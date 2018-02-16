@@ -73,31 +73,11 @@ const (
 )
 
 type Session struct {
-	key string
-	operatingSystem OperatingSystem
-	userAgent string
-	creationDate time.Time
-	info interface {}
-}
-
-func (sess *Session) Key() string {
-	return sess.key
-}
-
-func (sess *Session) OperatingSystem() OperatingSystem {
-	return sess.operatingSystem
-}
-
-func (sess *Session) UserAgent() string {
-	return sess.userAgent
-}
-
-func (sess *Session) CreationDate() time.Time {
-	return sess.creationDate
-}
-
-func (sess *Session) Info() interface {} {
-	return sess.info
+	Key string
+	OperatingSystem OperatingSystem
+	UserAgent string
+	CreationDate time.Time
+	Info interface {}
 }
 
 func NewSession(

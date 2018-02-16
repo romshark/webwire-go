@@ -4,6 +4,9 @@ import (
 	"io"
 	"log"
 	"fmt"
+	"net"
+	"time"
+	"sync"
 	"context"
 	"net/http"
 	"encoding/json"
@@ -11,6 +14,10 @@ import (
 )
 
 type OnCORS func(resp http.ResponseWriter)
+
+// OnClientConnected is an optional callback.
+// It's invoked when a new client successfuly connects to the webwire server
+type OnClientConnected func(client *Client)
 
 // OnSignal is an optional callback.
 // It's invoked when the webwire server receives a signal from the client
@@ -47,6 +54,7 @@ type OnSessionClosure func(key string) (error)
 
 type Server struct {
 	// Configuration
+	onClientConnected OnClientConnected
 	onSignal OnSignal
 	onRequest OnRequest
 	onSessionCreation OnSessionCreation
@@ -54,17 +62,28 @@ type Server struct {
 	onFindSession OnFindSession
 	onSessionClosure OnSessionClosure
 	onCORS OnCORS
+
+	// Dynamic methods
+	launch func() error
 	
-	// Internal state
+	// State
+	Addr string
+	clientsLock *sync.Mutex
+	clients []*Client
 	sessionsEnabled bool
 	activeSessions map[string]bool
 
+	// Internals
+	httpServer *http.Server
 	upgrader websocket.Upgrader
 	warnLog *log.Logger
 	errorLog *log.Logger
 }
 
+// NewServer creates a new WebWire server instance.
 func NewServer(
+	addr string,
+	onClientConnected OnClientConnected,
 	onSignal OnSignal,
 	onRequest OnRequest,
 	onSessionCreation OnSessionCreation,
@@ -74,7 +93,11 @@ func NewServer(
 	onCORS OnCORS,
 	warningLogWriter io.Writer,
 	errorLogWriter io.Writer,
-) Server {
+) (*Server, error) {
+	if onClientConnected == nil {
+		onClientConnected = func(_ *Client) {}
+	}
+
 	if onSignal == nil {
 		onSignal = func(_ context.Context) {}
 	}
@@ -106,32 +129,88 @@ func NewServer(
 		sessionsEnabled = true
 	}
 
-	return Server {
-		onSignal,
-		onRequest,
-		onSessionCreation,
-		onSaveSession,
-		onFindSession,
-		onSessionClosure,
-		onCORS,
-		sessionsEnabled,
-		make(map[string]bool),
-		websocket.Upgrader {
-			CheckOrigin: func(_ *http.Request) bool {
-				return true
-			},
-		},
-		log.New(
+	srv := Server {
+		// Configuration
+		onClientConnected: onClientConnected,
+		onSignal: onSignal,
+		onRequest: onRequest,
+		onSessionCreation: onSessionCreation,
+		onSaveSession: onSaveSession,
+		onFindSession: onFindSession,
+		onSessionClosure: onSessionClosure,
+		onCORS: onCORS,
+
+		// State
+		clients: make([]*Client, 0),
+		clientsLock: &sync.Mutex {},
+		sessionsEnabled: sessionsEnabled,
+		activeSessions: make(map[string]bool),
+
+		// Internals
+		warnLog: log.New(
 			warningLogWriter,
 			"WARNING: ",
 			log.Ldate | log.Ltime | log.Lshortfile,
 		),
-		log.New(
+		errorLog: log.New(
 			errorLogWriter,
 			"ERROR: ",
 			log.Ldate | log.Ltime | log.Lshortfile,
 		),
 	}
+
+	// Initialize websocket
+	srv.upgrader = websocket.Upgrader {
+		CheckOrigin: func(_ *http.Request) bool {
+			return true
+		},
+	}
+
+	// Initialize HTTP server
+	srv.httpServer = &http.Server {
+		Addr: addr,
+		Handler: &srv,
+	}
+
+	// Determine final address
+	addr = srv.httpServer.Addr
+	if addr == "" {
+		addr = ":http"
+	}
+
+	// Initialize TCP/IP listener
+	listener, err := net.Listen("tcp", addr)
+	if err != nil {
+		return nil, fmt.Errorf("Failed setting up TCP/IP listener: %s", err)
+	}
+
+	srv.launch = func() error {
+		// Launch server
+		err = srv.httpServer.Serve(tcpKeepAliveListener{listener.(*net.TCPListener)})
+		if err != nil {
+			return fmt.Errorf("HTTP Server failure: %s", err)
+		}
+		return nil
+	}
+
+	// Remember HTTP server address
+	srv.Addr = listener.Addr().String()
+
+	return &srv, nil
+}
+
+type tcpKeepAliveListener struct {
+	*net.TCPListener
+}
+
+func (ln tcpKeepAliveListener) Accept() (c net.Conn, err error) {
+	tc, err := ln.AcceptTCP()
+	if err != nil {
+		return
+	}
+	tc.SetKeepAlive(true)
+	tc.SetKeepAlivePeriod(3 * time.Minute)
+	return tc, nil
 }
 
 // handleSessionRestore handles session restoration (by session key) requests
@@ -166,7 +245,7 @@ func (srv *Server) handleSessionRestore(
 		return nil
 	}
 	(*currentSession) = session
-	srv.activeSessions[session.key] = true
+	srv.activeSessions[session.Key] = true
 
 	// Send confirmation response
 	msg.fulfill(nil)
@@ -181,7 +260,7 @@ func (srv *Server) handleSessionCreation(
 	currentSession **Session,
 ) error {
 	if (*currentSession) != nil {
-		msg.fulfill([]byte((*currentSession).key))
+		msg.fulfill([]byte((*currentSession).Key))
 		return nil
 	}
 
@@ -231,10 +310,10 @@ func (srv *Server) handleSessionCreation(
 		return fmt.Errorf("CRITICAL: Session saving handler failed: %s", err)
 	}
 	(*currentSession) = &session
-	srv.activeSessions[session.key] = true
+	srv.activeSessions[session.Key] = true
 
 	// Send confirmation response including the session key
-	msg.fulfill([]byte(session.key))
+	msg.fulfill([]byte(session.Key))
 
 	return nil
 }
@@ -251,7 +330,7 @@ func (srv *Server) handleSessionClosure(
 		return nil
 	}
 
-	key := (*currentSession).key
+	key := (*currentSession).Key
 	err := srv.onSessionClosure(key)
 	if err != nil {
 		return fmt.Errorf("CRITICAL: Session closure handler failed: %s", err)
@@ -324,7 +403,7 @@ func (srv Server) ServeHTTP(
 	}
 
 	var session *Session
-	
+
 	// Establish connection
 	conn, err := srv.upgrader.Upgrade(resp, req, nil)
 	if err != nil {
@@ -332,6 +411,20 @@ func (srv Server) ServeHTTP(
 		return
 	}
 	defer conn.Close()
+
+	// Register connected client
+	newClient := &Client {
+		time.Now(),
+		conn,
+		&sync.Mutex {},
+	}
+
+	srv.clientsLock.Lock()
+	srv.clients = append(srv.clients, newClient)
+	srv.clientsLock.Unlock()
+
+	// Call hook on successful connection
+	srv.onClientConnected(newClient)
 
 	for {
 		// Await message
@@ -341,7 +434,7 @@ func (srv Server) ServeHTTP(
 				websocket.IsCloseError(err) ||
 				websocket.IsUnexpectedCloseError(err)) {
 				// Mark session as inactive
-				delete(srv.activeSessions, session.key)
+				delete(srv.activeSessions, session.Key)
 				break
 			} else if websocket.IsCloseError(err) {
 				break
@@ -362,7 +455,7 @@ func (srv Server) ServeHTTP(
 		msg.fulfill = func(response []byte) {
 			// Send response
 			header := append([]byte("p"), *msg.id...)
-			err := conn.WriteMessage(
+			err := newClient.write(
 				wsMsgType, append(header, response...),
 			)
 			if err != nil {
@@ -377,7 +470,7 @@ func (srv Server) ServeHTTP(
 
 			// Send request failure notification
 			header := append([]byte("e"), *msg.id...)
-			err = conn.WriteMessage(
+			err = newClient.write(
 				websocket.TextMessage,
 				append(header, encoded...),
 			)
@@ -401,4 +494,15 @@ func (srv Server) ServeHTTP(
 			break
 		}
 	}
+}
+
+func (srv *Server) Run() error {
+	return srv.launch()
+}
+
+func (srv *Server) ClientsNum() int {
+	srv.clientsLock.Lock()
+	defer srv.clientsLock.Unlock()
+	ln := len(srv.clients)
+	return ln
 }
