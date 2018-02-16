@@ -1,6 +1,8 @@
 package webwire
 
 import (
+	"io"
+	"log"
 	"fmt"
 	"time"
 	"bytes"
@@ -22,16 +24,33 @@ type Client struct {
 	conn *websocket.Conn
 	reqRegister map[[32]byte] chan []byte
 	sess Session
+	warningLog *log.Logger
+	errorLog *log.Logger
 }
 
 // NewClient creates a new disconnected client instance. 
-func NewClient(serverAddr string, defaultTimeout time.Duration) Client {
+func NewClient(
+	serverAddr string,
+	defaultTimeout time.Duration,
+	warningLogWriter io.Writer,
+	errorLogWriter io.Writer,
+) Client {
 	return Client {
 		serverAddr,
 		defaultTimeout,
 		nil,
 		make(map[[32]byte] chan []byte, 0),
 		Session {},
+		log.New(
+			warningLogWriter,
+			"WARNING: ",
+			log.Ldate | log.Ltime | log.Lshortfile,
+		),
+		log.New(
+			errorLogWriter,
+			"ERROR: ",
+			log.Ldate | log.Ltime | log.Lshortfile,
+		),
 	}
 }
 
@@ -124,18 +143,27 @@ func (clt *Client) Connect() (err error) {
 	}
 
 	// Setup reader thread
-	// TODO: kill reader thread on connection closure
 	go func() {
 		defer clt.Close()
 		for {
 			_, message, err := clt.conn.ReadMessage()
 			if err != nil {
-				fmt.Println("Failed reading message:", err)
-				return
+				if websocket.IsUnexpectedCloseError(
+					err,
+					websocket.CloseGoingAway,
+					websocket.CloseAbnormalClosure,
+				) {
+					// Error while reading message
+					clt.errorLog.Print("Failed reading message:", err)
+					break
+				} else {
+					// Shutdown client due to clean disconnection
+					break
+				}
 			}
+			// Try to handle the message
 			if err = clt.handleMessage(message); err != nil {
-				fmt.Println("Failed handling message:", err)
-				return
+				clt.warningLog.Print("Failed handling message:", err)
 			}
 		}
 	}()

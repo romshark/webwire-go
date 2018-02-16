@@ -14,7 +14,7 @@ type OnCORS func(resp http.ResponseWriter)
 
 // OnSignal is an optional callback.
 // It's invoked when the webwire server receives a signal from the client
-type OnSignal func(data []byte, session *Session)
+type OnSignal func(ctx context.Context)
 
 // OnRequest is an optional callback.
 // It's invoked when the webwire server receives a request from the client.
@@ -76,7 +76,7 @@ func NewServer(
 	errorLogWriter io.Writer,
 ) Server {
 	if onSignal == nil {
-		onSignal = func(data []byte, session *Session) {}
+		onSignal = func(_ context.Context) {}
 	}
 
 	if onRequest == nil {
@@ -271,7 +271,7 @@ func (srv *Server) handleSignal(
 	msg *Message,
 	currentSession *Session,
 ) error {
-	srv.onSignal(msg.payload, currentSession)
+	srv.onSignal(context.WithValue(context.Background(), MESSAGE, *msg))
 	return nil
 }
 

@@ -48,12 +48,6 @@ func createHttpServer(handler http.Handler) (srv *http.Server, addr string, err 
 	return httpServer, listener.Addr().String(), nil
 }
 
-// shutdownHttpServer helps gracefully shutting down the given HTTP server
-func shutdownHttpServer(srv *http.Server) {
-	ctx, _ := context.WithTimeout(context.Background(), 5 * time.Second)
-	srv.Shutdown(ctx)
-}
-
 // setup helps setting up and launching everything, the client, the server and the http server.
 // The returned teardown handle must be defered right after calling setup for proper shutdown
 func setup(
@@ -65,7 +59,7 @@ func setup(
 	onFindSession OnFindSession,
 	onSessionClosure OnSessionClosure,
 	onCORS OnCORS,
-) (srv *Server, httpSrv *http.Server, clt *Client, teardownHandle func()) {
+) (srv *Server, httpSrv *http.Server, clt *Client) {
 	// Initialize webwire server
 	webwireServer := NewServer(
 		onSignal, onRequest,
@@ -80,23 +74,31 @@ func setup(
 	}
 
 	// Initialize client
-	client := NewClient(addr, 5 * time.Second)
+	client := NewClient(addr, 5 * time.Second, os.Stdout, os.Stderr)
 
-	return &webwireServer, httpSrv, &client, func() {
-		client.Close()
-		shutdownHttpServer(httpSrv)
+	return &webwireServer, httpSrv, &client
+}
+
+func comparePayload(t *testing.T, name string, expected, actual []byte) {
+	if !reflect.DeepEqual(actual, expected) {
+		t.Fatalf("Invalid %s: payload doesn't match:\n expected: '%s'\n actual:   '%s'",
+			name,
+			string(expected),
+			string(actual),
+		)
 	}
 }
 
 // TESTS
 
-// TestRequest verifies the server is connectable, receives requests and answers them correctly
-func TestRequest(t *testing.T) {
+// TestClientRequest verifies the server is connectable,
+// receives requests and answers them correctly
+func TestClientRequest(t *testing.T) {
 	expectedRequestPayload := []byte("webwire_test_REQUEST_payload")
 	expectedReplyPayload := []byte("webwire_test_RESPONSE_message")
 
-	// Initialize webwire server
-	_, _, client, teardown := setup(
+	// Initialize webwire server given only the request
+	_, _, client := setup(
 		t,
 		nil,
 		func(ctx context.Context) ([]byte, *Error) {
@@ -104,18 +106,11 @@ func TestRequest(t *testing.T) {
 			msg := ctx.Value(MESSAGE).(Message)
 
 			// Verify request payload
-			payload := msg.Payload()
-			if !reflect.DeepEqual(payload, expectedRequestPayload) {
-				t.Fatalf("Request payload doesn't match:\n expected: '%s'\n actual:   '%s'",
-					string(expectedRequestPayload),
-					string(payload),
-				)
-			}
+			comparePayload(t, "client request", expectedRequestPayload, msg.Payload())
 			return expectedReplyPayload, nil
 		},
 		nil, nil, nil, nil, nil,
 	)
-	defer teardown()
 
 	// Send request and await reply
 	reply, err := client.Request(expectedRequestPayload)
@@ -124,10 +119,36 @@ func TestRequest(t *testing.T) {
 	}
 
 	// Verify reply
-	if !reflect.DeepEqual(reply, expectedReplyPayload) {
-		t.Fatalf("Request reply doesn't match:\n expected: '%s'\n actual:   '%s'",
-			string(expectedReplyPayload),
-			string(reply),
-		)
+	comparePayload(t, "server reply", expectedReplyPayload, reply)
+}
+
+// TestClientSignal verifies the server is connectable and receives signals correctly
+func TestClientSignal(t *testing.T) {
+	expectedSignalPayload := []byte("webwire_test_SIGNAL_payload")
+	wait := make(chan bool)
+
+	// Initialize webwire server given only the signal handler
+	_, _, client := setup(
+		t,
+		func(ctx context.Context) {
+			// Extract signal message from the context
+			msg := ctx.Value(MESSAGE).(Message)
+
+			// Verify signal payload
+			comparePayload(t, "client signal", expectedSignalPayload, msg.Payload())
+
+			// Notify signal arival
+			wait <- true
+		},
+		nil, nil, nil, nil, nil, nil,
+	)
+
+	// Send signal
+	err := client.Signal(expectedSignalPayload)
+	if err != nil {
+		t.Fatalf("Request failed: %s", err)
 	}
+
+	// Await signal arival
+	<- wait
 }
