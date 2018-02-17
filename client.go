@@ -19,7 +19,8 @@ type Client struct {
 	Session *Session
 }
 
-// write protects the connection socket from concurrent writes
+// write sends the given data to the other side of the socket,
+// it also protects the connection from concurrent writes
 func (clt *Client) write(wsMsgType int, data []byte) error {
 	clt.lock.Lock()
 	defer clt.lock.Unlock()
@@ -31,7 +32,7 @@ func (clt *Client) ConnectionTime() time.Time {
 	return clt.connectionTime
 }
 
-// Signal sends a signal to the client
+// Signal sends a signal to this client
 func (clt *Client) Signal(payload []byte) error {
 	var msg bytes.Buffer
 	msg.WriteRune(MsgTyp_SIGNAL)
@@ -42,11 +43,13 @@ func (clt *Client) Signal(payload []byte) error {
 	return nil
 }
 
+// CreateSession creates a new session for this client.
+// Returns an error if there's already another session active
 func (clt *Client) CreateSession(session *Session) error {
 	if clt.Session != nil {
 		return fmt.Errorf("Another session (%s) on this client is already active", clt.Session.Key)
 	}
-	if err := clt.srv.registerSession(session); err != nil {
+	if err := clt.srv.registerSession(clt, session); err != nil {
 		return fmt.Errorf("Couldn't create session: %s", err)
 	}
 	clt.Session = session
@@ -62,6 +65,24 @@ func (clt *Client) CreateSession(session *Session) error {
 	return nil
 }
 
+// Close session destroys the currently active session for this client.
+// Does nothing if there's no active session
 func (clt *Client) CloseSession() error {
-	return fmt.Errorf("CloseSession is not yet implemented")
+	if clt.Session == nil {
+		return nil
+	}
+
+	if err := clt.srv.deregisterSession(clt); err != nil {
+		return fmt.Errorf("Couldn't close session: %s", err)
+	}
+	clt.Session = nil
+
+	// Notify client about the session destruction
+	var msg bytes.Buffer
+	msg.WriteRune(MsgTyp_SESS_CLOSED)
+	if err := clt.write(websocket.TextMessage, msg.Bytes()); err != nil {
+		return fmt.Errorf("Couldn't notify client about the session destruction: %s", err)
+	}
+
+	return nil
 }

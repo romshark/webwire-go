@@ -63,7 +63,7 @@ func TestServerSignal(t *testing.T) {
 			// Synchronize, unlock main goroutine to pass the test case
 			finish.Done()
 		},
-		nil,
+		nil, nil,
 		5 * time.Second,
 		os.Stdout,
 		os.Stderr,

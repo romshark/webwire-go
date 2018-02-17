@@ -45,7 +45,7 @@ type OnFindSession func(key string) (*Session, error)
 // It's invoked when the webwire server is closing a specific session.
 // Because webwire isn't responsible for storing the sessions the library users must
 // provide this callback to close and delete the session associated with the given key
-type OnSessionClosure func(key string) (error)
+type OnSessionClosure func(client *Client) (error)
 
 type Server struct {
 	// Configuration
@@ -65,7 +65,7 @@ type Server struct {
 	clientsLock *sync.Mutex
 	clients []*Client
 	sessionsEnabled bool
-	activeSessions map[string]bool
+	activeSessions map[string]*Client
 
 	// Internals
 	httpServer *http.Server
@@ -127,7 +127,7 @@ func NewServer(
 		clients: make([]*Client, 0),
 		clientsLock: &sync.Mutex {},
 		sessionsEnabled: sessionsEnabled,
-		activeSessions: make(map[string]bool),
+		activeSessions: make(map[string]*Client),
 
 		// Internals
 		warnLog: log.New(
@@ -198,10 +198,7 @@ func (ln tcpKeepAliveListener) Accept() (c net.Conn, err error) {
 
 // handleSessionRestore handles session restoration (by session key) requests
 // and returns an error if the ongoing connection cannot be proceeded
-func (srv *Server) handleSessionRestore(
-	msg *Message,
-	currentSession **Session,
-) (error) {
+func (srv *Server) handleSessionRestore(msg *Message) (error) {
 	key := string(msg.Payload)
 	if _, exists := srv.activeSessions[key]; exists {
 		msg.fail(Error {
@@ -216,6 +213,10 @@ func (srv *Server) handleSessionRestore(
 
 	session, err := srv.onFindSession(key)
 	if err != nil {
+		msg.fail(Error {
+			"INTERNAL_ERROR",
+			fmt.Sprintf("Session restoration request not could have been fulfilled"),
+		})
 		return fmt.Errorf(
 			"CRITICAL: Session search handler failed: %s", err,
 		)
@@ -227,8 +228,8 @@ func (srv *Server) handleSessionRestore(
 		})
 		return nil
 	}
-	(*currentSession) = session
-	srv.activeSessions[session.Key] = true
+	msg.Client.Session = session
+	srv.activeSessions[session.Key] = msg.Client
 
 	// Send confirmation response
 	msg.fulfill(nil)
@@ -236,25 +237,34 @@ func (srv *Server) handleSessionRestore(
 	return nil
 }
 
-// handleSessionClosure handles session closure signals
+// handleSessionClosure handles session destruction requests
 // and returns an error if the ongoing connection cannot be proceeded
-func (srv *Server) handleSessionClosure(
-	msg *Message,
-	currentSession **Session,
-) error {
-	if *currentSession == nil {
+func (srv *Server) handleSessionClosure(msg *Message) error {
+	if msg.Client.Session == nil {
 		// Send confirmation even though no session was closed
 		msg.fulfill(nil)
 		return nil
 	}
 
-	key := (*currentSession).Key
-	err := srv.onSessionClosure(key)
-	if err != nil {
-		return fmt.Errorf("CRITICAL: Session closure handler failed: %s", err)
+	if err := srv.deregisterSession(msg.Client); err != nil {
+		msg.fail(Error {
+			"INTERNAL_ERROR",
+			fmt.Sprintf("Session destruction request not could have been fulfilled"),
+		})
+		return fmt.Errorf("CRITICAL: Internal server error, session destruction failed: %s", err)
 	}
-	*currentSession = nil
-	delete(srv.activeSessions, key)
+
+	// Synchronize session destruction to the client
+	if err := msg.Client.CloseSession(); err != nil {
+		msg.fail(Error {
+			"INTERNAL_ERROR",
+			fmt.Sprintf("Session destruction request not could have been fulfilled"),
+		})
+		return fmt.Errorf("CRITICAL: Internal server error," +
+			" session destruction failed during client.CloseSession call: %s",
+			err,
+		)
+	}
 
 	// Send confirmation
 	msg.fulfill(nil)
@@ -264,20 +274,14 @@ func (srv *Server) handleSessionClosure(
 
 // handleSignal handles incoming signals
 // and returns an error if the ongoing connection cannot be proceeded
-func (srv *Server) handleSignal(
-	msg *Message,
-	currentSession *Session,
-) error {
+func (srv *Server) handleSignal(msg *Message) error {
 	srv.onSignal(context.WithValue(context.Background(), MESSAGE, *msg))
 	return nil
 }
 
 // handleRequest handles incoming requests
 // and returns an error if the ongoing connection cannot be proceeded
-func (srv *Server) handleRequest(
-	msg *Message,
-	currentSession *Session,
-) {
+func (srv *Server) handleRequest(msg *Message) {
 	response, err := srv.onRequest(
 		context.WithValue(context.Background(), MESSAGE, *msg),
 	)
@@ -289,20 +293,14 @@ func (srv *Server) handleRequest(
 
 // handleResponse handles incoming responses to requests
 // and returns an error if the ongoing connection cannot be proceeded
-func (srv *Server) handleResponse(
-	msg *Message,
-	currentSession *Session,
-) error {
+func (srv *Server) handleResponse(msg *Message) error {
 	// TODO: implement server-side response handling
 	return nil
 }
 
 // handleErrorResponse handles incoming responses to failed requests
 // and returns an error if the ongoing connection cannot be proceeded
-func (srv *Server) handleErrorResponse(
-	msg *Message,
-	currentSession *Session,
-) error {
+func (srv *Server) handleErrorResponse(msg *Message) error {
 	// TODO: implement server-side error-response handling
 	return nil
 }
@@ -313,7 +311,6 @@ func (srv *Server) CORS(resp http.ResponseWriter) {
 
 // handleMetadata handles endpoint metadata requests
 func (srv *Server) handleMetadata(resp http.ResponseWriter) {
-	fmt.Println("METADATA REQ")
 	resp.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(resp).Encode(struct {
 		ProtocolVersion string `json:"protocol-version"`
@@ -334,8 +331,6 @@ func (srv Server) ServeHTTP(
 		srv.handleMetadata(resp)
 		return
 	}
-
-	var session *Session
 
 	// Establish connection
 	conn, err := srv.upgrader.Upgrade(resp, req, nil)
@@ -365,11 +360,11 @@ func (srv Server) ServeHTTP(
 		// Await message
 		wsMsgType, message, err := conn.ReadMessage()
 		if err != nil {
-			if session != nil && (
+			if newClient.Session != nil && (
 				websocket.IsCloseError(err) ||
 				websocket.IsUnexpectedCloseError(err)) {
 				// Mark session as inactive
-				delete(srv.activeSessions, session.Key)
+				delete(srv.activeSessions, newClient.Session.Key)
 				break
 			} else if websocket.IsCloseError(err) {
 				break
@@ -386,7 +381,10 @@ func (srv Server) ServeHTTP(
 		}
 
 		// Prepare message
+		// Reference the client associated with this message
 		msg.Client = newClient
+
+		// Create fulfillment lambda
 		msg.fulfill = func(response []byte) {
 			// Send response
 			header := append([]byte("p"), *msg.id...)
@@ -397,6 +395,8 @@ func (srv Server) ServeHTTP(
 				srv.errorLog.Println("Writing failed:", err)
 			}
 		}
+
+		// Create failure lambda
 		msg.fail = func(errObj Error) {
 			encoded, err := json.Marshal(errObj)
 			if err != nil {
@@ -414,13 +414,14 @@ func (srv Server) ServeHTTP(
 			}
 		}
 
+		// Handle message
 		switch msg.msgType {
-		case MsgTyp_SIGNAL: err = srv.handleSignal(&msg, session)
-		case MsgTyp_REQUEST: srv.handleRequest(&msg, session)
-		case MsgTyp_RESPONSE: err = srv.handleResponse(&msg, session)
-		case MsgTyp_ERROR_RESP: err = srv.handleErrorResponse(&msg, session)
-		case MsgTyp_SESS_RESTORE: err = srv.handleSessionRestore(&msg, &session)
-		case MsgTyp_SESS_CLOSURE: err = srv.handleSessionClosure(&msg, &session)
+		case MsgTyp_SIGNAL: err = srv.handleSignal(&msg)
+		case MsgTyp_REQUEST: srv.handleRequest(&msg)
+		case MsgTyp_RESPONSE: err = srv.handleResponse(&msg)
+		case MsgTyp_ERROR_RESP: err = srv.handleErrorResponse(&msg)
+		case MsgTyp_SESS_RESTORE: err = srv.handleSessionRestore(&msg)
+		case MsgTyp_CLOSE_SESSION: err = srv.handleSessionClosure(&msg)
 		}
 
 		if err != nil {
@@ -430,12 +431,21 @@ func (srv Server) ServeHTTP(
 	}
 }
 
-func (srv *Server) registerSession(session *Session) error {
+func (srv *Server) registerSession(clt *Client, session *Session) error {
 	err := srv.onSaveSession(session)
 	if err != nil {
 		return fmt.Errorf("Couldn't save session: %s", err)
 	}
-	srv.activeSessions[session.Key] = true
+	srv.activeSessions[session.Key] = clt
+	return nil
+}
+
+func (srv *Server) deregisterSession(clt *Client) error {
+	err := srv.onSessionClosure(clt)
+	if err != nil {
+		return fmt.Errorf("CRITICAL: Session closure handler failed: %s", err)
+	}
+	delete(srv.activeSessions, clt.Session.Key)
 	return nil
 }
 

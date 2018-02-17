@@ -22,6 +22,10 @@ type OnServerSignal func([]byte)
 // It's invoked when the webwire client receives a new session
 type OnSessionCreated func(*webwire.Session)
 
+// OnSessionClosed is an optional callback.
+// It's invoked when the clients session was closed either by the server or by himself
+type OnSessionClosed func()
+
 func extractMessageId(message []byte) (arr [32]byte) {
 	copy(arr[:], message[1:33])
 	return arr
@@ -32,11 +36,12 @@ type Client struct {
 	defaultTimeout time.Duration
 	conn *websocket.Conn
 	reqRegister map[[32]byte] chan []byte
-	sess webwire.Session
+	sess *webwire.Session
 
 	// Handlers
 	onServerSignal OnServerSignal
 	onSessionCreated OnSessionCreated
+	onSessionClosed OnSessionClosed
 
 	// Loggers
 	warningLog *log.Logger
@@ -48,6 +53,7 @@ func NewClient(
 	serverAddr string,
 	onServerSignal OnServerSignal,
 	onSessionCreated OnSessionCreated,
+	onSessionClosed OnSessionClosed,
 	defaultTimeout time.Duration,
 	warningLogWriter io.Writer,
 	errorLogWriter io.Writer,
@@ -60,14 +66,19 @@ func NewClient(
 		onSessionCreated = func(_ *webwire.Session) {}
 	}
 
+	if onSessionClosed == nil {
+		onSessionClosed = func() {}
+	}
+
 	return Client {
 		serverAddr,
 		defaultTimeout,
 		nil,
 		make(map[[32]byte] chan []byte, 0),
-		webwire.Session {},
+		nil,
 		onServerSignal,
 		onSessionCreated,
+		onSessionClosed,
 		log.New(
 			warningLogWriter,
 			"WARNING: ",
@@ -111,13 +122,23 @@ func (clt *Client) handleRequest(message []byte) error {
 
 func (clt *Client) handleSessionCreated(message []byte) error {
 	// Set new session
-	clt.sess.Key = string(message)
 	// TODO: get session creation time from actual server time
-	clt.sess.CreationDate = time.Now()
-
 	// TODO: get session info from appended JSON
+	clt.sess = &webwire.Session {
+		Key: string(message),
+		CreationDate: time.Now(),
+	}
 
-	clt.onSessionCreated(&clt.sess)
+	clt.onSessionCreated(clt.sess)
+
+	return nil
+}
+
+func (clt *Client) handleSessionClosed() error {
+	// Destroy local session
+	clt.sess = nil
+
+	clt.onSessionClosed()
 
 	return nil
 }
@@ -150,6 +171,8 @@ func (clt *Client) handleMessage(message []byte) error {
 		return nil
 	case webwire.MsgTyp_REQUEST: return clt.handleRequest(message)
 	case webwire.MsgTyp_SESS_CREATED: return clt.handleSessionCreated(message[1:])
+	case webwire.MsgTyp_SESS_CLOSED: return clt.handleSessionClosed()
+	// TODO: write warning to warningLog
 	default: fmt.Printf("Strange message type received: '%c'\n", message[0:1][0])
 	}
 	return nil
@@ -279,7 +302,10 @@ func (clt *Client) Signal(payload []byte) error {
 
 // Session returns information about the current session
 func (clt *Client) Session() webwire.Session {
-	return webwire.Session {}
+	if clt.sess == nil {
+		return webwire.Session {}
+	}
+	return *clt.sess
 }
 
 // RestoreSession tries to restore the previously opened session
@@ -304,19 +330,21 @@ func (clt *Client) RestoreSession(sessionKey []byte) error {
 // CloseSession closes the currently active session.
 // Does nothing if there's no active session
 func (clt *Client) CloseSession() error {
-	if len(clt.sess.Key) < 1 {
+	if clt.conn == nil {
+		return fmt.Errorf("Cannot close a session of a disconnected client")
+	}
+
+	if clt.sess == nil {
 		return nil
 	}
 
-	// Connect before attempting session restoration
-	if err := clt.Connect(); err != nil {
-		return fmt.Errorf("Couldn't connect: %s", err)
+	if _, err := clt.sendRequest(webwire.MsgTyp_CLOSE_SESSION, nil, clt.defaultTimeout);
+	err != nil {
+		return fmt.Errorf("Session destruction request failed: %s", err)
 	}
 
-	if _, err := clt.sendRequest(webwire.MsgTyp_SESS_CLOSURE, nil, clt.defaultTimeout);
-	err != nil {
-		return fmt.Errorf("Session closure request failed: %s", err)
-	}
+	// Reset session locally after destroying it on the server
+	clt.sess = nil
 
 	return nil
 }

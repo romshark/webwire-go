@@ -35,8 +35,7 @@ func TestClientRequest(t *testing.T) {
 	// Initialize client
 	client := webwire_client.NewClient(
 		server.Addr,
-		nil,
-		nil,
+		nil, nil, nil,
 		5 * time.Second,
 		os.Stdout,
 		os.Stderr,

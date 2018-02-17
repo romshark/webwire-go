@@ -18,11 +18,12 @@ type MessageType byte
 const (
 	MsgTyp_SESS_CREATED = 'c'
 	MsgTyp_SESS_RESTORE = 'r'
-	MsgTyp_SESS_CLOSURE = 'd'
+	MsgTyp_SESS_CLOSED = 'd'
 	MsgTyp_SIGNAL = 's'
 	MsgTyp_REQUEST = 'q'
 	MsgTyp_RESPONSE = 'p'
 	MsgTyp_ERROR_RESP = 'e'
+	MsgTyp_CLOSE_SESSION = 'x'
 )
 
 type Message struct {
@@ -108,6 +109,15 @@ func ParseMessage(message []byte) (obj Message, err error) {
 		obj.msgType = MsgTyp_SESS_RESTORE
 		obj.Payload = message[33:]
 
+	// Session destruction request message must be [1 (type), 32 (id)]
+	case MsgTyp_CLOSE_SESSION:
+		if len(message) != 33 {
+			return obj, fmt.Errorf("Invalid session destruction request message")
+		}
+		id := message[1:33]
+		obj.id = &id
+		obj.msgType = MsgTyp_CLOSE_SESSION
+
 	// Session creation request must be [1 (type), 32 (id), | 1+ (payload)]
 	case MsgTyp_SESS_CREATED:
 		if len(message) < 34 {
@@ -119,13 +129,11 @@ func ParseMessage(message []byte) (obj Message, err error) {
 		obj.Payload = message[33:]
 	
 	// Session closure request message must be [1 (type), 32 (id)]
-	case MsgTyp_SESS_CLOSURE:
-		if len(message) < 33 {
+	case MsgTyp_SESS_CLOSED:
+		if len(message) != 1 {
 			return obj, fmt.Errorf("Invalid session closure request message")
 		}
-		id := message[1:33]
-		obj.id = &id
-		obj.msgType = MsgTyp_SESS_CLOSURE
+		obj.msgType = MsgTyp_SESS_CLOSED
 		obj.Payload = nil
 
 	// Ignore messages of invalid message type

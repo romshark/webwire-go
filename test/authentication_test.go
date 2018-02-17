@@ -78,7 +78,7 @@ func TestAuthentication(t *testing.T) {
 			return nil, nil
 		},
 		// OnSessionClosure
-		func(_ string) error {
+		func(_ *webwire.Client) error {
 			return nil
 		},
 		nil,
@@ -88,8 +88,7 @@ func TestAuthentication(t *testing.T) {
 	// Initialize client
 	client := webwire_client.NewClient(
 		server.Addr,
-		nil,
-		nil,
+		nil, nil, nil,
 		5 * time.Second,
 		os.Stdout,
 		os.Stderr,

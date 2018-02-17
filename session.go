@@ -35,49 +35,12 @@ func GenerateSessionKey() string {
 	return base64.URLEncoding.EncodeToString(bytes)
 }
 
-type OperatingSystem int
-const (
-	Os_UNKNOWN OperatingSystem = iota
-	Os_WINDOWS_10
-	Os_WINDOWS_8_1
-	Os_WINDOWS_8
-	Os_WINDOWS_7
-	Os_WINDOWS_VISTA
-	Os_WINDOWS_XP
-	Os_WINDOWS_NT
-	Os_WINDOWS_2000
-	Os_MACOSX_10_13
-	Os_MACOSX_10_12
-	Os_MACOSX_10_10
-	Os_MACOSX_10_9
-	Os_MACOSX_10_8
-	Os_MACOSX_10_7
-	Os_MACOSX_10_6
-	Os_MACOSX_10_5
-	Os_LINUX
-	Os_ANDROID_8
-	Os_ANDROID_7
-	Os_ANDROID_6
-	Os_ANDROID_5
-	Os_ANDROID_4_4
-	Os_ANDROID_4
-	Os_ANDROID_2_3
-	Os_IOS_11
-	Os_IOS_10
-	Os_IOS_9
-	Os_IOS_8
-	Os_IOS_7
-	Os_IOS_6
-	Os_IOS_5
-	Os_IOS_4
-)
-
 type Session struct {
-	Key string
-	OperatingSystem OperatingSystem
-	UserAgent string
-	CreationDate time.Time
-	Info interface {}
+	Key string `json:"key"`
+	OperatingSystem OperatingSystem `json:"os"`
+	UserAgent string `json:"ua"`
+	CreationDate time.Time `json:"crt"`
+	Info interface {} `json:"inf"`
 }
 
 func NewSession(

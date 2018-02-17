@@ -61,7 +61,7 @@ func TestSessionCreation(t *testing.T) {
 			return nil, nil
 		},
 		// OnSessionClosure
-		func(_ string) error {
+		func(_ *webwire.Client) error {
 			return nil
 		},
 		nil,
@@ -79,6 +79,7 @@ func TestSessionCreation(t *testing.T) {
 			// Verify reply
 			compareSessions(t, createdSession, newSession)
 		},
+		nil,
 		5 * time.Second,
 		os.Stdout,
 		os.Stderr,
