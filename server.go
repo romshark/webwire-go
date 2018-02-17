@@ -13,6 +13,8 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+const protocolVersion = "1.0"
+
 type OnCORS func(resp http.ResponseWriter)
 
 // OnClientConnected is an optional callback.
@@ -309,12 +311,27 @@ func (srv *Server) CORS(resp http.ResponseWriter) {
 	srv.onCORS(resp)
 }
 
+// handleMetadata handles endpoint metadata requests
+func (srv *Server) handleMetadata(resp http.ResponseWriter) {
+	fmt.Println("METADATA REQ")
+	resp.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(resp).Encode(struct {
+		ProtocolVersion string `json:"protocol-version"`
+	} {
+		protocolVersion,
+	})
+}
+
 func (srv Server) ServeHTTP(
 	resp http.ResponseWriter,
 	req *http.Request,
 ) {
-	if req.Method == "OPTIONS" {
+	switch(req.Method) {
+	case "OPTIONS":
 		srv.CORS(resp)
+		return
+	case "WEBWIRE":
+		srv.handleMetadata(resp)
 		return
 	}
 
