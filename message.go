@@ -11,18 +11,18 @@ type Error struct {
 
 type ContextKey int
 const (
-    MESSAGE ContextKey = iota
+	MESSAGE ContextKey = iota
 )
 
 type MessageType byte
 const (
-	SESS_CREATION = 'c'
-	SESS_RESTORE = 'r'
-	SESS_CLOSURE = 'd'
-	SIGNAL = 's'
-	REQUEST = 'q'
-	RESPONSE = 'p'
-	ERROR_RESP = 'e'
+	MsgTyp_SESS_CREATED = 'c'
+	MsgTyp_SESS_RESTORE = 'r'
+	MsgTyp_SESS_CLOSURE = 'd'
+	MsgTyp_SIGNAL = 's'
+	MsgTyp_REQUEST = 'q'
+	MsgTyp_RESPONSE = 'p'
+	MsgTyp_ERROR_RESP = 'e'
 )
 
 type Message struct {
@@ -30,8 +30,9 @@ type Message struct {
 	fail func(Error)
 	msgType MessageType
 	id *[]byte
-	payload []byte
-	session *Session
+
+	Payload []byte
+	Client *Client
 }
 
 func ConstructMessage(
@@ -40,7 +41,7 @@ func ConstructMessage(
 	msgType MessageType,
 	id *[]byte,
 	payload []byte,
-	session *Session,
+	client *Client,
 ) Message {
 	return Message {
 		fulfill,
@@ -48,16 +49,8 @@ func ConstructMessage(
 		msgType,
 		id,
 		payload,
-		session,
+		client,
 	}
-}
-
-func (msg *Message) Payload() []byte {
-	return msg.payload
-}
-
-func (msg *Message) Session() *Session {
-	return msg.session
 }
 
 func ParseMessage(message []byte) (obj Message, err error) {
@@ -68,43 +61,43 @@ func ParseMessage(message []byte) (obj Message, err error) {
 	switch msgType {
 
 	// Request message must be [1 (type), 1+ (payload)]
-	case SIGNAL:
+	case MsgTyp_SIGNAL:
 		if len(message) < 2 {
 			return obj, fmt.Errorf("Invalid signal message")
 		}
-		obj.msgType = SIGNAL
-		obj.payload = message[1:]
+		obj.msgType = MsgTyp_SIGNAL
+		obj.Payload = message[1:]
 
 	// Request message must be [1 (type), 32 (id), | 1+ (payload)]
-	case REQUEST:
+	case MsgTyp_REQUEST:
 		if len(message) < 34 {
 			return obj, fmt.Errorf("Invalid request message")
 		}
 		id := message[1:33]
 		obj.id = &id
-		obj.msgType = REQUEST
-		obj.payload = message[33:]
+		obj.msgType = MsgTyp_REQUEST
+		obj.Payload = message[33:]
 
-	case RESPONSE:
+	case MsgTyp_RESPONSE:
 		if len(message) < 34 {
 			return obj, fmt.Errorf("Invalid response message")
 		}
 		id := message[1:33]
 		obj.id = &id
-		obj.msgType = RESPONSE
-		obj.payload = message[33:]
+		obj.msgType = MsgTyp_RESPONSE
+		obj.Payload = message[33:]
 
 	// Request message must be [1 (type), 32 (id), | 1+ (payload)]
-	case ERROR_RESP:
+	case MsgTyp_ERROR_RESP:
 		if len(message) < 34 {
 			return obj, fmt.Errorf("Invalid error response message")
 		}
 		id := message[1:33]
 		obj.id = &id
-		obj.msgType = ERROR_RESP
-		obj.payload = message[33:]
+		obj.msgType = MsgTyp_ERROR_RESP
+		obj.Payload = message[33:]
 
-	case SESS_RESTORE:
+	case MsgTyp_SESS_RESTORE:
 		// Session activation request message must be
 		// [1 (type), 32 (id), | 1+ (payload)]
 		if len(message) < 34 {
@@ -112,28 +105,28 @@ func ParseMessage(message []byte) (obj Message, err error) {
 		}
 		id := message[1:33]
 		obj.id = &id
-		obj.msgType = SESS_RESTORE
-		obj.payload = message[33:]
+		obj.msgType = MsgTyp_SESS_RESTORE
+		obj.Payload = message[33:]
 
 	// Session creation request must be [1 (type), 32 (id), | 1+ (payload)]
-	case SESS_CREATION:
+	case MsgTyp_SESS_CREATED:
 		if len(message) < 34 {
 			return obj, fmt.Errorf("Invalid session creation request message")
 		}
 		id := message[1:33]
 		obj.id = &id
-		obj.msgType = SESS_CREATION
-		obj.payload = message[33:]
+		obj.msgType = MsgTyp_SESS_CREATED
+		obj.Payload = message[33:]
 	
 	// Session closure request message must be [1 (type), 32 (id)]
-	case SESS_CLOSURE:
+	case MsgTyp_SESS_CLOSURE:
 		if len(message) < 33 {
 			return obj, fmt.Errorf("Invalid session closure request message")
 		}
 		id := message[1:33]
 		obj.id = &id
-		obj.msgType = SESS_CLOSURE
-		obj.payload = nil
+		obj.msgType = MsgTyp_SESS_CLOSURE
+		obj.Payload = nil
 
 	// Ignore messages of invalid message type
 	default:

@@ -28,13 +28,6 @@ type OnSignal func(ctx context.Context)
 // It must return either a response payload or an error.
 type OnRequest func(ctx context.Context) (response []byte, err *Error)
 
-// OnSessionCreation is an optional callback.
-// It's invoked when a connected client attempts to authenticate itself by the given credentials.
-// The user code must return whether or not the authentication was successful.
-// Arbitrary data also can also be attached to the session
-// by returning anything but nil in the second return value.
-type OnSessionCreation func(login, password string) (bool, interface {}, *Error)
-
 // OnSaveSession is a required callback invoked after the creation of a new session.
 // Because webwire isn't responsible for storing the sessions the library users must
 // provide this callback to persist the session to whatever storage they like
@@ -57,7 +50,6 @@ type Server struct {
 	onClientConnected OnClientConnected
 	onSignal OnSignal
 	onRequest OnRequest
-	onSessionCreation OnSessionCreation
 	onSaveSession OnSaveSession
 	onFindSession OnFindSession
 	onSessionClosure OnSessionClosure
@@ -86,7 +78,6 @@ func NewServer(
 	onClientConnected OnClientConnected,
 	onSignal OnSignal,
 	onRequest OnRequest,
-	onSessionCreation OnSessionCreation,
 	onSaveSession OnSaveSession,
 	onFindSession OnFindSession,
 	onSessionClosure OnSessionClosure,
@@ -111,15 +102,6 @@ func NewServer(
 		}
 	}
 
-	if onSessionCreation == nil {
-		onSessionCreation = func(login, password string) (bool, interface {}, *Error) {
-			return false, nil, &Error {
-				"NOT_IMPLEMENTED",
-				fmt.Sprintf("Session creation is not implemented on this server instance"),
-			}
-		}
-	}
-
 	if onCORS == nil {
 		onCORS = func(resp http.ResponseWriter)	{}
 	}
@@ -134,7 +116,6 @@ func NewServer(
 		onClientConnected: onClientConnected,
 		onSignal: onSignal,
 		onRequest: onRequest,
-		onSessionCreation: onSessionCreation,
 		onSaveSession: onSaveSession,
 		onFindSession: onFindSession,
 		onSessionClosure: onSessionClosure,
@@ -219,7 +200,7 @@ func (srv *Server) handleSessionRestore(
 	msg *Message,
 	currentSession **Session,
 ) (error) {
-	key := string(msg.payload)
+	key := string(msg.Payload)
 	if _, exists := srv.activeSessions[key]; exists {
 		msg.fail(Error {
 			"SESS_ACTIVE",
@@ -249,71 +230,6 @@ func (srv *Server) handleSessionRestore(
 
 	// Send confirmation response
 	msg.fulfill(nil)
-
-	return nil
-}
-
-// handleSessionCreation handles session creation requests
-// and returns an error if the ongoing connection cannot be proceeded
-func (srv *Server) handleSessionCreation(
-	msg *Message,
-	currentSession **Session,
-) error {
-	if (*currentSession) != nil {
-		msg.fulfill([]byte((*currentSession).Key))
-		return nil
-	}
-
-	if !srv.sessionsEnabled {
-		msg.fail(Error {
-			"NOT_IMPLEMENTED",
-			"Sessions are not implemented on this server instance",
-		})
-		return nil
-	}
-
-	// Decode credentials
-	var credentials struct {
-		Login string `json:"l"`
-		Password string `json:"p"`
-	}
-	if err := json.Unmarshal(msg.payload, &credentials); err != nil {
-		return fmt.Errorf("CRITICAL: Failed unmarshalling credentials: %s", err)
-	}
-
-	// Check client authentication
-	success, sessionInfo, sessCrtErr := srv.onSessionCreation(
-		credentials.Login,
-		credentials.Password,
-	)
-	if sessCrtErr != nil {
-		msg.fail(*sessCrtErr)
-		return nil
-	}
-	if !success {
-		msg.fail(Error {
-			"INVALID_CRED",
-			"Authentication failed (invalid credentials)",
-		})
-		return nil
-	}
-
-	// Save session
-	session := NewSession(
-		UNKNOWN,
-		// TODO: set proper user agent string
-		"user agent",
-		sessionInfo,
-	)
-	err := srv.onSaveSession(&session)
-	if err != nil {
-		return fmt.Errorf("CRITICAL: Session saving handler failed: %s", err)
-	}
-	(*currentSession) = &session
-	srv.activeSessions[session.Key] = true
-
-	// Send confirmation response including the session key
-	msg.fulfill([]byte(session.Key))
 
 	return nil
 }
@@ -414,9 +330,11 @@ func (srv Server) ServeHTTP(
 
 	// Register connected client
 	newClient := &Client {
-		time.Now(),
-		conn,
+		&srv,
 		&sync.Mutex {},
+		conn,
+		time.Now(),
+		nil,
 	}
 
 	srv.clientsLock.Lock()
@@ -451,7 +369,7 @@ func (srv Server) ServeHTTP(
 		}
 
 		// Prepare message
-		msg.session = session
+		msg.Client = newClient
 		msg.fulfill = func(response []byte) {
 			// Send response
 			header := append([]byte("p"), *msg.id...)
@@ -480,13 +398,12 @@ func (srv Server) ServeHTTP(
 		}
 
 		switch msg.msgType {
-		case SIGNAL: err = srv.handleSignal(&msg, session)
-		case REQUEST: srv.handleRequest(&msg, session)
-		case RESPONSE: err = srv.handleResponse(&msg, session)
-		case ERROR_RESP: err = srv.handleErrorResponse(&msg, session)
-		case SESS_CREATION: err = srv.handleSessionCreation(&msg, &session)
-		case SESS_RESTORE: err = srv.handleSessionRestore(&msg, &session)
-		case SESS_CLOSURE: err = srv.handleSessionClosure(&msg, &session)
+		case MsgTyp_SIGNAL: err = srv.handleSignal(&msg, session)
+		case MsgTyp_REQUEST: srv.handleRequest(&msg, session)
+		case MsgTyp_RESPONSE: err = srv.handleResponse(&msg, session)
+		case MsgTyp_ERROR_RESP: err = srv.handleErrorResponse(&msg, session)
+		case MsgTyp_SESS_RESTORE: err = srv.handleSessionRestore(&msg, &session)
+		case MsgTyp_SESS_CLOSURE: err = srv.handleSessionClosure(&msg, &session)
 		}
 
 		if err != nil {
@@ -494,6 +411,15 @@ func (srv Server) ServeHTTP(
 			break
 		}
 	}
+}
+
+func (srv *Server) registerSession(session *Session) error {
+	err := srv.onSaveSession(session)
+	if err != nil {
+		return fmt.Errorf("Couldn't save session: %s", err)
+	}
+	srv.activeSessions[session.Key] = true
+	return nil
 }
 
 func (srv *Server) Run() error {

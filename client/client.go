@@ -10,7 +10,6 @@ import (
 	"bytes"
 	"strings"
 	"net/url"
-	"encoding/json"
 	"github.com/satori/go.uuid"
 	"github.com/gorilla/websocket"
 )
@@ -18,6 +17,10 @@ import (
 // OnServerSignal is an optional callback.
 // It's invoked when the webwire client receives a signal from the server
 type OnServerSignal func([]byte)
+
+// OnSessionCreated is an optional callback.
+// It's invoked when the webwire client receives a new session
+type OnSessionCreated func(*webwire.Session)
 
 func extractMessageId(message []byte) (arr [32]byte) {
 	copy(arr[:], message[1:33])
@@ -33,6 +36,7 @@ type Client struct {
 
 	// Handlers
 	onServerSignal OnServerSignal
+	onSessionCreated OnSessionCreated
 
 	// Loggers
 	warningLog *log.Logger
@@ -43,12 +47,17 @@ type Client struct {
 func NewClient(
 	serverAddr string,
 	onServerSignal OnServerSignal,
+	onSessionCreated OnSessionCreated,
 	defaultTimeout time.Duration,
 	warningLogWriter io.Writer,
 	errorLogWriter io.Writer,
 ) Client {
 	if onServerSignal == nil {
 		onServerSignal = func(_ []byte) {}
+	}
+
+	if onSessionCreated == nil {
+		onSessionCreated = func(_ *webwire.Session) {}
 	}
 
 	return Client {
@@ -58,6 +67,7 @@ func NewClient(
 		make(map[[32]byte] chan []byte, 0),
 		webwire.Session {},
 		onServerSignal,
+		onSessionCreated,
 		log.New(
 			warningLogWriter,
 			"WARNING: ",
@@ -69,11 +79,6 @@ func NewClient(
 			log.Ldate | log.Ltime | log.Lshortfile,
 		),
 	}
-}
-
-func (clt *Client) setSession(sessionKey []byte) {
-	clt.sess.Key = string(sessionKey)
-	clt.sess.CreationDate = time.Now()
 }
 
 func (clt *Client) onRequest(payload []byte) ([]byte, error) {
@@ -88,11 +93,11 @@ func (clt *Client) handleRequest(message []byte) error {
 	result, err := clt.onRequest(message[33:])
 	var msg bytes.Buffer
 	if err != nil {
-		msg.WriteRune(webwire.ERROR_RESP)
+		msg.WriteRune(webwire.MsgTyp_ERROR_RESP)
 		msg.Write(reqId[:])
 		msg.WriteString(err.Error())
 	} else {
-		msg.WriteRune(webwire.RESPONSE)
+		msg.WriteRune(webwire.MsgTyp_RESPONSE)
 		msg.Write(reqId[:])
 		msg.Write(result)
 	}
@@ -101,6 +106,19 @@ func (clt *Client) handleRequest(message []byte) error {
 		// TODO: return typed error TransmissionFailure
 		return fmt.Errorf("Couldn't send message")
 	}
+	return nil
+}
+
+func (clt *Client) handleSessionCreated(message []byte) error {
+	// Set new session
+	clt.sess.Key = string(message)
+	// TODO: get session creation time from actual server time
+	clt.sess.CreationDate = time.Now()
+
+	// TODO: get session info from appended JSON
+
+	clt.onSessionCreated(&clt.sess)
+
 	return nil
 }
 
@@ -125,12 +143,13 @@ func (clt *Client) handleMessage(message []byte) error {
 		return nil
 	}
 	switch (message[0:1][0]) {
-	case webwire.RESPONSE: return clt.handleResponse(message)
-	case webwire.ERROR_RESP: return clt.handleFailure(message)
-	case webwire.SIGNAL:
+	case webwire.MsgTyp_RESPONSE: return clt.handleResponse(message)
+	case webwire.MsgTyp_ERROR_RESP: return clt.handleFailure(message)
+	case webwire.MsgTyp_SIGNAL:
 		clt.onServerSignal(message[1:])
 		return nil
-	case webwire.REQUEST: return clt.handleRequest(message)
+	case webwire.MsgTyp_REQUEST: return clt.handleRequest(message)
+	case webwire.MsgTyp_SESS_CREATED: return clt.handleSessionCreated(message[1:])
 	default: fmt.Printf("Strange message type received: '%c'\n", message[0:1][0])
 	}
 	return nil
@@ -225,7 +244,7 @@ func (clt *Client) sendRequest(
 // Attempts to automatically connect to the server
 // if no connection has yet been established
 func (clt *Client) Request(payload []byte) ([]byte, error) {
-	return clt.sendRequest(webwire.REQUEST, payload, clt.defaultTimeout)
+	return clt.sendRequest(webwire.MsgTyp_REQUEST, payload, clt.defaultTimeout)
 }
 
 // TimedRequest sends a request containing the given payload to the server
@@ -236,7 +255,7 @@ func (clt *Client) Request(payload []byte) ([]byte, error) {
 // Attempts to automatically connect to the server
 // if no connection has yet been established
 func (clt *Client) TimedRequest(payload []byte, timeout time.Duration) ([]byte, error) {
-	return clt.sendRequest(webwire.REQUEST, payload, timeout)
+	return clt.sendRequest(webwire.MsgTyp_REQUEST, payload, timeout)
 }
 
 // Signal sends a signal containing the given payload to the server.
@@ -249,57 +268,12 @@ func (clt *Client) Signal(payload []byte) error {
 	}
 
 	var msg bytes.Buffer
-	msg.WriteRune(webwire.SIGNAL)
+	msg.WriteRune(webwire.MsgTyp_SIGNAL)
 	msg.Write(payload)
 	if err := clt.conn.WriteMessage(websocket.TextMessage, msg.Bytes());
 	err != nil {
 		return err
 	}
-	return nil
-}
-
-// Authenticate attempts to authenticate and create a new session
-// using the given credentials.
-// Fails if a session is currently already active.
-// Attempts to automatically connect to the server
-// if no connection has yet been established
-func (clt *Client) Authenticate(login, password string) error {
-	if len(clt.sess.Key) < 1 {
-		// TODO: return typed error SessionActive
-		return fmt.Errorf("another session is currently active")
-	}
-	if len(login) < 1 {
-		return fmt.Errorf("missing login parameter")
-	}
-	if len(password) < 1 {
-		return fmt.Errorf("missing password parameter")
-	}
-
-	// Connect before attempting authentication
-	if err := clt.Connect(); err != nil {
-		return fmt.Errorf("Couldn't connect: %s", err)
-	}
-
-	// Request session creation
-	jsonBuff, err := json.Marshal(struct {
-		Login string `json:"l"`
-		Password string `json:"p"`
-	} {
-		login,
-		password,
-	})
-	if err != nil {
-		return fmt.Errorf("Couldn't marshal credentials: %s", err)
-	}
-
-	sessionKey, err := clt.sendRequest(
-		webwire.SESS_CREATION, jsonBuff, clt.defaultTimeout,
-	)
-	clt.setSession(sessionKey)
-	if err != nil {
-		return fmt.Errorf("Couldn't request session key: %s", err)
-	}
-
 	return nil
 }
 
@@ -318,7 +292,7 @@ func (clt *Client) RestoreSession(sessionKey []byte) error {
 		return fmt.Errorf("Couldn't connect: %s", err)
 	}
 
-	if _, err := clt.sendRequest(webwire.SESS_RESTORE, sessionKey, clt.defaultTimeout);
+	if _, err := clt.sendRequest(webwire.MsgTyp_SESS_RESTORE, sessionKey, clt.defaultTimeout);
 	err != nil {
 		// TODO: check for error types
 		return fmt.Errorf("Session restoration request failed: %s", err)
@@ -339,7 +313,7 @@ func (clt *Client) CloseSession() error {
 		return fmt.Errorf("Couldn't connect: %s", err)
 	}
 
-	if _, err := clt.sendRequest(webwire.SESS_CLOSURE, nil, clt.defaultTimeout);
+	if _, err := clt.sendRequest(webwire.MsgTyp_SESS_CLOSURE, nil, clt.defaultTimeout);
 	err != nil {
 		return fmt.Errorf("Session closure request failed: %s", err)
 	}

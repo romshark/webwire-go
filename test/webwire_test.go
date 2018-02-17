@@ -3,6 +3,7 @@ package test
 import (
 	"testing"
 	"os"
+	"fmt"
 	"net"
 	"time"
 	"sync"
@@ -33,7 +34,6 @@ func setupServer(
 	onClientConnected webwire.OnClientConnected,
 	onSignal webwire.OnSignal,
 	onRequest webwire.OnRequest,
-	onSessionCreation webwire.OnSessionCreation,
 	onSaveSession webwire.OnSaveSession,
 	onFindSession webwire.OnFindSession,
 	onSessionClosure webwire.OnSessionClosure,
@@ -44,7 +44,7 @@ func setupServer(
 		"127.0.0.1:0",
 		onClientConnected,
 		onSignal, onRequest,
-		onSessionCreation, onSaveSession, onFindSession, onSessionClosure,
+		onSaveSession, onFindSession, onSessionClosure,
 		onCORS,
 		os.Stdout, os.Stderr,
 	)
@@ -57,12 +57,56 @@ func setupServer(
 
 func comparePayload(t *testing.T, name string, expected, actual []byte) {
 	if !reflect.DeepEqual(actual, expected) {
-		t.Fatalf("Invalid %s: payload doesn't match:\n expected: '%s'\n actual:   '%s'",
+		t.Errorf("Invalid %s: payload doesn't match:\n expected: '%s'\n actual:   '%s'",
 			name,
 			string(expected),
 			string(actual),
 		)
 	}
+}
+
+func compareSessions(t *testing.T, expected, actual *webwire.Session) {
+	if actual == nil && expected == nil {
+		return
+	} else if (actual == nil && expected != nil) || (expected == nil && actual != nil) {
+		t.Errorf("Sessions differ:\n expected: '%v'\n actual:   '%v'",
+			expected,
+			actual,
+		)
+	} else if actual.Key != expected.Key {
+		t.Errorf("Session keys differ:\n expected: '%s'\n actual:   '%s'",
+			expected.Key,
+			actual.Key,
+		)
+	}
+	// TODO: get session creation time from actual server time
+	/*
+	else if actual.CreationDate != expected.CreationDate {
+		t.Errorf("Session creation dates differ:\n expected: '%s'\n actual:   '%s'",
+			expected.CreationDate,
+			actual.CreationDate,
+		)
+	}
+	*/
+	// TODO: implement user agent, OS and info comparison
+	/*
+	else if actual.UserAgent != expected.UserAgent {
+		t.Errorf("Session user agents differ:\n expected: '%s'\n actual:   '%s'",
+			expected.UserAgent,
+			actual.UserAgent,
+		)
+	} else if actual.OperatingSystem != expected.OperatingSystem {
+		t.Errorf("Session operating systems differ:\n expected: '%v'\n actual:   '%v'",
+			expected.OperatingSystem,
+			actual.OperatingSystem,
+		)
+	} else if !reflect.DeepEqual(expected.Info, actual.Info) {
+		t.Errorf("Session info differs:\n expected: '%v'\n actual:   '%v'",
+			expected.Info,
+			actual.Info,
+		)
+	}
+	*/
 }
 
 // TESTS
@@ -82,16 +126,17 @@ func TestClientRequest(t *testing.T) {
 			msg := ctx.Value(webwire.MESSAGE).(webwire.Message)
 
 			// Verify request payload
-			comparePayload(t, "client request", expectedRequestPayload, msg.Payload())
+			comparePayload(t, "client request", expectedRequestPayload, msg.Payload)
 			return expectedReplyPayload, nil
 		},
-		nil, nil, nil, nil, nil,
+		nil, nil, nil, nil,
 	)
 	go server.Run()
 
 	// Initialize client
 	client := webwire_client.NewClient(
 		server.Addr,
+		nil,
 		nil,
 		5 * time.Second,
 		os.Stdout,
@@ -122,18 +167,19 @@ func TestClientSignal(t *testing.T) {
 			msg := ctx.Value(webwire.MESSAGE).(webwire.Message)
 
 			// Verify signal payload
-			comparePayload(t, "client signal", expectedSignalPayload, msg.Payload())
+			comparePayload(t, "client signal", expectedSignalPayload, msg.Payload)
 
 			// Synchronize, notify signal arival
 			wait <- true
 		},
-		nil, nil, nil, nil, nil, nil,
+		nil, nil, nil, nil, nil,
 	)
 	go server.Run()
 
 	// Initialize client
 	client := webwire_client.NewClient(
 		server.Addr,
+		nil,
 		nil,
 		5 * time.Second,
 		os.Stdout,
@@ -175,11 +221,11 @@ func TestServerSignal(t *testing.T) {
 			}
 			*/
 
-			// Send signal*
+			// Send signal
 			if err := client.Signal(expectedSignalPayload); err != nil {
 				t.Fatalf("Couldn't send signal to client: %s", err)
 			}
-		}, nil, nil, nil, nil, nil, nil, nil)
+		}, nil, nil, nil, nil, nil, nil)
 		go server.Run()
 		addr = server.Addr
 
@@ -203,6 +249,7 @@ func TestServerSignal(t *testing.T) {
 			// Synchronize, unlock main goroutine to pass the test case
 			finish.Done()
 		},
+		nil,
 		5 * time.Second,
 		os.Stdout,
 		os.Stderr,
@@ -219,4 +266,201 @@ func TestServerSignal(t *testing.T) {
 
 	// Synchronize, await signal arival
 	finish.Wait()
+}
+
+// TestSessionCreation verifies the server is connectable,
+// and is able to receives requests and create sessions for the requesting client
+func TestSessionCreation(t *testing.T) {
+	var finish sync.WaitGroup
+	var createdSession *webwire.Session
+	finish.Add(2)
+
+	// Initialize webwire server
+	server := setupServer(
+		t,
+		nil,
+		nil,
+		// onRequest
+		func(ctx context.Context) ([]byte, *webwire.Error) {
+			defer finish.Done()
+
+			// Extract request message and requesting client from the context
+			msg := ctx.Value(webwire.MESSAGE).(webwire.Message)
+
+			// Create a new session
+			newSession := webwire.NewSession(
+				webwire.Os_UNKNOWN,
+				"user agent",
+				nil,
+			)
+			createdSession = &newSession
+
+			// Try to register the newly created session and bind it to the client
+			if err := msg.Client.CreateSession(createdSession); err != nil {
+				return nil, &webwire.Error {
+					"INTERNAL_ERROR",
+					fmt.Sprintf("Internal server error: %s", err),
+				}
+			}
+
+			// Return the key of the newly created session
+			return []byte(createdSession.Key), nil
+		},
+		// OnSaveSession
+		func(session *webwire.Session) error {
+			// Verify the session
+			compareSessions(t, createdSession, session)
+			return nil
+		},
+		// OnFindSession
+		func(_ string) (*webwire.Session, error) {
+			return nil, nil
+		},
+		// OnSessionClosure
+		func(_ string) error {
+			return nil
+		},
+		nil,
+	)
+	go server.Run()
+
+	// Initialize client
+	client := webwire_client.NewClient(
+		server.Addr,
+		nil,
+		// On session creation
+		func (newSession *webwire.Session) {
+			defer finish.Done()
+
+			// Verify reply
+			compareSessions(t, createdSession, newSession)
+		},
+		5 * time.Second,
+		os.Stdout,
+		os.Stderr,
+	)
+	defer client.Close()
+
+	// Send request and await reply
+	reply, err := client.Request([]byte("credentials"))
+	if err != nil {
+		t.Fatalf("Request failed: %s", err)
+	}
+
+	// Verify reply
+	comparePayload(t, "server reply", []byte(createdSession.Key), reply)
+
+	// Verify client session
+	finish.Wait()
+}
+
+
+// TestAuthentication verifies the server is connectable,
+// and is able to receives requests and signals, create sessions
+// and identify clients during request- and signal handling
+func TestAuthentication(t *testing.T) {
+	var clientSignal sync.WaitGroup
+	clientSignal.Add(1)
+	var createdSession *webwire.Session
+	expectedCredentials := []byte("secret_credentials")
+	expectedConfirmation := []byte("session_is_correct")
+	currentStep := 1
+
+	// Initialize webwire server
+	server := setupServer(
+		t,
+		nil,
+		// onSignal
+		func(ctx context.Context) {
+			defer clientSignal.Done()
+			// Extract request message and requesting client from the context
+			msg := ctx.Value(webwire.MESSAGE).(webwire.Message)
+			compareSessions(t, createdSession, msg.Client.Session)
+		},
+		// onRequest
+		func(ctx context.Context) ([]byte, *webwire.Error) {
+			// Extract request message and requesting client from the context
+			msg := ctx.Value(webwire.MESSAGE).(webwire.Message)
+
+			// If already authenticated then check session
+			if currentStep > 1 {
+				compareSessions(t, createdSession, msg.Client.Session)
+				return expectedConfirmation, nil
+			}
+
+			// Create a new session
+			newSession := webwire.NewSession(
+				webwire.Os_UNKNOWN,
+				"user agent",
+				nil,
+			)
+			createdSession = &newSession
+
+			// Try to register the newly created session and bind it to the client
+			if err := msg.Client.CreateSession(createdSession); err != nil {
+				return nil, &webwire.Error {
+					"INTERNAL_ERROR",
+					fmt.Sprintf("Internal server error: %s", err),
+				}
+			}
+
+			// Authentication step is passed
+			currentStep = 2
+
+			// Return the key of the newly created session
+			return []byte(createdSession.Key), nil
+		},
+		// OnSaveSession
+		func(session *webwire.Session) error {
+			// Verify the session
+			compareSessions(t, createdSession, session)
+			return nil
+		},
+		// OnFindSession
+		func(_ string) (*webwire.Session, error) {
+			return nil, nil
+		},
+		// OnSessionClosure
+		func(_ string) error {
+			return nil
+		},
+		nil,
+	)
+	go server.Run()
+
+	// Initialize client
+	client := webwire_client.NewClient(
+		server.Addr,
+		nil,
+		nil,
+		5 * time.Second,
+		os.Stdout,
+		os.Stderr,
+	)
+	defer client.Close()
+
+	// Send authentication request and await reply
+	authReqReply, err := client.Request(expectedCredentials)
+	if err != nil {
+		t.Fatalf("Request failed: %s", err)
+	}
+
+	// Verify reply
+	comparePayload(t, "authentication reply", []byte(createdSession.Key), authReqReply)
+
+
+	// Send a test-request to verify the session on the server and await response
+	testReqReply, err := client.Request(expectedCredentials)
+	if err != nil {
+		t.Fatalf("Request failed: %s", err)
+	}
+
+	// Verify reply
+	comparePayload(t, "test reply", expectedConfirmation, testReqReply)
+
+	// Send a test-signal to verify the session on the server
+	if err := client.Signal(expectedCredentials); err != nil {
+		t.Fatalf("Request failed: %s", err)
+	}
+	clientSignal.Wait()
 }
