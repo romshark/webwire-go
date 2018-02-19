@@ -10,9 +10,14 @@ import (
 	"bytes"
 	"strings"
 	"net/url"
+	"net/http"
+	"io/ioutil"
+	"encoding/json"
 	"github.com/satori/go.uuid"
 	"github.com/gorilla/websocket"
 )
+
+const supportedProtocolVersion = "1.0"
 
 // OnServerSignal is an optional callback.
 // It's invoked when the webwire client receives a signal from the server
@@ -173,10 +178,55 @@ func (clt *Client) handleMessage(message []byte) error {
 	case webwire.MsgTyp_SESS_CREATED: return clt.handleSessionCreated(message[1:])
 	case webwire.MsgTyp_SESS_CLOSED: return clt.handleSessionClosed()
 	// TODO: write warning to warningLog
+	// TODO: write warning to warningLog
 	default: fmt.Printf("Strange message type received: '%c'\n", message[0:1][0])
 	}
 	return nil
 }
+// verifyProtocolVersion requests the endpoint metadata
+// to verify the server is running a supported protocol version
+func (clt *Client) verifyProtocolVersion() error {
+	// Initialize HTTP client
+	var httpClient = &http.Client {
+		Timeout: time.Second * 10,
+	}
+
+	request, err := http.NewRequest("WEBWIRE", "http://" + clt.serverAddr + "/", nil)
+	if err != nil {
+		return fmt.Errorf("Couldn't create HTTP metadata request: %s", err)
+	}
+	response, err := httpClient.Do(request)
+	if err != nil {
+		fmt.Errorf("Endpoint metadata request failed: %s", err)
+	}
+
+	// Read response body
+	defer response.Body.Close()
+	encodedData, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		fmt.Errorf("Couldn't read metadata response body: %s", err)
+	}
+
+	// Unmarshal response
+	var metadata struct {
+		ProtocolVersion string `json:"protocol-version"`
+	}
+	if err := json.Unmarshal(encodedData, &metadata); err != nil {
+		fmt.Errorf("Couldn't parse HTTP metadata response ('%s'): %s", string(encodedData), err)
+	}
+
+	// Verify metadata
+	if metadata.ProtocolVersion != supportedProtocolVersion {
+		fmt.Errorf(
+			"Unsupported protocol version: %s (%s is supported by this client)",
+			metadata.ProtocolVersion,
+			supportedProtocolVersion,
+		)
+	}
+
+	return nil
+}
+
 
 // Connect connects the client to the configured server and
 // returns an error in case of a connection failure
@@ -184,6 +234,11 @@ func (clt *Client) Connect() (err error) {
 	if clt.conn != nil {
 		return nil
 	}
+
+	if err := clt.verifyProtocolVersion(); err != nil {
+		return err
+	}
+
 	connUrl := url.URL {Scheme: "ws", Host: clt.serverAddr, Path: "/"}
 	clt.conn, _, err = websocket.DefaultDialer.Dial(connUrl.String(), nil)
 	if err != nil {
