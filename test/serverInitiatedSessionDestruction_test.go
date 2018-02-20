@@ -28,6 +28,7 @@ func TestServerInitiatedSessionDestruction(t *testing.T) {
 		t,
 		nil,
 		nil,
+		nil,
 		// onRequest
 		func(ctx context.Context) ([]byte, *webwire.Error) {
 			// Extract request message and requesting client from the context

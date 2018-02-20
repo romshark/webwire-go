@@ -24,6 +24,10 @@ type OnOptions func(resp http.ResponseWriter)
 // It's invoked when a new client establishes a connection to the server
 type OnClientConnected func(client *Client)
 
+// OnClientDisconnected is an optional hook.
+// It's invoked when a client closes the connection to the server
+type OnClientDisconnected func(client *Client)
+
 // OnSignal is a required hook.
 // It's invoked when the webwire server receives a signal from the client
 type OnSignal func(ctx context.Context)
@@ -58,6 +62,7 @@ type OnSessionClosed func(client *Client) (error)
 type Server struct {
 	// Configuration
 	onClientConnected OnClientConnected
+	onClientDisconnected OnClientDisconnected
 	onSignal OnSignal
 	onRequest OnRequest
 	OnSessionCreated OnSessionCreated
@@ -86,6 +91,7 @@ type Server struct {
 func NewServer(
 	addr string,
 	onClientConnected OnClientConnected,
+	onClientDisconnected OnClientDisconnected,
 	onSignal OnSignal,
 	onRequest OnRequest,
 	OnSessionCreated OnSessionCreated,
@@ -97,6 +103,10 @@ func NewServer(
 ) (*Server, error) {
 	if onClientConnected == nil {
 		onClientConnected = func(_ *Client) {}
+	}
+
+	if onClientDisconnected == nil {
+		onClientDisconnected = func(_ *Client) {}
 	}
 
 	if onSignal == nil {
@@ -128,6 +138,7 @@ func NewServer(
 	srv := Server {
 		// Configuration
 		onClientConnected: onClientConnected,
+		onClientDisconnected: onClientDisconnected,
 		onSignal: onSignal,
 		onRequest: onRequest,
 		OnSessionCreated: OnSessionCreated,
@@ -372,13 +383,17 @@ func (srv Server) ServeHTTP(
 		// Await message
 		wsMsgType, message, err := conn.ReadMessage()
 		if err != nil {
-			if newClient.Session != nil && (
-				websocket.IsCloseError(err) ||
-				websocket.IsUnexpectedCloseError(err)) {
+			isClosed := websocket.IsCloseError(err)
+			isUnexpectedlyClosed := websocket.IsUnexpectedCloseError(err)
+			if newClient.Session != nil && (isClosed || isUnexpectedlyClosed) {
 				// Mark session as inactive
 				delete(srv.activeSessions, newClient.Session.Key)
+			}
+			if isClosed {
+				srv.onClientDisconnected(newClient)
 				break
-			} else if websocket.IsCloseError(err) {
+			} else if isUnexpectedlyClosed {
+				srv.onClientDisconnected(newClient)
 				break
 			}
 			srv.warnLog.Println("Reading failed:", err)

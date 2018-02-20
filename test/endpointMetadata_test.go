@@ -15,7 +15,7 @@ func TestEndpointMetadata(t *testing.T) {
 	// Initialize webwire server
 	server := setupServer(
 		t,
-		nil, nil, nil, nil, nil, nil, nil,
+		nil, nil, nil, nil, nil, nil, nil, nil,
 	)
 	go server.Run()
 

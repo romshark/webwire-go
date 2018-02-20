@@ -26,7 +26,7 @@ func TestAuthentication(t *testing.T) {
 	// Initialize webwire server
 	server := setupServer(
 		t,
-		nil,
+		nil, nil,
 		// onSignal
 		func(ctx context.Context) {
 			defer clientSignal.Done()

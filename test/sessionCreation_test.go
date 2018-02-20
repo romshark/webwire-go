@@ -24,6 +24,7 @@ func TestSessionCreation(t *testing.T) {
 		t,
 		nil,
 		nil,
+		nil,
 		// onRequest
 		func(ctx context.Context) ([]byte, *webwire.Error) {
 			defer finish.Done()

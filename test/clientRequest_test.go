@@ -19,7 +19,7 @@ func TestClientRequest(t *testing.T) {
 	// Initialize webwire server given only the request
 	server := setupServer(
 		t,
-		nil, nil,
+		nil, nil, nil,
 		func(ctx context.Context) ([]byte, *webwire.Error) {
 			// Extract request message from the context
 			msg := ctx.Value(webwire.MESSAGE).(webwire.Message)

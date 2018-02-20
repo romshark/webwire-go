@@ -39,7 +39,7 @@ func TestServerSignal(t *testing.T) {
 			if err := client.Signal(expectedSignalPayload); err != nil {
 				t.Fatalf("Couldn't send signal to client: %s", err)
 			}
-		}, nil, nil, nil, nil, nil, nil)
+		}, nil, nil, nil, nil, nil, nil, nil)
 		go server.Run()
 		addr = server.Addr
 

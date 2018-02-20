@@ -18,7 +18,7 @@ func TestClientSignal(t *testing.T) {
 	// Initialize webwire server given only the signal handler
 	server := setupServer(
 		t,
-		nil,
+		nil, nil,
 		func(ctx context.Context) {
 			// Extract signal message from the context
 			msg := ctx.Value(webwire.MESSAGE).(webwire.Message)

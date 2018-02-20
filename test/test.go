@@ -12,6 +12,7 @@ import (
 func setupServer(
 	t *testing.T,
 	onClientConnected webwire.OnClientConnected,
+	onClientDisconnected webwire.OnClientDisconnected,
 	onSignal webwire.OnSignal,
 	onRequest webwire.OnRequest,
 	onSessionCreated webwire.OnSessionCreated,
@@ -23,6 +24,7 @@ func setupServer(
 	webwireServer, err := webwire.NewServer(
 		"127.0.0.1:0",
 		onClientConnected,
+		onClientDisconnected,
 		onSignal, onRequest,
 		onSessionCreated, onSessionLookup, onSessionClosed,
 		onOptions,
