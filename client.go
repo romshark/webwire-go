@@ -47,10 +47,7 @@ func (clt *Client) Signal(payload []byte) error {
 	var msg bytes.Buffer
 	msg.WriteRune(MsgSignal)
 	msg.Write(payload)
-	if err := clt.write(websocket.TextMessage, msg.Bytes()); err != nil {
-		return err
-	}
-	return nil
+	return clt.write(websocket.TextMessage, msg.Bytes())
 }
 
 // CreateSession creates a new session for this client.

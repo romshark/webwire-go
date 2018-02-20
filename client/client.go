@@ -356,11 +356,7 @@ func (clt *Client) Signal(payload []byte) error {
 	var msg bytes.Buffer
 	msg.WriteRune(webwire.MsgSignal)
 	msg.Write(payload)
-	if err := clt.conn.WriteMessage(websocket.TextMessage, msg.Bytes());
-	err != nil {
-		return err
-	}
-	return nil
+	return clt.conn.WriteMessage(websocket.TextMessage, msg.Bytes())
 }
 
 // Session returns information about the current session
