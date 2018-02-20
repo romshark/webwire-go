@@ -1,6 +1,0 @@
-[submodule "vendor/github.com/gorilla/websocket"]
-	path = vendor/github.com/gorilla/websocket
-	url = https://github.com/gorilla/websocket
-[submodule "vendor/github.com/satori/go.uuid"]
-	path = vendor/github.com/satori/go.uuid
-	url = https://github.com/satori/go.uuid
