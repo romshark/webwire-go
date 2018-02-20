@@ -68,9 +68,9 @@ func TestAuthentication(t *testing.T) {
 			return []byte(createdSession.Key), nil
 		},
 		// OnSessionCreated
-		func(session *webwire.Session) error {
+		func(clt *webwire.Client) error {
 			// Verify the session
-			compareSessions(t, createdSession, session)
+			compareSessions(t, createdSession, clt.Session)
 			return nil
 		},
 		// OnSessionLookup

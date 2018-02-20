@@ -43,7 +43,7 @@ type OnRequest func(ctx context.Context) (response []byte, err *Error)
 // the user must save the given session in this hook either to a database,
 // a filesystem or any other kind of persistent or volatile storage
 // for onSessionLookup to later be able to restore it by the session key
-type OnSessionCreated func(session *Session) (error)
+type OnSessionCreated func(client *Client) (error)
 
 // OnSessionLookup is a required hook for sessions to be supported.
 // It's invoked when the server is looking for a specific session given its key.
@@ -459,20 +459,21 @@ func (srv Server) ServeHTTP(
 }
 
 func (srv *Server) registerSession(clt *Client, session *Session) error {
-	err := srv.OnSessionCreated(session)
+	clt.Session = session
+	srv.activeSessions[session.Key] = clt
+	err := srv.OnSessionCreated(clt)
 	if err != nil {
 		return fmt.Errorf("Couldn't save session: %s", err)
 	}
-	srv.activeSessions[session.Key] = clt
 	return nil
 }
 
 func (srv *Server) deregisterSession(clt *Client) error {
+	delete(srv.activeSessions, clt.Session.Key)
 	err := srv.onSessionClosed(clt)
 	if err != nil {
 		return fmt.Errorf("CRITICAL: Session closure handler failed: %s", err)
 	}
-	delete(srv.activeSessions, clt.Session.Key)
 	return nil
 }
 
