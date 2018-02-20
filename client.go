@@ -1,6 +1,7 @@
 package webwire
 
 import (
+	"net"
 	"fmt"
 	"time"
 	"sync"
@@ -30,6 +31,15 @@ func (clt *Client) write(wsMsgType int, data []byte) error {
 // ConnectionTime returns the time when the connection was established
 func (clt *Client) ConnectionTime() time.Time {
 	return clt.connectionTime
+}
+
+// RemoteAddr returns the address of the client.
+// Returns empty string if the client is not connected.
+func (clt *Client) RemoteAddr() net.Addr {
+	if clt.conn == nil {
+		return nil
+	}
+	return clt.conn.RemoteAddr()
 }
 
 // Signal sends a signal to the client
