@@ -33,7 +33,7 @@ func TestSessionCreation(t *testing.T) {
 
 			// Create a new session
 			newSession := webwire.NewSession(
-				webwire.Os_UNKNOWN,
+				webwire.OsUnknown,
 				"user agent",
 				nil,
 			)
@@ -42,25 +42,25 @@ func TestSessionCreation(t *testing.T) {
 			// Try to register the newly created session and bind it to the client
 			if err := msg.Client.CreateSession(createdSession); err != nil {
 				return nil, &webwire.Error {
-					"INTERNAL_ERROR",
-					fmt.Sprintf("Internal server error: %s", err),
+					Code: "INTERNAL_ERROR",
+					Message: fmt.Sprintf("Internal server error: %s", err),
 				}
 			}
 
 			// Return the key of the newly created session
 			return []byte(createdSession.Key), nil
 		},
-		// OnSaveSession
+		// OnSessionCreated
 		func(session *webwire.Session) error {
 			// Verify the session
 			compareSessions(t, createdSession, session)
 			return nil
 		},
-		// OnFindSession
+		// OnSessionLookup
 		func(_ string) (*webwire.Session, error) {
 			return nil, nil
 		},
-		// OnSessionClosure
+		// OnSessionClosed
 		func(_ *webwire.Client) error {
 			return nil
 		},

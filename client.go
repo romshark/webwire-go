@@ -32,10 +32,10 @@ func (clt *Client) ConnectionTime() time.Time {
 	return clt.connectionTime
 }
 
-// Signal sends a signal to this client
+// Signal sends a signal to the client
 func (clt *Client) Signal(payload []byte) error {
 	var msg bytes.Buffer
-	msg.WriteRune(MsgTyp_SIGNAL)
+	msg.WriteRune(MsgSignal)
 	msg.Write(payload)
 	if err := clt.write(websocket.TextMessage, msg.Bytes()); err != nil {
 		return err
@@ -44,6 +44,9 @@ func (clt *Client) Signal(payload []byte) error {
 }
 
 // CreateSession creates a new session for this client.
+// It automatically synchronizes the new session to the client.
+// The synchronization happens asynchronously using a signal
+// and doesn't block the calling goroutine.
 // Returns an error if there's already another session active
 func (clt *Client) CreateSession(session *Session) error {
 	if clt.Session != nil {
@@ -56,7 +59,7 @@ func (clt *Client) CreateSession(session *Session) error {
 
 	// Notify client about the session creation
 	var msg bytes.Buffer
-	msg.WriteRune(MsgTyp_SESS_CREATED)
+	msg.WriteRune(MsgSessionCreated)
 	msg.WriteString(session.Key)
 	if err := clt.write(websocket.TextMessage, msg.Bytes()); err != nil {
 		return fmt.Errorf("Couldn't notify client about the session creation: %s", err)
@@ -65,7 +68,10 @@ func (clt *Client) CreateSession(session *Session) error {
 	return nil
 }
 
-// Close session destroys the currently active session for this client.
+// CloseSession destroys the currently active session for this client.
+// It automatically synchronizes the session destruction to the client. 
+// The synchronization happens asynchronously using a signal
+// and doesn't block the calling goroutine.
 // Does nothing if there's no active session
 func (clt *Client) CloseSession() error {
 	if clt.Session == nil {
@@ -79,7 +85,7 @@ func (clt *Client) CloseSession() error {
 
 	// Notify client about the session destruction
 	var msg bytes.Buffer
-	msg.WriteRune(MsgTyp_SESS_CLOSED)
+	msg.WriteRune(MsgSessionClosed)
 	if err := clt.write(websocket.TextMessage, msg.Bytes()); err != nil {
 		return fmt.Errorf("Couldn't notify client about the session destruction: %s", err)
 	}

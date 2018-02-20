@@ -15,47 +15,55 @@ import (
 
 const protocolVersion = "1.0"
 
-type OnCORS func(resp http.ResponseWriter)
+// OnOptions is an optional hook.
+// It's invoked when the websocket endpoint is examined by the client
+// using the HTTP OPTION method.
+type OnOptions func(resp http.ResponseWriter)
 
-// OnClientConnected is an optional callback.
-// It's invoked when a new client successfuly connects to the webwire server
+// OnClientConnected is an optional hook.
+// It's invoked when a new client establishes a connection to the server
 type OnClientConnected func(client *Client)
 
-// OnSignal is an optional callback.
+// OnSignal is a required hook.
 // It's invoked when the webwire server receives a signal from the client
 type OnSignal func(ctx context.Context)
 
-// OnRequest is an optional callback.
+// OnRequest is an optional hook.
 // It's invoked when the webwire server receives a request from the client.
-// It must return either a response payload or an error.
+// It must return either a response payload or an error
 type OnRequest func(ctx context.Context) (response []byte, err *Error)
 
-// OnSaveSession is a required callback invoked after the creation of a new session.
-// Because webwire isn't responsible for storing the sessions the library users must
-// provide this callback to persist the session to whatever storage they like
-type OnSaveSession func(session *Session) (error)
+// OnSessionCreated is a required hook for sessions to be supported.
+// It's invoked right after the creation of a new session.
+// The WebWire server isn't responsible for storing the sessions it creates,
+// the user must save the given session in this hook either to a database,
+// a filesystem or any other kind of persistent or volatile storage
+// for onSessionLookup to later be able to restore it by the session key
+type OnSessionCreated func(session *Session) (error)
 
-// OnFindSession is a required callback.
-// It's invoked when the webwire server is looking for a specific session.
-// Because webwire isn't responsible for storing the sessions the library users must
-// provide this callback to find a persisted session by the given key
-type OnFindSession func(key string) (*Session, error)
+// OnSessionLookup is a required hook for sessions to be supported.
+// It's invoked when the server is looking for a specific session given its key.
+// The user is responsible for returning the exact copy of the session object
+// associated with the given key for sessions to be restorable
+type OnSessionLookup func(key string) (*Session, error)
 
-// OnSessionClosure is a required callback.
-// It's invoked when the webwire server is closing a specific session.
-// Because webwire isn't responsible for storing the sessions the library users must
-// provide this callback to close and delete the session associated with the given key
-type OnSessionClosure func(client *Client) (error)
+// OnSessionClosed is a required hook for sessions to be supported.
+// It's invoked when the active session of the given client
+// is closed (thus destroyed) either by the server or the client himself.
+// The user is responsible for removing the current session of the given client
+// from its storage for the session to be actually and properly destroyed.
+type OnSessionClosed func(client *Client) (error)
 
+// Server represents the actual 
 type Server struct {
 	// Configuration
 	onClientConnected OnClientConnected
 	onSignal OnSignal
 	onRequest OnRequest
-	onSaveSession OnSaveSession
-	onFindSession OnFindSession
-	onSessionClosure OnSessionClosure
-	onCORS OnCORS
+	OnSessionCreated OnSessionCreated
+	onSessionLookup OnSessionLookup
+	onSessionClosed OnSessionClosed
+	onOptions OnOptions
 
 	// Dynamic methods
 	launch func() error
@@ -80,10 +88,10 @@ func NewServer(
 	onClientConnected OnClientConnected,
 	onSignal OnSignal,
 	onRequest OnRequest,
-	onSaveSession OnSaveSession,
-	onFindSession OnFindSession,
-	onSessionClosure OnSessionClosure,
-	onCORS OnCORS,
+	OnSessionCreated OnSessionCreated,
+	onSessionLookup OnSessionLookup,
+	onSessionClosed OnSessionClosed,
+	onOptions OnOptions,
 	warningLogWriter io.Writer,
 	errorLogWriter io.Writer,
 ) (*Server, error) {
@@ -99,17 +107,21 @@ func NewServer(
 		onRequest = func(_ context.Context) (response []byte, err *Error) {
 			return nil, &Error {
 				"NOT_IMPLEMENTED",
-				fmt.Sprintf("Request handling is not implemented on this server instance"),
+				fmt.Sprintf("Request handling is not implemented " +
+					" on this server instance",
+				),
 			}
 		}
 	}
 
-	if onCORS == nil {
-		onCORS = func(resp http.ResponseWriter)	{}
+	if onOptions == nil {
+		onOptions = func(resp http.ResponseWriter)	{}
 	}
 
 	sessionsEnabled := false
-	if onSaveSession != nil && onFindSession != nil && onSessionClosure != nil {
+	if OnSessionCreated != nil &&
+		onSessionLookup != nil &&
+		onSessionClosed != nil {
 		sessionsEnabled = true
 	}
 
@@ -118,10 +130,10 @@ func NewServer(
 		onClientConnected: onClientConnected,
 		onSignal: onSignal,
 		onRequest: onRequest,
-		onSaveSession: onSaveSession,
-		onFindSession: onFindSession,
-		onSessionClosure: onSessionClosure,
-		onCORS: onCORS,
+		OnSessionCreated: OnSessionCreated,
+		onSessionLookup: onSessionLookup,
+		onSessionClosed: onSessionClosed,
+		onOptions: onOptions,
 
 		// State
 		clients: make([]*Client, 0),
@@ -169,7 +181,9 @@ func NewServer(
 
 	srv.launch = func() error {
 		// Launch server
-		err = srv.httpServer.Serve(tcpKeepAliveListener{listener.(*net.TCPListener)})
+		err = srv.httpServer.Serve(
+			tcpKeepAliveListener{listener.(*net.TCPListener)},
+		)
 		if err != nil {
 			return fmt.Errorf("HTTP Server failure: %s", err)
 		}
@@ -202,7 +216,7 @@ func (srv *Server) handleSessionRestore(msg *Message) (error) {
 	key := string(msg.Payload)
 	if _, exists := srv.activeSessions[key]; exists {
 		msg.fail(Error {
-			"SESS_ACTIVE",
+			"SESSION_ACTIVE",
 			fmt.Sprintf(
 				"The session identified by key: '%s' is already active",
 				key,
@@ -211,7 +225,7 @@ func (srv *Server) handleSessionRestore(msg *Message) (error) {
 		return nil
 	}
 
-	session, err := srv.onFindSession(key)
+	session, err := srv.onSessionLookup(key)
 	if err != nil {
 		msg.fail(Error {
 			"INTERNAL_ERROR",
@@ -223,7 +237,7 @@ func (srv *Server) handleSessionRestore(msg *Message) (error) {
 	}
 	if session == nil {
 		msg.fail(Error {
-			"SESS_NOT_FOUND",
+			"SESSION_NOT_FOUND",
 			fmt.Sprintf("No session associated with key: '%s'", key),
 		})
 		return nil
@@ -291,9 +305,9 @@ func (srv *Server) handleRequest(msg *Message) {
 	msg.fulfill(response)
 }
 
-// handleResponse handles incoming responses to requests
+// handleReply handles incoming responses to requests
 // and returns an error if the ongoing connection cannot be proceeded
-func (srv *Server) handleResponse(msg *Message) error {
+func (srv *Server) handleReply(msg *Message) error {
 	// TODO: implement server-side response handling
 	return nil
 }
@@ -303,10 +317,6 @@ func (srv *Server) handleResponse(msg *Message) error {
 func (srv *Server) handleErrorResponse(msg *Message) error {
 	// TODO: implement server-side error-response handling
 	return nil
-}
-
-func (srv *Server) CORS(resp http.ResponseWriter) {
-	srv.onCORS(resp)
 }
 
 // handleMetadata handles endpoint metadata requests
@@ -319,13 +329,15 @@ func (srv *Server) handleMetadata(resp http.ResponseWriter) {
 	})
 }
 
+// ServeHTTP will make the server listen for incoming HTTP requests
+// eventually trying to upgrade them to WebSocket connections
 func (srv Server) ServeHTTP(
 	resp http.ResponseWriter,
 	req *http.Request,
 ) {
 	switch(req.Method) {
 	case "OPTIONS":
-		srv.CORS(resp)
+		srv.onOptions(resp)
 		return
 	case "WEBWIRE":
 		srv.handleMetadata(resp)
@@ -416,12 +428,12 @@ func (srv Server) ServeHTTP(
 
 		// Handle message
 		switch msg.msgType {
-		case MsgTyp_SIGNAL: err = srv.handleSignal(&msg)
-		case MsgTyp_REQUEST: srv.handleRequest(&msg)
-		case MsgTyp_RESPONSE: err = srv.handleResponse(&msg)
-		case MsgTyp_ERROR_RESP: err = srv.handleErrorResponse(&msg)
-		case MsgTyp_SESS_RESTORE: err = srv.handleSessionRestore(&msg)
-		case MsgTyp_CLOSE_SESSION: err = srv.handleSessionClosure(&msg)
+		case MsgSignal: err = srv.handleSignal(&msg)
+		case MsgRequest: srv.handleRequest(&msg)
+		case MsgReply: err = srv.handleReply(&msg)
+		case MsgErrorReply: err = srv.handleErrorResponse(&msg)
+		case MsgRestoreSession: err = srv.handleSessionRestore(&msg)
+		case MsgCloseSession: err = srv.handleSessionClosure(&msg)
 		}
 
 		if err != nil {
@@ -432,7 +444,7 @@ func (srv Server) ServeHTTP(
 }
 
 func (srv *Server) registerSession(clt *Client, session *Session) error {
-	err := srv.onSaveSession(session)
+	err := srv.OnSessionCreated(session)
 	if err != nil {
 		return fmt.Errorf("Couldn't save session: %s", err)
 	}
@@ -441,7 +453,7 @@ func (srv *Server) registerSession(clt *Client, session *Session) error {
 }
 
 func (srv *Server) deregisterSession(clt *Client) error {
-	err := srv.onSessionClosure(clt)
+	err := srv.onSessionClosed(clt)
 	if err != nil {
 		return fmt.Errorf("CRITICAL: Session closure handler failed: %s", err)
 	}
@@ -449,13 +461,7 @@ func (srv *Server) deregisterSession(clt *Client) error {
 	return nil
 }
 
+// Run will launch the server blocking the calling goroutine
 func (srv *Server) Run() error {
 	return srv.launch()
-}
-
-func (srv *Server) ClientsNum() int {
-	srv.clientsLock.Lock()
-	defer srv.clientsLock.Unlock()
-	ln := len(srv.clients)
-	return ln
 }

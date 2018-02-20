@@ -14,18 +14,18 @@ func setupServer(
 	onClientConnected webwire.OnClientConnected,
 	onSignal webwire.OnSignal,
 	onRequest webwire.OnRequest,
-	onSaveSession webwire.OnSaveSession,
-	onFindSession webwire.OnFindSession,
-	onSessionClosure webwire.OnSessionClosure,
-	onCORS webwire.OnCORS,
+	onSessionCreated webwire.OnSessionCreated,
+	onSessionLookup webwire.OnSessionLookup,
+	onSessionClosed webwire.OnSessionClosed,
+	onOptions webwire.OnOptions,
 ) (srv *webwire.Server) {
 	// Initialize webwire server
 	webwireServer, err := webwire.NewServer(
 		"127.0.0.1:0",
 		onClientConnected,
 		onSignal, onRequest,
-		onSaveSession, onFindSession, onSessionClosure,
-		onCORS,
+		onSessionCreated, onSessionLookup, onSessionClosed,
+		onOptions,
 		os.Stdout, os.Stderr,
 	)
 	if err != nil {

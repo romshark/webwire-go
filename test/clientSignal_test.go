@@ -26,7 +26,7 @@ func TestClientSignal(t *testing.T) {
 			// Verify signal payload
 			comparePayload(t, "client signal", expectedSignalPayload, msg.Payload)
 
-			// Synchronize, notify signal arival
+			// Synchronize, notify signal arrival
 			wait <- true
 		},
 		nil, nil, nil, nil, nil,
@@ -48,6 +48,6 @@ func TestClientSignal(t *testing.T) {
 		t.Fatalf("Request failed: %s", err)
 	}
 
-	// Synchronize, await signal arival
+	// Synchronize, await signal arrival
 	<- wait
 }

@@ -57,7 +57,7 @@ func TestClientInitiatedSessionDestruction(t *testing.T) {
 
 			// On step 1 - authenticate and create a new session
 			newSession := webwire.NewSession(
-				webwire.Os_UNKNOWN,
+				webwire.OsUnknown,
 				"user agent",
 				nil,
 			)
@@ -66,25 +66,25 @@ func TestClientInitiatedSessionDestruction(t *testing.T) {
 			// Try to register the newly created session and bind it to the client
 			if err := msg.Client.CreateSession(createdSession); err != nil {
 				return nil, &webwire.Error {
-					"INTERNAL_ERROR",
-					fmt.Sprintf("Internal server error: %s", err),
+					Code: "INTERNAL_ERROR",
+					Message: fmt.Sprintf("Internal server error: %s", err),
 				}
 			}
 
 			// Return the key of the newly created session
 			return []byte(createdSession.Key), nil
 		},
-		// OnSaveSession
+		// OnSessionCreated
 		func(session *webwire.Session) error {
 			// Verify the session
 			compareSessions(t, createdSession, session)
 			return nil
 		},
-		// OnFindSession
+		// OnSessionLookup
 		func(_ string) (*webwire.Session, error) {
 			return nil, nil
 		},
-		// OnSessionClosure
+		// OnSessionClosed
 		func(_ *webwire.Client) error {
 			return nil
 		},
@@ -133,9 +133,12 @@ func TestClientInitiatedSessionDestruction(t *testing.T) {
 	sessionCreationCallback.Wait()
 	
 	// Ensure the session was locally created
-	currSessAfterCreation := client.Session()
-	if currSessAfterCreation.Key == "" {
-		t.Fatalf("Expected session on client-side, got none: %v", currSessAfterCreation)
+	currentSessionAfterCreation := client.Session()
+	if currentSessionAfterCreation.Key == "" {
+		t.Fatalf(
+			"Expected session on client-side, got none: %v",
+			currentSessionAfterCreation,
+		)
 	}
 
 	/*****************************************************************\
@@ -167,11 +170,12 @@ func TestClientInitiatedSessionDestruction(t *testing.T) {
 	currentStep = 4
 
 	// Ensure the session is destroyed locally as well
-	currSessAfterDestruction := client.Session()
-	if currSessAfterDestruction.Key != "" {
+	currentSessionAfterDestruction := client.Session()
+	if currentSessionAfterDestruction.Key != "" {
 		t.Fatalf(
-			"Expected session to be destroyed on the client as well, but still got: %v",
-			currSessAfterDestruction,
+			"Expected session to be destroyed on the client as well, " +
+				"but still got: %v",
+			currentSessionAfterDestruction,
 		)
 	}
 

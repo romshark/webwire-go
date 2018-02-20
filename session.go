@@ -35,6 +35,9 @@ func GenerateSessionKey() string {
 	return base64.URLEncoding.EncodeToString(bytes)
 }
 
+// Session represents a session object.
+// If the key is empty the session is invalid.
+// Info can contain arbitrary attached data 
 type Session struct {
 	Key string `json:"key"`
 	OperatingSystem OperatingSystem `json:"os"`
@@ -43,6 +46,8 @@ type Session struct {
 	Info interface {} `json:"inf"`
 }
 
+// NewSession generates a new session object
+// generating a cryptographically random secure key
 func NewSession(
 	operatingSystem OperatingSystem,
 	userAgent string,

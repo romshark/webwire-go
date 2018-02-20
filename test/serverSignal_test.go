@@ -78,6 +78,6 @@ func TestServerSignal(t *testing.T) {
 	// Synchronize, notify the server the client was initialized and request the signal
 	sendSignal <- true
 
-	// Synchronize, await signal arival
+	// Synchronize, await signal arrival
 	finish.Wait()
 }
