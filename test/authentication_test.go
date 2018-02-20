@@ -1,12 +1,12 @@
 package test
 
 import (
-	"testing"
-	"os"
-	"fmt"
-	"time"
-	"sync"
 	"context"
+	"fmt"
+	"os"
+	"sync"
+	"testing"
+	"time"
 
 	webwire "github.com/qbeon/webwire-go"
 	webwire_client "github.com/qbeon/webwire-go/client"
@@ -103,7 +103,6 @@ func TestAuthentication(t *testing.T) {
 
 	// Verify reply
 	comparePayload(t, "authentication reply", []byte(createdSession.Key), authReqReply)
-
 
 	// Send a test-request to verify the session on the server and await response
 	testReqReply, err := client.Request(expectedCredentials)

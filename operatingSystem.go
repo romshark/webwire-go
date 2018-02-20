@@ -78,6 +78,8 @@ const (
 	OsIOS4
 )
 
+// Turns the operating system identifier into a string
+// nolint: gocyclo
 func (os OperatingSystem) String() string {
 	switch(os) {
 	case OsUnknown: return "OsUnknown"
@@ -119,6 +121,7 @@ func (os OperatingSystem) String() string {
 }
 
 // FromString tries to parse the operating system type from the given string
+// nolint: gocyclo
 func (os *OperatingSystem) FromString(str string) error {
 	switch(str) {
 	case "OsUnknown": *os = OsUnknown
