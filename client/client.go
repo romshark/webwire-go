@@ -28,8 +28,15 @@ type OnServerSignal func([]byte)
 type OnSessionCreated func(*webwire.Session)
 
 // OnSessionClosed is an optional callback.
-// It's invoked when the clients session was closed either by the server or by himself
+// It's invoked when the clients session was closed
+// either by the server or by himself
 type OnSessionClosed func()
+
+// replyObj is used by the request registry
+type replyObj struct {
+	Reply []byte
+	Error *webwire.Error
+}
 
 func extractMessageIdentifier(message []byte) (arr [32]byte) {
 	copy(arr[:], message[1:33])
@@ -41,7 +48,7 @@ type Client struct {
 	serverAddr string
 	defaultTimeout time.Duration
 	conn *websocket.Conn
-	reqRegister map[[32]byte] chan []byte
+	reqRegister map[[32]byte] chan replyObj
 	session *webwire.Session
 
 	// Handlers
@@ -80,7 +87,7 @@ func NewClient(
 		serverAddr,
 		defaultTimeout,
 		nil,
-		make(map[[32]byte] chan []byte, 0),
+		make(map[[32]byte] chan replyObj, 0),
 		nil,
 		onServerSignal,
 		onSessionCreated,
@@ -104,29 +111,7 @@ func (clt *Client) onRequest(payload []byte) ([]byte, error) {
 	return payload, nil
 }
 
-func (clt *Client) handleRequest(message []byte) error {
-	requestIdentifier := extractMessageIdentifier(message)
-	// Handle server request
-	result, err := clt.onRequest(message[33:])
-	var msg bytes.Buffer
-	if err != nil {
-		msg.WriteRune(webwire.MsgErrorReply)
-		msg.Write(requestIdentifier[:])
-		msg.WriteString(err.Error())
-	} else {
-		msg.WriteRune(webwire.MsgReply)
-		msg.Write(requestIdentifier[:])
-		msg.Write(result)
-	}
-	if err = clt.conn.WriteMessage(websocket.TextMessage, msg.Bytes());
-	err != nil {
-		// TODO: return typed error TransmissionFailure
-		return fmt.Errorf("Couldn't send message")
-	}
-	return nil
-}
-
-func (clt *Client) handleSessionCreated(message []byte) error {
+func (clt *Client) handleSessionCreated(message []byte) {
 	// Set new session
 	// TODO: get session creation time from actual server time
 	// TODO: get session info from appended JSON
@@ -136,33 +121,45 @@ func (clt *Client) handleSessionCreated(message []byte) error {
 	}
 
 	clt.onSessionCreated(clt.session)
-
-	return nil
 }
 
-func (clt *Client) handleSessionClosed() error {
+func (clt *Client) handleSessionClosed() {
 	// Destroy local session
 	clt.session = nil
 
 	clt.onSessionClosed()
-
-	return nil
 }
 
-func (clt *Client) handleFailure(message []byte) error {
-	return nil
-}
-
-func (clt *Client) handleResponse(message []byte) error {
+func (clt *Client) handleFailure(message []byte) {
 	requestIdentifier := extractMessageIdentifier(message)
 
-	if response, exists := clt.reqRegister[requestIdentifier]; exists {
-		// Fulfill response
-		response <- message[33:]
+	if reply, exists := clt.reqRegister[requestIdentifier]; exists {
+		// Decode error
+		var err webwire.Error
+		if err :=  json.Unmarshal(message[33:], &err); err != nil {
+			clt.errorLog.Printf("Failed unmarshalling error reply: %s", err)
+}
+
+		// Fail request
+		reply <- replyObj {
+			Reply: nil,
+			Error: &err,
+}
 		delete(clt.reqRegister, requestIdentifier)
 	}
+}
 
-	return nil
+func (clt *Client) handleReply(message []byte) {
+	requestIdentifier := extractMessageIdentifier(message)
+
+	if reply, exists := clt.reqRegister[requestIdentifier]; exists {
+		// Fulfill request
+		reply <- replyObj {
+			Reply: message[33:],
+			Error: nil,
+		}
+		delete(clt.reqRegister, requestIdentifier)
+	}
 }
 
 func (clt *Client) handleMessage(message []byte) error {
@@ -170,18 +167,15 @@ func (clt *Client) handleMessage(message []byte) error {
 		return nil
 	}
 	switch (message[0:1][0]) {
-	case webwire.MsgReply: return clt.handleResponse(message)
-	case webwire.MsgErrorReply: return clt.handleFailure(message)
-	case webwire.MsgSignal:
-		clt.onServerSignal(message[1:])
-		return nil
-	case webwire.MsgRequest: return clt.handleRequest(message)
-	case webwire.MsgSessionCreated: return clt.handleSessionCreated(message[1:])
-	case webwire.MsgSessionClosed: return clt.handleSessionClosed()
-	// TODO: write warning to warningLog
-	// TODO: write warning to warningLog
-	default: fmt.Printf("Strange message type received: '%c'\n", message[0:1][0])
-	}
+	case webwire.MsgReply: clt.handleReply(message)
+	case webwire.MsgErrorReply: clt.handleFailure(message)
+	case webwire.MsgSignal: clt.onServerSignal(message[1:])
+	case webwire.MsgSessionCreated: clt.handleSessionCreated(message[1:])
+	case webwire.MsgSessionClosed: clt.handleSessionClosed()
+	default: clt.warningLog.Printf(
+		"Strange message type received: '%c'\n",
+		message[0:1][0],
+	)}
 	return nil
 }
 // verifyProtocolVersion requests the endpoint metadata
@@ -192,7 +186,9 @@ func (clt *Client) verifyProtocolVersion() error {
 		Timeout: time.Second * 10,
 	}
 
-	request, err := http.NewRequest("WEBWIRE", "http://" + clt.serverAddr + "/", nil)
+	request, err := http.NewRequest(
+		"WEBWIRE", "http://" + clt.serverAddr + "/", nil,
+	)
 	if err != nil {
 		return fmt.Errorf("Couldn't create HTTP metadata request: %s", err)
 	}
@@ -284,10 +280,12 @@ func (clt *Client) sendRequest(
 	messageType rune,
 	payload []byte,
 	timeout time.Duration,
-) ([]byte, error) {
+) ([]byte, *webwire.Error) {
 	// Connect before attempting to send the request
 	if err := clt.Connect(); err != nil {
-		return nil, fmt.Errorf("Couldn't connect: %s", err)
+		return nil, &webwire.Error {
+			Message: fmt.Sprintf("Couldn't connect: %s", err),
+		}
 	}
 
 	id := uuid.NewV4()
@@ -299,24 +297,32 @@ func (clt *Client) sendRequest(
 	msg.Write(payload)
 
 	timeoutTimer := time.NewTimer(timeout).C
-	responseChannel := make(chan []byte)
+	responseChannel := make(chan replyObj)
 
 	// Register request
 	clt.reqRegister[requestIdentifier] = responseChannel
 
 	// Send request
-	if err := clt.conn.WriteMessage(websocket.TextMessage, msg.Bytes()); err != nil {
+	if err := clt.conn.WriteMessage(websocket.TextMessage, msg.Bytes());
+	err != nil {
 		// TODO: return typed error TransmissionFailure
-		return nil, fmt.Errorf("Couldn't send message: %s", err)
+		return nil, &webwire.Error {
+			Message: fmt.Sprintf("Couldn't send message: %s", err),
+		}
 	}
 
 	// Block until request either times out or a response is received
 	select {
 	case <- timeoutTimer:
 		// TODO: return typed TimeoutError
-		return nil, fmt.Errorf("Request timed out")
-	case response := <- responseChannel:
-		return response, nil
+		return nil, &webwire.Error {
+			Message: fmt.Sprintf("Request timed out"),
+		}
+	case reply := <- responseChannel:
+		if reply.Error != nil {
+			return nil, reply.Error
+		}
+		return reply.Reply, nil
 	}
 }
 
@@ -326,7 +332,7 @@ func (clt *Client) sendRequest(
 // Returns an error if the request failed for some reason.
 // Attempts to automatically connect to the server
 // if no connection has yet been established
-func (clt *Client) Request(payload []byte) ([]byte, error) {
+func (clt *Client) Request(payload []byte) ([]byte, *webwire.Error) {
 	return clt.sendRequest(webwire.MsgRequest, payload, clt.defaultTimeout)
 }
 
@@ -340,7 +346,7 @@ func (clt *Client) Request(payload []byte) ([]byte, error) {
 func (clt *Client) TimedRequest(
 	payload []byte,
 	timeout time.Duration,
-) ([]byte, error) {
+) ([]byte, *webwire.Error) {
 	return clt.sendRequest(webwire.MsgRequest, payload, timeout)
 }
 
