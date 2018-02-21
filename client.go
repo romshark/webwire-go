@@ -6,6 +6,7 @@ import (
 	"time"
 	"sync"
 	"bytes"
+	"encoding/json"
 	"github.com/gorilla/websocket"
 )
 
@@ -57,21 +58,47 @@ func (clt *Client) Signal(payload []byte) error {
 // Returns an error if there's already another session active
 func (clt *Client) CreateSession(session *Session) error {
 	if clt.Session != nil {
-		return fmt.Errorf("Another session (%s) on this client is already active", clt.Session.Key)
+		return fmt.Errorf(
+			"Another session (%s) on this client is already active",
+			clt.Session.Key,
+		)
 	}
 	if err := clt.srv.registerSession(clt, session); err != nil {
 		return fmt.Errorf("Couldn't create session: %s", err)
 	}
 	clt.Session = session
 
+	// Encode session into JSON
+	encoded, err := json.Marshal(*clt.Session)
+	if err != nil {
+		return fmt.Errorf("Couldn't marshal session object: %s", err)
+	}
+
 	// Notify client about the session creation
 	var msg bytes.Buffer
 	msg.WriteRune(MsgSessionCreated)
-	msg.WriteString(session.Key)
+	msg.Write(encoded)
 	if err := clt.write(websocket.TextMessage, msg.Bytes()); err != nil {
-		return fmt.Errorf("Couldn't notify client about the session creation: %s", err)
+		return fmt.Errorf(
+			"Couldn't notify client about the session creation: %s",
+			err,
+		)
 	}
 
+	return nil
+}
+
+func (clt *Client) notifySessionClosed() error {
+	// Notify client about the session destruction
+	if err := clt.write(
+		websocket.TextMessage,
+		[]byte(string(MsgSessionClosed)),
+	); err != nil {
+		return fmt.Errorf(
+			"Couldn't notify client about the session destruction: %s",
+			err,
+		)
+	}
 	return nil
 }
 
@@ -90,12 +117,5 @@ func (clt *Client) CloseSession() error {
 	}
 	clt.Session = nil
 
-	// Notify client about the session destruction
-	var msg bytes.Buffer
-	msg.WriteRune(MsgSessionClosed)
-	if err := clt.write(websocket.TextMessage, msg.Bytes()); err != nil {
-		return fmt.Errorf("Couldn't notify client about the session destruction: %s", err)
-	}
-
-	return nil
+	return clt.notifySessionClosed()
 }

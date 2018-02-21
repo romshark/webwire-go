@@ -113,14 +113,15 @@ func (clt *Client) onRequest(payload []byte) ([]byte, error) {
 
 func (clt *Client) handleSessionCreated(message []byte) {
 	// Set new session
-	// TODO: get session creation time from actual server time
-	// TODO: get session info from appended JSON
-	clt.session = &webwire.Session {
-		Key: string(message),
-		CreationDate: time.Now(),
+	var session webwire.Session
+
+	if err := json.Unmarshal(message, &session); err != nil {
+		clt.errorLog.Printf("Failed unmarshalling session object: %s", err)
+		return
 	}
 
-	clt.onSessionCreated(clt.session)
+	clt.session = &session
+	clt.onSessionCreated(&session)
 }
 
 func (clt *Client) handleSessionClosed() {

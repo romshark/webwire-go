@@ -280,13 +280,13 @@ func (srv *Server) handleSessionClosure(msg *Message) error {
 	}
 
 	// Synchronize session destruction to the client
-	if err := msg.Client.CloseSession(); err != nil {
+	if err := msg.Client.notifySessionClosed(); err != nil {
 		msg.fail(Error {
 			"INTERNAL_ERROR",
 			fmt.Sprintf("Session destruction request not could have been fulfilled"),
 		})
 		return fmt.Errorf("CRITICAL: Internal server error," +
-			" session destruction failed during client.CloseSession call: %s",
+			" couldn't notify client about the session destruction: %s",
 			err,
 		)
 	}
