@@ -291,6 +291,9 @@ func (srv *Server) handleSessionClosure(msg *Message) error {
 		)
 	}
 
+	// Reset the session on the client agent
+	msg.Client.Session = nil
+
 	// Send confirmation
 	msg.fulfill(nil)
 

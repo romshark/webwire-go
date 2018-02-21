@@ -51,7 +51,10 @@ func TestClientInitiatedSessionDestruction(t *testing.T) {
 			// On step 4 - verify session destruction
 			if currentStep == 4 {
 				if msg.Client.Session != nil {
-					t.Errorf("Expected the session to be destroyed")
+					t.Errorf(
+						"Expected the session to be destroyed, got: %v",
+						msg.Client.Session,
+					)
 				}
 				return nil, nil
 			}
