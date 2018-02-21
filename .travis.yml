@@ -6,6 +6,7 @@ language: go
 go:
   - 1.10.0
   - release
+  - 1.9.1
 
 # Skip the install step. Don't `go get` dependencies. Only build with the
 # code in vendor/
