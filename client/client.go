@@ -3,19 +3,20 @@ package client
 import (
 	webwire "github.com/qbeon/webwire-go"
 
-	"io"
-	"log"
-	"fmt"
-	"time"
-	"sync"
 	"bytes"
-	"strings"
-	"net/url"
-	"net/http"
-	"io/ioutil"
 	"encoding/json"
-	"github.com/satori/go.uuid"
+	"fmt"
+	"io"
+	"io/ioutil"
+	"log"
+	"net/http"
+	"net/url"
+	"strings"
+	"sync"
+	"time"
+
 	"github.com/gorilla/websocket"
+	"github.com/satori/go.uuid"
 )
 
 const supportedProtocolVersion = "1.0"
@@ -46,25 +47,25 @@ func extractMessageIdentifier(message []byte) (arr [32]byte) {
 
 // Client represents an instance of one of the servers clients
 type Client struct {
-	serverAddr string
+	serverAddr     string
 	defaultTimeout time.Duration
-	conn *websocket.Conn
-	session *webwire.Session
+	conn           *websocket.Conn
+	session        *webwire.Session
 
 	reqRegisterLock sync.Mutex
-	reqRegister map[[32]byte] chan replyObj
+	reqRegister     map[[32]byte]chan replyObj
 
 	// Handlers
-	onServerSignal OnServerSignal
+	onServerSignal   OnServerSignal
 	onSessionCreated OnSessionCreated
-	onSessionClosed OnSessionClosed
+	onSessionClosed  OnSessionClosed
 
 	// Loggers
 	warningLog *log.Logger
-	errorLog *log.Logger
+	errorLog   *log.Logger
 }
 
-// NewClient creates a new disconnected client instance. 
+// NewClient creates a new disconnected client instance.
 func NewClient(
 	serverAddr string,
 	onServerSignal OnServerSignal,
@@ -86,12 +87,12 @@ func NewClient(
 		onSessionClosed = func() {}
 	}
 
-	return Client {
+	return Client{
 		serverAddr,
 		defaultTimeout,
 		nil,
 		nil,
-		sync.Mutex {},
+		sync.Mutex{},
 		make(map[[32]byte]chan replyObj),
 		onServerSignal,
 		onSessionCreated,
@@ -99,12 +100,12 @@ func NewClient(
 		log.New(
 			warningLogWriter,
 			"WARNING: ",
-			log.Ldate | log.Ltime | log.Lshortfile,
+			log.Ldate|log.Ltime|log.Lshortfile,
 		),
 		log.New(
 			errorLogWriter,
 			"ERROR: ",
-			log.Ldate | log.Ltime | log.Lshortfile,
+			log.Ldate|log.Ltime|log.Lshortfile,
 		),
 	}
 }
@@ -135,15 +136,15 @@ func (clt *Client) handleFailure(message []byte) {
 	if reply, exists := clt.reqRegister[requestIdentifier]; exists {
 		// Decode error
 		var err webwire.Error
-		if err :=  json.Unmarshal(message[33:], &err); err != nil {
+		if err := json.Unmarshal(message[33:], &err); err != nil {
 			clt.errorLog.Printf("Failed unmarshalling error reply: %s", err)
-}
+		}
 
 		// Fail request
-		reply <- replyObj {
+		reply <- replyObj{
 			Reply: nil,
 			Error: &err,
-}
+		}
 		delete(clt.reqRegister, requestIdentifier)
 	}
 }
@@ -153,7 +154,7 @@ func (clt *Client) handleReply(message []byte) {
 
 	if reply, exists := clt.reqRegister[requestIdentifier]; exists {
 		// Fulfill request
-		reply <- replyObj {
+		reply <- replyObj{
 			Reply: message[33:],
 			Error: nil,
 		}
@@ -167,28 +168,36 @@ func (clt *Client) handleMessage(message []byte) error {
 	if len(message) < 1 {
 		return nil
 	}
-	switch (message[0:1][0]) {
-	case webwire.MsgReply: clt.handleReply(message)
-	case webwire.MsgErrorReply: clt.handleFailure(message)
-	case webwire.MsgSignal: clt.onServerSignal(message[1:])
-	case webwire.MsgSessionCreated: clt.handleSessionCreated(message[1:])
-	case webwire.MsgSessionClosed: clt.handleSessionClosed()
-	default: clt.warningLog.Printf(
-		"Strange message type received: '%c'\n",
-		message[0:1][0],
-	)}
+	switch message[0:1][0] {
+	case webwire.MsgReply:
+		clt.handleReply(message)
+	case webwire.MsgErrorReply:
+		clt.handleFailure(message)
+	case webwire.MsgSignal:
+		clt.onServerSignal(message[1:])
+	case webwire.MsgSessionCreated:
+		clt.handleSessionCreated(message[1:])
+	case webwire.MsgSessionClosed:
+		clt.handleSessionClosed()
+	default:
+		clt.warningLog.Printf(
+			"Strange message type received: '%c'\n",
+			message[0:1][0],
+		)
+	}
 	return nil
 }
+
 // verifyProtocolVersion requests the endpoint metadata
 // to verify the server is running a supported protocol version
 func (clt *Client) verifyProtocolVersion() error {
 	// Initialize HTTP client
-	var httpClient = &http.Client {
+	var httpClient = &http.Client{
 		Timeout: time.Second * 10,
 	}
 
 	request, err := http.NewRequest(
-		"WEBWIRE", "http://" + clt.serverAddr + "/", nil,
+		"WEBWIRE", "http://"+clt.serverAddr+"/", nil,
 	)
 	if err != nil {
 		return fmt.Errorf("Couldn't create HTTP metadata request: %s", err)
@@ -229,7 +238,6 @@ func (clt *Client) verifyProtocolVersion() error {
 	return nil
 }
 
-
 // Connect connects the client to the configured server and
 // returns an error in case of a connection failure
 func (clt *Client) Connect() (err error) {
@@ -241,7 +249,7 @@ func (clt *Client) Connect() (err error) {
 		return err
 	}
 
-	connURL := url.URL {Scheme: "ws", Host: clt.serverAddr, Path: "/"}
+	connURL := url.URL{Scheme: "ws", Host: clt.serverAddr, Path: "/"}
 	clt.conn, _, err = websocket.DefaultDialer.Dial(connURL.String(), nil)
 	if err != nil {
 		// TODO: return typed error ConnectionFailure
@@ -284,7 +292,7 @@ func (clt *Client) sendRequest(
 ) ([]byte, *webwire.Error) {
 	// Connect before attempting to send the request
 	if err := clt.Connect(); err != nil {
-		return nil, &webwire.Error {
+		return nil, &webwire.Error{
 			Message: fmt.Sprintf("Couldn't connect: %s", err),
 		}
 	}
@@ -306,22 +314,22 @@ func (clt *Client) sendRequest(
 	clt.reqRegisterLock.Unlock()
 
 	// Send request
-	if err := clt.conn.WriteMessage(websocket.TextMessage, msg.Bytes());
-	err != nil {
+	err := clt.conn.WriteMessage(websocket.TextMessage, msg.Bytes())
+	if err != nil {
 		// TODO: return typed error TransmissionFailure
-		return nil, &webwire.Error {
+		return nil, &webwire.Error{
 			Message: fmt.Sprintf("Couldn't send message: %s", err),
 		}
 	}
 
 	// Block until request either times out or a response is received
 	select {
-	case <- timeoutTimer:
+	case <-timeoutTimer:
 		// TODO: return typed TimeoutError
-		return nil, &webwire.Error {
+		return nil, &webwire.Error{
 			Message: fmt.Sprintf("Request timed out"),
 		}
-	case reply := <- responseChannel:
+	case reply := <-responseChannel:
 		if reply.Error != nil {
 			return nil, reply.Error
 		}
@@ -371,7 +379,7 @@ func (clt *Client) Signal(payload []byte) error {
 // Session returns information about the current session
 func (clt *Client) Session() webwire.Session {
 	if clt.session == nil {
-		return webwire.Session {}
+		return webwire.Session{}
 	}
 	return *clt.session
 }
@@ -390,12 +398,11 @@ func (clt *Client) RestoreSession(sessionKey []byte) error {
 		webwire.MsgRestoreSession,
 		sessionKey,
 		clt.defaultTimeout,
-	);
-	err != nil {
+	); err != nil {
 		// TODO: check for error types
 		return fmt.Errorf("Session restoration request failed: %s", err)
 	}
-	
+
 	return nil
 }
 
@@ -414,8 +421,7 @@ func (clt *Client) CloseSession() error {
 		webwire.MsgCloseSession,
 		nil,
 		clt.defaultTimeout,
-	);
-	err != nil {
+	); err != nil {
 		return fmt.Errorf("Session destruction request failed: %s", err)
 	}
 
