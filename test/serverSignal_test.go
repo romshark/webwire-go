@@ -7,7 +7,7 @@ import (
 	"time"
 
 	webwire "github.com/qbeon/webwire-go"
-	webwire_client "github.com/qbeon/webwire-go/client"
+	webwireClient "github.com/qbeon/webwire-go/client"
 )
 
 // TestServerSignal verifies the server is connectable
@@ -62,21 +62,22 @@ func TestServerSignal(t *testing.T) {
 	<-initClient
 
 	// Initialize client
-	client := webwire_client.NewClient(
+	client := webwireClient.NewClient(
 		addr,
-		func(signalPayload []byte) {
-			// Verify server signal payload
-			comparePayload(
-				t,
-				"server signal",
-				expectedSignalPayload,
-				signalPayload,
-			)
+		webwireClient.Hooks{
+			OnServerSignal: func(signalPayload []byte) {
+				// Verify server signal payload
+				comparePayload(
+					t,
+					"server signal",
+					expectedSignalPayload,
+					signalPayload,
+				)
 
-			// Synchronize, unlock main goroutine to pass the test case
-			finish.Done()
+				// Synchronize, unlock main goroutine to pass the test case
+				finish.Done()
+			},
 		},
-		nil, nil,
 		5*time.Second,
 		os.Stdout,
 		os.Stderr,

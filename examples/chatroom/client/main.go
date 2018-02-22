@@ -24,9 +24,10 @@ func main() {
 	client = webwireClient.NewClient(
 		// Address of the webwire server
 		*serverAddr,
-		onSignal,
-		onSessionCreated,
-		nil,
+		webwireClient.Hooks{
+			OnServerSignal:   onSignal,
+			OnSessionCreated: onSessionCreated,
+		},
 
 		// Default timeout for timed requests
 		5*time.Second,

@@ -9,7 +9,7 @@ import (
 	"time"
 
 	webwire "github.com/qbeon/webwire-go"
-	webwire_client "github.com/qbeon/webwire-go/client"
+	webwireClient "github.com/qbeon/webwire-go/client"
 	"github.com/qbeon/webwire-go/ostype"
 )
 
@@ -67,17 +67,16 @@ func TestSessionCreation(t *testing.T) {
 	go server.Run()
 
 	// Initialize client
-	client := webwire_client.NewClient(
+	client := webwireClient.NewClient(
 		server.Addr,
-		nil,
-		// On session creation
-		func(newSession *webwire.Session) {
-			defer finish.Done()
+		webwireClient.Hooks{
+			OnSessionCreated: func(newSession *webwire.Session) {
+				defer finish.Done()
 
-			// Verify reply
-			compareSessions(t, createdSession, newSession)
+				// Verify reply
+				compareSessions(t, createdSession, newSession)
+			},
 		},
-		nil,
 		5*time.Second,
 		os.Stdout,
 		os.Stderr,

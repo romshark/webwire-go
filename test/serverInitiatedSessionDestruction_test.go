@@ -9,7 +9,7 @@ import (
 	"time"
 
 	webwire "github.com/qbeon/webwire-go"
-	webwire_client "github.com/qbeon/webwire-go/client"
+	webwireClient "github.com/qbeon/webwire-go/client"
 	"github.com/qbeon/webwire-go/ostype"
 )
 
@@ -117,25 +117,24 @@ func TestServerInitiatedSessionDestruction(t *testing.T) {
 	go server.Run()
 
 	// Initialize client
-	client := webwire_client.NewClient(
+	client := webwireClient.NewClient(
 		server.Addr,
-		nil,
-		// On session created
-		func(_ *webwire.Session) {
-			// Mark the client-side session creation callback as executed
-			sessionCreationCallback.Done()
-		},
-		// On session closed
-		func() {
-			// Ensure this callback is called during the
-			if currentStep != 3 {
-				t.Errorf(
-					"Client-side session destruction callback "+
-						"called at wrong step (%d)",
-					currentStep,
-				)
-			}
-			sessionDestructionCallback.Done()
+		webwireClient.Hooks{
+			OnSessionCreated: func(_ *webwire.Session) {
+				// Mark the client-side session creation callback as executed
+				sessionCreationCallback.Done()
+			},
+			OnSessionClosed: func() {
+				// Ensure this callback is called during the
+				if currentStep != 3 {
+					t.Errorf(
+						"Client-side session destruction callback "+
+							"called at wrong step (%d)",
+						currentStep,
+					)
+				}
+				sessionDestructionCallback.Done()
+			},
 		},
 		5*time.Second,
 		os.Stdout,

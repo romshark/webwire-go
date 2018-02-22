@@ -34,6 +34,28 @@ type OnSessionCreated func(*webwire.Session)
 // either by the server or by himself
 type OnSessionClosed func()
 
+// Hooks represents all callback hook functions
+type Hooks struct {
+	OnServerSignal   OnServerSignal
+	OnSessionCreated OnSessionCreated
+	OnSessionClosed  OnSessionClosed
+}
+
+// SetDefaults sets undefined required hooks
+func (hooks *Hooks) SetDefaults() {
+	if hooks.OnServerSignal == nil {
+		hooks.OnServerSignal = func(_ []byte) {}
+	}
+
+	if hooks.OnSessionCreated == nil {
+		hooks.OnSessionCreated = func(_ *webwire.Session) {}
+	}
+
+	if hooks.OnSessionClosed == nil {
+		hooks.OnSessionClosed = func() {}
+	}
+}
+
 // replyObj is used by the request registry
 type replyObj struct {
 	Reply []byte
@@ -49,16 +71,12 @@ func extractMessageIdentifier(message []byte) (arr [32]byte) {
 type Client struct {
 	serverAddr     string
 	defaultTimeout time.Duration
+	hooks          Hooks
 	conn           *websocket.Conn
 	session        *webwire.Session
 
 	reqRegisterLock sync.Mutex
 	reqRegister     map[[32]byte]chan replyObj
-
-	// Handlers
-	onServerSignal   OnServerSignal
-	onSessionCreated OnSessionCreated
-	onSessionClosed  OnSessionClosed
 
 	// Loggers
 	warningLog *log.Logger
@@ -68,35 +86,21 @@ type Client struct {
 // NewClient creates a new disconnected client instance.
 func NewClient(
 	serverAddr string,
-	onServerSignal OnServerSignal,
-	onSessionCreated OnSessionCreated,
-	onSessionClosed OnSessionClosed,
+	hooks Hooks,
 	defaultTimeout time.Duration,
 	warningLogWriter io.Writer,
 	errorLogWriter io.Writer,
 ) Client {
-	if onServerSignal == nil {
-		onServerSignal = func(_ []byte) {}
-	}
-
-	if onSessionCreated == nil {
-		onSessionCreated = func(_ *webwire.Session) {}
-	}
-
-	if onSessionClosed == nil {
-		onSessionClosed = func() {}
-	}
+	hooks.SetDefaults()
 
 	return Client{
 		serverAddr,
 		defaultTimeout,
+		hooks,
 		nil,
 		nil,
 		sync.Mutex{},
 		make(map[[32]byte]chan replyObj),
-		onServerSignal,
-		onSessionCreated,
-		onSessionClosed,
 		log.New(
 			warningLogWriter,
 			"WARNING: ",
@@ -120,14 +124,14 @@ func (clt *Client) handleSessionCreated(message []byte) {
 	}
 
 	clt.session = &session
-	clt.onSessionCreated(&session)
+	clt.hooks.OnSessionCreated(&session)
 }
 
 func (clt *Client) handleSessionClosed() {
 	// Destroy local session
 	clt.session = nil
 
-	clt.onSessionClosed()
+	clt.hooks.OnSessionClosed()
 }
 
 func (clt *Client) handleFailure(message []byte) {
@@ -174,7 +178,7 @@ func (clt *Client) handleMessage(message []byte) error {
 	case webwire.MsgErrorReply:
 		clt.handleFailure(message)
 	case webwire.MsgSignal:
-		clt.onServerSignal(message[1:])
+		clt.hooks.OnServerSignal(message[1:])
 	case webwire.MsgSessionCreated:
 		clt.handleSessionCreated(message[1:])
 	case webwire.MsgSessionClosed:

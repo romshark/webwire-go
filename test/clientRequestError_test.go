@@ -7,7 +7,7 @@ import (
 	"time"
 
 	webwire "github.com/qbeon/webwire-go"
-	webwire_client "github.com/qbeon/webwire-go/client"
+	webwireClient "github.com/qbeon/webwire-go/client"
 )
 
 // TestClientRequestError verifies returned request errors properly
@@ -33,9 +33,9 @@ func TestClientRequestError(t *testing.T) {
 	go server.Run()
 
 	// Initialize client
-	client := webwire_client.NewClient(
+	client := webwireClient.NewClient(
 		server.Addr,
-		nil, nil, nil,
+		webwireClient.Hooks{},
 		5*time.Second,
 		os.Stdout,
 		os.Stderr,

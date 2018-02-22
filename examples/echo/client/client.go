@@ -24,7 +24,7 @@ func main() {
 		*serverAddr,
 
 		// No hooks required in this example
-		nil, nil, nil,
+		webwireClient.Hooks{},
 
 		// Default timeout for timed requests
 		5*time.Second,
