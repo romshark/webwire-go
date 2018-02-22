@@ -55,7 +55,7 @@ func main() {
 
 			log.Printf("Broadcasting message '%s', to %d clients", msg, len(connectedClients))
 
-			for client, _ := range connectedClients {
+			for client := range connectedClients {
 				client.Signal([]byte(msg))
 			}
 		}
