@@ -381,21 +381,21 @@ func (srv Server) ServeHTTP(
 		// Await message
 		_, message, err := conn.ReadMessage()
 		if err != nil {
-			isClosed := websocket.IsCloseError(err)
-			isUnexpectedlyClosed := websocket.IsUnexpectedCloseError(err)
-			if newClient.Session != nil && (isClosed || isUnexpectedlyClosed) {
+			if newClient.Session != nil {
 				// Mark session as inactive
 				delete(srv.activeSessions, newClient.Session.Key)
 			}
-			if isClosed {
-				srv.hooks.OnClientDisconnected(newClient)
-				break
-			} else if isUnexpectedlyClosed {
-				srv.hooks.OnClientDisconnected(newClient)
-				break
+
+			if websocket.IsUnexpectedCloseError(
+				err,
+				websocket.CloseGoingAway,
+				websocket.CloseAbnormalClosure,
+			) {
+				srv.warnLog.Printf("Reading failed: %s", err)
 			}
-			srv.warnLog.Println("Reading failed:", err)
-			break
+
+			srv.hooks.OnClientDisconnected(newClient)
+			return
 		}
 
 		// Parse message
