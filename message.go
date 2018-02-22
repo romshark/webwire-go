@@ -190,6 +190,4 @@ func (msg *Message) Parse(message []byte) error {
 	default:
 		return fmt.Errorf("Invalid message type (%d)", rune(msgType))
 	}
-
-	return nil
 }
