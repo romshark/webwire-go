@@ -388,7 +388,7 @@ func (srv Server) ServeHTTP(
 
 	for {
 		// Await message
-		wsMsgType, message, err := conn.ReadMessage()
+		_, message, err := conn.ReadMessage()
 		if err != nil {
 			isClosed := websocket.IsCloseError(err)
 			isUnexpectedlyClosed := websocket.IsUnexpectedCloseError(err)
@@ -418,35 +418,8 @@ func (srv Server) ServeHTTP(
 		// Reference the client associated with this message
 		msg.Client = newClient
 
-		// Create fulfillment lambda
-		msg.fulfill = func(response []byte) {
-			// Send response
-			header := append([]byte("p"), *msg.id...)
-			err := newClient.write(
-				wsMsgType, append(header, response...),
-			)
-			if err != nil {
-				srv.errorLog.Println("Writing failed:", err)
-			}
-		}
-
-		// Create failure lambda
-		msg.fail = func(errObj Error) {
-			encoded, err := json.Marshal(errObj)
-			if err != nil {
-				encoded = []byte("CRITICAL: could not encode error report")
-			}
-
-			// Send request failure notification
-			header := append([]byte("e"), *msg.id...)
-			err = newClient.write(
-				websocket.TextMessage,
-				append(header, encoded...),
-			)
-			if err != nil {
-				srv.errorLog.Println("Writing failed:", err)
-			}
-		}
+		msg.createReplyCallback(newClient, &srv)
+		msg.createFailCallback(newClient, &srv)
 
 		// Handle message
 		if err := srv.handleMessage(&msg); err != nil {

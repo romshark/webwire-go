@@ -1,8 +1,14 @@
 package webwire
 
 import (
+	"encoding/json"
 	"fmt"
+
+	"github.com/gorilla/websocket"
 )
+
+type msgReplyCallback func(errObj Error)
+type msgFailCallback func(errObj Error)
 
 // Error represents an error returned in case of a wrong request
 type Error struct {
@@ -189,5 +195,38 @@ func (msg *Message) Parse(message []byte) error {
 	// Ignore messages of invalid message type
 	default:
 		return fmt.Errorf("Invalid message type (%d)", rune(msgType))
+	}
+}
+
+func (msg *Message) createFailCallback(client *Client, srv *Server) {
+	msg.fail = func(errObj Error) {
+		encoded, err := json.Marshal(errObj)
+		if err != nil {
+			encoded = []byte("CRITICAL: could not encode error report")
+		}
+
+		// Send request failure notification
+		header := append([]byte("e"), *msg.id...)
+		err = client.write(
+			websocket.TextMessage,
+			append(header, encoded...),
+		)
+		if err != nil {
+			srv.errorLog.Println("Writing failed:", err)
+		}
+	}
+}
+
+func (msg *Message) createReplyCallback(client *Client, srv *Server) {
+	msg.fulfill = func(response []byte) {
+		// Send response
+		header := append([]byte("p"), *msg.id...)
+		err := client.write(
+			websocket.TextMessage,
+			append(header, response...),
+		)
+		if err != nil {
+			srv.errorLog.Println("Writing failed:", err)
+		}
 	}
 }
