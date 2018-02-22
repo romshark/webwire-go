@@ -8,6 +8,7 @@ import (
 
 	webwire "github.com/qbeon/webwire-go"
 	"github.com/qbeon/webwire-go/examples/chatroom/shared"
+	ostype "github.com/qbeon/webwire-go/ostype"
 )
 
 // onRequest handles incoming client requests
@@ -56,7 +57,7 @@ func onRequest(ctx context.Context) ([]byte, *webwire.Error) {
 
 	// Finally create a new session
 	newSession := webwire.NewSession(
-		webwire.OsUnknown,
+		ostype.Unknown,
 		"unknown user agent",
 		map[string]string{
 			"username": credentials.Name,

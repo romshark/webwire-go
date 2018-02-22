@@ -10,6 +10,7 @@ import (
 
 	webwire "github.com/qbeon/webwire-go"
 	webwire_client "github.com/qbeon/webwire-go/client"
+	"github.com/qbeon/webwire-go/ostype"
 )
 
 // TestSessionCreation verifies the server is connectable,
@@ -35,7 +36,7 @@ func TestSessionCreation(t *testing.T) {
 
 			// Create a new session
 			newSession := webwire.NewSession(
-				webwire.OsUnknown,
+				ostype.Unknown,
 				"user agent",
 				nil,
 			)

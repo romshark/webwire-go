@@ -10,6 +10,7 @@ import (
 
 	webwire "github.com/qbeon/webwire-go"
 	webwire_client "github.com/qbeon/webwire-go/client"
+	"github.com/qbeon/webwire-go/ostype"
 )
 
 // TestServerInitiatedSessionDestruction verifies
@@ -85,7 +86,7 @@ func TestServerInitiatedSessionDestruction(t *testing.T) {
 
 			// On step 1 - authenticate and create a new session
 			newSession := webwire.NewSession(
-				webwire.OsUnknown,
+				ostype.Unknown,
 				"user agent",
 				nil,
 			)
