@@ -414,8 +414,8 @@ func (srv Server) ServeHTTP(
 		}
 
 		// Parse message
-		msg, err := ParseMessage(message)
-		if err != nil {
+		var msg Message
+		if err := msg.Parse(message); err != nil {
 			srv.errorLog.Println("Failed parsing message:", err)
 			break
 		}

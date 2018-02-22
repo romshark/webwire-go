@@ -63,92 +63,133 @@ type Message struct {
 	Client  *Client
 }
 
-// ParseMessage tries to parse the byte slice into a typed message object
-func ParseMessage(message []byte) (obj Message, err error) {
+func (msg *Message) parseSignal(message []byte) error {
 	if len(message) < 2 {
-		return obj, fmt.Errorf("Invalid message (too short)")
+		return fmt.Errorf("Invalid signal message")
+	}
+	msg.msgType = MsgSignal
+	msg.Payload = message[1:]
+	return nil
+}
+
+func (msg *Message) parseRequest(message []byte) error {
+	if len(message) < 34 {
+		return fmt.Errorf("Invalid request message")
+	}
+	id := message[1:33]
+	msg.id = &id
+	msg.msgType = MsgRequest
+	msg.Payload = message[33:]
+	return nil
+}
+
+func (msg *Message) parseReply(message []byte) error {
+	if len(message) < 34 {
+		return fmt.Errorf("Invalid response message")
+	}
+	id := message[1:33]
+	msg.id = &id
+	msg.msgType = MsgReply
+	msg.Payload = message[33:]
+	return nil
+}
+
+func (msg *Message) parseErrorReply(message []byte) error {
+	if len(message) < 34 {
+		return fmt.Errorf("Invalid error reply message")
+	}
+	id := message[1:33]
+	msg.id = &id
+	msg.msgType = MsgErrorReply
+	msg.Payload = message[33:]
+	return nil
+}
+
+func (msg *Message) parseRestoreSession(message []byte) error {
+	if len(message) < 34 {
+		return fmt.Errorf("Invalid session activation request message")
+	}
+	id := message[1:33]
+	msg.id = &id
+	msg.msgType = MsgRestoreSession
+	msg.Payload = message[33:]
+	return nil
+}
+
+func (msg *Message) parseCloseSession(message []byte) error {
+	if len(message) != 33 {
+		return fmt.Errorf("Invalid session destruction request message")
+	}
+	id := message[1:33]
+	msg.id = &id
+	msg.msgType = MsgCloseSession
+	return nil
+}
+
+func (msg *Message) parseSessionCreated(message []byte) error {
+	if len(message) < 34 {
+		return fmt.Errorf("Invalid session creation request message")
+	}
+	id := message[1:33]
+	msg.id = &id
+	msg.msgType = MsgSessionCreated
+	msg.Payload = message[33:]
+	return nil
+}
+
+func (msg *Message) parseSessionClosed(message []byte) error {
+	if len(message) != 1 {
+		return fmt.Errorf("Invalid session closure request message")
+	}
+	msg.msgType = MsgSessionClosed
+	msg.Payload = nil
+	return nil
+}
+
+// Parse tries to parse the message from a byte slice
+func (msg *Message) Parse(message []byte) error {
+	if len(message) < 2 {
+		return fmt.Errorf("Invalid message (too short)")
 	}
 	msgType := message[0:1][0]
+
 	switch msgType {
 
-	// Request message must be [1 (type), 1+ (payload)]
+	// Request message must be: [1 (type), 1+ (payload)]
 	case MsgSignal:
-		if len(message) < 2 {
-			return obj, fmt.Errorf("Invalid signal message")
-		}
-		obj.msgType = MsgSignal
-		obj.Payload = message[1:]
+		return msg.parseSignal(message)
 
-	// Request message must be [1 (type), 32 (id), | 1+ (payload)]
+	// Request message must be: [1 (type), 32 (id), | 1+ (payload)]
 	case MsgRequest:
-		if len(message) < 34 {
-			return obj, fmt.Errorf("Invalid request message")
-		}
-		id := message[1:33]
-		obj.id = &id
-		obj.msgType = MsgRequest
-		obj.Payload = message[33:]
+		return msg.parseRequest(message)
 
 	case MsgReply:
-		if len(message) < 34 {
-			return obj, fmt.Errorf("Invalid response message")
-		}
-		id := message[1:33]
-		obj.id = &id
-		obj.msgType = MsgReply
-		obj.Payload = message[33:]
+		return msg.parseReply(message)
 
-	// Request message must be [1 (type), 32 (id), | 1+ (payload)]
+	// Request message must be: [1 (type), 32 (id), | 1+ (payload)]
 	case MsgErrorReply:
-		if len(message) < 34 {
-			return obj, fmt.Errorf("Invalid error response message")
-		}
-		id := message[1:33]
-		obj.id = &id
-		obj.msgType = MsgErrorReply
-		obj.Payload = message[33:]
+		return msg.parseErrorReply(message)
 
+	// Session restoration request message must be: [1 (type), 32 (id), | 1+ (payload)]
 	case MsgRestoreSession:
-		// Session activation request message must be
-		// [1 (type), 32 (id), | 1+ (payload)]
-		if len(message) < 34 {
-			return obj, fmt.Errorf("Invalid session activation request message")
-		}
-		id := message[1:33]
-		obj.id = &id
-		obj.msgType = MsgRestoreSession
-		obj.Payload = message[33:]
+		return msg.parseRestoreSession(message)
 
 	// Session destruction request message must be [1 (type), 32 (id)]
 	case MsgCloseSession:
-		if len(message) != 33 {
-			return obj, fmt.Errorf("Invalid session destruction request message")
-		}
-		id := message[1:33]
-		obj.id = &id
-		obj.msgType = MsgCloseSession
+		return msg.parseCloseSession(message)
 
 	// Session creation request must be [1 (type), 32 (id), | 1+ (payload)]
 	case MsgSessionCreated:
-		if len(message) < 34 {
-			return obj, fmt.Errorf("Invalid session creation request message")
-		}
-		id := message[1:33]
-		obj.id = &id
-		obj.msgType = MsgSessionCreated
-		obj.Payload = message[33:]
+		return msg.parseSessionCreated(message)
 
 	// Session closure request message must be [1 (type), 32 (id)]
 	case MsgSessionClosed:
-		if len(message) != 1 {
-			return obj, fmt.Errorf("Invalid session closure request message")
-		}
-		obj.msgType = MsgSessionClosed
-		obj.Payload = nil
+		return msg.parseSessionClosed(message)
 
 	// Ignore messages of invalid message type
 	default:
-		return obj, fmt.Errorf("Invalid message type (%d)", rune(msgType))
+		return fmt.Errorf("Invalid message type (%d)", rune(msgType))
 	}
-	return obj, nil
+
+	return nil
 }
