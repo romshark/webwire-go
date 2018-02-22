@@ -92,7 +92,7 @@ func NewClient(
 		nil,
 		nil,
 		sync.Mutex {},
-		make(map[[32]byte] chan replyObj, 0),
+		make(map[[32]byte]chan replyObj),
 		onServerSignal,
 		onSessionCreated,
 		onSessionClosed,
@@ -107,12 +107,6 @@ func NewClient(
 			log.Ldate | log.Ltime | log.Lshortfile,
 		),
 	}
-}
-
-func (clt *Client) onRequest(payload []byte) ([]byte, error) {
-	// TODO: implement real server-request handling
-	// instead of current ping-pong
-	return payload, nil
 }
 
 func (clt *Client) handleSessionCreated(message []byte) {
