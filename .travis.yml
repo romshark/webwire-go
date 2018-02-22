@@ -35,6 +35,18 @@ before_script:
 # script always run to completion (set +e).
 # All of these code checks are must haves in a modern Go project.
 script:
+  - pushd examples/chatroom/client && go build
+  - pushd ../server && go build
+  - popd && popd
+
+  - pushd examples/echo/client && go build
+  - pushd ../server && go build
+  - popd && popd
+
+  - pushd examples/pubsub/client && go build
+  - pushd ../server && go build
+  - popd && popd
+
   # Fail if a .go file hasn't been formatted with gofmt
   # disabled because we don't want to enforce the go-coding style
   # - test -z $(gofmt -s -l $GO_FILES)
