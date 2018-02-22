@@ -1,17 +1,17 @@
 package main
 
 import (
-	"log"
-	"fmt"
 	"encoding/json"
+	"fmt"
+	"log"
 
 	"github.com/qbeon/webwire-go/examples/chatroom/shared"
 )
 
 // authenticate tries to login using the password and name from the CLI
 func authenticate() {
-	encodedCreds, err := json.Marshal(shared.AuthenticationCredentials {
-		Name: *username,
+	encodedCreds, err := json.Marshal(shared.AuthenticationCredentials{
+		Name:     *username,
 		Password: *password,
 	})
 	if err != nil {

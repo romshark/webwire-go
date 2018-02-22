@@ -1,9 +1,9 @@
 package main
 
 import (
-	"log"
-	"fmt"
 	"encoding/json"
+	"fmt"
+	"log"
 
 	"github.com/qbeon/webwire-go/examples/chatroom/shared"
 )
@@ -12,14 +12,14 @@ import (
 // to all connected clients
 func broadcastMessage(name string, msg string) {
 	// Marshal message
-	encoded, err := json.Marshal(shared.ChatMessage {
+	encoded, err := json.Marshal(shared.ChatMessage{
 		User: name,
-		Msg: msg,
+		Msg:  msg,
 	})
 	if err != nil {
 		panic(fmt.Errorf("Couldn't marshal chat message: %s", err))
 	}
-	
+
 	// Send message as a signal to each connected client
 	log.Printf("Broadcast message to %d clients", len(connectedClients))
 	for client := range connectedClients {

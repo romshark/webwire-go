@@ -1,9 +1,9 @@
 package main
 
 import (
-	"log"
-	"fmt"
 	"encoding/json"
+	"fmt"
+	"log"
 
 	"github.com/qbeon/webwire-go/examples/chatroom/shared"
 )

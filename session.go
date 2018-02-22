@@ -1,10 +1,10 @@
 package webwire
 
 import (
+	cryptoRand "crypto/rand"
+	"encoding/base64"
 	"fmt"
 	"time"
-	"encoding/base64"
-	cryptoRand "crypto/rand"
 )
 
 // generateRandomBytes returns securely generated random bytes.
@@ -37,13 +37,13 @@ func GenerateSessionKey() string {
 
 // Session represents a session object.
 // If the key is empty the session is invalid.
-// Info can contain arbitrary attached data 
+// Info can contain arbitrary attached data
 type Session struct {
-	Key string `json:"key"`
+	Key             string          `json:"key"`
 	OperatingSystem OperatingSystem `json:"os"`
-	UserAgent string `json:"ua"`
-	CreationDate time.Time `json:"crt"`
-	Info interface {} `json:"inf"`
+	UserAgent       string          `json:"ua"`
+	CreationDate    time.Time       `json:"crt"`
+	Info            interface{}     `json:"inf"`
 }
 
 // NewSession generates a new session object
@@ -51,9 +51,9 @@ type Session struct {
 func NewSession(
 	operatingSystem OperatingSystem,
 	userAgent string,
-	info interface {},
+	info interface{},
 ) Session {
-	return Session {
+	return Session{
 		GenerateSessionKey(),
 		operatingSystem,
 		userAgent,

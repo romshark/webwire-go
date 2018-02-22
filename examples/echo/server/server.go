@@ -1,11 +1,11 @@
 package main
 
 import (
-	"os"
+	"context"
+	"flag"
 	"fmt"
 	"log"
-	"flag"
-	"context"
+	"os"
 
 	webwire "github.com/qbeon/webwire-go"
 )
@@ -15,7 +15,7 @@ var serverAddr = flag.String("addr", ":8081", "server address")
 func onRequest(ctx context.Context) ([]byte, *webwire.Error) {
 	msg := ctx.Value(webwire.MESSAGE).(webwire.Message)
 	client := msg.Client
-	
+
 	log.Printf("Replied to client: %s", client.RemoteAddr())
 
 	// Reply to the request

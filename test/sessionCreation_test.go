@@ -1,19 +1,20 @@
 package test
 
 import (
-	"testing"
-	"os"
-	"fmt"
-	"time"
-	"sync"
 	"context"
+	"fmt"
+	"os"
+	"sync"
+	"testing"
+	"time"
 
 	webwire "github.com/qbeon/webwire-go"
 	webwire_client "github.com/qbeon/webwire-go/client"
 )
 
 // TestSessionCreation verifies the server is connectable,
-// and is able to receives requests and create sessions for the requesting client
+// and is able to receives requests and create sessions
+// for the requesting client
 func TestSessionCreation(t *testing.T) {
 	var finish sync.WaitGroup
 	var createdSession *webwire.Session
@@ -40,10 +41,11 @@ func TestSessionCreation(t *testing.T) {
 			)
 			createdSession = &newSession
 
-			// Try to register the newly created session and bind it to the client
+			// Try to register the newly created session
+			// and bind it to the client
 			if err := msg.Client.CreateSession(createdSession); err != nil {
-				return nil, &webwire.Error {
-					Code: "INTERNAL_ERROR",
+				return nil, &webwire.Error{
+					Code:    "INTERNAL_ERROR",
 					Message: fmt.Sprintf("Internal server error: %s", err),
 				}
 			}
@@ -74,14 +76,14 @@ func TestSessionCreation(t *testing.T) {
 		server.Addr,
 		nil,
 		// On session creation
-		func (newSession *webwire.Session) {
+		func(newSession *webwire.Session) {
 			defer finish.Done()
 
 			// Verify reply
 			compareSessions(t, createdSession, newSession)
 		},
 		nil,
-		5 * time.Second,
+		5*time.Second,
 		os.Stdout,
 		os.Stderr,
 	)

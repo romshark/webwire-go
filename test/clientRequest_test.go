@@ -1,10 +1,10 @@
 package test
 
 import (
-	"testing"
-	"os"
-	"time"
 	"context"
+	"os"
+	"testing"
+	"time"
 
 	webwire "github.com/qbeon/webwire-go"
 	webwire_client "github.com/qbeon/webwire-go/client"
@@ -25,7 +25,12 @@ func TestClientRequest(t *testing.T) {
 			msg := ctx.Value(webwire.MESSAGE).(webwire.Message)
 
 			// Verify request payload
-			comparePayload(t, "client request", expectedRequestPayload, msg.Payload)
+			comparePayload(
+				t,
+				"client request",
+				expectedRequestPayload,
+				msg.Payload,
+			)
 			return expectedReplyPayload, nil
 		},
 		nil, nil, nil, nil,
@@ -36,7 +41,7 @@ func TestClientRequest(t *testing.T) {
 	client := webwire_client.NewClient(
 		server.Addr,
 		nil, nil, nil,
-		5 * time.Second,
+		5*time.Second,
 		os.Stdout,
 		os.Stderr,
 	)

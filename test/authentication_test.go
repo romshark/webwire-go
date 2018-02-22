@@ -53,10 +53,11 @@ func TestAuthentication(t *testing.T) {
 			)
 			createdSession = &newSession
 
-			// Try to register the newly created session and bind it to the client
+			// Try to register the newly created session
+			// and bind it to the client
 			if err := msg.Client.CreateSession(createdSession); err != nil {
-				return nil, &webwire.Error {
-					Code: "INTERNAL_ERROR",
+				return nil, &webwire.Error{
+					Code:    "INTERNAL_ERROR",
 					Message: fmt.Sprintf("Internal server error: %s", err),
 				}
 			}
@@ -89,7 +90,7 @@ func TestAuthentication(t *testing.T) {
 	client := webwire_client.NewClient(
 		server.Addr,
 		nil, nil, nil,
-		5 * time.Second,
+		5*time.Second,
 		os.Stdout,
 		os.Stderr,
 	)
@@ -102,9 +103,15 @@ func TestAuthentication(t *testing.T) {
 	}
 
 	// Verify reply
-	comparePayload(t, "authentication reply", []byte(createdSession.Key), authReqReply)
+	comparePayload(
+		t,
+		"authentication reply",
+		[]byte(createdSession.Key),
+		authReqReply,
+	)
 
-	// Send a test-request to verify the session on the server and await response
+	// Send a test-request to verify the session on the server
+	// and await response
 	testReqReply, err := client.Request(expectedCredentials)
 	if err != nil {
 		t.Fatalf("Request failed: %s", err)

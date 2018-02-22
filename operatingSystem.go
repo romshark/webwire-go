@@ -1,12 +1,13 @@
 package webwire
 
 import (
-	"fmt"
 	"encoding/json"
+	"fmt"
 )
 
 // OperatingSystem represents the type and version of the clients OS
 type OperatingSystem int
+
 const (
 	// OsUnknown represents an unknown operating system
 	OsUnknown OperatingSystem = iota
@@ -81,84 +82,154 @@ const (
 // Turns the operating system identifier into a string
 // nolint: gocyclo
 func (os OperatingSystem) String() string {
-	switch(os) {
-	case OsUnknown: return "OsUnknown"
-	case OsWindows10: return "OsWindows10"
-	case OsWindows81: return "OsWindows81"
-	case OsWindows8: return "OsWindows8"
-	case OsWindows7: return "OsWindows7"
-	case OsWindowsVista: return "OsWindowsVista"
-	case OsWindowsXP: return "OsWindowsXP"
-	case OsWindowsNT: return "OsWindowsNT"
-	case OsWindows2000: return "OsWindows2000"
-	case OsMacOSX1013: return "OsMacOSX1013"
-	case OsMacOSX1012: return "OsMacOSX1012"
-	case OsMacOSX1010: return "OsMacOSX1010"
-	case OsMacOSX109: return "OsMacOSX109"
-	case OsMacOSX108: return "OsMacOSX108"
-	case OsMacOSX107: return "OsMacOSX107"
-	case OsMacOSX106: return "OsMacOSX106"
-	case OsMacOSX105: return "OsMacOSX105"
-	case OsLinux: return "OsLinux"
-	case OsAndroid8: return "OsAndroid8"
-	case OsAndroid7: return "OsAndroid7"
-	case OsAndroid6: return "OsAndroid6"
-	case OsAndroid5: return "OsAndroid5"
-	case OsAndroid44: return "OsAndroid44"
-	case OsAndroid41: return "OsAndroid41"
-	case OsAndroid4: return "OsAndroid4"
-	case OsAndroid23: return "OsAndroid23"
-	case OsIOS11: return "OsIOS11"
-	case OsIOS10: return "OsIOS10"
-	case OsIOS9: return "OsIOS9"
-	case OsIOS8: return "OsIOS8"
-	case OsIOS7: return "OsIOS7"
-	case OsIOS6: return "OsIOS6"
-	case OsIOS5: return "OsIOS5"
-	case OsIOS4: return "OsIOS4"
-	default: panic(fmt.Errorf("Invalid OperatingSystem numeric value: %d", os))
+	switch os {
+	case OsUnknown:
+		return "OsUnknown"
+	case OsWindows10:
+		return "OsWindows10"
+	case OsWindows81:
+		return "OsWindows81"
+	case OsWindows8:
+		return "OsWindows8"
+	case OsWindows7:
+		return "OsWindows7"
+	case OsWindowsVista:
+		return "OsWindowsVista"
+	case OsWindowsXP:
+		return "OsWindowsXP"
+	case OsWindowsNT:
+		return "OsWindowsNT"
+	case OsWindows2000:
+		return "OsWindows2000"
+	case OsMacOSX1013:
+		return "OsMacOSX1013"
+	case OsMacOSX1012:
+		return "OsMacOSX1012"
+	case OsMacOSX1010:
+		return "OsMacOSX1010"
+	case OsMacOSX109:
+		return "OsMacOSX109"
+	case OsMacOSX108:
+		return "OsMacOSX108"
+	case OsMacOSX107:
+		return "OsMacOSX107"
+	case OsMacOSX106:
+		return "OsMacOSX106"
+	case OsMacOSX105:
+		return "OsMacOSX105"
+	case OsLinux:
+		return "OsLinux"
+	case OsAndroid8:
+		return "OsAndroid8"
+	case OsAndroid7:
+		return "OsAndroid7"
+	case OsAndroid6:
+		return "OsAndroid6"
+	case OsAndroid5:
+		return "OsAndroid5"
+	case OsAndroid44:
+		return "OsAndroid44"
+	case OsAndroid41:
+		return "OsAndroid41"
+	case OsAndroid4:
+		return "OsAndroid4"
+	case OsAndroid23:
+		return "OsAndroid23"
+	case OsIOS11:
+		return "OsIOS11"
+	case OsIOS10:
+		return "OsIOS10"
+	case OsIOS9:
+		return "OsIOS9"
+	case OsIOS8:
+		return "OsIOS8"
+	case OsIOS7:
+		return "OsIOS7"
+	case OsIOS6:
+		return "OsIOS6"
+	case OsIOS5:
+		return "OsIOS5"
+	case OsIOS4:
+		return "OsIOS4"
+	default:
+		panic(fmt.Errorf("Invalid OperatingSystem numeric value: %d", os))
 	}
 }
 
 // FromString tries to parse the operating system type from the given string
 // nolint: gocyclo
 func (os *OperatingSystem) FromString(str string) error {
-	switch(str) {
-	case "OsUnknown": *os = OsUnknown
-	case "OsWindows10": *os = OsWindows10
-	case "OsWindows81": *os = OsWindows81
-	case "OsWindows8": *os = OsWindows8
-	case "OsWindows7": *os = OsWindows7
-	case "OsWindowsVista": *os = OsWindowsVista
-	case "OsWindowsXP": *os = OsWindowsXP
-	case "OsWindowsNT": *os = OsWindowsNT
-	case "OsWindows2000": *os = OsWindows2000
-	case "OsMacOSX1013": *os = OsMacOSX1013
-	case "OsMacOSX1012": *os = OsMacOSX1012
-	case "OsMacOSX1010": *os = OsMacOSX1010
-	case "OsMacOSX109": *os = OsMacOSX109
-	case "OsMacOSX108": *os = OsMacOSX108
-	case "OsMacOSX107": *os = OsMacOSX107
-	case "OsMacOSX106": *os = OsMacOSX106
-	case "OsMacOSX105": *os = OsMacOSX105
-	case "OsLinux": *os = OsLinux
-	case "OsAndroid8": *os = OsAndroid8
-	case "OsAndroid7": *os = OsAndroid7
-	case "OsAndroid6": *os = OsAndroid6
-	case "OsAndroid5": *os = OsAndroid5
-	case "OsAndroid44": *os = OsAndroid44
-	case "OsAndroid41": *os = OsAndroid41
-	case "OsAndroid4": *os = OsAndroid4
-	case "OsAndroid23": *os = OsAndroid23
-	case "OsIOS11": *os = OsIOS11
-	case "OsIOS10": *os = OsIOS10
-	case "OsIOS9": *os = OsIOS9
-	case "OsIOS8": *os = OsIOS8
-	case "OsIOS7": *os = OsIOS7
-	case "OsIOS6": *os = OsIOS6
-	case "OsIOS5": *os = OsIOS5
-	case "OsIOS4": *os = OsIOS4
-	default: return fmt.Errorf("Invalid OperatingSystem string value: %d", os)
+	switch str {
+	case "OsUnknown":
+		*os = OsUnknown
+	case "OsWindows10":
+		*os = OsWindows10
+	case "OsWindows81":
+		*os = OsWindows81
+	case "OsWindows8":
+		*os = OsWindows8
+	case "OsWindows7":
+		*os = OsWindows7
+	case "OsWindowsVista":
+		*os = OsWindowsVista
+	case "OsWindowsXP":
+		*os = OsWindowsXP
+	case "OsWindowsNT":
+		*os = OsWindowsNT
+	case "OsWindows2000":
+		*os = OsWindows2000
+	case "OsMacOSX1013":
+		*os = OsMacOSX1013
+	case "OsMacOSX1012":
+		*os = OsMacOSX1012
+	case "OsMacOSX1010":
+		*os = OsMacOSX1010
+	case "OsMacOSX109":
+		*os = OsMacOSX109
+	case "OsMacOSX108":
+		*os = OsMacOSX108
+	case "OsMacOSX107":
+		*os = OsMacOSX107
+	case "OsMacOSX106":
+		*os = OsMacOSX106
+	case "OsMacOSX105":
+		*os = OsMacOSX105
+	case "OsLinux":
+		*os = OsLinux
+	case "OsAndroid8":
+		*os = OsAndroid8
+	case "OsAndroid7":
+		*os = OsAndroid7
+	case "OsAndroid6":
+		*os = OsAndroid6
+	case "OsAndroid5":
+		*os = OsAndroid5
+	case "OsAndroid44":
+		*os = OsAndroid44
+	case "OsAndroid41":
+		*os = OsAndroid41
+	case "OsAndroid4":
+		*os = OsAndroid4
+	case "OsAndroid23":
+		*os = OsAndroid23
+	case "OsIOS11":
+		*os = OsIOS11
+	case "OsIOS10":
+		*os = OsIOS10
+	case "OsIOS9":
+		*os = OsIOS9
+	case "OsIOS8":
+		*os = OsIOS8
+	case "OsIOS7":
+		*os = OsIOS7
+	case "OsIOS6":
+		*os = OsIOS6
+	case "OsIOS5":
+		*os = OsIOS5
+	case "OsIOS4":
+		*os = OsIOS4
+	default:
+		return fmt.Errorf("Invalid OperatingSystem string value: %d", os)
 	}
 	return nil
 }
@@ -170,5 +241,5 @@ func (os OperatingSystem) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements the JSON unmarshalling interface
 func (os *OperatingSystem) UnmarshalJSON(bytes []byte) error {
-	return os.FromString(string(bytes[1 : len(bytes) - 1]))
+	return os.FromString(string(bytes[1 : len(bytes)-1]))
 }

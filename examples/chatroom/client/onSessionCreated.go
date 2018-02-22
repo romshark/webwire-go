@@ -1,8 +1,8 @@
 package main
 
 import (
-	"log"
 	webwire "github.com/qbeon/webwire-go"
+	"log"
 )
 
 // onSessionCreated will be invoked when a session is created

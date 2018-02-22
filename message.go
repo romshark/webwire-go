@@ -6,19 +6,18 @@ import (
 
 // Error represents an error returned in case of a wrong request
 type Error struct {
-	Code string `json:"c"`
+	Code    string `json:"c"`
 	Message string `json:"m,omitempty"`
 }
 
 // ContextKey defines all values of the context passed to handlers
 type ContextKey int
+
 const (
-	// MESSAGE represents the received message message
+	// MESSAGE represents the received message
 	MESSAGE ContextKey = iota
 )
 
-// MessageType defines protocol message types
-type MessageType byte
 const (
 	// MsgRestoreSession is sent by the client
 	// to request session restoration
@@ -56,12 +55,12 @@ const (
 // Message represents a WebWire protocol message
 type Message struct {
 	fulfill func(response []byte)
-	fail func(Error)
-	msgType MessageType
-	id *[]byte
+	fail    func(Error)
+	msgType rune
+	id      *[]byte
 
 	Payload []byte
-	Client *Client
+	Client  *Client
 }
 
 // ParseMessage tries to parse the byte slice into a typed message object
@@ -138,7 +137,7 @@ func ParseMessage(message []byte) (obj Message, err error) {
 		obj.id = &id
 		obj.msgType = MsgSessionCreated
 		obj.Payload = message[33:]
-	
+
 	// Session closure request message must be [1 (type), 32 (id)]
 	case MsgSessionClosed:
 		if len(message) != 1 {

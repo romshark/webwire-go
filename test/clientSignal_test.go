@@ -1,16 +1,17 @@
 package test
 
 import (
-	"testing"
-	"os"
-	"time"
 	"context"
+	"os"
+	"testing"
+	"time"
 
 	webwire "github.com/qbeon/webwire-go"
 	webwire_client "github.com/qbeon/webwire-go/client"
 )
 
-// TestClientSignal verifies the server is connectable and receives signals correctly
+// TestClientSignal verifies the server is connectable
+// and receives signals correctly
 func TestClientSignal(t *testing.T) {
 	expectedSignalPayload := []byte("webwire_test_SIGNAL_payload")
 	wait := make(chan bool)
@@ -24,7 +25,12 @@ func TestClientSignal(t *testing.T) {
 			msg := ctx.Value(webwire.MESSAGE).(webwire.Message)
 
 			// Verify signal payload
-			comparePayload(t, "client signal", expectedSignalPayload, msg.Payload)
+			comparePayload(
+				t,
+				"client signal",
+				expectedSignalPayload,
+				msg.Payload,
+			)
 
 			// Synchronize, notify signal arrival
 			wait <- true
@@ -37,7 +43,7 @@ func TestClientSignal(t *testing.T) {
 	client := webwire_client.NewClient(
 		server.Addr,
 		nil, nil, nil,
-		5 * time.Second,
+		5*time.Second,
 		os.Stdout,
 		os.Stderr,
 	)
@@ -49,5 +55,5 @@ func TestClientSignal(t *testing.T) {
 	}
 
 	// Synchronize, await signal arrival
-	<- wait
+	<-wait
 }

@@ -1,10 +1,10 @@
 package main
 
 import (
-	"os"
+	"bufio"
 	"fmt"
 	"log"
-	"bufio"
+	"os"
 )
 
 func promptCreds() (username, password string) {
@@ -16,7 +16,7 @@ func promptCreds() (username, password string) {
 	if err != nil {
 		panic(fmt.Errorf("Failed reading username prompt: %s", err))
 	}
-	username = input[:len(input) - 1]
+	username = input[:len(input)-1]
 
 	// Prompt password
 	fmt.Print("  Password: ")
@@ -24,22 +24,23 @@ func promptCreds() (username, password string) {
 	if err != nil {
 		panic(fmt.Errorf("Failed reading password prompt: %s", err))
 	}
-	password = input[:len(input) - 1]
+	password = input[:len(input)-1]
 
 	return username, password
 }
 
 func mainLoop() {
 	reader := bufio.NewReader(os.Stdin)
-	MAINLOOP: for {
+MAINLOOP:
+	for {
 		input, _ := reader.ReadString('\n')
 		// Remove new-line character
-		input = input[:len(input) - 1]
+		input = input[:len(input)-1]
 
 		if len(input) < 1 {
 			continue
 		}
-		switch(input) {
+		switch input {
 		case ":x":
 			fmt.Println("Closing connection...")
 			break MAINLOOP

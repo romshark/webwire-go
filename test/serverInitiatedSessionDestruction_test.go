@@ -1,18 +1,19 @@
 package test
 
 import (
-	"testing"
-	"os"
-	"fmt"
-	"time"
-	"sync"
 	"context"
+	"fmt"
+	"os"
+	"sync"
+	"testing"
+	"time"
 
 	webwire "github.com/qbeon/webwire-go"
 	webwire_client "github.com/qbeon/webwire-go/client"
 )
 
-// TestServerInitiatedSessionDestruction verifies server-initiated session destruction
+// TestServerInitiatedSessionDestruction verifies
+// server-initiated session destruction
 func TestServerInitiatedSessionDestruction(t *testing.T) {
 	var sessionCreationCallback sync.WaitGroup
 	var sessionDestructionCallback sync.WaitGroup
@@ -39,8 +40,8 @@ func TestServerInitiatedSessionDestruction(t *testing.T) {
 				compareSessions(t, createdSession, msg.Client.Session)
 				if string(msg.Payload) != msg.Client.Session.Key {
 					t.Errorf(
-						"Clients session key doesn't match servers session key:" +
-							" client: '%s' | server: '%s'",
+						"Clients session key doesn't match: "+
+							"client: '%s' | server: '%s'",
 						string(msg.Payload),
 						msg.Client.Session.Key,
 					)
@@ -50,18 +51,25 @@ func TestServerInitiatedSessionDestruction(t *testing.T) {
 
 			// on step 3 - close session and verify its destruction
 			if currentStep == 3 {
-				/*****************************************************************\
+				/***********************************************************\
 					Server-side session destruction initiation
-				\*****************************************************************/
-				// Attempt to destroy this clients session on the end of the first step
+				\***********************************************************/
+				// Attempt to destroy this clients session
+				// on the end of the first step
 				err := msg.Client.CloseSession()
 				if err != nil {
-					t.Errorf("Couldn't close the active session on the server: %s", err)
+					t.Errorf(
+						"Couldn't close the active session on the server: %s",
+						err,
+					)
 				}
 
 				// Verify destruction
 				if msg.Client.Session != nil {
-					t.Errorf("Expected the session to be destroyed right after its closure")
+					t.Errorf(
+						"Expected the session to be destroyed, got: %v",
+						msg.Client.Session,
+					)
 				}
 
 				return nil, nil
@@ -83,10 +91,11 @@ func TestServerInitiatedSessionDestruction(t *testing.T) {
 			)
 			createdSession = &newSession
 
-			// Try to register the newly created session and bind it to the client
+			// Try to register the newly created session
+			// and bind it to the client
 			if err := msg.Client.CreateSession(createdSession); err != nil {
-				return nil, &webwire.Error {
-					Code: "INTERNAL_ERROR",
+				return nil, &webwire.Error{
+					Code:    "INTERNAL_ERROR",
 					Message: fmt.Sprintf("Internal server error: %s", err),
 				}
 			}
@@ -117,22 +126,23 @@ func TestServerInitiatedSessionDestruction(t *testing.T) {
 		server.Addr,
 		nil,
 		// On session created
-		func (_ *webwire.Session) {
+		func(_ *webwire.Session) {
 			// Mark the client-side session creation callback as executed
 			sessionCreationCallback.Done()
 		},
 		// On session closed
 		func() {
-			// Ensure this callback is called during the 
+			// Ensure this callback is called during the
 			if currentStep != 3 {
 				t.Errorf(
-					"Client-side session destruction callback called at wrong step (%d)",
+					"Client-side session destruction callback "+
+						"called at wrong step (%d)",
 					currentStep,
 				)
 			}
 			sessionDestructionCallback.Done()
 		},
-		5 * time.Second,
+		5*time.Second,
 		os.Stdout,
 		os.Stderr,
 	)
@@ -147,11 +157,16 @@ func TestServerInitiatedSessionDestruction(t *testing.T) {
 	}
 
 	// Verify reply
-	comparePayload(t, "authentication reply", []byte(createdSession.Key), authReqReply)
+	comparePayload(
+		t,
+		"authentication reply",
+		[]byte(createdSession.Key),
+		authReqReply,
+	)
 
 	// Wait for the client-side session creation callback to be executed
 	sessionCreationCallback.Wait()
-	
+
 	// Ensure the session was locally created
 	currentSessionAfterCreation := client.Session()
 	if currentSessionAfterCreation.Key == "" {
@@ -193,7 +208,7 @@ func TestServerInitiatedSessionDestruction(t *testing.T) {
 	currentSessionAfterDestruction := client.Session()
 	if currentSessionAfterDestruction.Key != "" {
 		t.Fatalf(
-			"Expected session to be destroyed on the client as well, but still got: %v",
+			"Expected session to be destroyed on the client as well, got: %v",
 			currentSessionAfterDestruction,
 		)
 	}

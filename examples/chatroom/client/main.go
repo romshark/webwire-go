@@ -1,10 +1,10 @@
 package main
 
 import (
-	"os"
+	"flag"
 	"fmt"
 	"log"
-	"flag"
+	"os"
 	"time"
 
 	webwireClient "github.com/qbeon/webwire-go/client"
@@ -29,8 +29,8 @@ func main() {
 		nil,
 
 		// Default timeout for timed requests
-		5 * time.Second,
-		
+		5*time.Second,
+
 		// Log writers
 		os.Stdout,
 		os.Stderr,

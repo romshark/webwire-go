@@ -1,10 +1,10 @@
 package test
 
 import (
-	"testing"
-	"os"
-	"time"
 	"context"
+	"os"
+	"testing"
+	"time"
 
 	webwire "github.com/qbeon/webwire-go"
 	webwire_client "github.com/qbeon/webwire-go/client"
@@ -14,8 +14,8 @@ import (
 // fail the request on the client
 func TestClientRequestError(t *testing.T) {
 	expectedRequestPayload := []byte("webwire_test_REQUEST_payload")
-	expectedReplyError := webwire.Error {
-		Code: "SAMPLE_ERROR",
+	expectedReplyError := webwire.Error{
+		Code:    "SAMPLE_ERROR",
 		Message: "Sample error message",
 	}
 
@@ -36,14 +36,14 @@ func TestClientRequestError(t *testing.T) {
 	client := webwire_client.NewClient(
 		server.Addr,
 		nil, nil, nil,
-		5 * time.Second,
+		5*time.Second,
 		os.Stdout,
 		os.Stderr,
 	)
 
 	// Send request and await reply
 	reply, err := client.Request(expectedRequestPayload)
-	
+
 	// Verify returned error
 	if err == nil {
 		t.Fatal("Expected an error, got nil")

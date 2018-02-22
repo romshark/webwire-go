@@ -1,10 +1,10 @@
 package main
 
 import (
-	"fmt"
-	"log"
 	"context"
 	"encoding/json"
+	"fmt"
+	"log"
 
 	webwire "github.com/qbeon/webwire-go"
 	"github.com/qbeon/webwire-go/examples/chatroom/shared"
@@ -17,39 +17,39 @@ import (
 func onRequest(ctx context.Context) ([]byte, *webwire.Error) {
 	msg := ctx.Value(webwire.MESSAGE).(webwire.Message)
 	client := msg.Client
-	
+
 	log.Printf("Client attempts authentication: %s", client.RemoteAddr())
 
 	// Try to parse credentials
 	var credentials shared.AuthenticationCredentials
 	if err := json.Unmarshal(msg.Payload, &credentials); err != nil {
-        return nil, &webwire.Error {
-			Code: "INTERNAL_ERROR",
-			Message: fmt.Sprintf( "Failed parsing credentials: %s", err),
+		return nil, &webwire.Error{
+			Code:    "INTERNAL_ERROR",
+			Message: fmt.Sprintf("Failed parsing credentials: %s", err),
 		}
 	}
 
 	// Verify username
 	password, userExists := userAccounts[credentials.Name]
 	if !userExists {
-		return nil, &webwire.Error {
-			Code: "INEXISTENT_USER",
+		return nil, &webwire.Error{
+			Code:    "INEXISTENT_USER",
 			Message: fmt.Sprintf("No such user: '%s'", credentials.Name),
 		}
 	}
 
 	// Verify password
 	if password != credentials.Password {
-		return nil, &webwire.Error {
-			Code: "WRONG_PASSWORD",
+		return nil, &webwire.Error{
+			Code:    "WRONG_PASSWORD",
 			Message: "Provided password is wrong",
 		}
 	}
 
 	// Check if client already has an ongoing session
 	if hasSession(client) {
-		return nil, &webwire.Error {
-			Code: "SESSION_ACTIVE",
+		return nil, &webwire.Error{
+			Code:    "SESSION_ACTIVE",
 			Message: "Already have an ongoing session for this client",
 		}
 	}
@@ -58,7 +58,7 @@ func onRequest(ctx context.Context) ([]byte, *webwire.Error) {
 	newSession := webwire.NewSession(
 		webwire.OsUnknown,
 		"unknown user agent",
-		map[string]string {
+		map[string]string{
 			"username": credentials.Name,
 		},
 	)
@@ -66,8 +66,8 @@ func onRequest(ctx context.Context) ([]byte, *webwire.Error) {
 
 	// Try to register the newly created session and bind it to the client
 	if err := client.CreateSession(createdSession); err != nil {
-		return nil, &webwire.Error {
-			Code: "INTERNAL_ERROR",
+		return nil, &webwire.Error{
+			Code:    "INTERNAL_ERROR",
 			Message: fmt.Sprintf("Couldn't create session: %s", err),
 		}
 	}

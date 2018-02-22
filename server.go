@@ -1,16 +1,16 @@
 package webwire
 
 import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"github.com/gorilla/websocket"
 	"io"
 	"log"
-	"fmt"
 	"net"
-	"time"
-	"sync"
-	"context"
 	"net/http"
-	"encoding/json"
-	"github.com/gorilla/websocket"
+	"sync"
+	"time"
 )
 
 const protocolVersion = "1.0"
@@ -43,7 +43,7 @@ type OnRequest func(ctx context.Context) (response []byte, err *Error)
 // the user must save the given session in this hook either to a database,
 // a filesystem or any other kind of persistent or volatile storage
 // for onSessionLookup to later be able to restore it by the session key
-type OnSessionCreated func(client *Client) (error)
+type OnSessionCreated func(client *Client) error
 
 // OnSessionLookup is a required hook for sessions to be supported.
 // It's invoked when the server is looking for a specific session given its key.
@@ -56,35 +56,35 @@ type OnSessionLookup func(key string) (*Session, error)
 // is closed (thus destroyed) either by the server or the client himself.
 // The user is responsible for removing the current session of the given client
 // from its storage for the session to be actually and properly destroyed.
-type OnSessionClosed func(client *Client) (error)
+type OnSessionClosed func(client *Client) error
 
-// Server represents the actual 
+// Server represents the actual
 type Server struct {
 	// Configuration
-	onClientConnected OnClientConnected
+	onClientConnected    OnClientConnected
 	onClientDisconnected OnClientDisconnected
-	onSignal OnSignal
-	onRequest OnRequest
-	OnSessionCreated OnSessionCreated
-	onSessionLookup OnSessionLookup
-	onSessionClosed OnSessionClosed
-	onOptions OnOptions
+	onSignal             OnSignal
+	onRequest            OnRequest
+	OnSessionCreated     OnSessionCreated
+	onSessionLookup      OnSessionLookup
+	onSessionClosed      OnSessionClosed
+	onOptions            OnOptions
 
 	// Dynamic methods
 	launch func() error
-	
+
 	// State
-	Addr string
-	clientsLock *sync.Mutex
-	clients []*Client
+	Addr            string
+	clientsLock     *sync.Mutex
+	clients         []*Client
 	sessionsEnabled bool
-	activeSessions map[string]*Client
+	activeSessions  map[string]*Client
 
 	// Internals
 	httpServer *http.Server
-	upgrader websocket.Upgrader
-	warnLog *log.Logger
-	errorLog *log.Logger
+	upgrader   websocket.Upgrader
+	warnLog    *log.Logger
+	errorLog   *log.Logger
 }
 
 // NewServer creates a new WebWire server instance.
@@ -115,7 +115,7 @@ func NewServer(
 
 	if onRequest == nil {
 		onRequest = func(_ context.Context) (response []byte, err *Error) {
-			return nil, &Error {
+			return nil, &Error{
 				"NOT_IMPLEMENTED",
 				fmt.Sprintf("Request handling is not implemented " +
 					" on this server instance",
@@ -125,7 +125,7 @@ func NewServer(
 	}
 
 	if onOptions == nil {
-		onOptions = func(resp http.ResponseWriter)	{}
+		onOptions = func(resp http.ResponseWriter) {}
 	}
 
 	sessionsEnabled := false
@@ -135,46 +135,46 @@ func NewServer(
 		sessionsEnabled = true
 	}
 
-	srv := Server {
+	srv := Server{
 		// Configuration
-		onClientConnected: onClientConnected,
+		onClientConnected:    onClientConnected,
 		onClientDisconnected: onClientDisconnected,
-		onSignal: onSignal,
-		onRequest: onRequest,
-		OnSessionCreated: OnSessionCreated,
-		onSessionLookup: onSessionLookup,
-		onSessionClosed: onSessionClosed,
-		onOptions: onOptions,
+		onSignal:             onSignal,
+		onRequest:            onRequest,
+		OnSessionCreated:     OnSessionCreated,
+		onSessionLookup:      onSessionLookup,
+		onSessionClosed:      onSessionClosed,
+		onOptions:            onOptions,
 
 		// State
-		clients: make([]*Client, 0),
-		clientsLock: &sync.Mutex {},
+		clients:         make([]*Client, 0),
+		clientsLock:     &sync.Mutex{},
 		sessionsEnabled: sessionsEnabled,
-		activeSessions: make(map[string]*Client),
+		activeSessions:  make(map[string]*Client),
 
 		// Internals
 		warnLog: log.New(
 			warningLogWriter,
 			"WARNING: ",
-			log.Ldate | log.Ltime | log.Lshortfile,
+			log.Ldate|log.Ltime|log.Lshortfile,
 		),
 		errorLog: log.New(
 			errorLogWriter,
 			"ERROR: ",
-			log.Ldate | log.Ltime | log.Lshortfile,
+			log.Ldate|log.Ltime|log.Lshortfile,
 		),
 	}
 
 	// Initialize websocket
-	srv.upgrader = websocket.Upgrader {
+	srv.upgrader = websocket.Upgrader{
 		CheckOrigin: func(_ *http.Request) bool {
 			return true
 		},
 	}
 
 	// Initialize HTTP server
-	srv.httpServer = &http.Server {
-		Addr: addr,
+	srv.httpServer = &http.Server{
+		Addr:    addr,
 		Handler: &srv,
 	}
 
@@ -223,10 +223,10 @@ func (ln tcpKeepAliveListener) Accept() (c net.Conn, err error) {
 
 // handleSessionRestore handles session restoration (by session key) requests
 // and returns an error if the ongoing connection cannot be proceeded
-func (srv *Server) handleSessionRestore(msg *Message) (error) {
+func (srv *Server) handleSessionRestore(msg *Message) error {
 	key := string(msg.Payload)
 	if _, exists := srv.activeSessions[key]; exists {
-		msg.fail(Error {
+		msg.fail(Error{
 			"SESSION_ACTIVE",
 			fmt.Sprintf(
 				"The session identified by key: '%s' is already active",
@@ -238,16 +238,18 @@ func (srv *Server) handleSessionRestore(msg *Message) (error) {
 
 	session, err := srv.onSessionLookup(key)
 	if err != nil {
-		msg.fail(Error {
+		msg.fail(Error{
 			"INTERNAL_ERROR",
-			fmt.Sprintf("Session restoration request not could have been fulfilled"),
+			fmt.Sprintf(
+				"Session restoration request not could have been fulfilled",
+			),
 		})
 		return fmt.Errorf(
 			"CRITICAL: Session search handler failed: %s", err,
 		)
 	}
 	if session == nil {
-		msg.fail(Error {
+		msg.fail(Error{
 			"SESSION_NOT_FOUND",
 			fmt.Sprintf("No session associated with key: '%s'", key),
 		})
@@ -272,21 +274,28 @@ func (srv *Server) handleSessionClosure(msg *Message) error {
 	}
 
 	if err := srv.deregisterSession(msg.Client); err != nil {
-		msg.fail(Error {
+		msg.fail(Error{
 			"INTERNAL_ERROR",
-			fmt.Sprintf("Session destruction request not could have been fulfilled"),
+			fmt.Sprintf(
+				"Session destruction request not could have been fulfilled",
+			),
 		})
-		return fmt.Errorf("CRITICAL: Internal server error, session destruction failed: %s", err)
+		return fmt.Errorf(
+			"CRITICAL: Internal server error, session destruction failed: %s",
+			err,
+		)
 	}
 
 	// Synchronize session destruction to the client
 	if err := msg.Client.notifySessionClosed(); err != nil {
-		msg.fail(Error {
+		msg.fail(Error{
 			"INTERNAL_ERROR",
-			fmt.Sprintf("Session destruction request not could have been fulfilled"),
+			fmt.Sprintf(
+				"Session destruction request not could have been fulfilled",
+			),
 		})
-		return fmt.Errorf("CRITICAL: Internal server error," +
-			" couldn't notify client about the session destruction: %s",
+		return fmt.Errorf("CRITICAL: Internal server error, "+
+			"couldn't notify client about the session destruction: %s",
 			err,
 		)
 	}
@@ -338,7 +347,7 @@ func (srv *Server) handleMetadata(resp http.ResponseWriter) {
 	resp.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(resp).Encode(struct {
 		ProtocolVersion string `json:"protocol-version"`
-	} {
+	}{
 		protocolVersion,
 	})
 }
@@ -349,7 +358,7 @@ func (srv Server) ServeHTTP(
 	resp http.ResponseWriter,
 	req *http.Request,
 ) {
-	switch(req.Method) {
+	switch req.Method {
 	case "OPTIONS":
 		srv.onOptions(resp)
 		return
@@ -367,9 +376,9 @@ func (srv Server) ServeHTTP(
 	defer conn.Close()
 
 	// Register connected client
-	newClient := &Client {
+	newClient := &Client{
 		&srv,
-		&sync.Mutex {},
+		&sync.Mutex{},
 		conn,
 		time.Now(),
 		nil,
@@ -446,12 +455,18 @@ func (srv Server) ServeHTTP(
 
 		// Handle message
 		switch msg.msgType {
-		case MsgSignal: err = srv.handleSignal(&msg)
-		case MsgRequest: srv.handleRequest(&msg)
-		case MsgReply: err = srv.handleReply(&msg)
-		case MsgErrorReply: err = srv.handleErrorResponse(&msg)
-		case MsgRestoreSession: err = srv.handleSessionRestore(&msg)
-		case MsgCloseSession: err = srv.handleSessionClosure(&msg)
+		case MsgSignal:
+			err = srv.handleSignal(&msg)
+		case MsgRequest:
+			srv.handleRequest(&msg)
+		case MsgReply:
+			err = srv.handleReply(&msg)
+		case MsgErrorReply:
+			err = srv.handleErrorResponse(&msg)
+		case MsgRestoreSession:
+			err = srv.handleSessionRestore(&msg)
+		case MsgCloseSession:
+			err = srv.handleSessionClosure(&msg)
 		}
 
 		if err != nil {

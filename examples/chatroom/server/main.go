@@ -1,10 +1,10 @@
 package main
 
 import (
-	"os"
+	"flag"
 	"fmt"
 	"log"
-	"flag"
+	"os"
 
 	webwire "github.com/qbeon/webwire-go"
 )

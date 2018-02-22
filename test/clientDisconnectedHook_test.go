@@ -1,10 +1,10 @@
 package test
 
 import (
-	"testing"
 	"os"
-	"time"
 	"sync"
+	"testing"
+	"time"
 
 	webwire "github.com/qbeon/webwire-go"
 	webwire_client "github.com/qbeon/webwire-go/client"
@@ -21,14 +21,14 @@ func TestClientDisconnectedHook(t *testing.T) {
 	server := setupServer(
 		t,
 		// onClientConnected
-		func (clt *webwire.Client) {
+		func(clt *webwire.Client) {
 			connectedClient = clt
 		},
 		// onClientDisconnected
-		func (clt *webwire.Client) {
+		func(clt *webwire.Client) {
 			if clt != connectedClient {
 				t.Errorf(
-					"Connected and disconnecting clients don't match: " +
+					"Connected and disconnecting clients don't match: "+
 						"disconnecting: %p | connected: %p",
 					clt,
 					connectedClient,
@@ -44,7 +44,7 @@ func TestClientDisconnectedHook(t *testing.T) {
 	client := webwire_client.NewClient(
 		server.Addr,
 		nil, nil, nil,
-		5 * time.Second,
+		5*time.Second,
 		os.Stdout,
 		os.Stderr,
 	)

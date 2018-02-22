@@ -1,13 +1,13 @@
 package webwire
 
 import (
-	"net"
-	"fmt"
-	"time"
-	"sync"
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"github.com/gorilla/websocket"
+	"net"
+	"sync"
+	"time"
 )
 
 // Client represents a client connected to the server
@@ -18,7 +18,7 @@ type Client struct {
 	conn *websocket.Conn
 
 	connectionTime time.Time
-	Session *Session
+	Session        *Session
 }
 
 // write sends the given data to the other side of the socket,
@@ -103,7 +103,7 @@ func (clt *Client) notifySessionClosed() error {
 }
 
 // CloseSession destroys the currently active session for this client.
-// It automatically synchronizes the session destruction to the client. 
+// It automatically synchronizes the session destruction to the client.
 // The synchronization happens asynchronously using a signal
 // and doesn't block the calling goroutine.
 // Does nothing if there's no active session

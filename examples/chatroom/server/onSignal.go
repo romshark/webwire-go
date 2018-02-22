@@ -1,8 +1,8 @@
 package main
 
 import (
-	"log"
 	"context"
+	"log"
 
 	webwire "github.com/qbeon/webwire-go"
 )
@@ -13,7 +13,7 @@ import (
 func onSignal(ctx context.Context) {
 	msg := ctx.Value(webwire.MESSAGE).(webwire.Message)
 	client := msg.Client
-	
+
 	msgStr := string(msg.Payload)
 
 	log.Printf(

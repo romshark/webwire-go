@@ -1,11 +1,11 @@
 package test
 
 import (
+	"encoding/json"
+	"io/ioutil"
+	"net/http"
 	"testing"
 	"time"
-	"net/http"
-	"io/ioutil"
-	"encoding/json"
 )
 
 // TestEndpointMetadata verifies the server endpoint provides correct metadata
@@ -20,12 +20,12 @@ func TestEndpointMetadata(t *testing.T) {
 	go server.Run()
 
 	// Initialize HTTP client
-	var httpClient = &http.Client {
+	var httpClient = &http.Client{
 		Timeout: time.Second * 10,
 	}
 
 	// Request metadata
-	request, err := http.NewRequest("WEBWIRE", "http://" + server.Addr + "/", nil)
+	request, err := http.NewRequest("WEBWIRE", "http://"+server.Addr+"/", nil)
 	if err != nil {
 		t.Fatalf("Couldn't create HTTP request: %s", err)
 	}
@@ -40,7 +40,7 @@ func TestEndpointMetadata(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Couldn't read response body: %s", err)
 	}
-	
+
 	// Unmarshal response
 	var metadata struct {
 		ProtocolVersion string `json:"protocol-version"`
