@@ -7,9 +7,6 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-type msgReplyCallback func(errObj Error)
-type msgFailCallback func(errObj Error)
-
 // Error represents an error returned in case of a wrong request
 type Error struct {
 	Code    string `json:"c"`
