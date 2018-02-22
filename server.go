@@ -4,13 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/gorilla/websocket"
 	"io"
 	"log"
 	"net"
 	"net/http"
 	"sync"
 	"time"
+
+	"github.com/gorilla/websocket"
 )
 
 const protocolVersion = "1.0"
@@ -311,9 +312,8 @@ func (srv *Server) handleSessionClosure(msg *Message) error {
 
 // handleSignal handles incoming signals
 // and returns an error if the ongoing connection cannot be proceeded
-func (srv *Server) handleSignal(msg *Message) error {
+func (srv *Server) handleSignal(msg *Message) {
 	srv.onSignal(context.WithValue(context.Background(), MESSAGE, *msg))
-	return nil
 }
 
 // handleRequest handles incoming requests
@@ -328,20 +328,6 @@ func (srv *Server) handleRequest(msg *Message) {
 	msg.fulfill(response)
 }
 
-// handleReply handles incoming responses to requests
-// and returns an error if the ongoing connection cannot be proceeded
-func (srv *Server) handleReply(msg *Message) error {
-	// TODO: implement server-side response handling
-	return nil
-}
-
-// handleErrorResponse handles incoming responses to failed requests
-// and returns an error if the ongoing connection cannot be proceeded
-func (srv *Server) handleErrorResponse(msg *Message) error {
-	// TODO: implement server-side error-response handling
-	return nil
-}
-
 // handleMetadata handles endpoint metadata requests
 func (srv *Server) handleMetadata(resp http.ResponseWriter) {
 	resp.Header().Set("Content-Type", "application/json")
@@ -350,6 +336,21 @@ func (srv *Server) handleMetadata(resp http.ResponseWriter) {
 	}{
 		protocolVersion,
 	})
+}
+
+// handleMessage handles incoming messages
+func (srv *Server) handleMessage(msg *Message) error {
+	switch msg.msgType {
+	case MsgSignal:
+		srv.handleSignal(msg)
+	case MsgRequest:
+		srv.handleRequest(msg)
+	case MsgRestoreSession:
+		return srv.handleSessionRestore(msg)
+	case MsgCloseSession:
+		return srv.handleSessionClosure(msg)
+	}
+	return nil
 }
 
 // ServeHTTP will make the server listen for incoming HTTP requests
@@ -454,22 +455,7 @@ func (srv Server) ServeHTTP(
 		}
 
 		// Handle message
-		switch msg.msgType {
-		case MsgSignal:
-			err = srv.handleSignal(&msg)
-		case MsgRequest:
-			srv.handleRequest(&msg)
-		case MsgReply:
-			err = srv.handleReply(&msg)
-		case MsgErrorReply:
-			err = srv.handleErrorResponse(&msg)
-		case MsgRestoreSession:
-			err = srv.handleSessionRestore(&msg)
-		case MsgCloseSession:
-			err = srv.handleSessionClosure(&msg)
-		}
-
-		if err != nil {
+		if err := srv.handleMessage(&msg); err != nil {
 			srv.errorLog.Printf("CRITICAL FAILURE: %s", err)
 			break
 		}
