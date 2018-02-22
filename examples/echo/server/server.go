@@ -29,14 +29,9 @@ func main() {
 	// Initialize webwire server
 	server, err := webwire.NewServer(
 		*serverAddr,
-		nil,
-		nil,
-		nil,
-		onRequest,
-		nil,
-		nil,
-		nil,
-		nil,
+		webwire.Hooks{
+			OnRequest: onRequest,
+		},
 		os.Stdout, os.Stderr,
 	)
 	if err != nil {

@@ -23,25 +23,30 @@ func TestServerSignal(t *testing.T) {
 
 	// Initialize webwire server
 	go func() {
-		server = setupServer(t, func(client *webwire.Client) {
+		server = setupServer(
+			t,
+			webwire.Hooks{
+				OnClientConnected: func(client *webwire.Client) {
 
-			// Verify client is listed
-			/*
-				if server.ClientsNum() != 1 {
-					finish.Done()
-					t.Fatalf(
-						"Unexpected list of connected clients (%d), "+
-							"expected 1 client to be connected",
-						server.ClientsNum(),
-					)
-				}
-			*/
+					// Verify client is listed
+					/*
+						if server.ClientsNum() != 1 {
+							finish.Done()
+							t.Fatalf(
+								"Unexpected list of connected clients (%d), "+
+									"expected 1 client to be connected",
+								server.ClientsNum(),
+							)
+						}
+					*/
 
-			// Send signal
-			if err := client.Signal(expectedSignalPayload); err != nil {
-				t.Fatalf("Couldn't send signal to client: %s", err)
-			}
-		}, nil, nil, nil, nil, nil, nil, nil)
+					// Send signal
+					if err := client.Signal(expectedSignalPayload); err != nil {
+						t.Fatalf("Couldn't send signal to client: %s", err)
+					}
+				},
+			},
+		)
 		go server.Run()
 		addr = server.Addr
 

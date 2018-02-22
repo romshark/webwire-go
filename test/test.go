@@ -12,23 +12,12 @@ import (
 // and launching the server together with the hosting http server
 func setupServer(
 	t *testing.T,
-	onClientConnected webwire.OnClientConnected,
-	onClientDisconnected webwire.OnClientDisconnected,
-	onSignal webwire.OnSignal,
-	onRequest webwire.OnRequest,
-	onSessionCreated webwire.OnSessionCreated,
-	onSessionLookup webwire.OnSessionLookup,
-	onSessionClosed webwire.OnSessionClosed,
-	onOptions webwire.OnOptions,
+	hooks webwire.Hooks,
 ) (srv *webwire.Server) {
 	// Initialize webwire server
 	webwireServer, err := webwire.NewServer(
 		"127.0.0.1:0",
-		onClientConnected,
-		onClientDisconnected,
-		onSignal, onRequest,
-		onSessionCreated, onSessionLookup, onSessionClosed,
-		onOptions,
+		hooks,
 		os.Stdout, os.Stderr,
 	)
 	if err != nil {

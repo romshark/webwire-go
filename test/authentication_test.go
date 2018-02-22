@@ -27,63 +27,58 @@ func TestAuthentication(t *testing.T) {
 	// Initialize webwire server
 	server := setupServer(
 		t,
-		nil, nil,
-		// onSignal
-		func(ctx context.Context) {
-			defer clientSignal.Done()
-			// Extract request message and requesting client from the context
-			msg := ctx.Value(webwire.MESSAGE).(webwire.Message)
-			compareSessions(t, createdSession, msg.Client.Session)
-		},
-		// onRequest
-		func(ctx context.Context) ([]byte, *webwire.Error) {
-			// Extract request message and requesting client from the context
-			msg := ctx.Value(webwire.MESSAGE).(webwire.Message)
-
-			// If already authenticated then check session
-			if currentStep > 1 {
+		webwire.Hooks{
+			OnSignal: func(ctx context.Context) {
+				defer clientSignal.Done()
+				// Extract request message and requesting client from the context
+				msg := ctx.Value(webwire.MESSAGE).(webwire.Message)
 				compareSessions(t, createdSession, msg.Client.Session)
-				return expectedConfirmation, nil
-			}
+			},
+			OnRequest: func(ctx context.Context) ([]byte, *webwire.Error) {
+				// Extract request message and requesting client from the context
+				msg := ctx.Value(webwire.MESSAGE).(webwire.Message)
 
-			// Create a new session
-			newSession := webwire.NewSession(
-				ostype.Unknown,
-				"user agent",
-				nil,
-			)
-			createdSession = &newSession
-
-			// Try to register the newly created session
-			// and bind it to the client
-			if err := msg.Client.CreateSession(createdSession); err != nil {
-				return nil, &webwire.Error{
-					Code:    "INTERNAL_ERROR",
-					Message: fmt.Sprintf("Internal server error: %s", err),
+				// If already authenticated then check session
+				if currentStep > 1 {
+					compareSessions(t, createdSession, msg.Client.Session)
+					return expectedConfirmation, nil
 				}
-			}
 
-			// Authentication step is passed
-			currentStep = 2
+				// Create a new session
+				newSession := webwire.NewSession(
+					ostype.Unknown,
+					"user agent",
+					nil,
+				)
+				createdSession = &newSession
 
-			// Return the key of the newly created session
-			return []byte(createdSession.Key), nil
+				// Try to register the newly created session
+				// and bind it to the client
+				if err := msg.Client.CreateSession(createdSession); err != nil {
+					return nil, &webwire.Error{
+						Code:    "INTERNAL_ERROR",
+						Message: fmt.Sprintf("Internal server error: %s", err),
+					}
+				}
+
+				// Authentication step is passed
+				currentStep = 2
+
+				// Return the key of the newly created session
+				return []byte(createdSession.Key), nil
+			},
+			OnSessionCreated: func(clt *webwire.Client) error {
+				// Verify the session
+				compareSessions(t, createdSession, clt.Session)
+				return nil
+			},
+			OnSessionLookup: func(_ string) (*webwire.Session, error) {
+				return nil, nil
+			},
+			OnSessionClosed: func(_ *webwire.Client) error {
+				return nil
+			},
 		},
-		// OnSessionCreated
-		func(clt *webwire.Client) error {
-			// Verify the session
-			compareSessions(t, createdSession, clt.Session)
-			return nil
-		},
-		// OnSessionLookup
-		func(_ string) (*webwire.Session, error) {
-			return nil, nil
-		},
-		// OnSessionClosed
-		func(_ *webwire.Client) error {
-			return nil
-		},
-		nil,
 	)
 	go server.Run()
 

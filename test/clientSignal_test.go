@@ -19,23 +19,23 @@ func TestClientSignal(t *testing.T) {
 	// Initialize webwire server given only the signal handler
 	server := setupServer(
 		t,
-		nil, nil,
-		func(ctx context.Context) {
-			// Extract signal message from the context
-			msg := ctx.Value(webwire.MESSAGE).(webwire.Message)
+		webwire.Hooks{
+			OnSignal: func(ctx context.Context) {
+				// Extract signal message from the context
+				msg := ctx.Value(webwire.MESSAGE).(webwire.Message)
 
-			// Verify signal payload
-			comparePayload(
-				t,
-				"client signal",
-				expectedSignalPayload,
-				msg.Payload,
-			)
+				// Verify signal payload
+				comparePayload(
+					t,
+					"client signal",
+					expectedSignalPayload,
+					msg.Payload,
+				)
 
-			// Synchronize, notify signal arrival
-			wait <- true
+				// Synchronize, notify signal arrival
+				wait <- true
+			},
 		},
-		nil, nil, nil, nil, nil,
 	)
 	go server.Run()
 

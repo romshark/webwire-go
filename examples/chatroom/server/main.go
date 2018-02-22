@@ -18,14 +18,15 @@ func main() {
 	// Initialize webwire server
 	server, err := webwire.NewServer(
 		*serverAddr,
-		onClientConnected,
-		onClientDisconnected,
-		onSignal,
-		onRequest,
-		onSessionCreated,
-		onSessionLookup,
-		onSessionClosed,
-		nil,
+		webwire.Hooks{
+			OnClientConnected:    onClientConnected,
+			OnClientDisconnected: onClientDisconnected,
+			OnSignal:             onSignal,
+			OnRequest:            onRequest,
+			OnSessionCreated:     onSessionCreated,
+			OnSessionLookup:      onSessionLookup,
+			OnSessionClosed:      onSessionClosed,
+		},
 		os.Stdout, os.Stderr,
 	)
 	if err != nil {

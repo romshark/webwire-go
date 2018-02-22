@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"testing"
 	"time"
+
+	webwire "github.com/qbeon/webwire-go"
 )
 
 // TestEndpointMetadata verifies the server endpoint provides correct metadata
@@ -15,7 +17,7 @@ func TestEndpointMetadata(t *testing.T) {
 	// Initialize webwire server
 	server := setupServer(
 		t,
-		nil, nil, nil, nil, nil, nil, nil, nil,
+		webwire.Hooks{},
 	)
 	go server.Run()
 

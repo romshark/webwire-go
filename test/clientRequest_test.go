@@ -19,21 +19,21 @@ func TestClientRequest(t *testing.T) {
 	// Initialize webwire server given only the request
 	server := setupServer(
 		t,
-		nil, nil, nil,
-		func(ctx context.Context) ([]byte, *webwire.Error) {
-			// Extract request message from the context
-			msg := ctx.Value(webwire.MESSAGE).(webwire.Message)
+		webwire.Hooks{
+			OnRequest: func(ctx context.Context) ([]byte, *webwire.Error) {
+				// Extract request message from the context
+				msg := ctx.Value(webwire.MESSAGE).(webwire.Message)
 
-			// Verify request payload
-			comparePayload(
-				t,
-				"client request",
-				expectedRequestPayload,
-				msg.Payload,
-			)
-			return expectedReplyPayload, nil
+				// Verify request payload
+				comparePayload(
+					t,
+					"client request",
+					expectedRequestPayload,
+					msg.Payload,
+				)
+				return expectedReplyPayload, nil
+			},
 		},
-		nil, nil, nil, nil,
 	)
 	go server.Run()
 

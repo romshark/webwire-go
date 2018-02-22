@@ -22,13 +22,13 @@ func TestClientRequestError(t *testing.T) {
 	// Initialize webwire server given only the request
 	server := setupServer(
 		t,
-		nil, nil, nil,
-		func(_ context.Context) ([]byte, *webwire.Error) {
-			// Fail the request by returning an error
-			err := expectedReplyError
-			return nil, &err
+		webwire.Hooks{
+			OnRequest: func(_ context.Context) ([]byte, *webwire.Error) {
+				// Fail the request by returning an error
+				err := expectedReplyError
+				return nil, &err
+			},
 		},
-		nil, nil, nil, nil,
 	)
 	go server.Run()
 

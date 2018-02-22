@@ -59,17 +59,51 @@ type OnSessionLookup func(key string) (*Session, error)
 // from its storage for the session to be actually and properly destroyed.
 type OnSessionClosed func(client *Client) error
 
+// Hooks represents all callback hook functions
+type Hooks struct {
+	OnClientConnected    OnClientConnected
+	OnClientDisconnected OnClientDisconnected
+	OnSignal             OnSignal
+	OnRequest            OnRequest
+	OnSessionCreated     OnSessionCreated
+	OnSessionLookup      OnSessionLookup
+	OnSessionClosed      OnSessionClosed
+	OnOptions            OnOptions
+}
+
+// SetDefaults sets undefined required hooks
+func (hooks *Hooks) SetDefaults() {
+	if hooks.OnClientConnected == nil {
+		hooks.OnClientConnected = func(_ *Client) {}
+	}
+
+	if hooks.OnClientDisconnected == nil {
+		hooks.OnClientDisconnected = func(_ *Client) {}
+	}
+
+	if hooks.OnSignal == nil {
+		hooks.OnSignal = func(_ context.Context) {}
+	}
+
+	if hooks.OnRequest == nil {
+		hooks.OnRequest = func(_ context.Context) (response []byte, err *Error) {
+			return nil, &Error{
+				"NOT_IMPLEMENTED",
+				fmt.Sprintf("Request handling is not implemented " +
+					" on this server instance",
+				),
+			}
+		}
+	}
+
+	if hooks.OnOptions == nil {
+		hooks.OnOptions = func(resp http.ResponseWriter) {}
+	}
+}
+
 // Server represents the actual
 type Server struct {
-	// Configuration
-	onClientConnected    OnClientConnected
-	onClientDisconnected OnClientDisconnected
-	onSignal             OnSignal
-	onRequest            OnRequest
-	OnSessionCreated     OnSessionCreated
-	onSessionLookup      OnSessionLookup
-	onSessionClosed      OnSessionClosed
-	onOptions            OnOptions
+	hooks Hooks
 
 	// Dynamic methods
 	launch func() error
@@ -91,61 +125,21 @@ type Server struct {
 // NewServer creates a new WebWire server instance.
 func NewServer(
 	addr string,
-	onClientConnected OnClientConnected,
-	onClientDisconnected OnClientDisconnected,
-	onSignal OnSignal,
-	onRequest OnRequest,
-	OnSessionCreated OnSessionCreated,
-	onSessionLookup OnSessionLookup,
-	onSessionClosed OnSessionClosed,
-	onOptions OnOptions,
+	hooks Hooks,
 	warningLogWriter io.Writer,
 	errorLogWriter io.Writer,
 ) (*Server, error) {
-	if onClientConnected == nil {
-		onClientConnected = func(_ *Client) {}
-	}
-
-	if onClientDisconnected == nil {
-		onClientDisconnected = func(_ *Client) {}
-	}
-
-	if onSignal == nil {
-		onSignal = func(_ context.Context) {}
-	}
-
-	if onRequest == nil {
-		onRequest = func(_ context.Context) (response []byte, err *Error) {
-			return nil, &Error{
-				"NOT_IMPLEMENTED",
-				fmt.Sprintf("Request handling is not implemented " +
-					" on this server instance",
-				),
-			}
-		}
-	}
-
-	if onOptions == nil {
-		onOptions = func(resp http.ResponseWriter) {}
-	}
+	hooks.SetDefaults()
 
 	sessionsEnabled := false
-	if OnSessionCreated != nil &&
-		onSessionLookup != nil &&
-		onSessionClosed != nil {
+	if hooks.OnSessionCreated != nil &&
+		hooks.OnSessionLookup != nil &&
+		hooks.OnSessionClosed != nil {
 		sessionsEnabled = true
 	}
 
 	srv := Server{
-		// Configuration
-		onClientConnected:    onClientConnected,
-		onClientDisconnected: onClientDisconnected,
-		onSignal:             onSignal,
-		onRequest:            onRequest,
-		OnSessionCreated:     OnSessionCreated,
-		onSessionLookup:      onSessionLookup,
-		onSessionClosed:      onSessionClosed,
-		onOptions:            onOptions,
+		hooks: hooks,
 
 		// State
 		clients:         make([]*Client, 0),
@@ -237,7 +231,7 @@ func (srv *Server) handleSessionRestore(msg *Message) error {
 		return nil
 	}
 
-	session, err := srv.onSessionLookup(key)
+	session, err := srv.hooks.OnSessionLookup(key)
 	if err != nil {
 		msg.fail(Error{
 			"INTERNAL_ERROR",
@@ -313,13 +307,13 @@ func (srv *Server) handleSessionClosure(msg *Message) error {
 // handleSignal handles incoming signals
 // and returns an error if the ongoing connection cannot be proceeded
 func (srv *Server) handleSignal(msg *Message) {
-	srv.onSignal(context.WithValue(context.Background(), MESSAGE, *msg))
+	srv.hooks.OnSignal(context.WithValue(context.Background(), MESSAGE, *msg))
 }
 
 // handleRequest handles incoming requests
 // and returns an error if the ongoing connection cannot be proceeded
 func (srv *Server) handleRequest(msg *Message) {
-	response, err := srv.onRequest(
+	response, err := srv.hooks.OnRequest(
 		context.WithValue(context.Background(), MESSAGE, *msg),
 	)
 	if err != nil {
@@ -361,7 +355,7 @@ func (srv Server) ServeHTTP(
 ) {
 	switch req.Method {
 	case "OPTIONS":
-		srv.onOptions(resp)
+		srv.hooks.OnOptions(resp)
 		return
 	case "WEBWIRE":
 		srv.handleMetadata(resp)
@@ -390,7 +384,7 @@ func (srv Server) ServeHTTP(
 	srv.clientsLock.Unlock()
 
 	// Call hook on successful connection
-	srv.onClientConnected(newClient)
+	srv.hooks.OnClientConnected(newClient)
 
 	for {
 		// Await message
@@ -403,10 +397,10 @@ func (srv Server) ServeHTTP(
 				delete(srv.activeSessions, newClient.Session.Key)
 			}
 			if isClosed {
-				srv.onClientDisconnected(newClient)
+				srv.hooks.OnClientDisconnected(newClient)
 				break
 			} else if isUnexpectedlyClosed {
-				srv.onClientDisconnected(newClient)
+				srv.hooks.OnClientDisconnected(newClient)
 				break
 			}
 			srv.warnLog.Println("Reading failed:", err)
@@ -465,7 +459,7 @@ func (srv Server) ServeHTTP(
 func (srv *Server) registerSession(clt *Client, session *Session) error {
 	clt.Session = session
 	srv.activeSessions[session.Key] = clt
-	err := srv.OnSessionCreated(clt)
+	err := srv.hooks.OnSessionCreated(clt)
 	if err != nil {
 		return fmt.Errorf("Couldn't save session: %s", err)
 	}
@@ -474,7 +468,7 @@ func (srv *Server) registerSession(clt *Client, session *Session) error {
 
 func (srv *Server) deregisterSession(clt *Client) error {
 	delete(srv.activeSessions, clt.Session.Key)
-	err := srv.onSessionClosed(clt)
+	err := srv.hooks.OnSessionClosed(clt)
 	if err != nil {
 		return fmt.Errorf("CRITICAL: Session closure handler failed: %s", err)
 	}
