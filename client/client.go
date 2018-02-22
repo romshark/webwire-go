@@ -7,6 +7,7 @@ import (
 	"log"
 	"fmt"
 	"time"
+	"sync"
 	"bytes"
 	"strings"
 	"net/url"
@@ -48,8 +49,10 @@ type Client struct {
 	serverAddr string
 	defaultTimeout time.Duration
 	conn *websocket.Conn
-	reqRegister map[[32]byte] chan replyObj
 	session *webwire.Session
+
+	reqRegisterLock sync.Mutex
+	reqRegister map[[32]byte] chan replyObj
 
 	// Handlers
 	onServerSignal OnServerSignal
@@ -87,8 +90,9 @@ func NewClient(
 		serverAddr,
 		defaultTimeout,
 		nil,
-		make(map[[32]byte] chan replyObj, 0),
 		nil,
+		sync.Mutex {},
+		make(map[[32]byte] chan replyObj, 0),
 		onServerSignal,
 		onSessionCreated,
 		onSessionClosed,
@@ -159,7 +163,9 @@ func (clt *Client) handleReply(message []byte) {
 			Reply: message[33:],
 			Error: nil,
 		}
+		clt.reqRegisterLock.Lock()
 		delete(clt.reqRegister, requestIdentifier)
+		clt.reqRegisterLock.Unlock()
 	}
 }
 
@@ -301,7 +307,9 @@ func (clt *Client) sendRequest(
 	responseChannel := make(chan replyObj)
 
 	// Register request
+	clt.reqRegisterLock.Lock()
 	clt.reqRegister[requestIdentifier] = responseChannel
+	clt.reqRegisterLock.Unlock()
 
 	// Send request
 	if err := clt.conn.WriteMessage(websocket.TextMessage, msg.Bytes());
