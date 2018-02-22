@@ -16,59 +16,50 @@ import (
 
 const protocolVersion = "1.0"
 
-// OnOptions is an optional hook.
-// It's invoked when the websocket endpoint is examined by the client
-// using the HTTP OPTION method.
-type OnOptions func(resp http.ResponseWriter)
-
-// OnClientConnected is an optional hook.
-// It's invoked when a new client establishes a connection to the server
-type OnClientConnected func(client *Client)
-
-// OnClientDisconnected is an optional hook.
-// It's invoked when a client closes the connection to the server
-type OnClientDisconnected func(client *Client)
-
-// OnSignal is a required hook.
-// It's invoked when the webwire server receives a signal from the client
-type OnSignal func(ctx context.Context)
-
-// OnRequest is an optional hook.
-// It's invoked when the webwire server receives a request from the client.
-// It must return either a response payload or an error
-type OnRequest func(ctx context.Context) (response []byte, err *Error)
-
-// OnSessionCreated is a required hook for sessions to be supported.
-// It's invoked right after the creation of a new session.
-// The WebWire server isn't responsible for storing the sessions it creates,
-// the user must save the given session in this hook either to a database,
-// a filesystem or any other kind of persistent or volatile storage
-// for onSessionLookup to later be able to restore it by the session key
-type OnSessionCreated func(client *Client) error
-
-// OnSessionLookup is a required hook for sessions to be supported.
-// It's invoked when the server is looking for a specific session given its key.
-// The user is responsible for returning the exact copy of the session object
-// associated with the given key for sessions to be restorable
-type OnSessionLookup func(key string) (*Session, error)
-
-// OnSessionClosed is a required hook for sessions to be supported.
-// It's invoked when the active session of the given client
-// is closed (thus destroyed) either by the server or the client himself.
-// The user is responsible for removing the current session of the given client
-// from its storage for the session to be actually and properly destroyed.
-type OnSessionClosed func(client *Client) error
-
 // Hooks represents all callback hook functions
 type Hooks struct {
-	OnClientConnected    OnClientConnected
-	OnClientDisconnected OnClientDisconnected
-	OnSignal             OnSignal
-	OnRequest            OnRequest
-	OnSessionCreated     OnSessionCreated
-	OnSessionLookup      OnSessionLookup
-	OnSessionClosed      OnSessionClosed
-	OnOptions            OnOptions
+	// OnOptions is an optional hook.
+	// It's invoked when the websocket endpoint is examined by the client
+	// using the HTTP OPTION method.
+	OnOptions func(resp http.ResponseWriter)
+
+	// OnClientConnected is an optional hook.
+	// It's invoked when a new client establishes a connection to the server
+	OnClientConnected func(client *Client)
+
+	// OnClientDisconnected is an optional hook.
+	// It's invoked when a client closes the connection to the server
+	OnClientDisconnected func(client *Client)
+
+	// OnSignal is a required hook.
+	// It's invoked when the webwire server receives a signal from the client
+	OnSignal func(ctx context.Context)
+
+	// OnRequest is an optional hook.
+	// It's invoked when the webwire server receives a request from the client.
+	// It must return either a response payload or an error
+	OnRequest func(ctx context.Context) (response []byte, err *Error)
+
+	// OnSessionCreated is a required hook for sessions to be supported.
+	// It's invoked right after the creation of a new session.
+	// The WebWire server isn't responsible for storing the sessions it creates,
+	// the user must save the given session in this hook either to a database,
+	// a filesystem or any other kind of persistent or volatile storage
+	// for onSessionLookup to later be able to restore it by the session key
+	OnSessionCreated func(client *Client) error
+
+	// OnSessionLookup is a required hook for sessions to be supported.
+	// It's invoked when the server is looking for a specific session given its key.
+	// The user is responsible for returning the exact copy of the session object
+	// associated with the given key for sessions to be restorable
+	OnSessionLookup func(key string) (*Session, error)
+
+	// OnSessionClosed is a required hook for sessions to be supported.
+	// It's invoked when the active session of the given client
+	// is closed (thus destroyed) either by the server or the client himself.
+	// The user is responsible for removing the current session of the given client
+	// from its storage for the session to be actually and properly destroyed.
+	OnSessionClosed func(client *Client) error
 }
 
 // SetDefaults sets undefined required hooks

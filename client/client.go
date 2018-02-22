@@ -21,24 +21,20 @@ import (
 
 const supportedProtocolVersion = "1.0"
 
-// OnServerSignal is an optional callback.
-// It's invoked when the webwire client receives a signal from the server
-type OnServerSignal func([]byte)
-
-// OnSessionCreated is an optional callback.
-// It's invoked when the webwire client receives a new session
-type OnSessionCreated func(*webwire.Session)
-
-// OnSessionClosed is an optional callback.
-// It's invoked when the clients session was closed
-// either by the server or by himself
-type OnSessionClosed func()
-
 // Hooks represents all callback hook functions
 type Hooks struct {
-	OnServerSignal   OnServerSignal
-	OnSessionCreated OnSessionCreated
-	OnSessionClosed  OnSessionClosed
+	// OnServerSignal is an optional callback.
+	// It's invoked when the webwire client receives a signal from the server
+	OnServerSignal func([]byte)
+
+	// OnSessionCreated is an optional callback.
+	// It's invoked when the webwire client receives a new session
+	OnSessionCreated func(*webwire.Session)
+
+	// OnSessionClosed is an optional callback.
+	// It's invoked when the clients session was closed
+	// either by the server or by himself
+	OnSessionClosed func()
 }
 
 // SetDefaults sets undefined required hooks
