@@ -145,7 +145,9 @@ func (clt *Client) handleFailure(message []byte) {
 			Reply: nil,
 			Error: &err,
 		}
+		clt.reqRegisterLock.Lock()
 		delete(clt.reqRegister, requestIdentifier)
+		clt.reqRegisterLock.Unlock()
 	}
 }
 
