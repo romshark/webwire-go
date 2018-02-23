@@ -327,6 +327,11 @@ func (clt *Client) sendRequest(
 	// Block until request either times out or a response is received
 	select {
 	case <-timeoutTimer:
+		// Deregister timedout request
+		clt.reqRegisterLock.Lock()
+		delete(clt.reqRegister, requestIdentifier)
+		clt.reqRegisterLock.Unlock()
+
 		// TODO: return typed TimeoutError
 		return nil, &webwire.Error{
 			Message: fmt.Sprintf("Request timed out"),
@@ -384,6 +389,13 @@ func (clt *Client) Session() webwire.Session {
 		return webwire.Session{}
 	}
 	return *clt.session
+}
+
+// Requests returns the number of currently pending requests
+func (clt *Client) Requests() int {
+	clt.reqRegisterLock.Lock()
+	defer clt.reqRegisterLock.Unlock()
+	return len(clt.reqRegister)
 }
 
 // RestoreSession tries to restore the previously opened session
