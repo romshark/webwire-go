@@ -219,6 +219,8 @@ func (clt *Client) verifyProtocolVersion() error {
 // Connect connects the client to the configured server and
 // returns an error in case of a connection failure
 func (clt *Client) Connect() (err error) {
+	clt.lock.Lock()
+	defer clt.lock.Unlock()
 	if clt.conn != nil {
 		return nil
 	}
