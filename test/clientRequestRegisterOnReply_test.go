@@ -21,7 +21,7 @@ func TestClientRequestRegisterOnReply(t *testing.T) {
 		webwire.Hooks{
 			OnRequest: func(ctx context.Context) ([]byte, *webwire.Error) {
 				// Verify pending requests
-				pendingReqs := client.Requests()
+				pendingReqs := client.PendingRequests()
 				if pendingReqs != 1 {
 					t.Errorf("Unexpected pending requests: %d", pendingReqs)
 					return nil, nil
@@ -50,7 +50,7 @@ func TestClientRequestRegisterOnReply(t *testing.T) {
 	}
 
 	// Verify pending requests
-	pendingReqsBeforeReq := client.Requests()
+	pendingReqsBeforeReq := client.PendingRequests()
 	if pendingReqsBeforeReq != 0 {
 		t.Fatalf("Unexpected pending requests: %d", pendingReqsBeforeReq)
 	}
@@ -62,7 +62,7 @@ func TestClientRequestRegisterOnReply(t *testing.T) {
 	}
 
 	// Verify pending requests
-	pendingReqsAfterReq := client.Requests()
+	pendingReqsAfterReq := client.PendingRequests()
 	if pendingReqsAfterReq != 0 {
 		t.Fatalf("Unexpected pending requests: %d", pendingReqsAfterReq)
 	}

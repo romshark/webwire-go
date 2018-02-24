@@ -2,6 +2,7 @@ package client
 
 import (
 	webwire "github.com/qbeon/webwire-go"
+	reqman "github.com/qbeon/webwire-go/requestManager"
 
 	"bytes"
 	"encoding/json"
@@ -11,12 +12,10 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"strings"
 	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
-	"github.com/satori/go.uuid"
 )
 
 const supportedProtocolVersion = "1.0"
@@ -52,12 +51,6 @@ func (hooks *Hooks) SetDefaults() {
 	}
 }
 
-// replyObj is used by the request registry
-type replyObj struct {
-	Reply []byte
-	Error *webwire.Error
-}
-
 func extractMessageIdentifier(message []byte) (arr [32]byte) {
 	copy(arr[:], message[1:33])
 	return arr
@@ -68,11 +61,12 @@ type Client struct {
 	serverAddr     string
 	defaultTimeout time.Duration
 	hooks          Hooks
-	conn           *websocket.Conn
 	session        *webwire.Session
 
-	reqRegisterLock sync.RWMutex
-	reqRegister     map[[32]byte]chan replyObj
+	lock sync.Mutex
+	conn *websocket.Conn
+
+	requestManager reqman.RequestManager
 
 	// Loggers
 	warningLog *log.Logger
@@ -94,9 +88,12 @@ func NewClient(
 		defaultTimeout,
 		hooks,
 		nil,
+
+		sync.Mutex{},
 		nil,
-		sync.RWMutex{},
-		make(map[[32]byte]chan replyObj),
+
+		reqman.NewRequestManager(),
+
 		log.New(
 			warningLogWriter,
 			"WARNING: ",
@@ -131,45 +128,18 @@ func (clt *Client) handleSessionClosed() {
 }
 
 func (clt *Client) handleFailure(message []byte) {
-	requestIdentifier := extractMessageIdentifier(message)
-
-	clt.reqRegisterLock.RLock()
-	reply, exists := clt.reqRegister[requestIdentifier]
-	clt.reqRegisterLock.RUnlock()
-	if exists {
-		// Decode error
-		var err webwire.Error
-		if err := json.Unmarshal(message[33:], &err); err != nil {
-			clt.errorLog.Printf("Failed unmarshalling error reply: %s", err)
-		}
-
-		// Fail request
-		reply <- replyObj{
-			Reply: nil,
-			Error: &err,
-		}
-		clt.reqRegisterLock.Lock()
-		delete(clt.reqRegister, requestIdentifier)
-		clt.reqRegisterLock.Unlock()
+	// Decode error
+	var replyErr webwire.Error
+	if err := json.Unmarshal(message[33:], &replyErr); err != nil {
+		clt.errorLog.Printf("Failed unmarshalling error reply: %s", err)
 	}
+
+	// Fail request
+	clt.requestManager.Fail(extractMessageIdentifier(message), replyErr)
 }
 
 func (clt *Client) handleReply(message []byte) {
-	requestIdentifier := extractMessageIdentifier(message)
-
-	clt.reqRegisterLock.RLock()
-	reply, exists := clt.reqRegister[requestIdentifier]
-	clt.reqRegisterLock.RUnlock()
-	if exists {
-		// Fulfill request
-		reply <- replyObj{
-			Reply: message[33:],
-			Error: nil,
-		}
-		clt.reqRegisterLock.Lock()
-		delete(clt.reqRegister, requestIdentifier)
-		clt.reqRegisterLock.Unlock()
-	}
+	clt.requestManager.Fulfill(extractMessageIdentifier(message), message[33:])
 }
 
 func (clt *Client) handleMessage(message []byte) error {
@@ -305,24 +275,18 @@ func (clt *Client) sendRequest(
 		}
 	}
 
-	id := uuid.NewV4()
-	var requestIdentifier [32]byte
-	copy(requestIdentifier[:], strings.Replace(id.String(), "-", "", -1))
+	request := clt.requestManager.Create(timeout)
+	reqIdentifier := request.Identifier()
+
 	var msg bytes.Buffer
 	msg.WriteRune(messageType)
-	msg.Write(requestIdentifier[:])
+	msg.Write(reqIdentifier[:])
 	msg.Write(payload)
 
-	timeoutTimer := time.NewTimer(timeout).C
-	responseChannel := make(chan replyObj)
-
-	// Register request
-	clt.reqRegisterLock.Lock()
-	clt.reqRegister[requestIdentifier] = responseChannel
-	clt.reqRegisterLock.Unlock()
-
 	// Send request
+	clt.lock.Lock()
 	err := clt.conn.WriteMessage(websocket.TextMessage, msg.Bytes())
+	clt.lock.Unlock()
 	if err != nil {
 		// TODO: return typed error TransmissionFailure
 		return nil, &webwire.Error{
@@ -331,23 +295,7 @@ func (clt *Client) sendRequest(
 	}
 
 	// Block until request either times out or a response is received
-	select {
-	case <-timeoutTimer:
-		// Deregister timedout request
-		clt.reqRegisterLock.Lock()
-		delete(clt.reqRegister, requestIdentifier)
-		clt.reqRegisterLock.Unlock()
-
-		// TODO: return typed TimeoutError
-		return nil, &webwire.Error{
-			Message: fmt.Sprintf("Request timed out"),
-		}
-	case reply := <-responseChannel:
-		if reply.Error != nil {
-			return nil, reply.Error
-		}
-		return reply.Reply, nil
-	}
+	return request.AwaitReply()
 }
 
 // Request sends a request containing the given payload to the server
@@ -386,6 +334,8 @@ func (clt *Client) Signal(payload []byte) error {
 	var msg bytes.Buffer
 	msg.WriteRune(webwire.MsgSignal)
 	msg.Write(payload)
+	clt.lock.Lock()
+	defer clt.lock.Unlock()
 	return clt.conn.WriteMessage(websocket.TextMessage, msg.Bytes())
 }
 
@@ -397,11 +347,9 @@ func (clt *Client) Session() webwire.Session {
 	return *clt.session
 }
 
-// Requests returns the number of currently pending requests
-func (clt *Client) Requests() int {
-	clt.reqRegisterLock.RLock()
-	defer clt.reqRegisterLock.RUnlock()
-	return len(clt.reqRegister)
+// PendingRequests returns the number of currently pending requests
+func (clt *Client) PendingRequests() int {
+	return clt.requestManager.PendingRequests()
 }
 
 // RestoreSession tries to restore the previously opened session
@@ -458,4 +406,7 @@ func (clt *Client) Close() {
 		return
 	}
 	clt.conn.Close()
+	clt.lock.Lock()
+	clt.conn = nil
+	clt.lock.Unlock()
 }
