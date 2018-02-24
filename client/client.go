@@ -402,11 +402,11 @@ func (clt *Client) CloseSession() error {
 // Close gracefully closes the connection.
 // Does nothing if the client isn't connected
 func (clt *Client) Close() {
+	clt.lock.Lock()
 	if clt.conn == nil {
 		return
 	}
 	clt.conn.Close()
-	clt.lock.Lock()
 	clt.conn = nil
 	clt.lock.Unlock()
 }
