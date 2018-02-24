@@ -104,7 +104,7 @@ type Server struct {
 	clientsLock     *sync.Mutex
 	clients         []*Client
 	sessionsEnabled bool
-	activeSessions  map[string]*Client
+	SessionRegistry sessionRegistry
 
 	// Internals
 	httpServer *http.Server
@@ -136,7 +136,7 @@ func NewServer(
 		clients:         make([]*Client, 0),
 		clientsLock:     &sync.Mutex{},
 		sessionsEnabled: sessionsEnabled,
-		activeSessions:  make(map[string]*Client),
+		SessionRegistry: newSessionRegistry(),
 
 		// Internals
 		warnLog: log.New(
@@ -211,7 +211,10 @@ func (ln tcpKeepAliveListener) Accept() (c net.Conn, err error) {
 // and returns an error if the ongoing connection cannot be proceeded
 func (srv *Server) handleSessionRestore(msg *Message) error {
 	key := string(msg.Payload)
-	if _, exists := srv.activeSessions[key]; exists {
+
+	sessionExists := srv.SessionRegistry.Exists(key)
+
+	if sessionExists {
 		msg.fail(Error{
 			"SESSION_ACTIVE",
 			fmt.Sprintf(
@@ -242,7 +245,8 @@ func (srv *Server) handleSessionRestore(msg *Message) error {
 		return nil
 	}
 	msg.Client.Session = session
-	srv.activeSessions[session.Key] = msg.Client
+
+	srv.SessionRegistry.register(msg.Client)
 
 	// Send confirmation response
 	msg.fulfill(nil)
@@ -383,7 +387,7 @@ func (srv Server) ServeHTTP(
 		if err != nil {
 			if newClient.Session != nil {
 				// Mark session as inactive
-				delete(srv.activeSessions, newClient.Session.Key)
+				srv.SessionRegistry.deregister(newClient)
 			}
 
 			if websocket.IsUnexpectedCloseError(
@@ -422,7 +426,7 @@ func (srv Server) ServeHTTP(
 
 func (srv *Server) registerSession(clt *Client, session *Session) error {
 	clt.Session = session
-	srv.activeSessions[session.Key] = clt
+	srv.SessionRegistry.register(clt)
 	err := srv.hooks.OnSessionCreated(clt)
 	if err != nil {
 		return fmt.Errorf("Couldn't save session: %s", err)
@@ -431,7 +435,7 @@ func (srv *Server) registerSession(clt *Client, session *Session) error {
 }
 
 func (srv *Server) deregisterSession(clt *Client) error {
-	delete(srv.activeSessions, clt.Session.Key)
+	srv.SessionRegistry.deregister(clt)
 	err := srv.hooks.OnSessionClosed(clt)
 	if err != nil {
 		return fmt.Errorf("CRITICAL: Session closure handler failed: %s", err)
