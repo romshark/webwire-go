@@ -71,7 +71,7 @@ type Client struct {
 	conn           *websocket.Conn
 	session        *webwire.Session
 
-	reqRegisterLock sync.Mutex
+	reqRegisterLock sync.RWMutex
 	reqRegister     map[[32]byte]chan replyObj
 
 	// Loggers
@@ -95,7 +95,7 @@ func NewClient(
 		hooks,
 		nil,
 		nil,
-		sync.Mutex{},
+		sync.RWMutex{},
 		make(map[[32]byte]chan replyObj),
 		log.New(
 			warningLogWriter,
@@ -133,7 +133,10 @@ func (clt *Client) handleSessionClosed() {
 func (clt *Client) handleFailure(message []byte) {
 	requestIdentifier := extractMessageIdentifier(message)
 
-	if reply, exists := clt.reqRegister[requestIdentifier]; exists {
+	clt.reqRegisterLock.RLock()
+	reply, exists := clt.reqRegister[requestIdentifier]
+	clt.reqRegisterLock.RUnlock()
+	if exists {
 		// Decode error
 		var err webwire.Error
 		if err := json.Unmarshal(message[33:], &err); err != nil {
@@ -154,7 +157,10 @@ func (clt *Client) handleFailure(message []byte) {
 func (clt *Client) handleReply(message []byte) {
 	requestIdentifier := extractMessageIdentifier(message)
 
-	if reply, exists := clt.reqRegister[requestIdentifier]; exists {
+	clt.reqRegisterLock.RLock()
+	reply, exists := clt.reqRegister[requestIdentifier]
+	clt.reqRegisterLock.RUnlock()
+	if exists {
 		// Fulfill request
 		reply <- replyObj{
 			Reply: message[33:],
@@ -393,8 +399,8 @@ func (clt *Client) Session() webwire.Session {
 
 // Requests returns the number of currently pending requests
 func (clt *Client) Requests() int {
-	clt.reqRegisterLock.Lock()
-	defer clt.reqRegisterLock.Unlock()
+	clt.reqRegisterLock.RLock()
+	defer clt.reqRegisterLock.RUnlock()
 	return len(clt.reqRegister)
 }
 
