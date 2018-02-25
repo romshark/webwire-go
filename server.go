@@ -344,7 +344,7 @@ func (srv *Server) handleMessage(msg *Message) error {
 
 // ServeHTTP will make the server listen for incoming HTTP requests
 // eventually trying to upgrade them to WebSocket connections
-func (srv Server) ServeHTTP(
+func (srv *Server) ServeHTTP(
 	resp http.ResponseWriter,
 	req *http.Request,
 ) {
@@ -367,7 +367,7 @@ func (srv Server) ServeHTTP(
 
 	// Register connected client
 	newClient := &Client{
-		&srv,
+		srv,
 		&sync.Mutex{},
 		conn,
 		time.Now(),
@@ -413,8 +413,8 @@ func (srv Server) ServeHTTP(
 		// Reference the client associated with this message
 		msg.Client = newClient
 
-		msg.createReplyCallback(newClient, &srv)
-		msg.createFailCallback(newClient, &srv)
+		msg.createReplyCallback(newClient, srv)
+		msg.createFailCallback(newClient, srv)
 
 		// Handle message
 		if err := srv.handleMessage(&msg); err != nil {
