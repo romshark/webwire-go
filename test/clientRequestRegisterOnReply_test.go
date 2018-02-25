@@ -11,7 +11,7 @@ import (
 )
 
 // TestClientRequestRegisterOnReply verifies the request register of the client
-// is correctly updated when the request is successfuly fulfilled
+// is correctly updated when the request is successfully fulfilled
 func TestClientRequestRegisterOnReply(t *testing.T) {
 	var client webwireClient.Client
 
