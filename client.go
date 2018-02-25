@@ -32,12 +32,16 @@ func (clt *Client) write(wsMsgType int, data []byte) error {
 
 // ConnectionTime returns the time when the connection was established
 func (clt *Client) ConnectionTime() time.Time {
+	clt.lock.Lock()
+	defer clt.lock.Unlock()
 	return clt.connectionTime
 }
 
 // RemoteAddr returns the address of the client.
 // Returns empty string if the client is not connected.
 func (clt *Client) RemoteAddr() net.Addr {
+	clt.lock.Lock()
+	defer clt.lock.Unlock()
 	if clt.conn == nil {
 		return nil
 	}
@@ -62,6 +66,8 @@ func (clt *Client) CreateSession(attachment interface{}) error {
 		return fmt.Errorf("Sessions disabled")
 	}
 
+	clt.lock.Lock()
+
 	// Abort if there's already another active session
 	if clt.Session != nil {
 		return fmt.Errorf(
@@ -69,6 +75,8 @@ func (clt *Client) CreateSession(attachment interface{}) error {
 			clt.Session.Key,
 		)
 	}
+
+	clt.lock.Unlock()
 
 	// Create a new session
 	newSession := NewSession(attachment)
@@ -88,8 +96,10 @@ func (clt *Client) CreateSession(attachment interface{}) error {
 	}
 
 	// Register the session
+	clt.lock.Lock()
 	clt.Session = &newSession
 	clt.srv.registerSession(clt)
+	clt.lock.Unlock()
 
 	return nil
 }
