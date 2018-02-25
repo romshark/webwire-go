@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"sync"
 	"testing"
 	"time"
 
@@ -14,10 +13,8 @@ import (
 
 // TestClientOnSessionClosed verifies the OnSessionClosed hook of the client is called properly.
 func TestClientOnSessionClosed(t *testing.T) {
-	var authentication sync.WaitGroup
-	var hook sync.WaitGroup
-	authentication.Add(1)
-	hook.Add(1)
+	authenticated := NewPending(1, 1*time.Second, true)
+	hookCalled := NewPending(1, 1*time.Second, true)
 
 	// Initialize webwire server
 	server := setupServer(
@@ -37,7 +34,10 @@ func TestClientOnSessionClosed(t *testing.T) {
 
 				go func() {
 					// Wait until the authentication request is finished
-					authentication.Wait()
+					if err := authenticated.Wait(); err != nil {
+						t.Errorf("Authentication timed out")
+						return
+					}
 
 					// Close the session
 					if err := msg.Client.CloseSession(); err != nil {
@@ -60,7 +60,7 @@ func TestClientOnSessionClosed(t *testing.T) {
 		server.Addr,
 		webwireClient.Hooks{
 			OnSessionClosed: func() {
-				hook.Done()
+				hookCalled.Done()
 			},
 		},
 		5*time.Second,
@@ -73,8 +73,10 @@ func TestClientOnSessionClosed(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Request failed: %s", err)
 	}
-	authentication.Done()
+	authenticated.Done()
 
 	// Verify client session
-	hook.Wait()
+	if err := hookCalled.Wait(); err != nil {
+		t.Fatal("Hook not called")
+	}
 }

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"sync"
 	"testing"
 	"time"
 
@@ -15,10 +14,8 @@ import (
 // TestClientInitiatedSessionDestruction verifies
 // client-initiated session destruction
 func TestClientInitiatedSessionDestruction(t *testing.T) {
-	var sessionCreationCallback sync.WaitGroup
-	var sessionDestructionCallback sync.WaitGroup
-	sessionCreationCallback.Add(1)
-	sessionDestructionCallback.Add(1)
+	sessionCreationCallbackCalled := NewPending(1, 1*time.Second, true)
+	sessionDestructionCallbackCalled := NewPending(1, 1*time.Second, true)
 	var createdSession *webwire.Session
 	expectedCredentials := []byte("secret_credentials")
 	placeholderMessage := []byte("nothinginteresting")
@@ -82,7 +79,7 @@ func TestClientInitiatedSessionDestruction(t *testing.T) {
 		webwireClient.Hooks{
 			OnSessionCreated: func(_ *webwire.Session) {
 				// Mark the client-side session creation callback as executed
-				sessionCreationCallback.Done()
+				sessionCreationCallbackCalled.Done()
 			},
 			OnSessionClosed: func() {
 				// Ensure this callback is called during the
@@ -93,7 +90,7 @@ func TestClientInitiatedSessionDestruction(t *testing.T) {
 						currentStep,
 					)
 				}
-				sessionDestructionCallback.Done()
+				sessionDestructionCallbackCalled.Done()
 			},
 		},
 		5*time.Second,
@@ -122,7 +119,9 @@ func TestClientInitiatedSessionDestruction(t *testing.T) {
 	)
 
 	// Wait for the client-side session creation callback to be executed
-	sessionCreationCallback.Wait()
+	if err := sessionCreationCallbackCalled.Wait(); err != nil {
+		t.Fatal("Session creation callback not called")
+	}
 
 	// Ensure the session was locally created
 	currentSessionAfterCreation := client.Session()
@@ -154,7 +153,9 @@ func TestClientInitiatedSessionDestruction(t *testing.T) {
 	}
 
 	// Wait for the client-side session destruction callback to be called
-	sessionDestructionCallback.Wait()
+	if err := sessionDestructionCallbackCalled.Wait(); err != nil {
+		t.Fatal("Session destruction callback not called")
+	}
 
 	/*****************************************************************\
 		Step 4 - Destruction Verification

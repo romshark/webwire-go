@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"sync"
 	"testing"
 	"time"
 
@@ -16,8 +15,7 @@ import (
 // and is able to receives requests and signals, create sessions
 // and identify clients during request- and signal handling
 func TestAuthentication(t *testing.T) {
-	var clientSignal sync.WaitGroup
-	clientSignal.Add(1)
+	clientSignalReceived := NewPending(1, 1*time.Second, true)
 	var createdSession *webwire.Session
 	expectedCredentials := []byte("secret_credentials")
 	expectedConfirmation := []byte("session_is_correct")
@@ -28,7 +26,7 @@ func TestAuthentication(t *testing.T) {
 		t,
 		webwire.Hooks{
 			OnSignal: func(ctx context.Context) {
-				defer clientSignal.Done()
+				defer clientSignalReceived.Done()
 				// Extract request message and requesting client from the context
 				msg := ctx.Value(webwire.MESSAGE).(webwire.Message)
 				compareSessions(t, createdSession, msg.Client.Session)
@@ -106,5 +104,8 @@ func TestAuthentication(t *testing.T) {
 	if err := client.Signal(expectedCredentials); err != nil {
 		t.Fatalf("Request failed: %s", err)
 	}
-	clientSignal.Wait()
+
+	if err := clientSignalReceived.Wait(); err != nil {
+		t.Fatal("Client signal not received")
+	}
 }

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"sync"
 	"testing"
 	"time"
 
@@ -14,8 +13,7 @@ import (
 
 // TestClientOnSessionCreated verifies the OnSessionCreated hook of the client is called properly.
 func TestClientOnSessionCreated(t *testing.T) {
-	var hook sync.WaitGroup
-	hook.Add(1)
+	hookCalled := NewPending(1, 1*time.Second, true)
 	var createdSession *webwire.Session
 	var sessionFromHook *webwire.Session
 
@@ -50,7 +48,7 @@ func TestClientOnSessionCreated(t *testing.T) {
 		webwireClient.Hooks{
 			OnSessionCreated: func(newSession *webwire.Session) {
 				sessionFromHook = newSession
-				hook.Done()
+				hookCalled.Done()
 			},
 		},
 		5*time.Second,
@@ -69,7 +67,9 @@ func TestClientOnSessionCreated(t *testing.T) {
 	createdSession = &tmp
 
 	// Verify client session
-	hook.Wait()
+	if err := hookCalled.Wait(); err != nil {
+		t.Fatal("Hook not called")
+	}
 
 	// Compare the actual created session with the session received in the hook
 	compareSessions(t, createdSession, sessionFromHook)

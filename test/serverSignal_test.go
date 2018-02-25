@@ -2,7 +2,6 @@ package test
 
 import (
 	"os"
-	"sync"
 	"testing"
 	"time"
 
@@ -16,8 +15,7 @@ func TestServerSignal(t *testing.T) {
 	expectedSignalPayload := []byte("webwire_test_SERVER_SIGNAL_payload")
 	var addr string
 	var server *webwire.Server
-	var finish sync.WaitGroup
-	finish.Add(1)
+	serverSignalArrived := NewPending(1, 1*time.Second, true)
 	initClient := make(chan bool, 1)
 	sendSignal := make(chan bool, 1)
 
@@ -27,19 +25,6 @@ func TestServerSignal(t *testing.T) {
 			t,
 			webwire.Hooks{
 				OnClientConnected: func(client *webwire.Client) {
-
-					// Verify client is listed
-					/*
-						if server.ClientsNum() != 1 {
-							finish.Done()
-							t.Fatalf(
-								"Unexpected list of connected clients (%d), "+
-									"expected 1 client to be connected",
-								server.ClientsNum(),
-							)
-						}
-					*/
-
 					// Send signal
 					if err := client.Signal(expectedSignalPayload); err != nil {
 						t.Fatalf("Couldn't send signal to client: %s", err)
@@ -75,7 +60,7 @@ func TestServerSignal(t *testing.T) {
 				)
 
 				// Synchronize, unlock main goroutine to pass the test case
-				finish.Done()
+				serverSignalArrived.Done()
 			},
 		},
 		5*time.Second,
@@ -94,5 +79,7 @@ func TestServerSignal(t *testing.T) {
 	sendSignal <- true
 
 	// Synchronize, await signal arrival
-	finish.Wait()
+	if err := serverSignalArrived.Wait(); err != nil {
+		t.Fatal("Server signal didn't arrive")
+	}
 }

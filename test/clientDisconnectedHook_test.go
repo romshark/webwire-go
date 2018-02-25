@@ -2,7 +2,6 @@ package test
 
 import (
 	"os"
-	"sync"
 	"testing"
 	"time"
 
@@ -13,8 +12,7 @@ import (
 // TestClientDisconnectedHook verifies the server is calling the
 // onClientDisconnected hook properly
 func TestClientDisconnectedHook(t *testing.T) {
-	var disconnectedHook sync.WaitGroup
-	disconnectedHook.Add(1)
+	disconnectedHookCalled := NewPending(1, 1*time.Second, true)
 	var connectedClient *webwire.Client
 
 	// Initialize webwire server given only the request
@@ -33,7 +31,7 @@ func TestClientDisconnectedHook(t *testing.T) {
 						connectedClient,
 					)
 				}
-				disconnectedHook.Done()
+				disconnectedHookCalled.Done()
 			},
 		},
 	)
@@ -57,5 +55,7 @@ func TestClientDisconnectedHook(t *testing.T) {
 	client.Close()
 
 	// Await the onClientDisconnected hook to be called on the server
-	disconnectedHook.Wait()
+	if err := disconnectedHookCalled.Wait(); err != nil {
+		t.Fatal("server.OnClientDisconnected hook not called")
+	}
 }

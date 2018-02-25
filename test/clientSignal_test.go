@@ -14,7 +14,7 @@ import (
 // and receives signals correctly
 func TestClientSignal(t *testing.T) {
 	expectedSignalPayload := []byte("webwire_test_SIGNAL_payload")
-	wait := make(chan bool)
+	signalArrived := NewPending(1, 1*time.Second, true)
 
 	// Initialize webwire server given only the signal handler
 	server := setupServer(
@@ -33,7 +33,7 @@ func TestClientSignal(t *testing.T) {
 				)
 
 				// Synchronize, notify signal arrival
-				wait <- true
+				signalArrived.Done()
 			},
 		},
 	)
@@ -55,5 +55,7 @@ func TestClientSignal(t *testing.T) {
 	}
 
 	// Synchronize, await signal arrival
-	<-wait
+	if err := signalArrived.Wait(); err != nil {
+		t.Fatal("Signal didn't arrive")
+	}
 }
