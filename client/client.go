@@ -1,6 +1,8 @@
 package client
 
 import (
+	"sync/atomic"
+
 	webwire "github.com/qbeon/webwire-go"
 	reqman "github.com/qbeon/webwire-go/requestManager"
 
@@ -59,6 +61,7 @@ func extractMessageIdentifier(message []byte) (arr [32]byte) {
 // Client represents an instance of one of the servers clients
 type Client struct {
 	serverAddr     string
+	isConnected    int32
 	defaultTimeout time.Duration
 	hooks          Hooks
 	session        *webwire.Session
@@ -85,6 +88,7 @@ func NewClient(
 
 	return Client{
 		serverAddr,
+		0,
 		defaultTimeout,
 		hooks,
 		nil,
@@ -216,12 +220,18 @@ func (clt *Client) verifyProtocolVersion() error {
 	return nil
 }
 
+// IsConnected returns true if the client is connected to the server, otherwise false is returned
+func (clt *Client) IsConnected() bool {
+	if atomic.LoadInt32(&clt.isConnected) > 0 {
+		return true
+	}
+	return false
+}
+
 // Connect connects the client to the configured server and
 // returns an error in case of a connection failure
 func (clt *Client) Connect() (err error) {
-	clt.lock.Lock()
-	defer clt.lock.Unlock()
-	if clt.conn != nil {
+	if atomic.LoadInt32(&clt.isConnected) > 0 {
 		return nil
 	}
 
@@ -230,6 +240,10 @@ func (clt *Client) Connect() (err error) {
 	}
 
 	connURL := url.URL{Scheme: "ws", Host: clt.serverAddr, Path: "/"}
+
+	clt.lock.Lock()
+	defer clt.lock.Unlock()
+
 	clt.conn, _, err = websocket.DefaultDialer.Dial(connURL.String(), nil)
 	if err != nil {
 		// TODO: return typed error ConnectionFailure
@@ -262,6 +276,7 @@ func (clt *Client) Connect() (err error) {
 		}
 	}()
 
+	atomic.StoreInt32(&clt.isConnected, 1)
 	return nil
 }
 
@@ -404,11 +419,13 @@ func (clt *Client) CloseSession() error {
 // Close gracefully closes the connection.
 // Does nothing if the client isn't connected
 func (clt *Client) Close() {
-	clt.lock.Lock()
-	if clt.conn == nil {
+	if atomic.LoadInt32(&clt.isConnected) < 1 {
 		return
 	}
-	clt.conn.Close()
-	clt.conn = nil
+	clt.lock.Lock()
+	if err := clt.conn.Close(); err != nil {
+		clt.errorLog.Printf("Failed closing connection: %s", err)
+	}
+	atomic.StoreInt32(&clt.isConnected, 0)
 	clt.lock.Unlock()
 }
