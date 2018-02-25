@@ -53,38 +53,43 @@ func (clt *Client) Signal(payload []byte) error {
 }
 
 // CreateSession creates a new session for this client.
-// It automatically synchronizes the new session to the client.
+// It automatically synchronizes the new session to the remote client.
 // The synchronization happens asynchronously using a signal
 // and doesn't block the calling goroutine.
 // Returns an error if there's already another session active
-func (clt *Client) CreateSession(session *Session) error {
+func (clt *Client) CreateSession(attachment interface{}) error {
+	if !clt.srv.sessionsEnabled {
+		return fmt.Errorf("Sessions disabled")
+	}
+
+	// Abort if there's already another active session
 	if clt.Session != nil {
 		return fmt.Errorf(
 			"Another session (%s) on this client is already active",
 			clt.Session.Key,
 		)
 	}
-	if err := clt.srv.registerSession(clt, session); err != nil {
-		return fmt.Errorf("Couldn't create session: %s", err)
-	}
-	clt.Session = session
 
-	// Encode session into JSON
-	encoded, err := json.Marshal(*clt.Session)
+	// Create a new session
+	newSession := NewSession(attachment)
+
+	// Try to serialize the session
+	encoded, err := json.Marshal(&newSession)
 	if err != nil {
 		return fmt.Errorf("Couldn't marshal session object: %s", err)
 	}
 
-	// Notify client about the session creation
+	// Try to notify the remote client about the session creation
 	var msg bytes.Buffer
 	msg.WriteRune(MsgSessionCreated)
 	msg.Write(encoded)
 	if err := clt.write(websocket.TextMessage, msg.Bytes()); err != nil {
-		return fmt.Errorf(
-			"Couldn't notify client about the session creation: %s",
-			err,
-		)
+		return fmt.Errorf("Couldn't notify client about the session creation: %s", err)
 	}
+
+	// Register the session
+	clt.Session = &newSession
+	clt.srv.registerSession(clt)
 
 	return nil
 }
@@ -109,13 +114,14 @@ func (clt *Client) notifySessionClosed() error {
 // and doesn't block the calling goroutine.
 // Does nothing if there's no active session
 func (clt *Client) CloseSession() error {
+	if !clt.srv.sessionsEnabled {
+		return fmt.Errorf("Sessions disabled")
+	}
 	if clt.Session == nil {
 		return nil
 	}
 
-	if err := clt.srv.deregisterSession(clt); err != nil {
-		return fmt.Errorf("Couldn't close session: %s", err)
-	}
+	clt.srv.deregisterSession(clt)
 	clt.Session = nil
 
 	return clt.notifySessionClosed()

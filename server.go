@@ -41,17 +41,22 @@ type Hooks struct {
 	OnRequest func(ctx context.Context) (response []byte, err *Error)
 
 	// OnSessionCreated is a required hook for sessions to be supported.
-	// It's invoked right after the creation of a new session.
-	// The WebWire server isn't responsible for storing the sessions it creates,
-	// the user must save the given session in this hook either to a database,
+	// It's invoked right after the synchronisation of the new session to the remote client.
+	// The WebWire server isn't responsible for permanently storing the sessions it creates,
+	// it's up to the user to save the given session in this hook either to a database,
 	// a filesystem or any other kind of persistent or volatile storage
-	// for onSessionLookup to later be able to restore it by the session key
+	// for OnSessionLookup to later be able to restore it by the session key.
+	// If OnSessionCreated fails returning an error then the failure is logged
+	// but the session isn't destroyed and remains active.
+	// The only consequence of OnSessionCreation failing is that the server won't be able
+	// to restore the session after the client is disconnected
 	OnSessionCreated func(client *Client) error
 
 	// OnSessionLookup is a required hook for sessions to be supported.
 	// It's invoked when the server is looking for a specific session given its key.
 	// The user is responsible for returning the exact copy of the session object
-	// associated with the given key for sessions to be restorable
+	// associated with the given key for sessions to be restorable.
+	// If OnSessionLookup fails returning an error then the failure is logged
 	OnSessionLookup func(key string) (*Session, error)
 
 	// OnSessionClosed is a required hook for sessions to be supported.
@@ -59,6 +64,7 @@ type Hooks struct {
 	// is closed (thus destroyed) either by the server or the client himself.
 	// The user is responsible for removing the current session of the given client
 	// from its storage for the session to be actually and properly destroyed.
+	// If OnSessionClosed fails returning an error then the failure is logged
 	OnSessionClosed func(client *Client) error
 }
 
@@ -210,6 +216,14 @@ func (ln tcpKeepAliveListener) Accept() (c net.Conn, err error) {
 // handleSessionRestore handles session restoration (by session key) requests
 // and returns an error if the ongoing connection cannot be proceeded
 func (srv *Server) handleSessionRestore(msg *Message) error {
+	if !srv.sessionsEnabled {
+		msg.fail(Error{
+			"SESSIONS_DISABLED",
+			"Sessions are disabled on this server instance",
+		})
+		return nil
+	}
+
 	key := string(msg.Payload)
 
 	sessionExists := srv.SessionRegistry.Exists(key)
@@ -257,24 +271,21 @@ func (srv *Server) handleSessionRestore(msg *Message) error {
 // handleSessionClosure handles session destruction requests
 // and returns an error if the ongoing connection cannot be proceeded
 func (srv *Server) handleSessionClosure(msg *Message) error {
+	if !srv.sessionsEnabled {
+		msg.fail(Error{
+			"SESSIONS_DISABLED",
+			"Sessions are disabled on this server instance",
+		})
+		return nil
+	}
+
 	if msg.Client.Session == nil {
 		// Send confirmation even though no session was closed
 		msg.fulfill(nil)
 		return nil
 	}
 
-	if err := srv.deregisterSession(msg.Client); err != nil {
-		msg.fail(Error{
-			"INTERNAL_ERROR",
-			fmt.Sprintf(
-				"Session destruction request not could have been fulfilled",
-			),
-		})
-		return fmt.Errorf(
-			"CRITICAL: Internal server error, session destruction failed: %s",
-			err,
-		)
-	}
+	srv.deregisterSession(msg.Client)
 
 	// Synchronize session destruction to the client
 	if err := msg.Client.notifySessionClosed(); err != nil {
@@ -424,23 +435,19 @@ func (srv *Server) ServeHTTP(
 	}
 }
 
-func (srv *Server) registerSession(clt *Client, session *Session) error {
-	clt.Session = session
+func (srv *Server) registerSession(clt *Client) {
 	srv.SessionRegistry.register(clt)
-	err := srv.hooks.OnSessionCreated(clt)
-	if err != nil {
-		return fmt.Errorf("Couldn't save session: %s", err)
+	// Execute session creation hook
+	if err := srv.hooks.OnSessionCreated(clt); err != nil {
+		srv.errorLog.Printf("OnSessionCreated hook failed: %s", err)
 	}
-	return nil
 }
 
-func (srv *Server) deregisterSession(clt *Client) error {
+func (srv *Server) deregisterSession(clt *Client) {
 	srv.SessionRegistry.deregister(clt)
-	err := srv.hooks.OnSessionClosed(clt)
-	if err != nil {
-		return fmt.Errorf("CRITICAL: Session closure handler failed: %s", err)
+	if err := srv.hooks.OnSessionClosed(clt); err != nil {
+		srv.errorLog.Printf("OnSessionClosed hook failed: %s", err)
 	}
-	return nil
 }
 
 // Run will launch the server blocking the calling goroutine

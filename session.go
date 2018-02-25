@@ -4,7 +4,6 @@ import (
 	cryptoRand "crypto/rand"
 	"encoding/base64"
 	"fmt"
-	"github.com/qbeon/webwire-go/ostype"
 	"time"
 )
 
@@ -40,24 +39,16 @@ func GenerateSessionKey() string {
 // If the key is empty the session is invalid.
 // Info can contain arbitrary attached data
 type Session struct {
-	Key             string                 `json:"key"`
-	OperatingSystem ostype.OperatingSystem `json:"os"`
-	UserAgent       string                 `json:"ua"`
-	CreationDate    time.Time              `json:"crt"`
-	Info            interface{}            `json:"inf"`
+	Key          string      `json:"key"`
+	CreationDate time.Time   `json:"crt"`
+	Info         interface{} `json:"inf"`
 }
 
 // NewSession generates a new session object
 // generating a cryptographically random secure key
-func NewSession(
-	operatingSystem ostype.OperatingSystem,
-	userAgent string,
-	info interface{},
-) Session {
+func NewSession(info interface{}) Session {
 	return Session{
 		GenerateSessionKey(),
-		operatingSystem,
-		userAgent,
 		time.Now(),
 		info,
 	}

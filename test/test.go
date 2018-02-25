@@ -53,33 +53,10 @@ func compareSessions(t *testing.T, expected, actual *webwire.Session) {
 			expected.Key,
 			actual.Key,
 		)
+	} else if actual.CreationDate.Unix() != expected.CreationDate.Unix() {
+		t.Errorf("Session creation dates differ:\n expected: '%s'\n actual:   '%s'",
+			expected.CreationDate,
+			actual.CreationDate,
+		)
 	}
-	// TODO: get session creation time from actual server time
-	/*
-		else if actual.CreationDate != expected.CreationDate {
-			t.Errorf("Session creation dates differ:\n expected: '%s'\n actual:   '%s'",
-				expected.CreationDate,
-				actual.CreationDate,
-			)
-		}
-	*/
-	// TODO: implement user agent, OS and info comparison
-	/*
-		else if actual.UserAgent != expected.UserAgent {
-			t.Errorf("Session user agents differ:\n expected: '%s'\n actual:   '%s'",
-				expected.UserAgent,
-				actual.UserAgent,
-			)
-		} else if actual.OperatingSystem != expected.OperatingSystem {
-			t.Errorf("Session operating systems differ:\n expected: '%v'\n actual:   '%v'",
-				expected.OperatingSystem,
-				actual.OperatingSystem,
-			)
-		} else if !reflect.DeepEqual(expected.Info, actual.Info) {
-			t.Errorf("Session info differs:\n expected: '%v'\n actual:   '%v'",
-				expected.Info,
-				actual.Info,
-			)
-		}
-	*/
 }

@@ -10,7 +10,6 @@ import (
 
 	webwire "github.com/qbeon/webwire-go"
 	webwireClient "github.com/qbeon/webwire-go/client"
-	ostype "github.com/qbeon/webwire-go/ostype"
 )
 
 // TestAuthentication verifies the server is connectable,
@@ -44,17 +43,8 @@ func TestAuthentication(t *testing.T) {
 					return expectedConfirmation, nil
 				}
 
-				// Create a new session
-				newSession := webwire.NewSession(
-					ostype.Unknown,
-					"user agent",
-					nil,
-				)
-				createdSession = &newSession
-
-				// Try to register the newly created session
-				// and bind it to the client
-				if err := msg.Client.CreateSession(createdSession); err != nil {
+				// Try to create a new session
+				if err := msg.Client.CreateSession(nil); err != nil {
 					return nil, &webwire.Error{
 						Code:    "INTERNAL_ERROR",
 						Message: fmt.Sprintf("Internal server error: %s", err),
@@ -65,19 +55,12 @@ func TestAuthentication(t *testing.T) {
 				currentStep = 2
 
 				// Return the key of the newly created session
-				return []byte(createdSession.Key), nil
+				return []byte(msg.Client.Session.Key), nil
 			},
-			OnSessionCreated: func(clt *webwire.Client) error {
-				// Verify the session
-				compareSessions(t, createdSession, clt.Session)
-				return nil
-			},
-			OnSessionLookup: func(_ string) (*webwire.Session, error) {
-				return nil, nil
-			},
-			OnSessionClosed: func(_ *webwire.Client) error {
-				return nil
-			},
+			// Define dummy hooks to enable sessions on this server
+			OnSessionCreated: func(_ *webwire.Client) error { return nil },
+			OnSessionLookup:  func(_ string) (*webwire.Session, error) { return nil, nil },
+			OnSessionClosed:  func(_ *webwire.Client) error { return nil },
 		},
 	)
 	go server.Run()
@@ -97,6 +80,9 @@ func TestAuthentication(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Request failed: %s", err)
 	}
+
+	tmp := client.Session()
+	createdSession = &tmp
 
 	// Verify reply
 	comparePayload(

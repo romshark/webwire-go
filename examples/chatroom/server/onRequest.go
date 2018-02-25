@@ -8,7 +8,6 @@ import (
 
 	webwire "github.com/qbeon/webwire-go"
 	"github.com/qbeon/webwire-go/examples/chatroom/shared"
-	ostype "github.com/qbeon/webwire-go/ostype"
 )
 
 // onRequest handles incoming client requests
@@ -56,17 +55,9 @@ func onRequest(ctx context.Context) ([]byte, *webwire.Error) {
 	}
 
 	// Finally create a new session
-	newSession := webwire.NewSession(
-		ostype.Unknown,
-		"unknown user agent",
-		map[string]string{
-			"username": credentials.Name,
-		},
-	)
-	createdSession := &newSession
-
-	// Try to register the newly created session and bind it to the client
-	if err := client.CreateSession(createdSession); err != nil {
+	if err := client.CreateSession(map[string]string{
+		"username": credentials.Name,
+	}); err != nil {
 		return nil, &webwire.Error{
 			Code:    "INTERNAL_ERROR",
 			Message: fmt.Sprintf("Couldn't create session: %s", err),
@@ -80,5 +71,5 @@ func onRequest(ctx context.Context) ([]byte, *webwire.Error) {
 	)
 
 	// Reply to the request
-	return []byte(newSession.Key), nil
+	return []byte(client.Session.Key), nil
 }

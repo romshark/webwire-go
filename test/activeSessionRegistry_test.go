@@ -5,21 +5,16 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"sync"
 	"testing"
 	"time"
 
 	webwire "github.com/qbeon/webwire-go"
 	webwireClient "github.com/qbeon/webwire-go/client"
-	ostype "github.com/qbeon/webwire-go/ostype"
 )
 
 // TestActiveSessionRegistry verifies that the session registry
 // of currently active sessions is properly updated
 func TestActiveSessionRegistry(t *testing.T) {
-	var clientSignal sync.WaitGroup
-	clientSignal.Add(1)
-	var createdSession *webwire.Session
 	authMsg := []byte("auth")
 	logoutMsg := []byte("logout")
 
@@ -39,17 +34,8 @@ func TestActiveSessionRegistry(t *testing.T) {
 					return nil, nil
 				}
 
-				// Create a new session
-				newSession := webwire.NewSession(
-					ostype.Unknown,
-					"user agent",
-					nil,
-				)
-				createdSession = &newSession
-
-				// Try to register the newly created session
-				// and bind it to the client
-				if err := msg.Client.CreateSession(createdSession); err != nil {
+				// Try to create a new session
+				if err := msg.Client.CreateSession(nil); err != nil {
 					return nil, &webwire.Error{
 						Code:    "INTERNAL_ERROR",
 						Message: fmt.Sprintf("Internal server error: %s", err),
@@ -57,19 +43,12 @@ func TestActiveSessionRegistry(t *testing.T) {
 				}
 
 				// Return the key of the newly created session
-				return []byte(createdSession.Key), nil
+				return []byte(msg.Client.Session.Key), nil
 			},
-			OnSessionCreated: func(clt *webwire.Client) error {
-				// Verify the session
-				compareSessions(t, createdSession, clt.Session)
-				return nil
-			},
-			OnSessionLookup: func(_ string) (*webwire.Session, error) {
-				return nil, nil
-			},
-			OnSessionClosed: func(_ *webwire.Client) error {
-				return nil
-			},
+			// Define dummy hooks for sessions to be enabled on this server
+			OnSessionCreated: func(_ *webwire.Client) error { return nil },
+			OnSessionLookup:  func(_ string) (*webwire.Session, error) { return nil, nil },
+			OnSessionClosed:  func(_ *webwire.Client) error { return nil },
 		},
 	)
 	go server.Run()
