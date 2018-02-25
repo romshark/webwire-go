@@ -22,7 +22,6 @@ func TestActiveSessionRegistry(t *testing.T) {
 	var createdSession *webwire.Session
 	authMsg := []byte("auth")
 	logoutMsg := []byte("logout")
-	currentStep := 1
 
 	// Initialize webwire server
 	server := setupServer(
@@ -56,9 +55,6 @@ func TestActiveSessionRegistry(t *testing.T) {
 						Message: fmt.Sprintf("Internal server error: %s", err),
 					}
 				}
-
-				// Authentication step is passed
-				currentStep = 2
 
 				// Return the key of the newly created session
 				return []byte(createdSession.Key), nil

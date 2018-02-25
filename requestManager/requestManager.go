@@ -1,4 +1,4 @@
-package requestManager
+package requestmanager
 
 import (
 	"fmt"
@@ -11,6 +11,7 @@ import (
 	webwire "github.com/qbeon/webwire-go"
 )
 
+// RequestIdentifier represents the universally unique minified UUIDv4 identifier of a request.
 type RequestIdentifier = [32]byte
 
 // reply is used by the request manager to represent the results
@@ -20,6 +21,7 @@ type reply struct {
 	Error *webwire.Error
 }
 
+// Request represents a request created and tracked by the request manager
 type Request struct {
 	// manager references the RequestManager instance managing this request
 	manager *RequestManager

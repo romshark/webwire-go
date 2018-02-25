@@ -222,10 +222,7 @@ func (clt *Client) verifyProtocolVersion() error {
 
 // IsConnected returns true if the client is connected to the server, otherwise false is returned
 func (clt *Client) IsConnected() bool {
-	if atomic.LoadInt32(&clt.isConnected) > 0 {
-		return true
-	}
-	return false
+	return atomic.LoadInt32(&clt.isConnected) > 0
 }
 
 // Connect connects the client to the configured server and
