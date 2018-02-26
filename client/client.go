@@ -431,26 +431,27 @@ func (clt *Client) RestoreSession(sessionKey []byte) error {
 	return nil
 }
 
-// CloseSession closes the currently active session.
+// CloseSession closes the currently active session
+// and synchronizes the closure to the server if connected.
+// If the client is not connected then the synchronization is skipped.
 // Does nothing if there's no active session
 func (clt *Client) CloseSession() error {
 	clt.opLock.Lock()
 	defer clt.opLock.Unlock()
 
-	if clt.conn == nil {
-		return fmt.Errorf("Cannot close a session of a disconnected client")
-	}
-
 	if clt.session == nil {
 		return nil
 	}
 
-	if _, err := clt.sendRequest(
-		webwire.MsgCloseSession,
-		nil,
-		clt.defaultTimeout,
-	); err != nil {
-		return fmt.Errorf("Session destruction request failed: %s", err)
+	// Synchronize session closure to the server if connected
+	if atomic.LoadInt32(&clt.isConnected) > 0 {
+		if _, err := clt.sendRequest(
+			webwire.MsgCloseSession,
+			nil,
+			clt.defaultTimeout,
+		); err != nil {
+			return fmt.Errorf("Session destruction request failed: %s", err)
+		}
 	}
 
 	// Reset session locally after destroying it on the server
