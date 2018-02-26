@@ -66,8 +66,11 @@ type Client struct {
 	hooks          Hooks
 	session        *webwire.Session
 
-	lock sync.Mutex
-	conn *websocket.Conn
+	// Operation lock synchronizes concurrent access to:
+	// Connect, RestoreSession, CloseSession and Close
+	opLock   sync.Mutex
+	connLock sync.Mutex
+	conn     *websocket.Conn
 
 	requestManager reqman.RequestManager
 
@@ -93,6 +96,7 @@ func NewClient(
 		hooks,
 		nil,
 
+		sync.Mutex{},
 		sync.Mutex{},
 		nil,
 
@@ -226,8 +230,12 @@ func (clt *Client) IsConnected() bool {
 }
 
 // Connect connects the client to the configured server and
-// returns an error in case of a connection failure
+// returns an error in case of a connection failure.
+// Automatically tries to restore the previous session
 func (clt *Client) Connect() (err error) {
+	clt.opLock.Lock()
+	defer clt.opLock.Unlock()
+
 	if atomic.LoadInt32(&clt.isConnected) > 0 {
 		return nil
 	}
@@ -238,18 +246,17 @@ func (clt *Client) Connect() (err error) {
 
 	connURL := url.URL{Scheme: "ws", Host: clt.serverAddr, Path: "/"}
 
-	clt.lock.Lock()
-	defer clt.lock.Unlock()
-
+	clt.connLock.Lock()
 	clt.conn, _, err = websocket.DefaultDialer.Dial(connURL.String(), nil)
 	if err != nil {
 		// TODO: return typed error ConnectionFailure
 		return fmt.Errorf("Could not connect: %s", err)
 	}
+	clt.connLock.Unlock()
 
 	// Setup reader thread
 	go func() {
-		defer clt.Close()
+		defer clt.close()
 		for {
 			_, message, err := clt.conn.ReadMessage()
 			if err != nil {
@@ -274,6 +281,34 @@ func (clt *Client) Connect() (err error) {
 	}()
 
 	atomic.StoreInt32(&clt.isConnected, 1)
+
+	// Try to restore session if necessary
+	if clt.session == nil {
+		return nil
+	}
+	if err := clt.sendSessionRestorationReq([]byte(clt.session.Key)); err != nil {
+		// Just log a warning and still return nil, even if session restoration failed,
+		// because we only care about the connection establishment in this method
+		clt.warningLog.Printf("Couldn't restore session on reconnection: %s", err)
+
+		// Reset the session
+		clt.session = nil
+	}
+
+	return nil
+}
+
+// sendSessionRestorationReq sends a session restoration request.
+// Expects the client to be connected beforehand
+func (clt *Client) sendSessionRestorationReq(sessionKey []byte) error {
+	if _, err := clt.sendRequest(
+		webwire.MsgRestoreSession,
+		sessionKey,
+		clt.defaultTimeout,
+	); err != nil {
+		// TODO: check for error types
+		return fmt.Errorf("Session restoration request failed: %s", err)
+	}
 	return nil
 }
 
@@ -282,10 +317,10 @@ func (clt *Client) sendRequest(
 	payload []byte,
 	timeout time.Duration,
 ) ([]byte, *webwire.Error) {
-	// Connect before attempting to send the request
-	if err := clt.Connect(); err != nil {
+	if atomic.LoadInt32(&clt.isConnected) < 1 {
 		return nil, &webwire.Error{
-			Message: fmt.Sprintf("Couldn't connect: %s", err),
+			Code:    "DISCONNECTED",
+			Message: "Trying to send a request on a disconnected socket",
 		}
 	}
 
@@ -298,9 +333,9 @@ func (clt *Client) sendRequest(
 	msg.Write(payload)
 
 	// Send request
-	clt.lock.Lock()
+	clt.connLock.Lock()
 	err := clt.conn.WriteMessage(websocket.TextMessage, msg.Bytes())
-	clt.lock.Unlock()
+	clt.connLock.Unlock()
 	if err != nil {
 		// TODO: return typed error TransmissionFailure
 		return nil, &webwire.Error{
@@ -310,6 +345,16 @@ func (clt *Client) sendRequest(
 
 	// Block until request either times out or a response is received
 	return request.AwaitReply()
+}
+
+func (clt *Client) close() {
+	if atomic.LoadInt32(&clt.isConnected) < 1 {
+		return
+	}
+	if err := clt.conn.Close(); err != nil {
+		clt.errorLog.Printf("Failed closing connection: %s", err)
+	}
+	atomic.StoreInt32(&clt.isConnected, 0)
 }
 
 // Request sends a request containing the given payload to the server
@@ -340,16 +385,15 @@ func (clt *Client) TimedRequest(
 // Attempts to automatically connect to the server
 // if no connection has yet been established
 func (clt *Client) Signal(payload []byte) error {
-	// Connect before attempting to send the signal
-	if err := clt.Connect(); err != nil {
-		return fmt.Errorf("Couldn't connect to server")
+	if atomic.LoadInt32(&clt.isConnected) < 1 {
+		return fmt.Errorf("Trying to send a signal on a disconnected client")
 	}
 
 	var msg bytes.Buffer
 	msg.WriteRune(webwire.MsgSignal)
 	msg.Write(payload)
-	clt.lock.Lock()
-	defer clt.lock.Unlock()
+	clt.connLock.Lock()
+	defer clt.connLock.Unlock()
 	return clt.conn.WriteMessage(websocket.TextMessage, msg.Bytes())
 }
 
@@ -371,16 +415,15 @@ func (clt *Client) PendingRequests() int {
 // Attempts to automatically connect to the server
 // if no connection has yet been established
 func (clt *Client) RestoreSession(sessionKey []byte) error {
+	clt.opLock.Lock()
+	defer clt.opLock.Unlock()
+
 	// Connect before attempting session restoration
 	if err := clt.Connect(); err != nil {
 		return fmt.Errorf("Couldn't connect: %s", err)
 	}
 
-	if _, err := clt.sendRequest(
-		webwire.MsgRestoreSession,
-		sessionKey,
-		clt.defaultTimeout,
-	); err != nil {
+	if err := clt.sendSessionRestorationReq(sessionKey); err != nil {
 		// TODO: check for error types
 		return fmt.Errorf("Session restoration request failed: %s", err)
 	}
@@ -391,6 +434,9 @@ func (clt *Client) RestoreSession(sessionKey []byte) error {
 // CloseSession closes the currently active session.
 // Does nothing if there's no active session
 func (clt *Client) CloseSession() error {
+	clt.opLock.Lock()
+	defer clt.opLock.Unlock()
+
 	if clt.conn == nil {
 		return fmt.Errorf("Cannot close a session of a disconnected client")
 	}
@@ -416,13 +462,7 @@ func (clt *Client) CloseSession() error {
 // Close gracefully closes the connection.
 // Does nothing if the client isn't connected
 func (clt *Client) Close() {
-	if atomic.LoadInt32(&clt.isConnected) < 1 {
-		return
-	}
-	clt.lock.Lock()
-	if err := clt.conn.Close(); err != nil {
-		clt.errorLog.Printf("Failed closing connection: %s", err)
-	}
-	atomic.StoreInt32(&clt.isConnected, 0)
-	clt.lock.Unlock()
+	clt.opLock.Lock()
+	defer clt.opLock.Unlock()
+	clt.close()
 }

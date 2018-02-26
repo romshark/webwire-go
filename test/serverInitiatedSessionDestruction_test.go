@@ -124,6 +124,10 @@ func TestServerInitiatedSessionDestruction(t *testing.T) {
 	/*****************************************************************\
 		Step 1 - Session Creation
 	\*****************************************************************/
+	if err := client.Connect(); err != nil {
+		t.Fatalf("Couldn't connect: %s", err)
+	}
+
 	// Send authentication request
 	authReqReply, err := client.Request(expectedCredentials)
 	if err != nil {

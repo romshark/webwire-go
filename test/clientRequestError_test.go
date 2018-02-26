@@ -41,6 +41,10 @@ func TestClientRequestError(t *testing.T) {
 		os.Stderr,
 	)
 
+	if err := client.Connect(); err != nil {
+		t.Fatalf("Couldn't connect: %s", err)
+	}
+
 	// Send request and await reply
 	reply, err := client.Request(expectedRequestPayload)
 

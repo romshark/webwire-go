@@ -73,6 +73,10 @@ func TestAuthentication(t *testing.T) {
 	)
 	defer client.Close()
 
+	if err := client.Connect(); err != nil {
+		t.Fatalf("Couldn't connect: %s", err)
+	}
+
 	// Send authentication request and await reply
 	authReqReply, err := client.Request(expectedCredentials)
 	if err != nil {

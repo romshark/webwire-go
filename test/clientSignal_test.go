@@ -48,6 +48,10 @@ func TestClientSignal(t *testing.T) {
 		os.Stderr,
 	)
 
+	if err := client.Connect(); err != nil {
+		t.Fatalf("Couldn't connect: %s", err)
+	}
+
 	// Send signal
 	err := client.Signal(expectedSignalPayload)
 	if err != nil {

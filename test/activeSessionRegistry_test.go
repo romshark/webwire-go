@@ -63,6 +63,10 @@ func TestActiveSessionRegistry(t *testing.T) {
 	)
 	defer client.Close()
 
+	if err := client.Connect(); err != nil {
+		t.Fatalf("Couldn't connect: %s", err)
+	}
+
 	// Send authentication request
 	if _, err := client.Request(authMsg); err != nil {
 		t.Fatalf("Request failed: %s", err)

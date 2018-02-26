@@ -57,6 +57,10 @@ func TestClientOnSessionCreated(t *testing.T) {
 	)
 	defer client.Close()
 
+	if err := client.Connect(); err != nil {
+		t.Fatalf("Couldn't connect: %s", err)
+	}
+
 	// Send request and await reply
 	_, err := client.Request([]byte("credentials"))
 	if err != nil {
