@@ -123,7 +123,7 @@ func TestClientOfflineSessionClosure(t *testing.T) {
 	currentStep = 2
 
 	if err := client.CloseSession(); err != nil {
-		t.Fatal("Offline session closure failed: %s", err)
+		t.Fatalf("Offline session closure failed: %s", err)
 	}
 
 	// Ensure the session is removed
