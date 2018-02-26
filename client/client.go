@@ -192,6 +192,9 @@ func (clt *Client) Signal(payload []byte) error {
 
 // Session returns information about the current session
 func (clt *Client) Session() webwire.Session {
+	clt.opLock.Lock()
+	defer clt.opLock.Unlock()
+
 	if clt.session == nil {
 		return webwire.Session{}
 	}
@@ -210,11 +213,6 @@ func (clt *Client) PendingRequests() int {
 func (clt *Client) RestoreSession(sessionKey []byte) error {
 	clt.opLock.Lock()
 	defer clt.opLock.Unlock()
-
-	// Connect before attempting session restoration
-	if err := clt.Connect(); err != nil {
-		return fmt.Errorf("Couldn't connect: %s", err)
-	}
 
 	if err := clt.sendSessionRestorationReq(sessionKey); err != nil {
 		// TODO: check for error types
