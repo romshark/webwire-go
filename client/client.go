@@ -7,12 +7,9 @@ import (
 	reqman "github.com/qbeon/webwire-go/requestManager"
 
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
-	"net/http"
 	"net/url"
 	"sync"
 	"time"
@@ -21,42 +18,6 @@ import (
 )
 
 const supportedProtocolVersion = "1.0"
-
-// Hooks represents all callback hook functions
-type Hooks struct {
-	// OnServerSignal is an optional callback.
-	// It's invoked when the webwire client receives a signal from the server
-	OnServerSignal func([]byte)
-
-	// OnSessionCreated is an optional callback.
-	// It's invoked when the webwire client receives a new session
-	OnSessionCreated func(*webwire.Session)
-
-	// OnSessionClosed is an optional callback.
-	// It's invoked when the clients session was closed
-	// either by the server or by himself
-	OnSessionClosed func()
-}
-
-// SetDefaults sets undefined required hooks
-func (hooks *Hooks) SetDefaults() {
-	if hooks.OnServerSignal == nil {
-		hooks.OnServerSignal = func(_ []byte) {}
-	}
-
-	if hooks.OnSessionCreated == nil {
-		hooks.OnSessionCreated = func(_ *webwire.Session) {}
-	}
-
-	if hooks.OnSessionClosed == nil {
-		hooks.OnSessionClosed = func() {}
-	}
-}
-
-func extractMessageIdentifier(message []byte) (arr [32]byte) {
-	copy(arr[:], message[1:33])
-	return arr
-}
 
 // Client represents an instance of one of the servers clients
 type Client struct {
@@ -113,115 +74,6 @@ func NewClient(
 			log.Ldate|log.Ltime|log.Lshortfile,
 		),
 	}
-}
-
-func (clt *Client) handleSessionCreated(message []byte) {
-	// Set new session
-	var session webwire.Session
-
-	if err := json.Unmarshal(message, &session); err != nil {
-		clt.errorLog.Printf("Failed unmarshalling session object: %s", err)
-		return
-	}
-
-	clt.session = &session
-	clt.hooks.OnSessionCreated(&session)
-}
-
-func (clt *Client) handleSessionClosed() {
-	// Destroy local session
-	clt.session = nil
-
-	clt.hooks.OnSessionClosed()
-}
-
-func (clt *Client) handleFailure(message []byte) {
-	// Decode error
-	var replyErr webwire.Error
-	if err := json.Unmarshal(message[33:], &replyErr); err != nil {
-		clt.errorLog.Printf("Failed unmarshalling error reply: %s", err)
-	}
-
-	// Fail request
-	clt.requestManager.Fail(extractMessageIdentifier(message), replyErr)
-}
-
-func (clt *Client) handleReply(message []byte) {
-	clt.requestManager.Fulfill(extractMessageIdentifier(message), message[33:])
-}
-
-func (clt *Client) handleMessage(message []byte) error {
-	if len(message) < 1 {
-		return nil
-	}
-	switch message[0:1][0] {
-	case webwire.MsgReply:
-		clt.handleReply(message)
-	case webwire.MsgErrorReply:
-		clt.handleFailure(message)
-	case webwire.MsgSignal:
-		clt.hooks.OnServerSignal(message[1:])
-	case webwire.MsgSessionCreated:
-		clt.handleSessionCreated(message[1:])
-	case webwire.MsgSessionClosed:
-		clt.handleSessionClosed()
-	default:
-		clt.warningLog.Printf(
-			"Strange message type received: '%c'\n",
-			message[0:1][0],
-		)
-	}
-	return nil
-}
-
-// verifyProtocolVersion requests the endpoint metadata
-// to verify the server is running a supported protocol version
-func (clt *Client) verifyProtocolVersion() error {
-	// Initialize HTTP client
-	var httpClient = &http.Client{
-		Timeout: time.Second * 10,
-	}
-
-	request, err := http.NewRequest(
-		"WEBWIRE", "http://"+clt.serverAddr+"/", nil,
-	)
-	if err != nil {
-		return fmt.Errorf("Couldn't create HTTP metadata request: %s", err)
-	}
-	response, err := httpClient.Do(request)
-	if err != nil {
-		return fmt.Errorf("Endpoint metadata request failed: %s", err)
-	}
-
-	// Read response body
-	defer response.Body.Close()
-	encodedData, err := ioutil.ReadAll(response.Body)
-	if err != nil {
-		return fmt.Errorf("Couldn't read metadata response body: %s", err)
-	}
-
-	// Unmarshal response
-	var metadata struct {
-		ProtocolVersion string `json:"protocol-version"`
-	}
-	if err := json.Unmarshal(encodedData, &metadata); err != nil {
-		return fmt.Errorf(
-			"Couldn't parse HTTP metadata response ('%s'): %s",
-			string(encodedData),
-			err,
-		)
-	}
-
-	// Verify metadata
-	if metadata.ProtocolVersion != supportedProtocolVersion {
-		return fmt.Errorf(
-			"Unsupported protocol version: %s (%s is supported by this client)",
-			metadata.ProtocolVersion,
-			supportedProtocolVersion,
-		)
-	}
-
-	return nil
 }
 
 // IsConnected returns true if the client is connected to the server, otherwise false is returned
@@ -296,65 +148,6 @@ func (clt *Client) Connect() (err error) {
 	}
 
 	return nil
-}
-
-// sendSessionRestorationReq sends a session restoration request.
-// Expects the client to be connected beforehand
-func (clt *Client) sendSessionRestorationReq(sessionKey []byte) error {
-	if _, err := clt.sendRequest(
-		webwire.MsgRestoreSession,
-		sessionKey,
-		clt.defaultTimeout,
-	); err != nil {
-		// TODO: check for error types
-		return fmt.Errorf("Session restoration request failed: %s", err)
-	}
-	return nil
-}
-
-func (clt *Client) sendRequest(
-	messageType rune,
-	payload []byte,
-	timeout time.Duration,
-) ([]byte, *webwire.Error) {
-	if atomic.LoadInt32(&clt.isConnected) < 1 {
-		return nil, &webwire.Error{
-			Code:    "DISCONNECTED",
-			Message: "Trying to send a request on a disconnected socket",
-		}
-	}
-
-	request := clt.requestManager.Create(timeout)
-	reqIdentifier := request.Identifier()
-
-	var msg bytes.Buffer
-	msg.WriteRune(messageType)
-	msg.Write(reqIdentifier[:])
-	msg.Write(payload)
-
-	// Send request
-	clt.connLock.Lock()
-	err := clt.conn.WriteMessage(websocket.TextMessage, msg.Bytes())
-	clt.connLock.Unlock()
-	if err != nil {
-		// TODO: return typed error TransmissionFailure
-		return nil, &webwire.Error{
-			Message: fmt.Sprintf("Couldn't send message: %s", err),
-		}
-	}
-
-	// Block until request either times out or a response is received
-	return request.AwaitReply()
-}
-
-func (clt *Client) close() {
-	if atomic.LoadInt32(&clt.isConnected) < 1 {
-		return
-	}
-	if err := clt.conn.Close(); err != nil {
-		clt.errorLog.Printf("Failed closing connection: %s", err)
-	}
-	atomic.StoreInt32(&clt.isConnected, 0)
 }
 
 // Request sends a request containing the given payload to the server
