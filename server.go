@@ -258,12 +258,23 @@ func (srv *Server) handleSessionRestore(msg *Message) error {
 		})
 		return nil
 	}
-	msg.Client.Session = session
 
+	// JSON encode the session
+	encodedSession, err := json.Marshal(session)
+	if err != nil {
+		msg.fail(Error{
+			"INTERNAL_ERROR",
+			fmt.Sprintf(
+				"Session restoration request not could have been fulfilled",
+			),
+		})
+		return fmt.Errorf("Couldn't encode session object (%v): %s", session, err)
+	}
+
+	msg.Client.Session = session
 	srv.SessionRegistry.register(msg.Client)
 
-	// Send confirmation response
-	msg.fulfill(nil)
+	msg.fulfill(encodedSession)
 
 	return nil
 }

@@ -11,8 +11,9 @@ import (
 	webwireClient "github.com/qbeon/webwire-go/client"
 )
 
-// TestAutomaticSessionRestoration verifies session restoration
-func TestAutomaticSessionRestoration(t *testing.T) {
+// TestClientAutomaticSessionRestoration verifies automatic session restoration
+// on connection establishment
+func TestClientAutomaticSessionRestoration(t *testing.T) {
 	sessionStorage := make(map[string]*webwire.Session)
 
 	currentStep := 1

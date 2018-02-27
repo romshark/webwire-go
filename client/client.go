@@ -138,7 +138,8 @@ func (clt *Client) Connect() (err error) {
 	if clt.session == nil {
 		return nil
 	}
-	if err := clt.sendSessionRestorationReq([]byte(clt.session.Key)); err != nil {
+	restoredSession, err := clt.requestSessionRestoration([]byte(clt.session.Key))
+	if err != nil {
 		// Just log a warning and still return nil, even if session restoration failed,
 		// because we only care about the connection establishment in this method
 		clt.warningLog.Printf("Couldn't restore session on reconnection: %s", err)
@@ -146,6 +147,7 @@ func (clt *Client) Connect() (err error) {
 		// Reset the session
 		clt.session = nil
 	}
+	clt.session = restoredSession
 
 	return nil
 }
@@ -153,9 +155,7 @@ func (clt *Client) Connect() (err error) {
 // Request sends a request containing the given payload to the server
 // and asynchronously returns the servers response
 // blocking the calling goroutine.
-// Returns an error if the request failed for some reason.
-// Attempts to automatically connect to the server
-// if no connection has yet been established
+// Returns an error if the request failed for some reason
 func (clt *Client) Request(payload []byte) ([]byte, *webwire.Error) {
 	return clt.sendRequest(webwire.MsgRequest, payload, clt.defaultTimeout)
 }
@@ -164,9 +164,7 @@ func (clt *Client) Request(payload []byte) ([]byte, *webwire.Error) {
 // and asynchronously returns the servers reply
 // blocking the calling goroutine.
 // Returns an error if the given timeout was exceeded awaiting the response
-// ar another failure occurred.
-// Attempts to automatically connect to the server
-// if no connection has yet been established
+// or another failure occurred
 func (clt *Client) TimedRequest(
 	payload []byte,
 	timeout time.Duration,
@@ -174,9 +172,7 @@ func (clt *Client) TimedRequest(
 	return clt.sendRequest(webwire.MsgRequest, payload, timeout)
 }
 
-// Signal sends a signal containing the given payload to the server.
-// Attempts to automatically connect to the server
-// if no connection has yet been established
+// Signal sends a signal containing the given payload to the server
 func (clt *Client) Signal(payload []byte) error {
 	if atomic.LoadInt32(&clt.isConnected) < 1 {
 		return fmt.Errorf("Trying to send a signal on a disconnected client")
@@ -206,18 +202,22 @@ func (clt *Client) PendingRequests() int {
 	return clt.requestManager.PendingRequests()
 }
 
-// RestoreSession tries to restore the previously opened session
+// RestoreSession tries to restore the previously opened session.
 // Fails if a session is currently already active
-// Attempts to automatically connect to the server
-// if no connection has yet been established
 func (clt *Client) RestoreSession(sessionKey []byte) error {
 	clt.opLock.Lock()
 	defer clt.opLock.Unlock()
 
-	if err := clt.sendSessionRestorationReq(sessionKey); err != nil {
+	if clt.session != nil {
+		return fmt.Errorf("Can't restore session if another one is already active")
+	}
+
+	restoredSession, err := clt.requestSessionRestoration(sessionKey)
+	if err != nil {
 		// TODO: check for error types
 		return fmt.Errorf("Session restoration request failed: %s", err)
 	}
+	clt.session = restoredSession
 
 	return nil
 }
