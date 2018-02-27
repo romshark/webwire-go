@@ -338,6 +338,7 @@ func (srv *Server) handleRequest(msg *Message) {
 	)
 	if err != nil {
 		msg.fail(*err)
+		return
 	}
 	msg.fulfill(response)
 }
