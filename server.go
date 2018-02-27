@@ -94,7 +94,10 @@ func (hooks *Hooks) SetDefaults() {
 	}
 
 	if hooks.OnOptions == nil {
-		hooks.OnOptions = func(resp http.ResponseWriter) {}
+		hooks.OnOptions = func(resp http.ResponseWriter) {
+			resp.Header().Set("Access-Control-Allow-Origin", "*")
+			resp.Header().Set("Access-Control-Allow-Methods", "WEBWIRE")
+		}
 	}
 }
 
@@ -342,6 +345,7 @@ func (srv *Server) handleRequest(msg *Message) {
 // handleMetadata handles endpoint metadata requests
 func (srv *Server) handleMetadata(resp http.ResponseWriter) {
 	resp.Header().Set("Content-Type", "application/json")
+	resp.Header().Set("Access-Control-Allow-Origin", "*")
 	json.NewEncoder(resp).Encode(struct {
 		ProtocolVersion string `json:"protocol-version"`
 	}{
