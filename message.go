@@ -170,7 +170,7 @@ func NewSignalMessage(name string, payload Payload) (msg []byte) {
 
 	// Check if a header padding is necessary.
 	// A padding is necessary if the payload is UTF16 encoded
-	// but not properly alligned due to a header length not divisible by 2
+	// but not properly aligned due to a header length not divisible by 2
 	headerPadding := false
 	if payload.Encoding == EncodingUtf16 && len(name)%2 != 0 {
 		headerPadding = true
@@ -232,7 +232,7 @@ func NewRequestMessage(id [8]byte, name string, payload Payload) (msg []byte) {
 
 	// Check if a header padding is necessary.
 	// A padding is necessary if the payload is UTF16 encoded
-	// but not properly alligned due to a header length not divisible by 2
+	// but not properly aligned due to a header length not divisible by 2
 	headerPadding := false
 	if payload.Encoding == EncodingUtf16 && len(name)%2 != 0 {
 		headerPadding = true
@@ -295,7 +295,7 @@ func NewReplyMessage(requestID [8]byte, payload Payload) (msg []byte) {
 
 	// Check if a header padding is necessary.
 	// A padding is necessary if the payload is UTF16 encoded
-	// but not properly alligned due to a header length not divisible by 2
+	// but not properly aligned due to a header length not divisible by 2
 	headerPadding := false
 	if payload.Encoding == EncodingUtf16 {
 		headerPadding = true
@@ -423,7 +423,7 @@ func (msg *Message) parseSignalUtf16(message []byte) error {
 
 	if len(message)%2 != 0 {
 		return fmt.Errorf(
-			"Unalligned UTF16 encoded signal message (probably missing header padding)",
+			"Unaligned UTF16 encoded signal message (probably missing header padding)",
 		)
 	}
 
@@ -523,7 +523,7 @@ func (msg *Message) parseRequestUtf16(message []byte) error {
 
 	if len(message)%2 != 0 {
 		return fmt.Errorf(
-			"Unalligned UTF16 encoded request message (probably missing header padding)",
+			"Unaligned UTF16 encoded request message (probably missing header padding)",
 		)
 	}
 
@@ -603,7 +603,7 @@ func (msg *Message) parseReplyUtf16(message []byte) error {
 
 	if len(message)%2 != 0 {
 		return fmt.Errorf(
-			"Unalligned UTF16 encoded reply message (probably missing header padding)",
+			"Unaligned UTF16 encoded reply message (probably missing header padding)",
 		)
 	}
 

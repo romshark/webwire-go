@@ -542,7 +542,7 @@ func TestMsgParseSignalUtf16(t *testing.T) {
 }
 
 // TestMsgParseSignalUtf16CorruptInput tests parsing of a named UTF16 encoded signal
-// with a corrupt unalligned input stream (length not divisible by 2)
+// with a corrupt unaligned input stream (length not divisible by 2)
 func TestMsgParseSignalUtf16CorruptInput(t *testing.T) {
 	name := genRndName()
 	payload := Payload{
