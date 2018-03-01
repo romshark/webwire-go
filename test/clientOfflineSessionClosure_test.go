@@ -22,28 +22,28 @@ func TestClientOfflineSessionClosure(t *testing.T) {
 	server := setupServer(
 		t,
 		webwire.Hooks{
-			OnRequest: func(ctx context.Context) ([]byte, *webwire.Error) {
+			OnRequest: func(ctx context.Context) (webwire.Payload, *webwire.Error) {
 				// Extract request message and requesting client from the context
-				msg := ctx.Value(webwire.MESSAGE).(webwire.Message)
+				msg := ctx.Value(webwire.Msg).(webwire.Message)
 
 				if currentStep == 2 {
 					// Expect the session to have been automatically restored
 					if msg.Client.Session != nil {
 						t.Errorf("Expected client to be anonymous")
 					}
-					return nil, nil
+					return webwire.Payload{}, nil
 				}
 
 				// Try to create a new session
 				if err := msg.Client.CreateSession(nil); err != nil {
-					return nil, &webwire.Error{
+					return webwire.Payload{}, &webwire.Error{
 						Code:    "INTERNAL_ERROR",
 						Message: fmt.Sprintf("Internal server error: %s", err),
 					}
 				}
 
 				// Return the key of the newly created session
-				return nil, nil
+				return webwire.Payload{}, nil
 			},
 			// Permanently store the session
 			OnSessionCreated: func(client *webwire.Client) error {
@@ -99,7 +99,10 @@ func TestClientOfflineSessionClosure(t *testing.T) {
 	\*****************************************************************/
 
 	// Create a new session
-	if _, err := client.Request([]byte("auth")); err != nil {
+	if _, err := client.Request(
+		"login",
+		webwire.Payload{Data: []byte("auth")},
+	); err != nil {
 		t.Fatalf("Auth request failed: %s", err)
 	}
 
@@ -138,7 +141,10 @@ func TestClientOfflineSessionClosure(t *testing.T) {
 
 	// Verify whether the previous session was restored automatically
 	// and the server authenticates the user
-	if _, err := client.Request([]byte("isrestored?")); err != nil {
+	if _, err := client.Request(
+		"verify-restored",
+		webwire.Payload{Data: []byte("isrestored?")},
+	); err != nil {
 		t.Fatalf("Second request failed: %s", err)
 	}
 }

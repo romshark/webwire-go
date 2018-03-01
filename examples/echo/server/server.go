@@ -12,14 +12,14 @@ import (
 
 var serverAddr = flag.String("addr", ":8081", "server address")
 
-func onRequest(ctx context.Context) ([]byte, *webwire.Error) {
-	msg := ctx.Value(webwire.MESSAGE).(webwire.Message)
+func onRequest(ctx context.Context) (webwire.Payload, *webwire.Error) {
+	msg := ctx.Value(webwire.Msg).(webwire.Message)
 	client := msg.Client
 
 	log.Printf("Replied to client: %s", client.RemoteAddr())
 
-	// Reply to the request
-	return append([]byte("ECHO: "), msg.Payload...), nil
+	// Reply to the request using the same data and encoding
+	return msg.Payload, nil
 }
 
 func main() {

@@ -8,6 +8,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/qbeon/webwire-go"
+
 	webwireClient "github.com/qbeon/webwire-go/client"
 )
 
@@ -29,9 +31,9 @@ func main() {
 
 		// No hooks required in this example
 		webwireClient.Hooks{
-			OnServerSignal: func(payload []byte) {
+			OnServerSignal: func(payload webwire.Payload) {
 				counter++
-				log.Printf("Signal %d received: %s", counter, string(payload))
+				log.Printf("Signal %d received: %s", counter, string(payload.Data))
 				todo.Done()
 			},
 		},

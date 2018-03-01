@@ -11,9 +11,12 @@ import (
 // and decodes the session object from the received replied.
 // Expects the client to be connected beforehand
 func (clt *Client) requestSessionRestoration(sessionKey []byte) (*webwire.Session, error) {
-	reply, err := clt.sendRequest(
+	reply, err := clt.sendNamelessRequest(
 		webwire.MsgRestoreSession,
-		sessionKey,
+		webwire.Payload{
+			Encoding: webwire.EncodingBinary,
+			Data:     sessionKey,
+		},
 		clt.defaultTimeout,
 	)
 	if err != nil {
@@ -22,10 +25,10 @@ func (clt *Client) requestSessionRestoration(sessionKey []byte) (*webwire.Sessio
 	}
 
 	var session webwire.Session
-	if err := json.Unmarshal(reply, &session); err != nil {
+	if err := json.Unmarshal(reply.Data, &session); err != nil {
 		return nil, fmt.Errorf(
 			"Couldn't unmarshal restored session from reply('%s'): %s",
-			reply,
+			string(reply.Data),
 			err,
 		)
 	}

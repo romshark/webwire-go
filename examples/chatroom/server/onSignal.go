@@ -11,16 +11,16 @@ import (
 // The server tries to identify the client by its session
 // and falls back to "anonymous" if the client has no ongoing session
 func onSignal(ctx context.Context) {
-	msg := ctx.Value(webwire.MESSAGE).(webwire.Message)
+	msg := ctx.Value(webwire.Msg).(webwire.Message)
 	client := msg.Client
 
-	msgStr := string(msg.Payload)
+	msgStr := string(msg.Payload.Data)
 
 	log.Printf(
 		"Received message from %s: '%s' (%d)",
 		client.RemoteAddr(),
 		msgStr,
-		len(msg.Payload),
+		len(msg.Payload.Data),
 	)
 
 	name := "Anonymous"

@@ -27,14 +27,24 @@ func setupServer(
 	return webwireServer
 }
 
-func comparePayload(t *testing.T, name string, expected, actual []byte) {
-	if !reflect.DeepEqual(actual, expected) {
+func comparePayload(t *testing.T, name string, expected, actual webwire.Payload) {
+	if actual.Encoding != expected.Encoding {
 		t.Errorf(
-			"Invalid %s: payload doesn't match:"+
+			"Invalid %s: payload encoding differs:"+
+				"\n expected: '%v'\n actual:   '%v'",
+			name,
+			expected.Encoding,
+			actual.Encoding,
+		)
+		return
+	}
+	if !reflect.DeepEqual(actual.Data, expected.Data) {
+		t.Errorf(
+			"Invalid %s: payload data differs:"+
 				"\n expected: '%s'\n actual:   '%s'",
 			name,
-			string(expected),
-			string(actual),
+			string(expected.Data),
+			string(actual.Data),
 		)
 	}
 }

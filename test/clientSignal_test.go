@@ -13,7 +13,10 @@ import (
 // TestClientSignal verifies the server is connectable
 // and receives signals correctly
 func TestClientSignal(t *testing.T) {
-	expectedSignalPayload := []byte("webwire_test_SIGNAL_payload")
+	expectedSignalPayload := webwire.Payload{
+		Encoding: webwire.EncodingUtf8,
+		Data:     []byte("webwire_test_SIGNAL_payload"),
+	}
 	signalArrived := NewPending(1, 1*time.Second, true)
 
 	// Initialize webwire server given only the signal handler
@@ -22,7 +25,7 @@ func TestClientSignal(t *testing.T) {
 		webwire.Hooks{
 			OnSignal: func(ctx context.Context) {
 				// Extract signal message from the context
-				msg := ctx.Value(webwire.MESSAGE).(webwire.Message)
+				msg := ctx.Value(webwire.Msg).(webwire.Message)
 
 				// Verify signal payload
 				comparePayload(
@@ -53,7 +56,7 @@ func TestClientSignal(t *testing.T) {
 	}
 
 	// Send signal
-	err := client.Signal(expectedSignalPayload)
+	err := client.Signal("", expectedSignalPayload)
 	if err != nil {
 		t.Fatalf("Request failed: %s", err)
 	}

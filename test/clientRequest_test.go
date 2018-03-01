@@ -13,16 +13,22 @@ import (
 // TestClientRequest verifies the server is connectable,
 // receives requests and answers them correctly
 func TestClientRequest(t *testing.T) {
-	expectedRequestPayload := []byte("webwire_test_REQUEST_payload")
-	expectedReplyPayload := []byte("webwire_test_RESPONSE_message")
+	expectedRequestPayload := webwire.Payload{
+		Encoding: webwire.EncodingUtf8,
+		Data:     []byte("webwire_test_REQUEST_payload"),
+	}
+	expectedReplyPayload := webwire.Payload{
+		Encoding: webwire.EncodingUtf8,
+		Data:     []byte("webwire_test_RESPONSE_message"),
+	}
 
 	// Initialize webwire server given only the request
 	server := setupServer(
 		t,
 		webwire.Hooks{
-			OnRequest: func(ctx context.Context) ([]byte, *webwire.Error) {
+			OnRequest: func(ctx context.Context) (webwire.Payload, *webwire.Error) {
 				// Extract request message from the context
-				msg := ctx.Value(webwire.MESSAGE).(webwire.Message)
+				msg := ctx.Value(webwire.Msg).(webwire.Message)
 
 				// Verify request payload
 				comparePayload(
@@ -51,7 +57,7 @@ func TestClientRequest(t *testing.T) {
 	}
 
 	// Send request and await reply
-	reply, err := client.Request(expectedRequestPayload)
+	reply, err := client.Request("", expectedRequestPayload)
 	if err != nil {
 		t.Fatalf("Request failed: %s", err)
 	}

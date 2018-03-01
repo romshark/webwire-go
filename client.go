@@ -1,7 +1,6 @@
 package webwire
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"net"
@@ -24,10 +23,10 @@ type Client struct {
 
 // write sends the given data to the other side of the socket,
 // it also protects the connection from concurrent writes
-func (clt *Client) write(wsMsgType int, data []byte) error {
+func (clt *Client) write(data []byte) error {
 	clt.lock.Lock()
 	defer clt.lock.Unlock()
-	return clt.conn.WriteMessage(wsMsgType, data)
+	return clt.conn.WriteMessage(websocket.BinaryMessage, data)
 }
 
 // ConnectionTime returns the time when the connection was established
@@ -48,12 +47,9 @@ func (clt *Client) RemoteAddr() net.Addr {
 	return clt.conn.RemoteAddr()
 }
 
-// Signal sends a signal to the client
-func (clt *Client) Signal(payload []byte) error {
-	var msg bytes.Buffer
-	msg.WriteRune(MsgSignal)
-	msg.Write(payload)
-	return clt.write(websocket.TextMessage, msg.Bytes())
+// Signal sends a named signal containing the given payload to the client
+func (clt *Client) Signal(name string, payload Payload) error {
+	return clt.write(NewSignalMessage(name, payload))
 }
 
 // CreateSession creates a new session for this client.
@@ -81,17 +77,8 @@ func (clt *Client) CreateSession(attachment interface{}) error {
 	// Create a new session
 	newSession := NewSession(attachment)
 
-	// Try to serialize the session
-	encoded, err := json.Marshal(&newSession)
-	if err != nil {
-		return fmt.Errorf("Couldn't marshal session object: %s", err)
-	}
-
-	// Try to notify the remote client about the session creation
-	var msg bytes.Buffer
-	msg.WriteRune(MsgSessionCreated)
-	msg.Write(encoded)
-	if err := clt.write(websocket.TextMessage, msg.Bytes()); err != nil {
+	// Try to notify about session creation
+	if err := clt.notifySessionCreated(&newSession); err != nil {
 		return fmt.Errorf("Couldn't notify client about the session creation: %s", err)
 	}
 
@@ -104,12 +91,25 @@ func (clt *Client) CreateSession(attachment interface{}) error {
 	return nil
 }
 
+func (clt *Client) notifySessionCreated(newSession *Session) error {
+	encoded, err := json.Marshal(&newSession)
+	if err != nil {
+		return fmt.Errorf("Couldn't marshal session object: %s", err)
+	}
+
+	// Notify client about the session creation
+	msg := make([]byte, 1+len(encoded))
+	msg[0] = MsgSessionCreated
+
+	for i := 0; i < len(encoded); i++ {
+		msg[1+i] = encoded[i]
+	}
+	return clt.write(msg)
+}
+
 func (clt *Client) notifySessionClosed() error {
 	// Notify client about the session destruction
-	if err := clt.write(
-		websocket.TextMessage,
-		[]byte(string(MsgSessionClosed)),
-	); err != nil {
+	if err := clt.write([]byte{MsgSessionClosed}); err != nil {
 		return fmt.Errorf(
 			"Couldn't notify client about the session destruction: %s",
 			err,

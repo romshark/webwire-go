@@ -9,9 +9,8 @@ import (
 	webwire "github.com/qbeon/webwire-go"
 )
 
-func (clt *Client) sendRequest(
+func (clt *Client) sendNamelessRequest(
 	messageType byte,
-	name string,
 	payload webwire.Payload,
 	timeout time.Duration,
 ) (webwire.Payload, *webwire.Error) {
@@ -25,7 +24,7 @@ func (clt *Client) sendRequest(
 	request := clt.requestManager.Create(timeout)
 	reqIdentifier := request.Identifier()
 
-	msg := webwire.NewRequestMessage(reqIdentifier, name, payload)
+	msg := webwire.NewNamelessRequestMessage(messageType, reqIdentifier, payload.Data)
 
 	// Send request
 	clt.connLock.Lock()

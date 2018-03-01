@@ -43,7 +43,10 @@ func TestClientConcurrentSignal(t *testing.T) {
 
 	sendSignal := func() {
 		defer finished.Done()
-		if err := client.Signal([]byte("samplepayload")); err != nil {
+		if err := client.Signal(
+			"sample",
+			webwire.Payload{Data: []byte("samplepayload")},
+		); err != nil {
 			t.Errorf("Request failed: %s", err)
 		}
 	}

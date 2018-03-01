@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/qbeon/webwire-go"
+
 	"github.com/qbeon/webwire-go/examples/chatroom/shared"
 )
 
@@ -18,8 +20,9 @@ func authenticate() {
 		panic(fmt.Errorf("Couldn't marshal credentials: %s", err))
 	}
 
-	_, reqErr := client.Request(encodedCreds)
-	if reqErr != nil {
+	if _, reqErr := client.Request("", webwire.Payload{
+		Data: encodedCreds,
+	}); reqErr != nil {
 		log.Printf(
 			"Authentication failed: %s : %s",
 			reqErr.Code,

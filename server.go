@@ -14,7 +14,7 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-const protocolVersion = "1.0"
+const protocolVersion = "1.1"
 
 // Hooks represents all callback hook functions
 type Hooks struct {
@@ -38,7 +38,7 @@ type Hooks struct {
 	// OnRequest is an optional hook.
 	// It's invoked when the webwire server receives a request from the client.
 	// It must return either a response payload or an error
-	OnRequest func(ctx context.Context) (response []byte, err *Error)
+	OnRequest func(ctx context.Context) (response Payload, err *Error)
 
 	// OnSessionCreated is a required hook for sessions to be supported.
 	// It's invoked right after the synchronisation of the new session to the remote client.
@@ -83,8 +83,8 @@ func (hooks *Hooks) SetDefaults() {
 	}
 
 	if hooks.OnRequest == nil {
-		hooks.OnRequest = func(_ context.Context) (response []byte, err *Error) {
-			return nil, &Error{
+		hooks.OnRequest = func(_ context.Context) (response Payload, err *Error) {
+			return Payload{}, &Error{
 				"NOT_IMPLEMENTED",
 				fmt.Sprintf("Request handling is not implemented " +
 					" on this server instance",
@@ -227,7 +227,7 @@ func (srv *Server) handleSessionRestore(msg *Message) error {
 		return nil
 	}
 
-	key := string(msg.Payload)
+	key := string(msg.Payload.Data)
 
 	sessionExists := srv.SessionRegistry.Exists(key)
 
@@ -277,7 +277,10 @@ func (srv *Server) handleSessionRestore(msg *Message) error {
 	msg.Client.Session = session
 	srv.SessionRegistry.register(msg.Client)
 
-	msg.fulfill(encodedSession)
+	msg.fulfill(Payload{
+		Encoding: EncodingUtf16,
+		Data:     encodedSession,
+	})
 
 	return nil
 }
@@ -295,7 +298,7 @@ func (srv *Server) handleSessionClosure(msg *Message) error {
 
 	if msg.Client.Session == nil {
 		// Send confirmation even though no session was closed
-		msg.fulfill(nil)
+		msg.fulfill(Payload{})
 		return nil
 	}
 
@@ -319,7 +322,7 @@ func (srv *Server) handleSessionClosure(msg *Message) error {
 	msg.Client.Session = nil
 
 	// Send confirmation
-	msg.fulfill(nil)
+	msg.fulfill(Payload{})
 
 	return nil
 }
@@ -327,20 +330,20 @@ func (srv *Server) handleSessionClosure(msg *Message) error {
 // handleSignal handles incoming signals
 // and returns an error if the ongoing connection cannot be proceeded
 func (srv *Server) handleSignal(msg *Message) {
-	srv.hooks.OnSignal(context.WithValue(context.Background(), MESSAGE, *msg))
+	srv.hooks.OnSignal(context.WithValue(context.Background(), Msg, *msg))
 }
 
 // handleRequest handles incoming requests
 // and returns an error if the ongoing connection cannot be proceeded
 func (srv *Server) handleRequest(msg *Message) {
-	response, err := srv.hooks.OnRequest(
-		context.WithValue(context.Background(), MESSAGE, *msg),
+	replyPayload, err := srv.hooks.OnRequest(
+		context.WithValue(context.Background(), Msg, *msg),
 	)
 	if err != nil {
 		msg.fail(*err)
 		return
 	}
-	msg.fulfill(response)
+	msg.fulfill(replyPayload)
 }
 
 // handleMetadata handles endpoint metadata requests
@@ -357,10 +360,20 @@ func (srv *Server) handleMetadata(resp http.ResponseWriter) {
 // handleMessage handles incoming messages
 func (srv *Server) handleMessage(msg *Message) error {
 	switch msg.msgType {
-	case MsgSignal:
+	case MsgSignalBinary:
+		fallthrough
+	case MsgSignalUtf8:
+		fallthrough
+	case MsgSignalUtf16:
 		srv.handleSignal(msg)
-	case MsgRequest:
+
+	case MsgRequestBinary:
+		fallthrough
+	case MsgRequestUtf8:
+		fallthrough
+	case MsgRequestUtf16:
 		srv.handleRequest(msg)
+
 	case MsgRestoreSession:
 		return srv.handleSessionRestore(msg)
 	case MsgCloseSession:

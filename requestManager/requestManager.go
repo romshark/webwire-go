@@ -1,23 +1,21 @@
 package requestmanager
 
 import (
+	"encoding/binary"
 	"fmt"
-	"strings"
 	"sync"
 	"time"
-
-	"github.com/satori/go.uuid"
 
 	webwire "github.com/qbeon/webwire-go"
 )
 
 // RequestIdentifier represents the universally unique minified UUIDv4 identifier of a request.
-type RequestIdentifier = [32]byte
+type RequestIdentifier = [8]byte
 
 // reply is used by the request manager to represent the results
 // of a request (both failed and succeeded)
 type reply struct {
-	Reply []byte
+	Reply webwire.Payload
 	Error *webwire.Error
 }
 
@@ -44,7 +42,7 @@ func (req *Request) Identifier() RequestIdentifier {
 // AwaitReply blocks the calling goroutine
 // until either the reply is fulfilled or failed or the request is timed out.
 // The timer is started when AwaitReply is called.
-func (req *Request) AwaitReply() ([]byte, *webwire.Error) {
+func (req *Request) AwaitReply() (webwire.Payload, *webwire.Error) {
 	// Start timeout timer
 	timeoutTimer := time.NewTimer(req.timeout).C
 
@@ -58,10 +56,10 @@ func (req *Request) AwaitReply() ([]byte, *webwire.Error) {
 		req.manager.deregister(req.identifier)
 
 		// TODO: return typed TimeoutError
-		return nil, &timeoutError
+		return webwire.Payload{}, &timeoutError
 	case reply := <-req.reply:
 		if reply.Error != nil {
-			return nil, reply.Error
+			return webwire.Payload{}, reply.Error
 		}
 		return reply.Reply, nil
 	}
@@ -69,7 +67,8 @@ func (req *Request) AwaitReply() ([]byte, *webwire.Error) {
 
 // RequestManager manages and keeps track of outgoing pending requests
 type RequestManager struct {
-	lock sync.RWMutex
+	lastID uint64
+	lock   sync.RWMutex
 
 	// pending represents an indexed list of all pending requests
 	pending map[RequestIdentifier]*Request
@@ -78,6 +77,7 @@ type RequestManager struct {
 // NewRequestManager constructs and returns a new instance of a RequestManager
 func NewRequestManager() RequestManager {
 	return RequestManager{
+		lastID:  0,
 		lock:    sync.RWMutex{},
 		pending: make(map[RequestIdentifier]*Request),
 	}
@@ -86,10 +86,14 @@ func NewRequestManager() RequestManager {
 // Create creates and registers a new request.
 // Create doesn't start the timeout timer, this is done in the subsequent request.AwaitReply
 func (manager *RequestManager) Create(timeout time.Duration) *Request {
-	// Generate unique request identifier
+	manager.lock.Lock()
+
+	// Generate unique request identifier by incrementing the last assigned id
+	manager.lastID++
 	var identifier RequestIdentifier
-	id := uuid.NewV4()
-	copy(identifier[:], strings.Replace(id.String(), "-", "", -1))
+	idBytes := make([]byte, 8)
+	binary.LittleEndian.PutUint64(idBytes, manager.lastID)
+	copy(identifier[:], idBytes[0:8])
 
 	newRequest := &Request{
 		manager,
@@ -99,8 +103,8 @@ func (manager *RequestManager) Create(timeout time.Duration) *Request {
 	}
 
 	// Register the newly created request
-	manager.lock.Lock()
 	manager.pending[identifier] = newRequest
+
 	manager.lock.Unlock()
 
 	return newRequest
@@ -116,7 +120,10 @@ func (manager *RequestManager) deregister(identifier RequestIdentifier) {
 // Fulfill fulfills the request associated with the given request identifier
 // with the provided reply payload.
 // Returns true if a pending request was fulfilled and deregistered, otherwise returns false
-func (manager *RequestManager) Fulfill(identifier RequestIdentifier, payload []byte) bool {
+func (manager *RequestManager) Fulfill(
+	identifier RequestIdentifier,
+	payload webwire.Payload,
+) bool {
 	manager.lock.RLock()
 	req, exists := manager.pending[identifier]
 	manager.lock.RUnlock()
@@ -141,7 +148,7 @@ func (manager *RequestManager) Fail(identifier RequestIdentifier, err webwire.Er
 		return false
 	}
 	req.reply <- reply{
-		Reply: nil,
+		Reply: webwire.Payload{},
 		Error: &err,
 	}
 	manager.deregister(identifier)
@@ -157,7 +164,7 @@ func (manager *RequestManager) PendingRequests() int {
 }
 
 // IsPending returns true if the request associated with the given identifier is pending
-func (manager *RequestManager) IsPending(identifier [32]byte) bool {
+func (manager *RequestManager) IsPending(identifier RequestIdentifier) bool {
 	manager.lock.RLock()
 	_, exists := manager.pending[identifier]
 	manager.lock.RUnlock()

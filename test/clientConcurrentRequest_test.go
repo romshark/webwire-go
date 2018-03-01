@@ -20,9 +20,9 @@ func TestClientConcurrentRequest(t *testing.T) {
 	server := setupServer(
 		t,
 		webwire.Hooks{
-			OnRequest: func(_ context.Context) ([]byte, *webwire.Error) {
+			OnRequest: func(_ context.Context) (webwire.Payload, *webwire.Error) {
 				finished.Done()
-				return nil, nil
+				return webwire.Payload{}, nil
 			},
 		},
 	)
@@ -44,7 +44,10 @@ func TestClientConcurrentRequest(t *testing.T) {
 
 	sendRequest := func() {
 		defer finished.Done()
-		if _, err := client.Request([]byte("samplepayload")); err != nil {
+		if _, err := client.Request(
+			"sample",
+			webwire.Payload{Data: []byte("samplepayload")},
+		); err != nil {
 			t.Errorf("Request failed: %s", err)
 		}
 	}

@@ -21,18 +21,18 @@ func TestClientOnSessionCreated(t *testing.T) {
 	server := setupServer(
 		t,
 		webwire.Hooks{
-			OnRequest: func(ctx context.Context) ([]byte, *webwire.Error) {
+			OnRequest: func(ctx context.Context) (webwire.Payload, *webwire.Error) {
 				// Extract request message and requesting client from the context
-				msg := ctx.Value(webwire.MESSAGE).(webwire.Message)
+				msg := ctx.Value(webwire.Msg).(webwire.Message)
 
 				// Try to create a new session
 				if err := msg.Client.CreateSession(nil); err != nil {
-					return nil, &webwire.Error{
+					return webwire.Payload{}, &webwire.Error{
 						Code:    "INTERNAL_ERROR",
 						Message: fmt.Sprintf("Internal server error: %s", err),
 					}
 				}
-				return nil, nil
+				return webwire.Payload{}, nil
 			},
 			// Define dummy hooks to enable sessions on this server
 			OnSessionCreated: func(_ *webwire.Client) error { return nil },
@@ -61,9 +61,11 @@ func TestClientOnSessionCreated(t *testing.T) {
 		t.Fatalf("Couldn't connect: %s", err)
 	}
 
-	// Send request and await reply
-	_, err := client.Request([]byte("credentials"))
-	if err != nil {
+	// Send authentication request and await reply
+	if _, err := client.Request(
+		"login",
+		webwire.Payload{Data: []byte("credentials")},
+	); err != nil {
 		t.Fatalf("Request failed: %s", err)
 	}
 

@@ -22,26 +22,26 @@ func TestClientSessionRestoration(t *testing.T) {
 	server := setupServer(
 		t,
 		webwire.Hooks{
-			OnRequest: func(ctx context.Context) ([]byte, *webwire.Error) {
+			OnRequest: func(ctx context.Context) (webwire.Payload, *webwire.Error) {
 				// Extract request message and requesting client from the context
-				msg := ctx.Value(webwire.MESSAGE).(webwire.Message)
+				msg := ctx.Value(webwire.Msg).(webwire.Message)
 
 				if currentStep == 2 {
 					// Expect the session to have been automatically restored
 					compareSessions(t, createdSession, msg.Client.Session)
-					return nil, nil
+					return webwire.Payload{}, nil
 				}
 
 				// Try to create a new session
 				if err := msg.Client.CreateSession(nil); err != nil {
-					return nil, &webwire.Error{
+					return webwire.Payload{}, &webwire.Error{
 						Code:    "INTERNAL_ERROR",
 						Message: fmt.Sprintf("Internal server error: %s", err),
 					}
 				}
 
 				// Return the key of the newly created session
-				return nil, nil
+				return webwire.Payload{}, nil
 			},
 			// Permanently store the session
 			OnSessionCreated: func(client *webwire.Client) error {
@@ -97,7 +97,10 @@ func TestClientSessionRestoration(t *testing.T) {
 	\*****************************************************************/
 
 	// Create a new session
-	if _, err := initialClient.Request([]byte("auth")); err != nil {
+	if _, err := initialClient.Request(
+		"login",
+		webwire.Payload{Data: []byte("auth")},
+	); err != nil {
 		t.Fatalf("Auth request failed: %s", err)
 	}
 

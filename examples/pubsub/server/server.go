@@ -1,11 +1,13 @@
 package main
 
 import (
+	"encoding/binary"
 	"flag"
 	"fmt"
 	"log"
 	"os"
 	"time"
+	"unicode/utf16"
 
 	webwire "github.com/qbeon/webwire-go"
 )
@@ -53,10 +55,25 @@ func main() {
 
 			msg := time.Now().String()
 
+			// Encode message payload data to UTF16 for JavaScript compatibility
+			runes := utf16.Encode([]rune(msg))
+			data := make([]byte, len(runes)*2)
+			dataItr := 0
+			for i := 0; i < len(runes); i++ {
+				tmp := make([]byte, 2)
+				binary.LittleEndian.PutUint16(tmp, runes[i])
+				data[dataItr] = tmp[0]
+				dataItr++
+				data[dataItr] = tmp[1]
+				dataItr++
+			}
+
 			log.Printf("Broadcasting message '%s', to %d clients", msg, len(connectedClients))
 
 			for client := range connectedClients {
-				client.Signal([]byte(msg))
+				client.Signal("", webwire.Payload{
+					Data: []byte(msg),
+				})
 			}
 		}
 	}()

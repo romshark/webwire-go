@@ -12,7 +12,7 @@ import (
 
 // TestEndpointMetadata verifies the server endpoint provides correct metadata
 func TestEndpointMetadata(t *testing.T) {
-	expectedVersion := "1.0"
+	expectedVersion := "1.1"
 
 	// Initialize webwire server
 	server := setupServer(

@@ -6,11 +6,11 @@ import (
 	webwire "github.com/qbeon/webwire-go"
 )
 
-func (clt *Client) handleSessionCreated(message []byte) {
+func (clt *Client) handleSessionCreated(sessionKey []byte) {
 	// Set new session
 	var session webwire.Session
 
-	if err := json.Unmarshal(message, &session); err != nil {
+	if err := json.Unmarshal(sessionKey, &session); err != nil {
 		clt.errorLog.Printf("Failed unmarshalling session object: %s", err)
 		return
 	}
@@ -26,19 +26,19 @@ func (clt *Client) handleSessionClosed() {
 	clt.hooks.OnSessionClosed()
 }
 
-func (clt *Client) handleFailure(message []byte) {
+func (clt *Client) handleFailure(reqID [8]byte, payload []byte) {
 	// Decode error
 	var replyErr webwire.Error
-	if err := json.Unmarshal(message[33:], &replyErr); err != nil {
+	if err := json.Unmarshal(payload, &replyErr); err != nil {
 		clt.errorLog.Printf("Failed unmarshalling error reply: %s", err)
 	}
 
 	// Fail request
-	clt.requestManager.Fail(extractMessageIdentifier(message), replyErr)
+	clt.requestManager.Fail(reqID, replyErr)
 }
 
-func (clt *Client) handleReply(message []byte) {
-	clt.requestManager.Fulfill(extractMessageIdentifier(message), message[33:])
+func (clt *Client) handleReply(reqID [8]byte, payload webwire.Payload) {
+	clt.requestManager.Fulfill(reqID, payload)
 }
 
 func (clt *Client) handleMessage(message []byte) error {
@@ -46,12 +46,47 @@ func (clt *Client) handleMessage(message []byte) error {
 		return nil
 	}
 	switch message[0:1][0] {
-	case webwire.MsgReply:
-		clt.handleReply(message)
+	case webwire.MsgReplyBinary:
+		clt.handleReply(
+			extractMessageIdentifier(message),
+			webwire.Payload{
+				Encoding: webwire.EncodingBinary,
+				Data:     message[9:],
+			},
+		)
+	case webwire.MsgReplyUtf8:
+		clt.handleReply(
+			extractMessageIdentifier(message),
+			webwire.Payload{
+				Encoding: webwire.EncodingUtf8,
+				Data:     message[9:],
+			},
+		)
+	case webwire.MsgReplyUtf16:
+		clt.handleReply(
+			extractMessageIdentifier(message),
+			webwire.Payload{
+				Encoding: webwire.EncodingUtf16,
+				Data:     message[9:],
+			},
+		)
 	case webwire.MsgErrorReply:
-		clt.handleFailure(message)
-	case webwire.MsgSignal:
-		clt.hooks.OnServerSignal(message[1:])
+		clt.handleFailure(extractMessageIdentifier(message), message[9:])
+	case webwire.MsgSignalBinary:
+		clt.hooks.OnServerSignal(webwire.Payload{
+			Encoding: webwire.EncodingBinary,
+			Data:     message[2:],
+		})
+	case webwire.MsgSignalUtf8:
+		clt.hooks.OnServerSignal(webwire.Payload{
+			Encoding: webwire.EncodingUtf8,
+			Data:     message[2:],
+		})
+	case webwire.MsgSignalUtf16:
+		clt.hooks.OnServerSignal(webwire.Payload{
+			Encoding: webwire.EncodingUtf16,
+			Data:     message[2:],
+		})
 	case webwire.MsgSessionCreated:
 		clt.handleSessionCreated(message[1:])
 	case webwire.MsgSessionClosed:

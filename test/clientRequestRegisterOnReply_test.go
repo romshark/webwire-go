@@ -19,17 +19,17 @@ func TestClientRequestRegisterOnReply(t *testing.T) {
 	server := setupServer(
 		t,
 		webwire.Hooks{
-			OnRequest: func(ctx context.Context) ([]byte, *webwire.Error) {
+			OnRequest: func(ctx context.Context) (webwire.Payload, *webwire.Error) {
 				// Verify pending requests
 				pendingReqs := client.PendingRequests()
 				if pendingReqs != 1 {
 					t.Errorf("Unexpected pending requests: %d", pendingReqs)
-					return nil, nil
+					return webwire.Payload{}, nil
 				}
 
 				// Wait until the request times out
 				time.Sleep(300 * time.Millisecond)
-				return nil, nil
+				return webwire.Payload{}, nil
 			},
 		},
 	)
@@ -56,7 +56,7 @@ func TestClientRequestRegisterOnReply(t *testing.T) {
 	}
 
 	// Send request and await reply
-	_, err := client.Request([]byte("t"))
+	_, err := client.Request("", webwire.Payload{Data: []byte("t")})
 	if err != nil {
 		t.Fatalf("Request failed: %s", err)
 	}

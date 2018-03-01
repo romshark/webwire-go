@@ -12,7 +12,9 @@ import (
 // TestServerSignal verifies the server is connectable
 // and sends signals correctly
 func TestServerSignal(t *testing.T) {
-	expectedSignalPayload := []byte("webwire_test_SERVER_SIGNAL_payload")
+	expectedSignalPayload := webwire.Payload{
+		Data: []byte("webwire_test_SERVER_SIGNAL_payload"),
+	}
 	var addr string
 	var server *webwire.Server
 	serverSignalArrived := NewPending(1, 1*time.Second, true)
@@ -26,7 +28,7 @@ func TestServerSignal(t *testing.T) {
 			webwire.Hooks{
 				OnClientConnected: func(client *webwire.Client) {
 					// Send signal
-					if err := client.Signal(expectedSignalPayload); err != nil {
+					if err := client.Signal("", expectedSignalPayload); err != nil {
 						t.Fatalf("Couldn't send signal to client: %s", err)
 					}
 				},
@@ -50,7 +52,7 @@ func TestServerSignal(t *testing.T) {
 	client := webwireClient.NewClient(
 		addr,
 		webwireClient.Hooks{
-			OnServerSignal: func(signalPayload []byte) {
+			OnServerSignal: func(signalPayload webwire.Payload) {
 				// Verify server signal payload
 				comparePayload(
 					t,

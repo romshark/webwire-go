@@ -6,7 +6,7 @@ import webwire "github.com/qbeon/webwire-go"
 type Hooks struct {
 	// OnServerSignal is an optional callback.
 	// It's invoked when the webwire client receives a signal from the server
-	OnServerSignal func([]byte)
+	OnServerSignal func(payload webwire.Payload)
 
 	// OnSessionCreated is an optional callback.
 	// It's invoked when the webwire client receives a new session
@@ -21,7 +21,7 @@ type Hooks struct {
 // SetDefaults sets undefined required hooks
 func (hooks *Hooks) SetDefaults() {
 	if hooks.OnServerSignal == nil {
-		hooks.OnServerSignal = func(_ []byte) {}
+		hooks.OnServerSignal = func(_ webwire.Payload) {}
 	}
 
 	if hooks.OnSessionCreated == nil {

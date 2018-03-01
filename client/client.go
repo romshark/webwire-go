@@ -6,7 +6,6 @@ import (
 	webwire "github.com/qbeon/webwire-go"
 	reqman "github.com/qbeon/webwire-go/requestManager"
 
-	"bytes"
 	"fmt"
 	"io"
 	"log"
@@ -17,7 +16,7 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-const supportedProtocolVersion = "1.0"
+const supportedProtocolVersion = "1.1"
 
 // Client represents an instance of one of the servers clients
 type Client struct {
@@ -156,8 +155,18 @@ func (clt *Client) Connect() (err error) {
 // and asynchronously returns the servers response
 // blocking the calling goroutine.
 // Returns an error if the request failed for some reason
-func (clt *Client) Request(payload []byte) ([]byte, *webwire.Error) {
-	return clt.sendRequest(webwire.MsgRequest, payload, clt.defaultTimeout)
+func (clt *Client) Request(
+	name string,
+	payload webwire.Payload,
+) (webwire.Payload, *webwire.Error) {
+	reqType := webwire.MsgRequestBinary
+	switch payload.Encoding {
+	case webwire.EncodingUtf8:
+		reqType = webwire.MsgRequestUtf8
+	case webwire.EncodingUtf16:
+		reqType = webwire.MsgRequestUtf16
+	}
+	return clt.sendRequest(reqType, name, payload, clt.defaultTimeout)
 }
 
 // TimedRequest sends a request containing the given payload to the server
@@ -166,24 +175,31 @@ func (clt *Client) Request(payload []byte) ([]byte, *webwire.Error) {
 // Returns an error if the given timeout was exceeded awaiting the response
 // or another failure occurred
 func (clt *Client) TimedRequest(
-	payload []byte,
+	name string,
+	payload webwire.Payload,
 	timeout time.Duration,
-) ([]byte, *webwire.Error) {
-	return clt.sendRequest(webwire.MsgRequest, payload, timeout)
+) (webwire.Payload, *webwire.Error) {
+	reqType := webwire.MsgRequestBinary
+	switch payload.Encoding {
+	case webwire.EncodingUtf8:
+		reqType = webwire.MsgRequestUtf8
+	case webwire.EncodingUtf16:
+		reqType = webwire.MsgRequestUtf16
+	}
+	return clt.sendRequest(reqType, name, payload, timeout)
 }
 
 // Signal sends a signal containing the given payload to the server
-func (clt *Client) Signal(payload []byte) error {
+func (clt *Client) Signal(name string, payload webwire.Payload) error {
 	if atomic.LoadInt32(&clt.isConnected) < 1 {
 		return fmt.Errorf("Trying to send a signal on a disconnected client")
 	}
 
-	var msg bytes.Buffer
-	msg.WriteRune(webwire.MsgSignal)
-	msg.Write(payload)
+	msgBytes := webwire.NewSignalMessage(name, payload)
+
 	clt.connLock.Lock()
 	defer clt.connLock.Unlock()
-	return clt.conn.WriteMessage(websocket.TextMessage, msg.Bytes())
+	return clt.conn.WriteMessage(websocket.BinaryMessage, msgBytes)
 }
 
 // Session returns information about the current session
@@ -236,9 +252,9 @@ func (clt *Client) CloseSession() error {
 
 	// Synchronize session closure to the server if connected
 	if atomic.LoadInt32(&clt.isConnected) > 0 {
-		if _, err := clt.sendRequest(
+		if _, err := clt.sendNamelessRequest(
 			webwire.MsgCloseSession,
-			nil,
+			webwire.Payload{},
 			clt.defaultTimeout,
 		); err != nil {
 			return fmt.Errorf("Session destruction request failed: %s", err)

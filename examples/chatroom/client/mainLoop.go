@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+
+	"github.com/qbeon/webwire-go"
 )
 
 func promptCreds() (username, password string) {
@@ -59,7 +61,9 @@ MAINLOOP:
 			}
 			fmt.Println("Logged out, you're anonymous now")
 		default:
-			if err := client.Signal([]byte(input)); err != nil {
+			if err := client.Signal("", webwire.Payload{
+				Data: []byte(input),
+			}); err != nil {
 				log.Printf("WARNING: Couldn't send message: %s", err)
 			}
 		}

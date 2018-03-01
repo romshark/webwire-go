@@ -13,7 +13,10 @@ import (
 // TestClientRequestError verifies returned request errors properly
 // fail the request on the client
 func TestClientRequestError(t *testing.T) {
-	expectedRequestPayload := []byte("webwire_test_REQUEST_payload")
+	expectedRequestPayload := webwire.Payload{
+		Encoding: webwire.EncodingUtf8,
+		Data:     []byte("webwire_test_REQUEST_payload"),
+	}
 	expectedReplyError := webwire.Error{
 		Code:    "SAMPLE_ERROR",
 		Message: "Sample error message",
@@ -23,10 +26,10 @@ func TestClientRequestError(t *testing.T) {
 	server := setupServer(
 		t,
 		webwire.Hooks{
-			OnRequest: func(_ context.Context) ([]byte, *webwire.Error) {
+			OnRequest: func(_ context.Context) (webwire.Payload, *webwire.Error) {
 				// Fail the request by returning an error
 				err := expectedReplyError
-				return nil, &err
+				return webwire.Payload{}, &err
 			},
 		},
 	)
@@ -46,7 +49,7 @@ func TestClientRequestError(t *testing.T) {
 	}
 
 	// Send request and await reply
-	reply, err := client.Request(expectedRequestPayload)
+	reply, err := client.Request("", expectedRequestPayload)
 
 	// Verify returned error
 	if err == nil {
@@ -69,11 +72,11 @@ func TestClientRequestError(t *testing.T) {
 		)
 	}
 
-	if len(reply) > 0 {
+	if len(reply.Data) > 0 {
 		t.Fatalf(
 			"Reply should have been empty, but was: '%s' (%d)",
-			string(reply),
-			len(reply),
+			string(reply.Data),
+			len(reply.Data),
 		)
 	}
 }

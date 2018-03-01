@@ -17,30 +17,35 @@ func TestServerInitiatedSessionDestruction(t *testing.T) {
 	sessionCreationCallbackCalled := NewPending(1, 1*time.Second, true)
 	sessionDestructionCallbackCalled := NewPending(1, 1*time.Second, true)
 	var createdSession *webwire.Session
-	expectedCredentials := []byte("secret_credentials")
-	placeholderMessage := []byte("nothinginteresting")
+	expectedCredentials := webwire.Payload{
+		Encoding: webwire.EncodingUtf8,
+		Data:     []byte("secret_credentials"),
+	}
+	placeholderMessage := webwire.Payload{
+		Data: []byte("nothinginteresting"),
+	}
 	currentStep := 1
 
 	// Initialize webwire server
 	server := setupServer(
 		t,
 		webwire.Hooks{
-			OnRequest: func(ctx context.Context) ([]byte, *webwire.Error) {
+			OnRequest: func(ctx context.Context) (webwire.Payload, *webwire.Error) {
 				// Extract request message and requesting client from the context
-				msg := ctx.Value(webwire.MESSAGE).(webwire.Message)
+				msg := ctx.Value(webwire.Msg).(webwire.Message)
 
 				// On step 2 - verify session creation and correctness
 				if currentStep == 2 {
 					compareSessions(t, createdSession, msg.Client.Session)
-					if string(msg.Payload) != msg.Client.Session.Key {
+					if string(msg.Payload.Data) != msg.Client.Session.Key {
 						t.Errorf(
 							"Clients session key doesn't match: "+
 								"client: '%s' | server: '%s'",
-							string(msg.Payload),
+							string(msg.Payload.Data),
 							msg.Client.Session.Key,
 						)
 					}
-					return nil, nil
+					return webwire.Payload{}, nil
 				}
 
 				// on step 3 - close session and verify its destruction
@@ -66,7 +71,7 @@ func TestServerInitiatedSessionDestruction(t *testing.T) {
 						)
 					}
 
-					return nil, nil
+					return webwire.Payload{}, nil
 				}
 
 				// On step 4 - verify session destruction
@@ -74,19 +79,21 @@ func TestServerInitiatedSessionDestruction(t *testing.T) {
 					if msg.Client.Session != nil {
 						t.Errorf("Expected the session to be destroyed")
 					}
-					return nil, nil
+					return webwire.Payload{}, nil
 				}
 
 				// On step 1 - authenticate and create a new session
 				if err := msg.Client.CreateSession(nil); err != nil {
-					return nil, &webwire.Error{
+					return webwire.Payload{}, &webwire.Error{
 						Code:    "INTERNAL_ERROR",
 						Message: fmt.Sprintf("Internal server error: %s", err),
 					}
 				}
 
 				// Return the key of the newly created session
-				return []byte(msg.Client.Session.Key), nil
+				return webwire.Payload{
+					Data: []byte(msg.Client.Session.Key),
+				}, nil
 			},
 			// Define dummy hooks to enable sessions on this server
 			OnSessionCreated: func(_ *webwire.Client) error { return nil },
@@ -129,7 +136,7 @@ func TestServerInitiatedSessionDestruction(t *testing.T) {
 	}
 
 	// Send authentication request
-	authReqReply, err := client.Request(expectedCredentials)
+	authReqReply, err := client.Request("login", expectedCredentials)
 	if err != nil {
 		t.Fatalf("Authentication request failed: %s", err)
 	}
@@ -141,7 +148,9 @@ func TestServerInitiatedSessionDestruction(t *testing.T) {
 	comparePayload(
 		t,
 		"authentication reply",
-		[]byte(createdSession.Key),
+		webwire.Payload{
+			Data: []byte(createdSession.Key),
+		},
 		authReqReply,
 	)
 
@@ -165,7 +174,10 @@ func TestServerInitiatedSessionDestruction(t *testing.T) {
 	currentStep = 2
 
 	// Send a test-request to verify the session creation on the server
-	if _, err := client.Request([]byte(client.Session().Key)); err != nil {
+	if _, err := client.Request(
+		"",
+		webwire.Payload{Data: []byte(client.Session().Key)},
+	); err != nil {
 		t.Fatalf("Session creation verification request failed: %s", err)
 	}
 
@@ -175,7 +187,7 @@ func TestServerInitiatedSessionDestruction(t *testing.T) {
 	currentStep = 3
 
 	// Request session destruction
-	if _, err := client.Request(placeholderMessage); err != nil {
+	if _, err := client.Request("", placeholderMessage); err != nil {
 		t.Fatalf("Session destruction request failed: %s", err)
 	}
 
@@ -199,7 +211,7 @@ func TestServerInitiatedSessionDestruction(t *testing.T) {
 	}
 
 	// Send a test-request to verify the session was destroyed on the server
-	if _, err := client.Request(placeholderMessage); err != nil {
+	if _, err := client.Request("", placeholderMessage); err != nil {
 		t.Fatalf("Session destruction verification request failed: %s", err)
 	}
 }

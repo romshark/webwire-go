@@ -7,6 +7,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/qbeon/webwire-go"
+
 	webwireClient "github.com/qbeon/webwire-go/client"
 )
 
@@ -16,7 +18,10 @@ func main() {
 	// Parse command line arguments
 	flag.Parse()
 
-	payload := []byte("hey server!")
+	// Define a payload to be sent to the server, use default binary encoding
+	payload := webwire.Payload{
+		Data: []byte("hey server!"),
+	}
 
 	// Initialize client
 	client := webwireClient.NewClient(
@@ -40,13 +45,13 @@ func main() {
 		panic(fmt.Errorf("Couldn't connect to the server: %s", err))
 	}
 
-	log.Printf("Send request: '%s' (%d)", string(payload), len(payload))
+	log.Printf("Send request: '%s' (%d)", string(payload.Data), len(payload.Data))
 
 	// Send request and await reply
-	reply, err := client.Request(payload)
+	reply, err := client.Request("", payload)
 	if err != nil {
 		panic(fmt.Errorf("Request failed: %s", err))
 	}
 
-	log.Printf("Received reply: '%s' (%d)", string(reply), len(reply))
+	log.Printf("Received reply: '%s' (%d)", string(reply.Data), len(reply.Data))
 }
