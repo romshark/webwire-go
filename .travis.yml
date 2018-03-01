@@ -65,3 +65,6 @@ script:
 
   # one last linter
   - golint -set_exit_status $(go list ./...)
+
+  # run unit tests
+  - go test -v
