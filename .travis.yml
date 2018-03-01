@@ -54,6 +54,9 @@ script:
   # Run all the tests with the race detector enabled
   - go test -v -race ./test/...
 
+  # Run more tests
+  - go test -v
+
   # go vet is the official Go static analyzer
   - go vet ./...
 
@@ -65,6 +68,3 @@ script:
 
   # one last linter
   - golint -set_exit_status $(go list ./...)
-
-  # run unit tests
-  - go test -v
