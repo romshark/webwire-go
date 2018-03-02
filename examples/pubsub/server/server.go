@@ -9,18 +9,18 @@ import (
 	"time"
 	"unicode/utf16"
 
-	webwire "github.com/qbeon/webwire-go"
+	wwr "github.com/qbeon/webwire-go"
 )
 
 var serverAddr = flag.String("addr", ":8081", "server address")
 
-var connectedClients = make(map[*webwire.Client]bool)
+var connectedClients = make(map[*wwr.Client]bool)
 
-func onClientConnected(client *webwire.Client) {
+func onClientConnected(client *wwr.Client) {
 	connectedClients[client] = true
 }
 
-func onClientDisconnected(client *webwire.Client) {
+func onClientDisconnected(client *wwr.Client) {
 	delete(connectedClients, client)
 }
 
@@ -28,19 +28,18 @@ func main() {
 	// Parse command line arguments
 	flag.Parse()
 
-	// Initialize webwire server
-	server, err := webwire.NewServer(
-		*serverAddr,
-		webwire.Hooks{
+	// Setup webwire server
+	_, _, addr, runServer, err := wwr.SetupServer(wwr.Options{
+		Addr: *serverAddr,
+		Hooks: wwr.Hooks{
 			OnClientConnected:    onClientConnected,
 			OnClientDisconnected: onClientDisconnected,
 		},
-		os.Stdout, os.Stderr,
-	)
+		WarnLog:  os.Stdout,
+		ErrorLog: os.Stderr,
+	})
 	if err != nil {
-		panic(fmt.Errorf(
-			"Failed creating a new WebWire server instance: %s", err,
-		))
+		panic(fmt.Errorf("Failed setting up WebWire server: %s", err))
 	}
 
 	// Begin sending the current time in 1 second intervals
@@ -71,13 +70,16 @@ func main() {
 			log.Printf("Broadcasting message '%s', to %d clients", msg, len(connectedClients))
 
 			for client := range connectedClients {
-				client.Signal("", webwire.Payload{
+				client.Signal("", wwr.Payload{
 					Data: []byte(msg),
 				})
 			}
 		}
 	}()
 
-	log.Printf("Listening on %s", server.Addr)
-	server.Run()
+	log.Printf("Listening on %s", addr)
+
+	if err := runServer(); err != nil {
+		panic(fmt.Errorf("WebWire server failed: %s", err))
+	}
 }

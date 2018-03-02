@@ -22,7 +22,7 @@ func TestRequestNamespaces(t *testing.T) {
 	longestPossibleName := string(buf)
 
 	// Initialize server
-	server := setupServer(
+	_, addr := setupServer(
 		t,
 		webwire.Hooks{
 			OnRequest: func(ctx context.Context) (webwire.Payload, *webwire.Error) {
@@ -42,11 +42,10 @@ func TestRequestNamespaces(t *testing.T) {
 			},
 		},
 	)
-	go server.Run()
 
 	// Initialize client
 	client := webwireClient.NewClient(
-		server.Addr,
+		addr,
 		webwireClient.Hooks{},
 		5*time.Second,
 		os.Stdout,

@@ -16,14 +16,13 @@ func TestServerSignal(t *testing.T) {
 		Data: []byte("webwire_test_SERVER_SIGNAL_payload"),
 	}
 	var addr string
-	var server *webwire.Server
 	serverSignalArrived := NewPending(1, 1*time.Second, true)
 	initClient := make(chan bool, 1)
 	sendSignal := make(chan bool, 1)
 
 	// Initialize webwire server
 	go func() {
-		server = setupServer(
+		_, addr = setupServer(
 			t,
 			webwire.Hooks{
 				OnClientConnected: func(client *webwire.Client) {
@@ -34,8 +33,6 @@ func TestServerSignal(t *testing.T) {
 				},
 			},
 		)
-		go server.Run()
-		addr = server.Addr
 
 		// Synchronize, initialize client
 		initClient <- true

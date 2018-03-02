@@ -19,7 +19,7 @@ func TestClientSessionRestoration(t *testing.T) {
 	var createdSession *webwire.Session
 
 	// Initialize webwire server
-	server := setupServer(
+	_, addr := setupServer(
 		t,
 		webwire.Hooks{
 			OnRequest: func(ctx context.Context) (webwire.Payload, *webwire.Error) {
@@ -77,11 +77,10 @@ func TestClientSessionRestoration(t *testing.T) {
 			OnSessionClosed: func(_ *webwire.Client) error { return nil },
 		},
 	)
-	go server.Run()
 
 	// Initialize client
 	initialClient := webwireClient.NewClient(
-		server.Addr,
+		addr,
 		webwireClient.Hooks{},
 		5*time.Second,
 		os.Stdout,
@@ -117,7 +116,7 @@ func TestClientSessionRestoration(t *testing.T) {
 
 	// Initialize client
 	secondClient := webwireClient.NewClient(
-		server.Addr,
+		addr,
 		webwireClient.Hooks{},
 		5*time.Second,
 		os.Stdout,

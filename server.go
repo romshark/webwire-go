@@ -4,9 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
-	"net"
 	"net/http"
 	"sync"
 	"time"
@@ -101,45 +99,36 @@ func (hooks *Hooks) SetDefaults() {
 	}
 }
 
-// Server represents the actual
+// Server represents a headless WebWire server instance,
+// where headless means there's no HTTP server that's hosting it
 type Server struct {
 	hooks Hooks
 
-	// Dynamic methods
-	launch func() error
-
 	// State
-	Addr            string
 	clientsLock     *sync.Mutex
 	clients         []*Client
 	sessionsEnabled bool
 	SessionRegistry sessionRegistry
 
 	// Internals
-	httpServer *http.Server
-	upgrader   websocket.Upgrader
-	warnLog    *log.Logger
-	errorLog   *log.Logger
+	upgrader websocket.Upgrader
+	warnLog  *log.Logger
+	errorLog *log.Logger
 }
 
-// NewServer creates a new WebWire server instance.
-func NewServer(
-	addr string,
-	hooks Hooks,
-	warningLogWriter io.Writer,
-	errorLogWriter io.Writer,
-) (*Server, error) {
-	hooks.SetDefaults()
+// NewServer creates a new WebWire server instance
+func NewServer(opts Options) *Server {
+	opts.SetDefaults()
 
 	sessionsEnabled := false
-	if hooks.OnSessionCreated != nil &&
-		hooks.OnSessionLookup != nil &&
-		hooks.OnSessionClosed != nil {
+	if opts.Hooks.OnSessionCreated != nil &&
+		opts.Hooks.OnSessionLookup != nil &&
+		opts.Hooks.OnSessionClosed != nil {
 		sessionsEnabled = true
 	}
 
 	srv := Server{
-		hooks: hooks,
+		hooks: opts.Hooks,
 
 		// State
 		clients:         make([]*Client, 0),
@@ -149,71 +138,25 @@ func NewServer(
 
 		// Internals
 		warnLog: log.New(
-			warningLogWriter,
+			opts.WarnLog,
 			"WARNING: ",
 			log.Ldate|log.Ltime|log.Lshortfile,
 		),
 		errorLog: log.New(
-			errorLogWriter,
+			opts.ErrorLog,
 			"ERROR: ",
 			log.Ldate|log.Ltime|log.Lshortfile,
 		),
 	}
 
-	// Initialize websocket
+	// Initialize HTTP connection upgrader
 	srv.upgrader = websocket.Upgrader{
 		CheckOrigin: func(_ *http.Request) bool {
 			return true
 		},
 	}
 
-	// Initialize HTTP server
-	srv.httpServer = &http.Server{
-		Addr:    addr,
-		Handler: &srv,
-	}
-
-	// Determine final address
-	addr = srv.httpServer.Addr
-	if addr == "" {
-		addr = ":http"
-	}
-
-	// Initialize TCP/IP listener
-	listener, err := net.Listen("tcp", addr)
-	if err != nil {
-		return nil, fmt.Errorf("Failed setting up TCP/IP listener: %s", err)
-	}
-
-	srv.launch = func() error {
-		// Launch server
-		err = srv.httpServer.Serve(
-			tcpKeepAliveListener{listener.(*net.TCPListener)},
-		)
-		if err != nil {
-			return fmt.Errorf("HTTP Server failure: %s", err)
-		}
-		return nil
-	}
-
-	// Remember HTTP server address
-	srv.Addr = listener.Addr().String()
-
-	return &srv, nil
-}
-
-type tcpKeepAliveListener struct {
-	*net.TCPListener
-}
-
-func (ln tcpKeepAliveListener) Accept() (c net.Conn, err error) {
-	tc, err := ln.AcceptTCP()
-	if err != nil {
-		return
-	}
-	tc.SetKeepAlive(true)
-	tc.SetKeepAlivePeriod(3 * time.Minute)
-	return tc, nil
+	return &srv
 }
 
 // handleSessionRestore handles session restoration (by session key) requests
@@ -477,9 +420,4 @@ func (srv *Server) deregisterSession(clt *Client) {
 	if err := srv.hooks.OnSessionClosed(clt); err != nil {
 		srv.errorLog.Printf("OnSessionClosed hook failed: %s", err)
 	}
-}
-
-// Run will launch the server blocking the calling goroutine
-func (srv *Server) Run() error {
-	return srv.launch()
 }

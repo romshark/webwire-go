@@ -16,7 +16,7 @@ func TestClientRequestRegisterOnTimeout(t *testing.T) {
 	var client webwireClient.Client
 
 	// Initialize webwire server given only the request
-	server := setupServer(
+	_, addr := setupServer(
 		t,
 		webwire.Hooks{
 			OnRequest: func(ctx context.Context) (webwire.Payload, *webwire.Error) {
@@ -33,11 +33,10 @@ func TestClientRequestRegisterOnTimeout(t *testing.T) {
 			},
 		},
 	)
-	go server.Run()
 
 	// Initialize client
 	client = webwireClient.NewClient(
-		server.Addr,
+		addr,
 		webwireClient.Hooks{},
 		5*time.Second,
 		os.Stdout,

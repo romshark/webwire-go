@@ -1,33 +1,43 @@
 package test
 
 import (
+	"fmt"
 	"os"
 	"reflect"
 	"testing"
 
-	webwire "github.com/qbeon/webwire-go"
+	wwr "github.com/qbeon/webwire-go"
 )
 
 // setupServer helps setting up
 // and launching the server together with the hosting http server
 func setupServer(
 	t *testing.T,
-	hooks webwire.Hooks,
-) (srv *webwire.Server) {
-	// Initialize webwire server
-	webwireServer, err := webwire.NewServer(
-		"127.0.0.1:0",
-		hooks,
-		os.Stdout, os.Stderr,
-	)
+	hooks wwr.Hooks,
+) (*wwr.Server, string) {
+	// Setup headed server on arbitrary port
+	srv, _, addr, run, err := wwr.SetupServer(wwr.Options{
+		Addr:     "127.0.0.1:0",
+		Hooks:    hooks,
+		WarnLog:  os.Stdout,
+		ErrorLog: os.Stderr,
+	})
 	if err != nil {
-		t.Fatalf("Failed creating a new WebWire server instance: %s", err)
+		t.Fatalf("Failed setting up server instance: %s", err)
 	}
 
-	return webwireServer
+	// Run server in a separate goroutine
+	go func() {
+		if err := run(); err != nil {
+			panic(fmt.Errorf("Server failed: %s", err))
+		}
+	}()
+
+	// Return reference to the server and the address its bound to
+	return srv, addr
 }
 
-func comparePayload(t *testing.T, name string, expected, actual webwire.Payload) {
+func comparePayload(t *testing.T, name string, expected, actual wwr.Payload) {
 	if actual.Encoding != expected.Encoding {
 		t.Errorf(
 			"Invalid %s: payload encoding differs:"+
@@ -49,7 +59,7 @@ func comparePayload(t *testing.T, name string, expected, actual webwire.Payload)
 	}
 }
 
-func compareSessions(t *testing.T, expected, actual *webwire.Session) {
+func compareSessions(t *testing.T, expected, actual *wwr.Session) {
 	if actual == nil && expected == nil {
 		return
 	} else if (actual == nil && expected != nil) ||

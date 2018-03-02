@@ -7,13 +7,13 @@ import (
 	"log"
 	"os"
 
-	webwire "github.com/qbeon/webwire-go"
+	wwr "github.com/qbeon/webwire-go"
 )
 
 var serverAddr = flag.String("addr", ":8081", "server address")
 
-func onRequest(ctx context.Context) (webwire.Payload, *webwire.Error) {
-	msg := ctx.Value(webwire.Msg).(webwire.Message)
+func onRequest(ctx context.Context) (wwr.Payload, *wwr.Error) {
+	msg := ctx.Value(wwr.Msg).(wwr.Message)
 	client := msg.Client
 
 	log.Printf("Replied to client: %s", client.RemoteAddr())
@@ -26,21 +26,22 @@ func main() {
 	// Parse command line arguments
 	flag.Parse()
 
-	// Initialize webwire server
-	server, err := webwire.NewServer(
-		*serverAddr,
-		webwire.Hooks{
+	// Setup webwire server
+	_, _, addr, runServer, err := wwr.SetupServer(wwr.Options{
+		Addr: *serverAddr,
+		Hooks: wwr.Hooks{
 			OnRequest: onRequest,
 		},
-		os.Stdout, os.Stderr,
-	)
+		WarnLog:  os.Stdout,
+		ErrorLog: os.Stderr,
+	})
 	if err != nil {
-		panic(fmt.Errorf(
-			"Failed creating a new WebWire server instance: %s", err,
-		))
+		panic(fmt.Errorf("Failed setting up WebWire server: %s", err))
 	}
 
-	log.Printf("Listening on %s", server.Addr)
+	log.Printf("Listening on %s", addr)
 
-	server.Run()
+	if err := runServer(); err != nil {
+		panic(fmt.Errorf("WebWire server failed: %s", err))
+	}
 }

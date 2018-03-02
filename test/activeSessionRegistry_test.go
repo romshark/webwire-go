@@ -15,7 +15,7 @@ import (
 // of currently active sessions is properly updated
 func TestActiveSessionRegistry(t *testing.T) {
 	// Initialize webwire server
-	server := setupServer(
+	srv, addr := setupServer(
 		t,
 		webwire.Hooks{
 			OnRequest: func(ctx context.Context) (webwire.Payload, *webwire.Error) {
@@ -49,11 +49,10 @@ func TestActiveSessionRegistry(t *testing.T) {
 			OnSessionClosed:  func(_ *webwire.Client) error { return nil },
 		},
 	)
-	go server.Run()
 
 	// Initialize client
 	client := webwireClient.NewClient(
-		server.Addr,
+		addr,
 		webwireClient.Hooks{},
 		5*time.Second,
 		os.Stdout,
@@ -76,7 +75,7 @@ func TestActiveSessionRegistry(t *testing.T) {
 		t.Fatalf("Request failed: %s", err)
 	}
 
-	activeSessionNumberBefore := server.SessionRegistry.Len()
+	activeSessionNumberBefore := srv.SessionRegistry.Len()
 	if activeSessionNumberBefore != 1 {
 		t.Fatalf(
 			"Unexpected active session number after authentication: %d",
@@ -95,7 +94,7 @@ func TestActiveSessionRegistry(t *testing.T) {
 		t.Fatalf("Request failed: %s", err)
 	}
 
-	activeSessionNumberAfter := server.SessionRegistry.Len()
+	activeSessionNumberAfter := srv.SessionRegistry.Len()
 	if activeSessionNumberAfter != 0 {
 		t.Fatalf("Unexpected active session number after logout: %d", activeSessionNumberAfter)
 	}

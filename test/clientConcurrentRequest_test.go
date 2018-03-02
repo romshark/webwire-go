@@ -17,7 +17,7 @@ func TestClientConcurrentRequest(t *testing.T) {
 	finished := NewPending(concurrentAccessors*2, 2*time.Second, true)
 
 	// Initialize webwire server
-	server := setupServer(
+	_, addr := setupServer(
 		t,
 		webwire.Hooks{
 			OnRequest: func(_ context.Context) (webwire.Payload, *webwire.Error) {
@@ -26,11 +26,10 @@ func TestClientConcurrentRequest(t *testing.T) {
 			},
 		},
 	)
-	go server.Run()
 
 	// Initialize client
 	client := webwireClient.NewClient(
-		server.Addr,
+		addr,
 		webwireClient.Hooks{},
 		5*time.Second,
 		os.Stdout,

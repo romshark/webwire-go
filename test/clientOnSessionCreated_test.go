@@ -18,7 +18,7 @@ func TestClientOnSessionCreated(t *testing.T) {
 	var sessionFromHook *webwire.Session
 
 	// Initialize webwire server
-	server := setupServer(
+	_, addr := setupServer(
 		t,
 		webwire.Hooks{
 			OnRequest: func(ctx context.Context) (webwire.Payload, *webwire.Error) {
@@ -40,11 +40,10 @@ func TestClientOnSessionCreated(t *testing.T) {
 			OnSessionClosed:  func(_ *webwire.Client) error { return nil },
 		},
 	)
-	go server.Run()
 
 	// Initialize client
 	client := webwireClient.NewClient(
-		server.Addr,
+		addr,
 		webwireClient.Hooks{
 			OnSessionCreated: func(newSession *webwire.Session) {
 				sessionFromHook = newSession

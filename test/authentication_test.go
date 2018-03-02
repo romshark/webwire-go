@@ -28,7 +28,7 @@ func TestAuthentication(t *testing.T) {
 	currentStep := 1
 
 	// Initialize webwire server
-	server := setupServer(
+	_, addr := setupServer(
 		t,
 		webwire.Hooks{
 			OnSignal: func(ctx context.Context) {
@@ -69,11 +69,10 @@ func TestAuthentication(t *testing.T) {
 			OnSessionClosed:  func(_ *webwire.Client) error { return nil },
 		},
 	)
-	go server.Run()
 
 	// Initialize client
 	client := webwireClient.NewClient(
-		server.Addr,
+		addr,
 		webwireClient.Hooks{},
 		5*time.Second,
 		os.Stdout,

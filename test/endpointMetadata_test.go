@@ -15,11 +15,10 @@ func TestEndpointMetadata(t *testing.T) {
 	expectedVersion := "1.1"
 
 	// Initialize webwire server
-	server := setupServer(
+	_, addr := setupServer(
 		t,
 		webwire.Hooks{},
 	)
-	go server.Run()
 
 	// Initialize HTTP client
 	var httpClient = &http.Client{
@@ -27,7 +26,7 @@ func TestEndpointMetadata(t *testing.T) {
 	}
 
 	// Request metadata
-	request, err := http.NewRequest("WEBWIRE", "http://"+server.Addr+"/", nil)
+	request, err := http.NewRequest("WEBWIRE", "http://"+addr+"/", nil)
 	if err != nil {
 		t.Fatalf("Couldn't create HTTP request: %s", err)
 	}

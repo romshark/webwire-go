@@ -28,7 +28,7 @@ func TestClientInitiatedSessionDestruction(t *testing.T) {
 	currentStep := 1
 
 	// Initialize webwire server
-	server := setupServer(
+	_, addr := setupServer(
 		t,
 		webwire.Hooks{
 			OnRequest: func(ctx context.Context) (webwire.Payload, *webwire.Error) {
@@ -79,11 +79,10 @@ func TestClientInitiatedSessionDestruction(t *testing.T) {
 			OnSessionClosed:  func(_ *webwire.Client) error { return nil },
 		},
 	)
-	go server.Run()
 
 	// Initialize client
 	client := webwireClient.NewClient(
-		server.Addr,
+		addr,
 		webwireClient.Hooks{
 			OnSessionCreated: func(_ *webwire.Session) {
 				// Mark the client-side session creation callback as executed

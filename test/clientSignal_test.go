@@ -20,7 +20,7 @@ func TestClientSignal(t *testing.T) {
 	signalArrived := NewPending(1, 1*time.Second, true)
 
 	// Initialize webwire server given only the signal handler
-	server := setupServer(
+	_, addr := setupServer(
 		t,
 		webwire.Hooks{
 			OnSignal: func(ctx context.Context) {
@@ -40,11 +40,10 @@ func TestClientSignal(t *testing.T) {
 			},
 		},
 	)
-	go server.Run()
 
 	// Initialize client
 	client := webwireClient.NewClient(
-		server.Addr,
+		addr,
 		webwireClient.Hooks{},
 		5*time.Second,
 		os.Stdout,

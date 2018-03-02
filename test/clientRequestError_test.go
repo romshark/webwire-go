@@ -23,7 +23,7 @@ func TestClientRequestError(t *testing.T) {
 	}
 
 	// Initialize webwire server given only the request
-	server := setupServer(
+	_, addr := setupServer(
 		t,
 		webwire.Hooks{
 			OnRequest: func(_ context.Context) (webwire.Payload, *webwire.Error) {
@@ -33,11 +33,10 @@ func TestClientRequestError(t *testing.T) {
 			},
 		},
 	)
-	go server.Run()
 
 	// Initialize client
 	client := webwireClient.NewClient(
-		server.Addr,
+		addr,
 		webwireClient.Hooks{},
 		5*time.Second,
 		os.Stdout,
