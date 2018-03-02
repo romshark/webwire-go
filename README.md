@@ -30,10 +30,10 @@ Clients can initiate multiple simultaneous requests and receive replies asynchro
 // Send a request to the server, will block the goroutine until replied
 reply, err := client.Request("", wwr.Payload{Data: []byte("sudo rm -rf /")})
 if err != nil {
-// Oh oh, request failed for some reason!
+  // Oh oh, request failed for some reason!
 }
 reply // Here we go!
-```
+ ```
 
 Timed requests will timeout and return an error if the server doesn't manage to reply within the specified time frame.
 
@@ -41,7 +41,7 @@ Timed requests will timeout and return an error if the server doesn't manage to 
 // Send a request to the server, will block the goroutine for 200ms at max
 reply, err := client.TimedRequest("", wwr.Payload{Data: []byte("hurry up!")}, 200*time.Millisecond)
 if err != nil {
-// Probably timed out!
+  // Probably timed out!
 }
 reply // Just in time!
 ```
@@ -59,10 +59,10 @@ The server also can send signals to individual connected clients.
 
 ```go
 func onRequest(ctx context.Context) (wwr.Payload, *wwr.Error) {
-msg := ctx.Value(wwr.Msg).(wwr.Message)
-// Send a signal to the client before replying to the request
-err := msg.Client.Signal("", wwr.Payload{Data: []byte("ping!")})
-return wwr.Payload{}, nil
+  msg := ctx.Value(wwr.Msg).(wwr.Message)
+  // Send a signal to the client before replying to the request
+  msg.Client.Signal("", wwr.Payload{Data: []byte("ping!")})
+  return wwr.Payload{}, nil
 }
 ```
 
@@ -71,25 +71,25 @@ Different kinds of requests and signals can be differentiated using the builtin 
 
 ```go
 func onRequest(ctx context.Context) (wwr.Payload, *wwr.Error) {
-msg := ctx.Value(wwr.Msg).(wwr.Message)
-if msg.Name == "auth" {
-// Authentication request
-}
-if msg.Name == "query" {
-// Query request
-}
-return wwr.Payload{}, nil
+  msg := ctx.Value(wwr.Msg).(wwr.Message)
+  switch msg.Name {
+  case "auth":
+    // Authentication request
+  case "query":
+    // Query request
+  }
+  return wwr.Payload{}, nil
 }
 ```
 ```go
 func onSignal(ctx context.Context) {
-msg := ctx.Value(wwr.Msg).(wwr.Message)
-if msg.Name == "event A" {
-// handle event A
-}
-if msg.Name == "event B" {
-// handle event B
-}
+  msg := ctx.Value(wwr.Msg).(wwr.Message)
+  switch msg.Name {
+  case "event A":
+    // handle event A
+  case "event B":
+    // handle event B
+  }
 }
 ```
 
@@ -98,23 +98,23 @@ Individual connections can get sessions assigned to identify them. The state of 
 
 ```go
 func onRequest(ctx context.Context) (wwr.Payload, *wwr.Error) {
-msg := ctx.Value(wwr.Msg).(wwr.Message)
-client := msg.Client
-// Verify credentials
-if string(msg.Payload.Data) != "secret:pass" {
-return wwr.Payload{}, wwr.Error {
-Code: "WRONG_CREDENTIALS",
-Message: "Incorrect username or password, try again"
-}
-}
-// Create session, will automatically synchronize to the client
-err := client.CreateSession(/*arbitrary data*/); err != nil {
-return wwr.Payload{}, wwr.Error {
-Code: "INTERNAL_ERROR",
-Message: "Couldn't create session for some reason"
-}
-}
-client.Session // return wwr.Payload{}, nil
+  msg := ctx.Value(wwr.Msg).(wwr.Message)
+  client := msg.Client
+  // Verify credentials
+  if string(msg.Payload.Data) != "secret:pass" {
+    return wwr.Payload{}, wwr.Error {
+      Code: "WRONG_CREDENTIALS",
+      Message: "Incorrect username or password, try again"
+    }
+  }
+  // Create session, will automatically synchronize to the client
+  err := client.CreateSession(/*arbitrary data*/); err != nil {
+    return wwr.Payload{}, wwr.Error {
+      Code: "INTERNAL_ERROR",
+      Message: "Couldn't create session for some reason"
+    }
+  }
+  client.Session // return wwr.Payload{}, nil
 }
 ```
 
