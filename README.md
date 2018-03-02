@@ -26,50 +26,50 @@ Fraudulent messages are recognized by analyzing the message length, out-of-range
 ### Request-Reply
 Clients can initiate multiple simultaneous requests and receive replies asynchronously. Requests are multiplexed through the connection similar to HTTP2 pipelining.
 
-'''go
+```go
 // Send a request to the server, will block the goroutine until replied
 reply, err := client.Request("", wwr.Payload{Data: []byte("sudo rm -rf /")})
 if err != nil {
 // Oh oh, request failed for some reason!
 }
 reply // Here we go!
-'''
+```
 
 Timed requests will timeout and return an error if the server doesn't manage to reply within the specified time frame.
 
-'''go
+```go
 // Send a request to the server, will block the goroutine for 200ms at max
 reply, err := client.TimedRequest("", wwr.Payload{Data: []byte("hurry up!")}, 200*time.Millisecond)
 if err != nil {
 // Probably timed out!
 }
 reply // Just in time!
-'''
+```
 
 ### Client-side Signals
 Individual clients can send signals to the server. Signals are one-way messages guaranteed to arrive not requiring any reply though.
 
-'''go
+```go
 // Send signal to server
 err := client.Signal("eventA", wwr.Payload{Data: []byte("something")})
-'''
+```
 
 ### Server-side Signals
 The server also can send signals to individual connected clients.
 
-'''go
+```go
 func onRequest(ctx context.Context) (wwr.Payload, *wwr.Error) {
 msg := ctx.Value(wwr.Msg).(wwr.Message)
 // Send a signal to the client before replying to the request
 err := msg.Client.Signal("", wwr.Payload{Data: []byte("ping!")})
 return wwr.Payload{}, nil
 }
-'''
+```
 
 ### Namespaces
 Different kinds of requests and signals can be differentiated using the builtin namespacing feature.
 
-'''go
+```go
 func onRequest(ctx context.Context) (wwr.Payload, *wwr.Error) {
 msg := ctx.Value(wwr.Msg).(wwr.Message)
 if msg.Name == "auth" {
@@ -80,8 +80,8 @@ if msg.Name == "query" {
 }
 return wwr.Payload{}, nil
 }
-'''
-'''go
+```
+```go
 func onSignal(ctx context.Context) {
 msg := ctx.Value(wwr.Msg).(wwr.Message)
 if msg.Name == "event A" {
@@ -91,12 +91,12 @@ if msg.Name == "event B" {
 // handle event B
 }
 }
-'''
+```
 
 ### Sessions
 Individual connections can get sessions assigned to identify them. The state of the session is automagically synchronized between the client and the server. WebWire doesn't enforce any kind of authentication technique though, it just provides you a way to authenticate a connection. WebWire also doesn't enforce any kind of session storage, it's up to the user to implement any kind of volatile or persistent session storage, be it a database or a simple map.
 
-'''go
+```go
 func onRequest(ctx context.Context) (wwr.Payload, *wwr.Error) {
 msg := ctx.Value(wwr.Msg).(wwr.Message)
 client := msg.Client
@@ -116,7 +116,7 @@ Message: "Couldn't create session for some reason"
 }
 client.Session // return wwr.Payload{}, nil
 }
-'''
+```
 
 ### Thread Safety
 It's safe to use both the session agents (those that are provided by the server through messages) and the client concurrently from multiple goroutines, the library automatically synchronizes concurrent operations.
