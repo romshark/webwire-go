@@ -7,22 +7,57 @@ import (
 	"testing"
 	"time"
 
-	webwire "github.com/qbeon/webwire-go"
-	webwireClient "github.com/qbeon/webwire-go/client"
+	wwr "github.com/qbeon/webwire-go"
+	wwrclt "github.com/qbeon/webwire-go/client"
 )
 
 // TestAuthentication verifies the server is connectable,
 // and is able to receives requests and signals, create sessions
 // and identify clients during request- and signal handling
 func TestAuthentication(t *testing.T) {
+	// Because compareSessions doesn't compare the sessions attached info:
+	compareSessionInfo := func(actual *wwr.Session) {
+		info, ok := actual.Info.(struct {
+			UserID     string `json:"uid"`
+			SomeNumber int    `json:"some-number"`
+		})
+		if !ok {
+			t.Errorf("Couldn't cast info from: %v", actual.Info)
+		}
+
+		// Check uid
+		field := "session.info.UserID"
+		expectedUID := "clientidentifiergoeshere"
+		if info.UserID != expectedUID {
+			t.Errorf("%s differs: %s | %s", field, info.UserID, expectedUID)
+			return
+		}
+
+		// Check some-number
+		field = "session.info.some-number"
+		expectedNumber := int(12345)
+		if info.SomeNumber != expectedNumber {
+			t.Errorf("%s differs: %s | %s", field, info.SomeNumber, expectedNumber)
+			return
+		}
+	}
+
+	onSessionCreatedHookExecuted := NewPending(1, 1*time.Second, true)
 	clientSignalReceived := NewPending(1, 1*time.Second, true)
-	var createdSession *webwire.Session
-	expectedCredentials := webwire.Payload{
-		Encoding: webwire.EncodingUtf8,
+	var createdSession *wwr.Session
+	sessionInfo := struct {
+		UserID     string `json:"uid"`
+		SomeNumber int    `json:"some-number"`
+	}{
+		"clientidentifiergoeshere",
+		12345,
+	}
+	expectedCredentials := wwr.Payload{
+		Encoding: wwr.EncodingUtf8,
 		Data:     []byte("secret_credentials"),
 	}
-	expectedConfirmation := webwire.Payload{
-		Encoding: webwire.EncodingUtf8,
+	expectedConfirmation := wwr.Payload{
+		Encoding: wwr.EncodingUtf8,
 		Data:     []byte("session_is_correct"),
 	}
 	currentStep := 1
@@ -30,26 +65,28 @@ func TestAuthentication(t *testing.T) {
 	// Initialize webwire server
 	_, addr := setupServer(
 		t,
-		webwire.Hooks{
+		wwr.Hooks{
 			OnSignal: func(ctx context.Context) {
 				defer clientSignalReceived.Done()
 				// Extract request message and requesting client from the context
-				msg := ctx.Value(webwire.Msg).(webwire.Message)
+				msg := ctx.Value(wwr.Msg).(wwr.Message)
 				compareSessions(t, createdSession, msg.Client.Session)
+				compareSessionInfo(msg.Client.Session)
 			},
-			OnRequest: func(ctx context.Context) (webwire.Payload, *webwire.Error) {
+			OnRequest: func(ctx context.Context) (wwr.Payload, *wwr.Error) {
 				// Extract request message and requesting client from the context
-				msg := ctx.Value(webwire.Msg).(webwire.Message)
+				msg := ctx.Value(wwr.Msg).(wwr.Message)
 
 				// If already authenticated then check session
 				if currentStep > 1 {
 					compareSessions(t, createdSession, msg.Client.Session)
+					compareSessionInfo(msg.Client.Session)
 					return expectedConfirmation, nil
 				}
 
 				// Try to create a new session
-				if err := msg.Client.CreateSession(nil); err != nil {
-					return webwire.Payload{}, &webwire.Error{
+				if err := msg.Client.CreateSession(sessionInfo); err != nil {
+					return wwr.Payload{}, &wwr.Error{
 						Code:    "INTERNAL_ERROR",
 						Message: fmt.Sprintf("Internal server error: %s", err),
 					}
@@ -59,21 +96,55 @@ func TestAuthentication(t *testing.T) {
 				currentStep = 2
 
 				// Return the key of the newly created session (use default binary encoding)
-				return webwire.Payload{
+				return wwr.Payload{
 					Data: []byte(msg.Client.Session.Key),
 				}, nil
 			},
 			// Define dummy hooks to enable sessions on this server
-			OnSessionCreated: func(_ *webwire.Client) error { return nil },
-			OnSessionLookup:  func(_ string) (*webwire.Session, error) { return nil, nil },
-			OnSessionClosed:  func(_ *webwire.Client) error { return nil },
+			OnSessionCreated: func(_ *wwr.Client) error { return nil },
+			OnSessionLookup:  func(_ string) (*wwr.Session, error) { return nil, nil },
+			OnSessionClosed:  func(_ *wwr.Client) error { return nil },
 		},
 	)
 
 	// Initialize client
-	client := webwireClient.NewClient(
+	client := wwrclt.NewClient(
 		addr,
-		webwireClient.Hooks{},
+		wwrclt.Hooks{
+			OnSessionCreated: func(session *wwr.Session) {
+				// The session info object won't be of initial structure type
+				// because of intermediate JSON encoding
+				// it'll be a map of arbitrary values with string keys
+				info := session.Info.(map[string]interface{})
+
+				// Check uid
+				field := "session.info.uid"
+				expectedUID := "clientidentifiergoeshere"
+				actualUID, ok := info["uid"].(string)
+				if !ok {
+					t.Errorf("expected %s not string", field)
+					return
+				}
+				if actualUID != expectedUID {
+					t.Errorf("%s differs: %s | %s", field, actualUID, expectedUID)
+					return
+				}
+
+				// Check some-number
+				field = "session.info.some-number"
+				expectedNumber := float64(12345)
+				actualNumber, ok := info["some-number"].(float64)
+				if !ok {
+					t.Errorf("expected %s not float64", field)
+					return
+				}
+				if actualNumber != expectedNumber {
+					t.Errorf("%s differs: %s | %s", field, actualNumber, expectedNumber)
+					return
+				}
+				onSessionCreatedHookExecuted.Done()
+			},
+		},
 		5*time.Second,
 		os.Stdout,
 		os.Stderr,
@@ -97,7 +168,7 @@ func TestAuthentication(t *testing.T) {
 	comparePayload(
 		t,
 		"authentication reply",
-		webwire.Payload{
+		wwr.Payload{
 			Data: []byte(createdSession.Key),
 		},
 		authReqReply,
@@ -120,5 +191,10 @@ func TestAuthentication(t *testing.T) {
 
 	if err := clientSignalReceived.Wait(); err != nil {
 		t.Fatal("Client signal not received")
+	}
+
+	// Expect the session creation hook to be executed in the client
+	if err := onSessionCreatedHookExecuted.Wait(); err != nil {
+		t.Fatalf("client.OnSessionCreated hook wasn't executed")
 	}
 }
