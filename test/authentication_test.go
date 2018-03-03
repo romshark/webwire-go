@@ -37,7 +37,7 @@ func TestAuthentication(t *testing.T) {
 		field = "session.info.some-number"
 		expectedNumber := int(12345)
 		if info.SomeNumber != expectedNumber {
-			t.Errorf("%s differs: %s | %s", field, info.SomeNumber, expectedNumber)
+			t.Errorf("%s differs: %d | %d", field, info.SomeNumber, expectedNumber)
 			return
 		}
 	}
@@ -139,7 +139,7 @@ func TestAuthentication(t *testing.T) {
 					return
 				}
 				if actualNumber != expectedNumber {
-					t.Errorf("%s differs: %s | %s", field, actualNumber, expectedNumber)
+					t.Errorf("%s differs: %f | %f", field, actualNumber, expectedNumber)
 					return
 				}
 				onSessionCreatedHookExecuted.Done()
