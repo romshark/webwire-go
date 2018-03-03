@@ -3,6 +3,8 @@ package client
 import "sync/atomic"
 
 func (clt *Client) close() {
+	clt.connLock.Lock()
+	defer clt.connLock.Unlock()
 	if atomic.LoadInt32(&clt.isConnected) < 1 {
 		return
 	}
