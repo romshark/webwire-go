@@ -25,7 +25,10 @@ func onSessionCreated(client *webwire.Client) error {
 }
 
 func onSessionLookup(key string) (*webwire.Session, error) {
-	return sessions[key].Session, nil
+	if clt, ok := sessions[key]; ok {
+		return clt.Session, nil
+	}
+	return nil, nil
 }
 
 func onSessionClosed(client *webwire.Client) error {
