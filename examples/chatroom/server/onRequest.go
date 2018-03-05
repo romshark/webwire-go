@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"log"
 
-	webwire "github.com/qbeon/webwire-go"
+	wwr "github.com/qbeon/webwire-go"
 	"github.com/qbeon/webwire-go/examples/chatroom/shared"
 )
 
@@ -14,16 +14,31 @@ import (
 // interpreted as authentication attempts. It parses and verifies
 // the provided credentials and either rejects the authentication
 // or confirms it eventually creating a session and returning the session key
-func onRequest(ctx context.Context) (webwire.Payload, *webwire.Error) {
-	msg := ctx.Value(webwire.Msg).(webwire.Message)
+func onRequest(ctx context.Context) (wwr.Payload, *wwr.Error) {
+	msg := ctx.Value(wwr.Msg).(wwr.Message)
 	client := msg.Client
+
+	if msg.Name != "auth" {
+		return wwr.Payload{}, &wwr.Error{
+			Code:    "BAD_REQUEST",
+			Message: fmt.Sprintf("Unsupported request name: %s", msg.Name),
+		}
+	}
+
+	credentialsText, err := ToUTF8(msg.Payload)
+	if err != nil {
+		return wwr.Payload{}, &wwr.Error{
+			Code:    "DECODING_FAILURE",
+			Message: fmt.Sprintf("Failed decoding message: %s", err),
+		}
+	}
 
 	log.Printf("Client attempts authentication: %s", client.RemoteAddr())
 
 	// Try to parse credentials
 	var credentials shared.AuthenticationCredentials
-	if err := json.Unmarshal(msg.Payload.Data, &credentials); err != nil {
-		return webwire.Payload{}, &webwire.Error{
+	if err := json.Unmarshal([]byte(credentialsText), &credentials); err != nil {
+		return wwr.Payload{}, &wwr.Error{
 			Code:    "INTERNAL_ERROR",
 			Message: fmt.Sprintf("Failed parsing credentials: %s", err),
 		}
@@ -32,7 +47,7 @@ func onRequest(ctx context.Context) (webwire.Payload, *webwire.Error) {
 	// Verify username
 	password, userExists := userAccounts[credentials.Name]
 	if !userExists {
-		return webwire.Payload{}, &webwire.Error{
+		return wwr.Payload{}, &wwr.Error{
 			Code:    "INEXISTENT_USER",
 			Message: fmt.Sprintf("No such user: '%s'", credentials.Name),
 		}
@@ -40,7 +55,7 @@ func onRequest(ctx context.Context) (webwire.Payload, *webwire.Error) {
 
 	// Verify password
 	if password != credentials.Password {
-		return webwire.Payload{}, &webwire.Error{
+		return wwr.Payload{}, &wwr.Error{
 			Code:    "WRONG_PASSWORD",
 			Message: "Provided password is wrong",
 		}
@@ -48,7 +63,7 @@ func onRequest(ctx context.Context) (webwire.Payload, *webwire.Error) {
 
 	// Check if client already has an ongoing session
 	if hasSession(client) {
-		return webwire.Payload{}, &webwire.Error{
+		return wwr.Payload{}, &wwr.Error{
 			Code:    "SESSION_ACTIVE",
 			Message: "Already have an ongoing session for this client",
 		}
@@ -58,7 +73,7 @@ func onRequest(ctx context.Context) (webwire.Payload, *webwire.Error) {
 	if err := client.CreateSession(map[string]string{
 		"username": credentials.Name,
 	}); err != nil {
-		return webwire.Payload{}, &webwire.Error{
+		return wwr.Payload{}, &wwr.Error{
 			Code:    "INTERNAL_ERROR",
 			Message: fmt.Sprintf("Couldn't create session: %s", err),
 		}
@@ -71,7 +86,7 @@ func onRequest(ctx context.Context) (webwire.Payload, *webwire.Error) {
 	)
 
 	// Reply to the request, use default binary encoding
-	return webwire.Payload{
+	return wwr.Payload{
 		Data: []byte(client.Session.Key),
 	}, nil
 }
