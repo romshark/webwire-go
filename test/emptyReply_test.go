@@ -10,7 +10,7 @@ import (
 	webwireClient "github.com/qbeon/webwire-go/client"
 )
 
-// TestEmptyReply verifies empty binary reply acceptence
+// TestEmptyReply verifies empty binary reply acceptance
 func TestEmptyReply(t *testing.T) {
 	// Initialize webwire server given only the request
 	_, addr := setupServer(

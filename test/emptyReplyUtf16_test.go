@@ -10,7 +10,7 @@ import (
 	webwireClient "github.com/qbeon/webwire-go/client"
 )
 
-// TestEmptyReplyUtf16 verifies empty UTF16 encoded reply acceptence
+// TestEmptyReplyUtf16 verifies empty UTF16 encoded reply acceptance
 func TestEmptyReplyUtf16(t *testing.T) {
 	// Initialize webwire server given only the request
 	_, addr := setupServer(
