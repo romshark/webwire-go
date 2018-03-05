@@ -54,20 +54,6 @@ const (
 	MsgMinLenSessionClosed = int(1)
 )
 
-// PayloadEncoding represents the type of encoding of the message payload
-type PayloadEncoding int
-
-const (
-	// EncodingBinary represents unencoded binary data
-	EncodingBinary PayloadEncoding = iota
-
-	// EncodingUtf8 represents UTF8 encoding
-	EncodingUtf8
-
-	// EncodingUtf16 represents UTF16 encoding
-	EncodingUtf16
-)
-
 const (
 	// SERVER/CLIENT
 

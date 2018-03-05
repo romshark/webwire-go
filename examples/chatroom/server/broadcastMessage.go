@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/qbeon/webwire-go"
+	wwr "github.com/qbeon/webwire-go"
 
 	"github.com/qbeon/webwire-go/examples/chatroom/shared"
 )
@@ -26,8 +26,9 @@ func broadcastMessage(name string, msg string) {
 	log.Printf("Broadcast message to %d clients", len(connectedClients))
 	for client := range connectedClients {
 		// Send message as signal
-		if err := client.Signal("", webwire.Payload{
-			Data: encoded,
+		if err := client.Signal("", wwr.Payload{
+			Encoding: wwr.EncodingUtf8,
+			Data:     encoded,
 		}); err != nil {
 			log.Printf(
 				"WARNING: failed sending signal to client %s : %s",
