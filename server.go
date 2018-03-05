@@ -221,7 +221,7 @@ func (srv *Server) handleSessionRestore(msg *Message) error {
 	srv.SessionRegistry.register(msg.Client)
 
 	msg.fulfill(Payload{
-		Encoding: EncodingUtf16,
+		Encoding: EncodingUtf8,
 		Data:     encodedSession,
 	})
 
