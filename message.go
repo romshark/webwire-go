@@ -33,10 +33,10 @@ const (
 	MsgMinLenRequestUtf16 = int(12)
 
 	// MsgMinLenReply represents the minimum binary/UTF8 encoded reply message length
-	MsgMinLenReply = int(10)
+	MsgMinLenReply = int(9)
 
 	// MsgMinLenReplyUtf16 represents the minimum UTF16 encoded reply message length
-	MsgMinLenReplyUtf16 = int(12)
+	MsgMinLenReplyUtf16 = int(10)
 
 	// MsgMinLenErrorReply represents the minimum error reply message length
 	MsgMinLenErrorReply = int(10)
@@ -560,7 +560,7 @@ func (msg *Message) parseReply(message []byte) error {
 	// Minimum binary/UTF8 reply message structure:
 	// 1. message type (1 byte)
 	// 2. message id (8 bytes)
-	// 3. payload (n bytes, at least 1 byte)
+	// 3. payload (n bytes, optional, at least 1 byte)
 	if len(message) < MsgMinLenReply {
 		return fmt.Errorf("Invalid reply message, too short")
 	}
@@ -569,6 +569,11 @@ func (msg *Message) parseReply(message []byte) error {
 	var id [8]byte
 	copy(id[:], message[1:9])
 	msg.id = id
+
+	// Skip payload if there's none
+	if len(message) == MsgMinLenReply {
+		return nil
+	}
 
 	// Read payload
 	msg.Payload = Payload{
@@ -582,7 +587,7 @@ func (msg *Message) parseReplyUtf16(message []byte) error {
 	// 1. message type (1 byte)
 	// 2. message id (8 bytes)
 	// 3. header padding (1 byte)
-	// 4. payload (n bytes, at least 2 bytes)
+	// 4. payload (n bytes, optional, at least 2 bytes)
 	if len(message) < MsgMinLenReplyUtf16 {
 		return fmt.Errorf("Invalid UTF16 reply message, too short")
 	}
@@ -597,6 +602,14 @@ func (msg *Message) parseReplyUtf16(message []byte) error {
 	var id [8]byte
 	copy(id[:], message[1:9])
 	msg.id = id
+
+	// Skip payload if there's none
+	if len(message) == MsgMinLenReplyUtf16 {
+		msg.Payload = Payload{
+			Encoding: EncodingUtf16,
+		}
+		return nil
+	}
 
 	// Read payload
 	msg.Payload = Payload{
