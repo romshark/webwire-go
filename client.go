@@ -18,7 +18,13 @@ type Client struct {
 	conn *websocket.Conn
 
 	connectionTime time.Time
+	userAgent      string
 	Session        *Session
+}
+
+// UserAgent returns the user agent string associated with this client
+func (clt *Client) UserAgent() string {
+	return clt.userAgent
 }
 
 // write sends the given data to the other side of the socket,

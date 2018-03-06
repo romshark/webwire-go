@@ -11,7 +11,7 @@ var sessions = make(map[string]*webwire.Client)
 
 func onClientConnected(newClient *webwire.Client) {
 	connectedClients[newClient] = true
-	log.Printf("New client connected: %s", newClient.RemoteAddr())
+	log.Printf("New client connected: %s | %s", newClient.RemoteAddr(), newClient.UserAgent())
 }
 
 func onClientDisconnected(client *webwire.Client) {

@@ -354,6 +354,7 @@ func (srv *Server) ServeHTTP(
 		&sync.Mutex{},
 		conn,
 		time.Now(),
+		req.Header.Get("User-Agent"),
 		nil,
 	}
 
