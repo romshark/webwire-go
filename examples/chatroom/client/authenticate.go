@@ -20,7 +20,7 @@ func authenticate() {
 		panic(fmt.Errorf("Couldn't marshal credentials: %s", err))
 	}
 
-	if _, reqErr := client.Request("", webwire.Payload{
+	if _, reqErr := client.Request("auth", webwire.Payload{
 		Data: encodedCreds,
 	}); reqErr != nil {
 		log.Printf(

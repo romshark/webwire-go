@@ -25,7 +25,7 @@ func onRequest(ctx context.Context) (wwr.Payload, *wwr.Error) {
 		}
 	}
 
-	credentialsText, err := ToUTF8(msg.Payload)
+	credentialsText, err := msg.Payload.Utf8()
 	if err != nil {
 		return wwr.Payload{}, &wwr.Error{
 			Code:    "DECODING_FAILURE",
