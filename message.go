@@ -121,12 +121,6 @@ const (
 	MsgReplyUtf16 = byte(193)
 )
 
-// Payload represents an encoded message payload
-type Payload struct {
-	Encoding PayloadEncoding
-	Data     []byte
-}
-
 // Message represents a WebWire protocol message
 type Message struct {
 	fulfill func(reply Payload)
