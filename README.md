@@ -11,6 +11,15 @@ The [webwire-go](https://github.com/qbeon/webwire-go) library provides both a cl
 ## Installation
 Chose any stable release from [the available release tags](https://github.com/qbeon/webwire-go/releases) and copy the source code into your projects vendor directory: ```$YOURPROJECT/vendor/github.com/qbeon/webwire-go```
 
+## Contribution
+Feel free to report bugs and propose new features or changes in the [Issues section](https://github.com/qbeon/webwire-go/issues).
+
+### Maintainers
+| Maintainer | Role | Specialization |
+| :--- | :--- | :--- |
+| **[Roman Sharkov](https://github.com/romshark)** | Core Maintainer | Dev (Go, JavaScript) |
+| **[Daniil Trishkin](https://github.com/FromZeus)** | CI Maintainer | DevOps |
+
 ## WebWire Binary Protocol
 WebWire is built for speed and portability implementing an open source binary protocol.
 ![Protocol Subset Diagram](https://github.com/qbeon/webwire-go/blob/master/docs/img/wwr_msgproto_diagram.svg)
