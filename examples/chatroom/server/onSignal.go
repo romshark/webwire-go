@@ -14,13 +14,12 @@ func onSignal(ctx context.Context) {
 	msg := ctx.Value(wwr.Msg).(wwr.Message)
 	client := msg.Client
 
-	msgStr := string(msg.Payload.Data)
-
-	if msg.Payload.Encoding != wwr.EncodingUtf8 {
+	msgStr, err := msg.Payload.Utf8()
+	if err != nil {
 		log.Printf(
-			"Received invalid message from %s, unsupported payload encoding (%s), expected UTF8",
+			"Received invalid message from %s, couldn't convert payload to UTF8: %s",
 			client.RemoteAddr(),
-			msg.Payload.Encoding.String(),
+			err,
 		)
 		return
 	}
