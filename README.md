@@ -8,6 +8,25 @@
 WebWire is a high-level asynchronous duplex messaging library built on top of [WebSockets](https://developer.mozilla.org/de/docs/WebSockets) and an open source binary message protocol with builtin authentication and support for UTF8 and UTF16 encoding.
 The [webwire-go](https://github.com/qbeon/webwire-go) library provides both a client and a server implementation for the Go programming language. An official [JavaScript client](https://github.com/qbeon/webwire-js) implementation is also available. WebWire provides a compact set of useful features that are not available and/or cumbersome to implement on raw WebSockets such as Request-Reply, Sessions, Thread-safety etc.
 
+#### Table of Contents
+- [Introduction](https://github.com/qbeon/webwire-go#webwire-for-golang)
+- [Installation](https://github.com/qbeon/webwire-go#installation)
+- [Contribution](https://github.com/qbeon/webwire-go#contribution)
+  - [Maintainers](https://github.com/qbeon/webwire-go#maintainers)
+- [WebWire Binary Protocol](https://github.com/qbeon/webwire-go#webwire-binary-protocol)
+- [Examples](https://github.com/qbeon/webwire-go#examples)
+- [Features](https://github.com/qbeon/webwire-go#features)
+  - [Request-Reply](https://github.com/qbeon/webwire-go#request-reply)
+  - [Client-side Signals](https://github.com/qbeon/webwire-go#client-side-signals)
+  - [Server-side Signals](https://github.com/qbeon/webwire-go#server-side-signals)
+  - [Namespaces](https://github.com/qbeon/webwire-go#namespaces)
+  - [Sessions](https://github.com/qbeon/webwire-go#sessions)
+  - [Thread-Safety](https://github.com/qbeon/webwire-go#thread-safety)
+  - [Hooks](https://github.com/qbeon/webwire-go#hooks)
+    - [Server-side Hooks](https://github.com/qbeon/webwire-go#server-side-hooks)
+    - [Client-side Hooks](https://github.com/qbeon/webwire-go#client-side-hooks)
+
+
 ## Installation
 Chose any stable release from [the available release tags](https://github.com/qbeon/webwire-go/releases) and copy the source code into your projects vendor directory: ```$YOURPROJECT/vendor/github.com/qbeon/webwire-go```
 
