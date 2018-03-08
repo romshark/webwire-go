@@ -25,6 +25,7 @@ The [webwire-go](https://github.com/qbeon/webwire-go) library provides both a cl
   - [Hooks](https://github.com/qbeon/webwire-go#hooks)
     - [Server-side Hooks](https://github.com/qbeon/webwire-go#server-side-hooks)
     - [Client-side Hooks](https://github.com/qbeon/webwire-go#client-side-hooks)
+- [Dependencies](https://github.com/qbeon/webwire-go#dependencies)
 
 
 ## Installation
@@ -170,6 +171,10 @@ Various hooks provide the ability to asynchronously react to different kinds of 
 - OnServerSignal
 - OnSessionCreated
 - OnSessionClosed
+
+## Dependencies
+This library depends on:
+- **[websocket](https://github.com/gorilla/websocket)** version [v1.2.0](https://github.com/gorilla/websocket/releases/tag/v1.2.0) by **[Gorilla web toolkit](https://github.com/gorilla)** - A WebSocket implementation for Go.
 
 ----
 
