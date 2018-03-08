@@ -5,8 +5,11 @@
 [![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.me/romshark)
 
 # WebWire for Golang
-WebWire is a high-level asynchronous duplex messaging library built on top of [WebSockets](https://developer.mozilla.org/de/docs/WebSockets) and an open source binary message protocol with builtin support for UTF8 and UTF16 encoding.
+WebWire is a high-level asynchronous duplex messaging library built on top of [WebSockets](https://developer.mozilla.org/de/docs/WebSockets) and an open source binary message protocol with builtin authentication and support for UTF8 and UTF16 encoding.
 The [webwire-go](https://github.com/qbeon/webwire-go) library provides both a client and a server implementation for the Go programming language. An official [JavaScript client](https://github.com/qbeon/webwire-js) implementation is also available. WebWire provides a compact set of useful features that are not available and/or cumbersome to implement on raw WebSockets such as Request-Reply, Sessions, Thread-safety etc.
+
+## Installation
+Chose any stable release from [the available release tags](https://github.com/qbeon/webwire-go/releases) and copy the source code into your projects vendor directory: ```$YOURPROJECT/vendor/github.com/qbeon/webwire-go```
 
 ## WebWire Binary Protocol
 WebWire is built for speed and portability implementing an open source binary protocol.
