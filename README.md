@@ -29,7 +29,7 @@ The [webwire-go](https://github.com/qbeon/webwire-go) library provides both a cl
 
 
 ## Installation
-Chose any stable release from [the available release tags](https://github.com/qbeon/webwire-go/releases) and copy the source code into your projects vendor directory: ```$YOURPROJECT/vendor/github.com/qbeon/webwire-go```
+Choose any stable release from [the available release tags](https://github.com/qbeon/webwire-go/releases) and copy the source code into your project's vendor directory: ```$YOURPROJECT/vendor/github.com/qbeon/webwire-go```
 
 ## Contribution
 Feel free to report bugs and propose new features or changes in the [Issues section](https://github.com/qbeon/webwire-go/issues).
