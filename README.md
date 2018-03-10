@@ -188,7 +188,8 @@ Various hooks provide the ability to asynchronously react to different kinds of 
 
 ## Dependencies
 This library depends on:
-- **[websocket](https://github.com/gorilla/websocket)** version [v1.2.0](https://github.com/gorilla/websocket/releases/tag/v1.2.0) by **[Gorilla web toolkit](https://github.com/gorilla)** - A WebSocket implementation for Go.
+- **[websocket](https://github.com/gorilla/websocket)** version [v1.2.0](https://github.com/gorilla/websocket/releases/tag/v1.2.0) by **[Gorilla web toolkit](https://github.com/gorilla)** - A WebSocket implementation for Go.  
+This library is used internally to abstract away the underlying websockets implementation.
 
 ----
 
