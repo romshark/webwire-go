@@ -151,6 +151,19 @@ func onRequest(ctx context.Context) (wwr.Payload, *wwr.Error) {
 }
 ```
 
+### Automatic Session Restoration
+The client will automatically try to restore the previously opened session during connection establishment when getting disconnected without explicitly closing the session before.
+
+```go
+// Will automatically restore the previous session if there was any
+err := client.Connect()
+```
+
+The session can also be restored manually given its key assuming the server didn't yet delete it. Session restoration will fail and return an error if the provided key doesn't correspond to any active session on the server or else if there's another active session already assigned to this client.
+```go
+err := client.RestoreSession([]byte("yoursessionkeygoeshere"))
+```
+
 ### Thread Safety
 It's safe to use both the session agents (those that are provided by the server through messages) and the client concurrently from multiple goroutines, the library automatically synchronizes concurrent operations.
 
