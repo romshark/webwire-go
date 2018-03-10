@@ -21,6 +21,7 @@ The [webwire-go](https://github.com/qbeon/webwire-go) library provides both a cl
   - [Server-side Signals](https://github.com/qbeon/webwire-go#server-side-signals)
   - [Namespaces](https://github.com/qbeon/webwire-go#namespaces)
   - [Sessions](https://github.com/qbeon/webwire-go#sessions)
+  - [Automatic Session Restoration](https://github.com/qbeon/webwire-go/blob/master/README.md#automatic-session-restoration)
   - [Thread-Safety](https://github.com/qbeon/webwire-go#thread-safety)
   - [Hooks](https://github.com/qbeon/webwire-go#hooks)
     - [Server-side Hooks](https://github.com/qbeon/webwire-go#server-side-hooks)
