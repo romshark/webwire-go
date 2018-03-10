@@ -26,6 +26,7 @@ The [webwire-go](https://github.com/qbeon/webwire-go) library provides both a cl
   - [Hooks](https://github.com/qbeon/webwire-go#hooks)
     - [Server-side Hooks](https://github.com/qbeon/webwire-go#server-side-hooks)
     - [Client-side Hooks](https://github.com/qbeon/webwire-go#client-side-hooks)
+  - [Seamless JavaScript Support](https://github.com/qbeon/webwire-go#seamless-javascript-support)
 - [Dependencies](https://github.com/qbeon/webwire-go#dependencies)
 
 
@@ -185,6 +186,9 @@ Various hooks provide the ability to asynchronously react to different kinds of 
 - OnServerSignal
 - OnSessionCreated
 - OnSessionClosed
+
+### Seamless JavaScript Support
+The [official JavaScript library](https://github.com/qbeon/webwire-js) enables seamless support for various JavaScript environments providing a fully compliant client implementation supporting the latest feature set of the [webwire-go](https://github.com/qbeon/webwire-go) library.
 
 ## Dependencies
 This library depends on:
