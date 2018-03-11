@@ -7,6 +7,7 @@ import (
 	"log"
 
 	wwr "github.com/qbeon/webwire-go"
+	"github.com/qbeon/webwire-go/examples/chatroom/server/state"
 	"github.com/qbeon/webwire-go/examples/chatroom/shared"
 )
 
@@ -62,7 +63,7 @@ func onRequest(ctx context.Context) (wwr.Payload, *wwr.Error) {
 	}
 
 	// Check if client already has an ongoing session
-	if hasSession(client) {
+	if state.State.HasSession(client) {
 		return wwr.Payload{}, &wwr.Error{
 			Code:    "SESSION_ACTIVE",
 			Message: "Already have an ongoing session for this client",

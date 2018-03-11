@@ -7,6 +7,7 @@ import (
 
 	wwr "github.com/qbeon/webwire-go"
 
+	"github.com/qbeon/webwire-go/examples/chatroom/server/state"
 	"github.com/qbeon/webwire-go/examples/chatroom/shared"
 )
 
@@ -23,8 +24,8 @@ func broadcastMessage(name string, msg string) {
 	}
 
 	// Send message as a signal to each connected client
-	log.Printf("Broadcast message to %d clients", len(connectedClients))
-	for client := range connectedClients {
+	log.Printf("Broadcast message to %d clients", state.State.NumConnected())
+	state.State.ForEachConnected(func(client *wwr.Client) {
 		// Send message as signal
 		if err := client.Signal("", wwr.Payload{
 			Encoding: wwr.EncodingUtf8,
@@ -36,5 +37,5 @@ func broadcastMessage(name string, msg string) {
 				err,
 			)
 		}
-	}
+	})
 }
