@@ -26,7 +26,7 @@ func TestClientRequest(t *testing.T) {
 	_, addr := setupServer(
 		t,
 		webwire.Hooks{
-			OnRequest: func(ctx context.Context) (webwire.Payload, *webwire.Error) {
+			OnRequest: func(ctx context.Context) (webwire.Payload, error) {
 				// Extract request message from the context
 				msg := ctx.Value(webwire.Msg).(webwire.Message)
 

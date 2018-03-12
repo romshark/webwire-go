@@ -19,7 +19,7 @@ func TestClientRequestRegisterOnReply(t *testing.T) {
 	_, addr := setupServer(
 		t,
 		webwire.Hooks{
-			OnRequest: func(ctx context.Context) (webwire.Payload, *webwire.Error) {
+			OnRequest: func(ctx context.Context) (webwire.Payload, error) {
 				// Verify pending requests
 				pendingReqs := client.PendingRequests()
 				if pendingReqs != 1 {

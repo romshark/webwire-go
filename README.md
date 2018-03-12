@@ -93,7 +93,7 @@ err := client.Signal("eventA", wwr.Payload{Data: []byte("something")})
 The server also can send signals to individual connected clients.
 
 ```go
-func onRequest(ctx context.Context) (wwr.Payload, *wwr.Error) {
+func onRequest(ctx context.Context) (wwr.Payload, error) {
   msg := ctx.Value(wwr.Msg).(wwr.Message)
   // Send a signal to the client before replying to the request
   msg.Client.Signal("", wwr.Payload{Data: []byte("ping!")})
@@ -105,7 +105,7 @@ func onRequest(ctx context.Context) (wwr.Payload, *wwr.Error) {
 Different kinds of requests and signals can be differentiated using the builtin namespacing feature.
 
 ```go
-func onRequest(ctx context.Context) (wwr.Payload, *wwr.Error) {
+func onRequest(ctx context.Context) (wwr.Payload, error) {
   msg := ctx.Value(wwr.Msg).(wwr.Message)
   switch msg.Name {
   case "auth":
@@ -132,7 +132,7 @@ func onSignal(ctx context.Context) {
 Individual connections can get sessions assigned to identify them. The state of the session is automagically synchronized between the client and the server. WebWire doesn't enforce any kind of authentication technique though, it just provides you a way to authenticate a connection. WebWire also doesn't enforce any kind of session storage, it's up to the user to implement any kind of volatile or persistent session storage, be it a database or a simple map.
 
 ```go
-func onRequest(ctx context.Context) (wwr.Payload, *wwr.Error) {
+func onRequest(ctx context.Context) (wwr.Payload, error) {
   msg := ctx.Value(wwr.Msg).(wwr.Message)
   client := msg.Client
   // Verify credentials

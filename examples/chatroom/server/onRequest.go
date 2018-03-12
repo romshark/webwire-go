@@ -15,12 +15,12 @@ import (
 // interpreted as authentication attempts. It parses and verifies
 // the provided credentials and either rejects the authentication
 // or confirms it eventually creating a session and returning the session key
-func onRequest(ctx context.Context) (wwr.Payload, *wwr.Error) {
+func onRequest(ctx context.Context) (wwr.Payload, error) {
 	msg := ctx.Value(wwr.Msg).(wwr.Message)
 	client := msg.Client
 
 	if msg.Name != "auth" {
-		return wwr.Payload{}, &wwr.Error{
+		return wwr.Payload{}, wwr.Error{
 			Code:    "BAD_REQUEST",
 			Message: fmt.Sprintf("Unsupported request name: %s", msg.Name),
 		}
@@ -28,7 +28,7 @@ func onRequest(ctx context.Context) (wwr.Payload, *wwr.Error) {
 
 	credentialsText, err := msg.Payload.Utf8()
 	if err != nil {
-		return wwr.Payload{}, &wwr.Error{
+		return wwr.Payload{}, wwr.Error{
 			Code:    "DECODING_FAILURE",
 			Message: fmt.Sprintf("Failed decoding message: %s", err),
 		}
@@ -39,7 +39,7 @@ func onRequest(ctx context.Context) (wwr.Payload, *wwr.Error) {
 	// Try to parse credentials
 	var credentials shared.AuthenticationCredentials
 	if err := json.Unmarshal([]byte(credentialsText), &credentials); err != nil {
-		return wwr.Payload{}, &wwr.Error{
+		return wwr.Payload{}, wwr.Error{
 			Code:    "INTERNAL_ERROR",
 			Message: fmt.Sprintf("Failed parsing credentials: %s", err),
 		}
@@ -48,7 +48,7 @@ func onRequest(ctx context.Context) (wwr.Payload, *wwr.Error) {
 	// Verify username
 	password, userExists := userAccounts[credentials.Name]
 	if !userExists {
-		return wwr.Payload{}, &wwr.Error{
+		return wwr.Payload{}, wwr.Error{
 			Code:    "INEXISTENT_USER",
 			Message: fmt.Sprintf("No such user: '%s'", credentials.Name),
 		}
@@ -56,7 +56,7 @@ func onRequest(ctx context.Context) (wwr.Payload, *wwr.Error) {
 
 	// Verify password
 	if password != credentials.Password {
-		return wwr.Payload{}, &wwr.Error{
+		return wwr.Payload{}, wwr.Error{
 			Code:    "WRONG_PASSWORD",
 			Message: "Provided password is wrong",
 		}
@@ -64,7 +64,7 @@ func onRequest(ctx context.Context) (wwr.Payload, *wwr.Error) {
 
 	// Check if client already has an ongoing session
 	if state.State.HasSession(client) {
-		return wwr.Payload{}, &wwr.Error{
+		return wwr.Payload{}, wwr.Error{
 			Code:    "SESSION_ACTIVE",
 			Message: "Already have an ongoing session for this client",
 		}
@@ -74,7 +74,7 @@ func onRequest(ctx context.Context) (wwr.Payload, *wwr.Error) {
 	if err := client.CreateSession(map[string]string{
 		"username": credentials.Name,
 	}); err != nil {
-		return wwr.Payload{}, &wwr.Error{
+		return wwr.Payload{}, wwr.Error{
 			Code:    "INTERNAL_ERROR",
 			Message: fmt.Sprintf("Couldn't create session: %s", err),
 		}
