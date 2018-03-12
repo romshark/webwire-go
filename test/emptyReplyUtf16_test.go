@@ -16,7 +16,7 @@ func TestEmptyReplyUtf16(t *testing.T) {
 	_, addr := setupServer(
 		t,
 		wwr.Hooks{
-			OnRequest: func(_ context.Context) (wwr.Payload, *wwr.Error) {
+			OnRequest: func(_ context.Context) (wwr.Payload, error) {
 				// Return empty reply
 				return wwr.Payload{
 					Encoding: wwr.EncodingUtf16,

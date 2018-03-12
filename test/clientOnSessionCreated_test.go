@@ -21,13 +21,13 @@ func TestClientOnSessionCreated(t *testing.T) {
 	_, addr := setupServer(
 		t,
 		webwire.Hooks{
-			OnRequest: func(ctx context.Context) (webwire.Payload, *webwire.Error) {
+			OnRequest: func(ctx context.Context) (webwire.Payload, error) {
 				// Extract request message and requesting client from the context
 				msg := ctx.Value(webwire.Msg).(webwire.Message)
 
 				// Try to create a new session
 				if err := msg.Client.CreateSession(nil); err != nil {
-					return webwire.Payload{}, &webwire.Error{
+					return webwire.Payload{}, webwire.Error{
 						Code:    "INTERNAL_ERROR",
 						Message: fmt.Sprintf("Internal server error: %s", err),
 					}

@@ -73,7 +73,7 @@ func TestAuthentication(t *testing.T) {
 				compareSessions(t, createdSession, msg.Client.Session)
 				compareSessionInfo(msg.Client.Session)
 			},
-			OnRequest: func(ctx context.Context) (wwr.Payload, *wwr.Error) {
+			OnRequest: func(ctx context.Context) (wwr.Payload, error) {
 				// Extract request message and requesting client from the context
 				msg := ctx.Value(wwr.Msg).(wwr.Message)
 
@@ -86,7 +86,7 @@ func TestAuthentication(t *testing.T) {
 
 				// Try to create a new session
 				if err := msg.Client.CreateSession(sessionInfo); err != nil {
-					return wwr.Payload{}, &wwr.Error{
+					return wwr.Payload{}, wwr.Error{
 						Code:    "INTERNAL_ERROR",
 						Message: fmt.Sprintf("Internal server error: %s", err),
 					}

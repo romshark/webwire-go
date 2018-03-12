@@ -25,7 +25,7 @@ func TestRequestNamespaces(t *testing.T) {
 	_, addr := setupServer(
 		t,
 		webwire.Hooks{
-			OnRequest: func(ctx context.Context) (webwire.Payload, *webwire.Error) {
+			OnRequest: func(ctx context.Context) (webwire.Payload, error) {
 				msg := ctx.Value(webwire.Msg).(webwire.Message)
 
 				if currentStep == 1 && msg.Name != "" {

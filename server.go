@@ -36,7 +36,7 @@ type Hooks struct {
 	// OnRequest is an optional hook.
 	// It's invoked when the webwire server receives a request from the client.
 	// It must return either a response payload or an error
-	OnRequest func(ctx context.Context) (response Payload, err *Error)
+	OnRequest func(ctx context.Context) (response Payload, err error)
 
 	// OnSessionCreated is a required hook for sessions to be supported.
 	// It's invoked right after the synchronisation of the new session to the remote client.
@@ -81,8 +81,8 @@ func (hooks *Hooks) SetDefaults() {
 	}
 
 	if hooks.OnRequest == nil {
-		hooks.OnRequest = func(_ context.Context) (response Payload, err *Error) {
-			return Payload{}, &Error{
+		hooks.OnRequest = func(_ context.Context) (Payload, error) {
+			return Payload{}, Error{
 				"NOT_IMPLEMENTED",
 				fmt.Sprintf("Request handling is not implemented " +
 					" on this server instance",
@@ -283,7 +283,15 @@ func (srv *Server) handleRequest(msg *Message) {
 		context.WithValue(context.Background(), Msg, *msg),
 	)
 	if err != nil {
-		msg.fail(*err)
+		switch errObj := err.(type) {
+		case Error:
+			msg.fail(errObj)
+		default:
+			msg.fail(Error{
+				Code:    "INTERNAL_ERR",
+				Message: err.Error(),
+			})
+		}
 		return
 	}
 	msg.fulfill(replyPayload)

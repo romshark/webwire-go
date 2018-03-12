@@ -26,10 +26,9 @@ func TestClientRequestError(t *testing.T) {
 	_, addr := setupServer(
 		t,
 		webwire.Hooks{
-			OnRequest: func(_ context.Context) (webwire.Payload, *webwire.Error) {
+			OnRequest: func(_ context.Context) (webwire.Payload, error) {
 				// Fail the request by returning an error
-				err := expectedReplyError
-				return webwire.Payload{}, &err
+				return webwire.Payload{}, expectedReplyError
 			},
 		},
 	)

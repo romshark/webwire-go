@@ -20,7 +20,7 @@ func TestClientConcurrentRequest(t *testing.T) {
 	_, addr := setupServer(
 		t,
 		webwire.Hooks{
-			OnRequest: func(_ context.Context) (webwire.Payload, *webwire.Error) {
+			OnRequest: func(_ context.Context) (webwire.Payload, error) {
 				finished.Done()
 				return webwire.Payload{}, nil
 			},

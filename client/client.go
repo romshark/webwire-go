@@ -178,7 +178,7 @@ func (clt *Client) TimedRequest(
 	name string,
 	payload webwire.Payload,
 	timeout time.Duration,
-) (webwire.Payload, *webwire.Error) {
+) (webwire.Payload, error) {
 	reqType := webwire.MsgRequestBinary
 	switch payload.Encoding {
 	case webwire.EncodingUtf8:

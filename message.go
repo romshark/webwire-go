@@ -19,6 +19,10 @@ type Error struct {
 	Message string `json:"m,omitempty"`
 }
 
+func (err Error) Error() string {
+	return err.Message
+}
+
 const (
 	// MsgMinLenSignal represents the minimum binary/UTF8 encoded signal message length
 	MsgMinLenSignal = int(3)

@@ -12,7 +12,7 @@ import (
 
 var serverAddr = flag.String("addr", ":8081", "server address")
 
-func onRequest(ctx context.Context) (wwr.Payload, *wwr.Error) {
+func onRequest(ctx context.Context) (wwr.Payload, error) {
 	msg := ctx.Value(wwr.Msg).(wwr.Message)
 	client := msg.Client
 
