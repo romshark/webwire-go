@@ -214,7 +214,7 @@ func (clt *Client) Session() webwire.Session {
 }
 
 // SessionInfo returns the value of a session info field identified by the given key
-// in the form of an empty interface that could be casted to either a string, a float64 number
+// in the form of an empty interface that could be casted to either a string, bool, float64 number
 // a map[string]interface{} object or an []interface{} array according to JSON data types.
 // Returns nil if either there's no session or if the given field doesn't exist.
 func (clt *Client) SessionInfo(key string) interface{} {

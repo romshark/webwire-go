@@ -14,6 +14,7 @@ import (
 
 // TestClientSessionInfo tests the client.SessionInfo getter method
 func TestClientSessionInfo(t *testing.T) {
+	expectedBool := true
 	expectedString := "somesamplestring1234"
 	expectedInt := uint32(404)
 	expectedNumber := float64(7.62)
@@ -34,6 +35,7 @@ func TestClientSessionInfo(t *testing.T) {
 
 				// Try to create a new session
 				if err := msg.Client.CreateSession(struct {
+					SampleBool   bool     `json:"bool"`
 					SampleString string   `json:"string"`
 					SampleInt    uint32   `json:"int"`
 					SampleNumber float64  `json:"number"`
@@ -42,6 +44,7 @@ func TestClientSessionInfo(t *testing.T) {
 						SampleString string `json:"struct_string"`
 					} `json:"struct"`
 				}{
+					SampleBool:   expectedBool,
 					SampleString: expectedString,
 					SampleInt:    expectedInt,
 					SampleNumber: expectedNumber,
@@ -92,6 +95,18 @@ func TestClientSessionInfo(t *testing.T) {
 	inexistent := client.SessionInfo("inexistent")
 	if inexistent != nil {
 		t.Fatalf("Expected nil for inexistent session info field, got: %v", inexistent)
+	}
+
+	// Verify field: bool
+	samplebool, ok := client.SessionInfo("bool").(bool)
+	if !ok {
+		t.Fatalf(
+			"Expected field 'bool' to be a boolean, got: %v",
+			reflect.TypeOf(client.SessionInfo("bool")),
+		)
+	}
+	if samplebool != expectedBool {
+		t.Fatalf("Expected bool %t for field %s", expectedBool, "bool")
 	}
 
 	// Verify field: string
