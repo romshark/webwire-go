@@ -213,6 +213,24 @@ func (clt *Client) Session() webwire.Session {
 	return *clt.session
 }
 
+// SessionInfo returns the value of a session info field identified by the given key
+// in the form of an empty interface that could be casted to either a string, a float64 number
+// a map[string]interface{} object or an []interface{} array according to JSON data types.
+// Returns nil if either there's no session or if the given field doesn't exist.
+func (clt *Client) SessionInfo(key string) interface{} {
+	if clt.session == nil {
+		return nil
+	}
+	infoMap, converted := clt.session.Info.(map[string]interface{})
+	if !converted {
+		return nil
+	}
+	if value, exists := infoMap[key]; exists {
+		return value
+	}
+	return nil
+}
+
 // PendingRequests returns the number of currently pending requests
 func (clt *Client) PendingRequests() int {
 	return clt.requestManager.PendingRequests()
