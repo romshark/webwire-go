@@ -15,13 +15,17 @@ func (clt *Client) handleSessionCreated(sessionKey []byte) {
 		return
 	}
 
+	clt.sessionLock.Lock()
 	clt.session = &session
+	clt.sessionLock.Unlock()
 	clt.hooks.OnSessionCreated(&session)
 }
 
 func (clt *Client) handleSessionClosed() {
 	// Destroy local session
+	clt.sessionLock.Lock()
 	clt.session = nil
+	clt.sessionLock.Unlock()
 
 	clt.hooks.OnSessionClosed()
 }

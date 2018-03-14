@@ -24,7 +24,9 @@ type Client struct {
 	isConnected    int32
 	defaultTimeout time.Duration
 	hooks          Hooks
-	session        *webwire.Session
+
+	sessionLock sync.RWMutex
+	session     *webwire.Session
 
 	// Operation lock synchronizes concurrent access to:
 	// Connect, RestoreSession, CloseSession and Close
@@ -54,6 +56,8 @@ func NewClient(
 		0,
 		defaultTimeout,
 		hooks,
+
+		sync.RWMutex{},
 		nil,
 
 		sync.Mutex{},
@@ -133,21 +137,32 @@ func (clt *Client) Connect() (err error) {
 
 	atomic.StoreInt32(&clt.isConnected, 1)
 
-	// Try to restore session if necessary
+	// Read the current sessions key if there is any
+	clt.sessionLock.RLock()
 	if clt.session == nil {
+		clt.sessionLock.RUnlock()
 		return nil
 	}
-	restoredSession, err := clt.requestSessionRestoration([]byte(clt.session.Key))
+	sessionKey := clt.session.Key
+	clt.sessionLock.RUnlock()
+
+	// Try to restore session if necessary
+	restoredSession, err := clt.requestSessionRestoration([]byte(sessionKey))
 	if err != nil {
 		// Just log a warning and still return nil, even if session restoration failed,
 		// because we only care about the connection establishment in this method
 		clt.warningLog.Printf("Couldn't restore session on reconnection: %s", err)
 
 		// Reset the session
+		clt.sessionLock.Lock()
 		clt.session = nil
+		clt.sessionLock.Unlock()
+		return nil
 	}
-	clt.session = restoredSession
 
+	clt.sessionLock.Lock()
+	clt.session = restoredSession
+	clt.sessionLock.Unlock()
 	return nil
 }
 
@@ -204,9 +219,8 @@ func (clt *Client) Signal(name string, payload webwire.Payload) error {
 
 // Session returns information about the current session
 func (clt *Client) Session() webwire.Session {
-	clt.opLock.Lock()
-	defer clt.opLock.Unlock()
-
+	clt.sessionLock.RLock()
+	defer clt.sessionLock.RUnlock()
 	if clt.session == nil {
 		return webwire.Session{}
 	}
@@ -218,6 +232,8 @@ func (clt *Client) Session() webwire.Session {
 // a map[string]interface{} object or an []interface{} array according to JSON data types.
 // Returns nil if either there's no session or if the given field doesn't exist.
 func (clt *Client) SessionInfo(key string) interface{} {
+	clt.sessionLock.RLock()
+	defer clt.sessionLock.RUnlock()
 	if clt.session == nil {
 		return nil
 	}
@@ -242,16 +258,21 @@ func (clt *Client) RestoreSession(sessionKey []byte) error {
 	clt.opLock.Lock()
 	defer clt.opLock.Unlock()
 
+	clt.sessionLock.RLock()
 	if clt.session != nil {
+		clt.sessionLock.RUnlock()
 		return fmt.Errorf("Can't restore session if another one is already active")
 	}
+	clt.sessionLock.RUnlock()
 
 	restoredSession, err := clt.requestSessionRestoration(sessionKey)
 	if err != nil {
 		// TODO: check for error types
 		return fmt.Errorf("Session restoration request failed: %s", err)
 	}
+	clt.sessionLock.Lock()
 	clt.session = restoredSession
+	clt.sessionLock.Unlock()
 
 	return nil
 }
@@ -264,9 +285,12 @@ func (clt *Client) CloseSession() error {
 	clt.opLock.Lock()
 	defer clt.opLock.Unlock()
 
+	clt.sessionLock.RLock()
 	if clt.session == nil {
+		clt.sessionLock.RUnlock()
 		return nil
 	}
+	clt.sessionLock.RUnlock()
 
 	// Synchronize session closure to the server if connected
 	if atomic.LoadInt32(&clt.isConnected) > 0 {
@@ -280,7 +304,9 @@ func (clt *Client) CloseSession() error {
 	}
 
 	// Reset session locally after destroying it on the server
+	clt.sessionLock.Lock()
 	clt.session = nil
+	clt.sessionLock.Unlock()
 
 	return nil
 }
