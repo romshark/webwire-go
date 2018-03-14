@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
+	"os"
 	"sync"
 	"time"
 
@@ -99,6 +101,27 @@ func (hooks *Hooks) SetDefaults() {
 	}
 }
 
+// ServerOptions represents the options used during the creation of a new WebWire server instance
+type ServerOptions struct {
+	Hooks                 Hooks
+	MaxSessionConnections uint
+	WarnLog               io.Writer
+	ErrorLog              io.Writer
+}
+
+// SetDefaults sets the defaults for undefined required values
+func (srvOpt *ServerOptions) SetDefaults() {
+	srvOpt.Hooks.SetDefaults()
+
+	if srvOpt.WarnLog == nil {
+		srvOpt.WarnLog = os.Stdout
+	}
+
+	if srvOpt.ErrorLog == nil {
+		srvOpt.ErrorLog = os.Stderr
+	}
+}
+
 // Server represents a headless WebWire server instance,
 // where headless means there's no HTTP server that's hosting it
 type Server struct {
@@ -117,7 +140,7 @@ type Server struct {
 }
 
 // NewServer creates a new WebWire server instance
-func NewServer(opts Options) *Server {
+func NewServer(opts ServerOptions) *Server {
 	opts.SetDefaults()
 
 	sessionsEnabled := false

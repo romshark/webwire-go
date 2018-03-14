@@ -18,7 +18,7 @@ func TestClientRequestRegisterOnTimeout(t *testing.T) {
 	// Initialize webwire server given only the request
 	_, addr := setupServer(
 		t,
-		webwire.Options{
+		webwire.ServerOptions{
 			Hooks: webwire.Hooks{
 				OnRequest: func(ctx context.Context) (webwire.Payload, error) {
 					// Verify pending requests

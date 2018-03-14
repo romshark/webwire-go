@@ -27,7 +27,7 @@ func TestSignalNamespaces(t *testing.T) {
 	// Initialize server
 	_, addr := setupServer(
 		t,
-		webwire.Options{
+		webwire.ServerOptions{
 			Hooks: webwire.Hooks{
 				OnSignal: func(ctx context.Context) {
 					msg := ctx.Value(webwire.Msg).(webwire.Message)

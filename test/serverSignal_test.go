@@ -24,7 +24,7 @@ func TestServerSignal(t *testing.T) {
 	go func() {
 		_, addr = setupServer(
 			t,
-			webwire.Options{
+			webwire.ServerOptions{
 				Hooks: webwire.Hooks{
 					OnClientConnected: func(client *webwire.Client) {
 						// Send signal

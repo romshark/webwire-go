@@ -11,12 +11,14 @@ import (
 
 // setupServer helps setting up
 // and launching the server together with the hosting http server
-func setupServer(t *testing.T, opts wwr.Options) (*wwr.Server, string) {
+func setupServer(t *testing.T, opts wwr.ServerOptions) (*wwr.Server, string) {
 	// Setup headed server on arbitrary port
-	opts.Addr = "127.0.0.1:0"
 	opts.WarnLog = os.Stdout
 	opts.ErrorLog = os.Stderr
-	srv, _, addr, run, err := wwr.SetupServer(opts)
+	srv, _, addr, run, err := wwr.SetupServer(wwr.SetupOptions{
+		ServerAddress: "127.0.0.1:0",
+		ServerOptions: opts,
+	})
 	if err != nil {
 		t.Fatalf("Failed setting up server instance: %s", err)
 	}

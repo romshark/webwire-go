@@ -29,14 +29,16 @@ func main() {
 	flag.Parse()
 
 	// Setup webwire server
-	_, _, addr, runServer, err := wwr.SetupServer(wwr.Options{
-		Addr: *serverAddr,
-		Hooks: wwr.Hooks{
-			OnClientConnected:    onClientConnected,
-			OnClientDisconnected: onClientDisconnected,
+	_, _, addr, runServer, err := wwr.SetupServer(wwr.SetupOptions{
+		ServerAddress: *serverAddr,
+		ServerOptions: wwr.ServerOptions{
+			Hooks: wwr.Hooks{
+				OnClientConnected:    onClientConnected,
+				OnClientDisconnected: onClientDisconnected,
+			},
+			WarnLog:  os.Stdout,
+			ErrorLog: os.Stderr,
 		},
-		WarnLog:  os.Stdout,
-		ErrorLog: os.Stderr,
 	})
 	if err != nil {
 		panic(fmt.Errorf("Failed setting up WebWire server: %s", err))

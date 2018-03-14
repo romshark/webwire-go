@@ -21,7 +21,7 @@ func TestClientSessionRestoration(t *testing.T) {
 	// Initialize webwire server
 	_, addr := setupServer(
 		t,
-		webwire.Options{
+		webwire.ServerOptions{
 			Hooks: webwire.Hooks{
 				OnRequest: func(ctx context.Context) (webwire.Payload, error) {
 					// Extract request message and requesting client from the context

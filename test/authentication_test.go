@@ -65,7 +65,7 @@ func TestAuthentication(t *testing.T) {
 	// Initialize webwire server
 	_, addr := setupServer(
 		t,
-		wwr.Options{
+		wwr.ServerOptions{
 			Hooks: wwr.Hooks{
 				OnSignal: func(ctx context.Context) {
 					defer clientSignalReceived.Done()

@@ -12,7 +12,7 @@ import (
 // TestClientIsConnected verifies correct client.IsConnected reporting
 func TestClientIsConnected(t *testing.T) {
 	// Initialize webwire server given only the request
-	_, addr := setupServer(t, webwire.Options{})
+	_, addr := setupServer(t, webwire.ServerOptions{})
 
 	// Initialize client
 	client := webwireClient.NewClient(

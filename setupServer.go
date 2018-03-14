@@ -2,33 +2,21 @@ package webwire
 
 import (
 	"fmt"
-	"io"
 	"net"
 	"net/http"
-	"os"
 	"time"
 )
 
-// Options represents the options for a headed server setup
-type Options struct {
-	Addr                  string
-	Hooks                 Hooks
-	MaxSessionConnections uint
-	WarnLog               io.Writer
-	ErrorLog              io.Writer
+// SetupOptions represents the options used during the setup of
+// a new headed WebWire server instance
+type SetupOptions struct {
+	ServerAddress string
+	ServerOptions ServerOptions
 }
 
 // SetDefaults sets default values to undefined options
-func (opts *Options) SetDefaults() {
-	opts.Hooks.SetDefaults()
-
-	if opts.WarnLog == nil {
-		opts.WarnLog = os.Stdout
-	}
-
-	if opts.ErrorLog == nil {
-		opts.ErrorLog = os.Stderr
-	}
+func (opts *SetupOptions) SetDefaults() {
+	opts.ServerOptions.SetDefaults()
 }
 
 type tcpKeepAliveListener struct {
@@ -47,18 +35,18 @@ func (ln tcpKeepAliveListener) Accept() (c net.Conn, err error) {
 }
 
 // SetupServer sets up a new headed WebWire server with an HTTP server hosting it
-func SetupServer(opts Options) (
+func SetupServer(opts SetupOptions) (
 	wwrSrv *Server,
 	httpServer *http.Server,
 	addr string,
 	runFunc func() error,
 	err error,
 ) {
-	wwrSrv = NewServer(opts)
+	wwrSrv = NewServer(opts.ServerOptions)
 
 	// Initialize HTTP server
 	httpServer = &http.Server{
-		Addr:    opts.Addr,
+		Addr:    opts.ServerAddress,
 		Handler: wwrSrv,
 	}
 

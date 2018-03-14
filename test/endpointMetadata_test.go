@@ -15,7 +15,7 @@ func TestEndpointMetadata(t *testing.T) {
 	expectedVersion := "1.1"
 
 	// Initialize webwire server
-	_, addr := setupServer(t, webwire.Options{})
+	_, addr := setupServer(t, webwire.ServerOptions{})
 
 	// Initialize HTTP client
 	var httpClient = &http.Client{

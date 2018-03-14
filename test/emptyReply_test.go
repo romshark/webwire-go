@@ -15,7 +15,7 @@ func TestEmptyReply(t *testing.T) {
 	// Initialize webwire server given only the request
 	_, addr := setupServer(
 		t,
-		wwr.Options{
+		wwr.ServerOptions{
 			Hooks: wwr.Hooks{
 				OnRequest: func(_ context.Context) (wwr.Payload, error) {
 					// Return empty reply
