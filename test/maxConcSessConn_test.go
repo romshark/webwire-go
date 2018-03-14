@@ -2,6 +2,7 @@ package test
 
 import (
 	"os"
+	"sync"
 	"testing"
 	"time"
 
@@ -14,6 +15,7 @@ func TestMaxConcSessConn(t *testing.T) {
 	sessionStorage := make(map[string]*wwr.Session)
 
 	var sessionKey string
+	sessionKeyLock := sync.RWMutex{}
 	concurrentConns := uint(4)
 
 	// Initialize server
@@ -24,6 +26,8 @@ func TestMaxConcSessConn(t *testing.T) {
 			Hooks: wwr.Hooks{
 				OnClientConnected: func(client *wwr.Client) {
 					// Created the session for the first connecting client only
+					sessionKeyLock.Lock()
+					defer sessionKeyLock.Unlock()
 					if len(sessionKey) < 1 {
 						if err := client.CreateSession(nil); err != nil {
 							t.Errorf("Unexpected error during session creation: %s", err)
@@ -67,9 +71,11 @@ func TestMaxConcSessConn(t *testing.T) {
 
 		// Restore the session for all clients except the first one
 		if i > 0 {
+			sessionKeyLock.RLock()
 			if err := client.RestoreSession([]byte(sessionKey)); err != nil {
 				t.Fatalf("Unexpected error during manual session restoration: %s", err)
 			}
+			sessionKeyLock.RUnlock()
 		}
 	}
 
@@ -87,7 +93,9 @@ func TestMaxConcSessConn(t *testing.T) {
 	}
 
 	// Try to restore the session and expect this operation to fail due to reached limit
+	sessionKeyLock.RLock()
 	if err := superflousClient.RestoreSession([]byte(sessionKey)); err == nil {
 		t.Fatalf("Expected an error during superfluous client manual session restoration")
 	}
+	sessionKeyLock.RUnlock()
 }
