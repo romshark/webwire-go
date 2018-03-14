@@ -21,62 +21,64 @@ func TestClientOfflineSessionClosure(t *testing.T) {
 	// Initialize webwire server
 	_, addr := setupServer(
 		t,
-		webwire.Hooks{
-			OnRequest: func(ctx context.Context) (webwire.Payload, error) {
-				// Extract request message and requesting client from the context
-				msg := ctx.Value(webwire.Msg).(webwire.Message)
+		webwire.Options{
+			Hooks: webwire.Hooks{
+				OnRequest: func(ctx context.Context) (webwire.Payload, error) {
+					// Extract request message and requesting client from the context
+					msg := ctx.Value(webwire.Msg).(webwire.Message)
 
-				if currentStep == 2 {
-					// Expect the session to have been automatically restored
-					if msg.Client.Session != nil {
-						t.Errorf("Expected client to be anonymous")
+					if currentStep == 2 {
+						// Expect the session to have been automatically restored
+						if msg.Client.Session != nil {
+							t.Errorf("Expected client to be anonymous")
+						}
+						return webwire.Payload{}, nil
 					}
+
+					// Try to create a new session
+					if err := msg.Client.CreateSession(nil); err != nil {
+						return webwire.Payload{}, webwire.Error{
+							Code:    "INTERNAL_ERROR",
+							Message: fmt.Sprintf("Internal server error: %s", err),
+						}
+					}
+
+					// Return the key of the newly created session
 					return webwire.Payload{}, nil
-				}
-
-				// Try to create a new session
-				if err := msg.Client.CreateSession(nil); err != nil {
-					return webwire.Payload{}, webwire.Error{
-						Code:    "INTERNAL_ERROR",
-						Message: fmt.Sprintf("Internal server error: %s", err),
+				},
+				// Permanently store the session
+				OnSessionCreated: func(client *webwire.Client) error {
+					sessionStorage[client.Session.Key] = client.Session
+					return nil
+				},
+				// Find session by key
+				OnSessionLookup: func(key string) (*webwire.Session, error) {
+					// Expect the key of the created session to be looked up
+					if key != createdSession.Key {
+						err := fmt.Errorf(
+							"Expected and looked up session keys differ: %s | %s",
+							createdSession.Key,
+							key,
+						)
+						t.Fatalf("Session lookup mismatch: %s", err)
+						return nil, err
 					}
-				}
 
-				// Return the key of the newly created session
-				return webwire.Payload{}, nil
-			},
-			// Permanently store the session
-			OnSessionCreated: func(client *webwire.Client) error {
-				sessionStorage[client.Session.Key] = client.Session
-				return nil
-			},
-			// Find session by key
-			OnSessionLookup: func(key string) (*webwire.Session, error) {
-				// Expect the key of the created session to be looked up
-				if key != createdSession.Key {
-					err := fmt.Errorf(
-						"Expected and looked up session keys differ: %s | %s",
+					if session, exists := sessionStorage[key]; exists {
+						return session, nil
+					}
+
+					// Expect the session to be found
+					t.Fatalf(
+						"Expected session (%s) not found in: %v",
 						createdSession.Key,
-						key,
+						sessionStorage,
 					)
-					t.Fatalf("Session lookup mismatch: %s", err)
-					return nil, err
-				}
-
-				if session, exists := sessionStorage[key]; exists {
-					return session, nil
-				}
-
-				// Expect the session to be found
-				t.Fatalf(
-					"Expected session (%s) not found in: %v",
-					createdSession.Key,
-					sessionStorage,
-				)
-				return nil, nil
+					return nil, nil
+				},
+				// Define dummy hook to enable sessions on this server
+				OnSessionClosed: func(_ *webwire.Client) error { return nil },
 			},
-			// Define dummy hook to enable sessions on this server
-			OnSessionClosed: func(_ *webwire.Client) error { return nil },
 		},
 	)
 

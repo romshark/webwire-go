@@ -21,7 +21,6 @@ func (clt *Client) requestSessionRestoration(sessionKey []byte) (*webwire.Sessio
 	)
 	if err != nil {
 		// TODO: check for error types
-		fmt.Println("ERR", err)
 		return nil, fmt.Errorf("Session restoration request failed: %s", err)
 	}
 

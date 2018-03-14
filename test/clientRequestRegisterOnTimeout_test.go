@@ -18,18 +18,20 @@ func TestClientRequestRegisterOnTimeout(t *testing.T) {
 	// Initialize webwire server given only the request
 	_, addr := setupServer(
 		t,
-		webwire.Hooks{
-			OnRequest: func(ctx context.Context) (webwire.Payload, error) {
-				// Verify pending requests
-				pendingReqs := client.PendingRequests()
-				if pendingReqs != 1 {
-					t.Errorf("Unexpected pending requests: %d", pendingReqs)
-					return webwire.Payload{}, nil
-				}
+		webwire.Options{
+			Hooks: webwire.Hooks{
+				OnRequest: func(ctx context.Context) (webwire.Payload, error) {
+					// Verify pending requests
+					pendingReqs := client.PendingRequests()
+					if pendingReqs != 1 {
+						t.Errorf("Unexpected pending requests: %d", pendingReqs)
+						return webwire.Payload{}, nil
+					}
 
-				// Wait until the request times out
-				time.Sleep(300 * time.Millisecond)
-				return webwire.Payload{}, nil
+					// Wait until the request times out
+					time.Sleep(300 * time.Millisecond)
+					return webwire.Payload{}, nil
+				},
 			},
 		},
 	)

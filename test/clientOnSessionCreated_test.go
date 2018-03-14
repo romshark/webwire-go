@@ -20,24 +20,26 @@ func TestClientOnSessionCreated(t *testing.T) {
 	// Initialize webwire server
 	_, addr := setupServer(
 		t,
-		webwire.Hooks{
-			OnRequest: func(ctx context.Context) (webwire.Payload, error) {
-				// Extract request message and requesting client from the context
-				msg := ctx.Value(webwire.Msg).(webwire.Message)
+		webwire.Options{
+			Hooks: webwire.Hooks{
+				OnRequest: func(ctx context.Context) (webwire.Payload, error) {
+					// Extract request message and requesting client from the context
+					msg := ctx.Value(webwire.Msg).(webwire.Message)
 
-				// Try to create a new session
-				if err := msg.Client.CreateSession(nil); err != nil {
-					return webwire.Payload{}, webwire.Error{
-						Code:    "INTERNAL_ERROR",
-						Message: fmt.Sprintf("Internal server error: %s", err),
+					// Try to create a new session
+					if err := msg.Client.CreateSession(nil); err != nil {
+						return webwire.Payload{}, webwire.Error{
+							Code:    "INTERNAL_ERROR",
+							Message: fmt.Sprintf("Internal server error: %s", err),
+						}
 					}
-				}
-				return webwire.Payload{}, nil
+					return webwire.Payload{}, nil
+				},
+				// Define dummy hooks to enable sessions on this server
+				OnSessionCreated: func(_ *webwire.Client) error { return nil },
+				OnSessionLookup:  func(_ string) (*webwire.Session, error) { return nil, nil },
+				OnSessionClosed:  func(_ *webwire.Client) error { return nil },
 			},
-			// Define dummy hooks to enable sessions on this server
-			OnSessionCreated: func(_ *webwire.Client) error { return nil },
-			OnSessionLookup:  func(_ string) (*webwire.Session, error) { return nil, nil },
-			OnSessionClosed:  func(_ *webwire.Client) error { return nil },
 		},
 	)
 

@@ -19,38 +19,40 @@ func TestClientOnSessionClosed(t *testing.T) {
 	// Initialize webwire server
 	_, addr := setupServer(
 		t,
-		webwire.Hooks{
-			OnRequest: func(ctx context.Context) (webwire.Payload, error) {
-				// Extract request message and requesting client from the context
-				msg := ctx.Value(webwire.Msg).(webwire.Message)
+		webwire.Options{
+			Hooks: webwire.Hooks{
+				OnRequest: func(ctx context.Context) (webwire.Payload, error) {
+					// Extract request message and requesting client from the context
+					msg := ctx.Value(webwire.Msg).(webwire.Message)
 
-				// Try to create a new session
-				if err := msg.Client.CreateSession(nil); err != nil {
-					return webwire.Payload{}, webwire.Error{
-						Code:    "INTERNAL_ERROR",
-						Message: fmt.Sprintf("Internal server error: %s", err),
-					}
-				}
-
-				go func() {
-					// Wait until the authentication request is finished
-					if err := authenticated.Wait(); err != nil {
-						t.Errorf("Authentication timed out")
-						return
+					// Try to create a new session
+					if err := msg.Client.CreateSession(nil); err != nil {
+						return webwire.Payload{}, webwire.Error{
+							Code:    "INTERNAL_ERROR",
+							Message: fmt.Sprintf("Internal server error: %s", err),
+						}
 					}
 
-					// Close the session
-					if err := msg.Client.CloseSession(); err != nil {
-						t.Errorf("Couldn't close session: %s", err)
-					}
-				}()
+					go func() {
+						// Wait until the authentication request is finished
+						if err := authenticated.Wait(); err != nil {
+							t.Errorf("Authentication timed out")
+							return
+						}
 
-				return webwire.Payload{}, nil
+						// Close the session
+						if err := msg.Client.CloseSession(); err != nil {
+							t.Errorf("Couldn't close session: %s", err)
+						}
+					}()
+
+					return webwire.Payload{}, nil
+				},
+				// Define dummy hooks to enable sessions on this server
+				OnSessionCreated: func(_ *webwire.Client) error { return nil },
+				OnSessionLookup:  func(_ string) (*webwire.Session, error) { return nil, nil },
+				OnSessionClosed:  func(_ *webwire.Client) error { return nil },
 			},
-			// Define dummy hooks to enable sessions on this server
-			OnSessionCreated: func(_ *webwire.Client) error { return nil },
-			OnSessionLookup:  func(_ string) (*webwire.Session, error) { return nil, nil },
-			OnSessionClosed:  func(_ *webwire.Client) error { return nil },
 		},
 	)
 

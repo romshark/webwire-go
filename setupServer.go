@@ -11,10 +11,11 @@ import (
 
 // Options represents the options for a headed server setup
 type Options struct {
-	Addr     string
-	Hooks    Hooks
-	WarnLog  io.Writer
-	ErrorLog io.Writer
+	Addr                  string
+	Hooks                 Hooks
+	MaxSessionConnections uint
+	WarnLog               io.Writer
+	ErrorLog              io.Writer
 }
 
 // SetDefaults sets default values to undefined options

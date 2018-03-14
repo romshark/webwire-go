@@ -18,20 +18,22 @@ func TestClientDisconnectedHook(t *testing.T) {
 	// Initialize webwire server given only the request
 	_, addr := setupServer(
 		t,
-		webwire.Hooks{
-			OnClientConnected: func(clt *webwire.Client) {
-				connectedClient = clt
-			},
-			OnClientDisconnected: func(clt *webwire.Client) {
-				if clt != connectedClient {
-					t.Errorf(
-						"Connected and disconnecting clients don't match: "+
-							"disconnecting: %p | connected: %p",
-						clt,
-						connectedClient,
-					)
-				}
-				disconnectedHookCalled.Done()
+		webwire.Options{
+			Hooks: webwire.Hooks{
+				OnClientConnected: func(clt *webwire.Client) {
+					connectedClient = clt
+				},
+				OnClientDisconnected: func(clt *webwire.Client) {
+					if clt != connectedClient {
+						t.Errorf(
+							"Connected and disconnecting clients don't match: "+
+								"disconnecting: %p | connected: %p",
+							clt,
+							connectedClient,
+						)
+					}
+					disconnectedHookCalled.Done()
+				},
 			},
 		},
 	)

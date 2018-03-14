@@ -134,7 +134,7 @@ func NewServer(opts Options) *Server {
 		clients:         make([]*Client, 0),
 		clientsLock:     &sync.Mutex{},
 		sessionsEnabled: sessionsEnabled,
-		SessionRegistry: newSessionRegistry(),
+		SessionRegistry: newSessionRegistry(opts.MaxSessionConnections),
 
 		// Internals
 		warnLog: log.New(
@@ -172,14 +172,14 @@ func (srv *Server) handleSessionRestore(msg *Message) error {
 
 	key := string(msg.Payload.Data)
 
-	sessionExists := srv.SessionRegistry.Exists(key)
-
-	if sessionExists {
+	if srv.SessionRegistry.maxConns > 0 &&
+		srv.SessionRegistry.SessionConnections(key)+1 > srv.SessionRegistry.maxConns {
 		msg.fail(Error{
-			"SESSION_ACTIVE",
-			fmt.Sprintf(
-				"The session identified by key: '%s' is already active",
+			Code: "MAX_CONN_REACHED",
+			Message: fmt.Sprintf(
+				"Session %s reached the maximum number of concurrent connections (%d)",
 				key,
+				srv.SessionRegistry.maxConns,
 			),
 		})
 		return nil
@@ -190,6 +190,7 @@ func (srv *Server) handleSessionRestore(msg *Message) error {
 		msg.fail(Error{
 			"INTERNAL_ERROR",
 			fmt.Sprintf(
+				// TODO: whoops, that's some master-yoda-style english, fix it
 				"Session restoration request not could have been fulfilled",
 			),
 		})
@@ -218,7 +219,9 @@ func (srv *Server) handleSessionRestore(msg *Message) error {
 	}
 
 	msg.Client.Session = session
-	srv.SessionRegistry.register(msg.Client)
+	if okay := srv.SessionRegistry.register(msg.Client); !okay {
+		panic(fmt.Errorf("The number of concurrent session connections was unexpectedly exceeded"))
+	}
 
 	msg.fulfill(Payload{
 		Encoding: EncodingUtf8,
@@ -378,7 +381,7 @@ func (srv *Server) ServeHTTP(
 		_, message, err := conn.ReadMessage()
 		if err != nil {
 			if newClient.Session != nil {
-				// Mark session as inactive
+				// Decrement number of connections for this clients session
 				srv.SessionRegistry.deregister(newClient)
 			}
 

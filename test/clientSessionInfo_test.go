@@ -28,44 +28,46 @@ func TestClientSessionInfo(t *testing.T) {
 	// Initialize webwire server
 	_, addr := setupServer(
 		t,
-		webwire.Hooks{
-			OnRequest: func(ctx context.Context) (webwire.Payload, error) {
-				// Extract request message and requesting client from the context
-				msg := ctx.Value(webwire.Msg).(webwire.Message)
+		webwire.Options{
+			Hooks: webwire.Hooks{
+				OnRequest: func(ctx context.Context) (webwire.Payload, error) {
+					// Extract request message and requesting client from the context
+					msg := ctx.Value(webwire.Msg).(webwire.Message)
 
-				// Try to create a new session
-				if err := msg.Client.CreateSession(struct {
-					SampleBool   bool     `json:"bool"`
-					SampleString string   `json:"string"`
-					SampleInt    uint32   `json:"int"`
-					SampleNumber float64  `json:"number"`
-					SampleArray  []string `json:"array"`
-					SampleStruct struct {
-						SampleString string `json:"struct_string"`
-					} `json:"struct"`
-				}{
-					SampleBool:   expectedBool,
-					SampleString: expectedString,
-					SampleInt:    expectedInt,
-					SampleNumber: expectedNumber,
-					SampleArray:  expectedArray,
-					SampleStruct: struct {
-						SampleString string `json:"struct_string"`
+					// Try to create a new session
+					if err := msg.Client.CreateSession(struct {
+						SampleBool   bool     `json:"bool"`
+						SampleString string   `json:"string"`
+						SampleInt    uint32   `json:"int"`
+						SampleNumber float64  `json:"number"`
+						SampleArray  []string `json:"array"`
+						SampleStruct struct {
+							SampleString string `json:"struct_string"`
+						} `json:"struct"`
 					}{
-						SampleString: expectedStruct.SampleString,
-					},
-				}); err != nil {
-					return webwire.Payload{}, webwire.Error{
-						Code:    "INTERNAL_ERROR",
-						Message: fmt.Sprintf("Internal server error: %s", err),
+						SampleBool:   expectedBool,
+						SampleString: expectedString,
+						SampleInt:    expectedInt,
+						SampleNumber: expectedNumber,
+						SampleArray:  expectedArray,
+						SampleStruct: struct {
+							SampleString string `json:"struct_string"`
+						}{
+							SampleString: expectedStruct.SampleString,
+						},
+					}); err != nil {
+						return webwire.Payload{}, webwire.Error{
+							Code:    "INTERNAL_ERROR",
+							Message: fmt.Sprintf("Internal server error: %s", err),
+						}
 					}
-				}
-				return webwire.Payload{}, nil
+					return webwire.Payload{}, nil
+				},
+				// Define dummy hooks to enable sessions on this server
+				OnSessionCreated: func(_ *webwire.Client) error { return nil },
+				OnSessionLookup:  func(_ string) (*webwire.Session, error) { return nil, nil },
+				OnSessionClosed:  func(_ *webwire.Client) error { return nil },
 			},
-			// Define dummy hooks to enable sessions on this server
-			OnSessionCreated: func(_ *webwire.Client) error { return nil },
-			OnSessionLookup:  func(_ string) (*webwire.Session, error) { return nil, nil },
-			OnSessionClosed:  func(_ *webwire.Client) error { return nil },
 		},
 	)
 

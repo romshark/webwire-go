@@ -65,45 +65,47 @@ func TestAuthentication(t *testing.T) {
 	// Initialize webwire server
 	_, addr := setupServer(
 		t,
-		wwr.Hooks{
-			OnSignal: func(ctx context.Context) {
-				defer clientSignalReceived.Done()
-				// Extract request message and requesting client from the context
-				msg := ctx.Value(wwr.Msg).(wwr.Message)
-				compareSessions(t, createdSession, msg.Client.Session)
-				compareSessionInfo(msg.Client.Session)
-			},
-			OnRequest: func(ctx context.Context) (wwr.Payload, error) {
-				// Extract request message and requesting client from the context
-				msg := ctx.Value(wwr.Msg).(wwr.Message)
-
-				// If already authenticated then check session
-				if currentStep > 1 {
+		wwr.Options{
+			Hooks: wwr.Hooks{
+				OnSignal: func(ctx context.Context) {
+					defer clientSignalReceived.Done()
+					// Extract request message and requesting client from the context
+					msg := ctx.Value(wwr.Msg).(wwr.Message)
 					compareSessions(t, createdSession, msg.Client.Session)
 					compareSessionInfo(msg.Client.Session)
-					return expectedConfirmation, nil
-				}
+				},
+				OnRequest: func(ctx context.Context) (wwr.Payload, error) {
+					// Extract request message and requesting client from the context
+					msg := ctx.Value(wwr.Msg).(wwr.Message)
 
-				// Try to create a new session
-				if err := msg.Client.CreateSession(sessionInfo); err != nil {
-					return wwr.Payload{}, wwr.Error{
-						Code:    "INTERNAL_ERROR",
-						Message: fmt.Sprintf("Internal server error: %s", err),
+					// If already authenticated then check session
+					if currentStep > 1 {
+						compareSessions(t, createdSession, msg.Client.Session)
+						compareSessionInfo(msg.Client.Session)
+						return expectedConfirmation, nil
 					}
-				}
 
-				// Authentication step is passed
-				currentStep = 2
+					// Try to create a new session
+					if err := msg.Client.CreateSession(sessionInfo); err != nil {
+						return wwr.Payload{}, wwr.Error{
+							Code:    "INTERNAL_ERROR",
+							Message: fmt.Sprintf("Internal server error: %s", err),
+						}
+					}
 
-				// Return the key of the newly created session (use default binary encoding)
-				return wwr.Payload{
-					Data: []byte(msg.Client.Session.Key),
-				}, nil
+					// Authentication step is passed
+					currentStep = 2
+
+					// Return the key of the newly created session (use default binary encoding)
+					return wwr.Payload{
+						Data: []byte(msg.Client.Session.Key),
+					}, nil
+				},
+				// Define dummy hooks to enable sessions on this server
+				OnSessionCreated: func(_ *wwr.Client) error { return nil },
+				OnSessionLookup:  func(_ string) (*wwr.Session, error) { return nil, nil },
+				OnSessionClosed:  func(_ *wwr.Client) error { return nil },
 			},
-			// Define dummy hooks to enable sessions on this server
-			OnSessionCreated: func(_ *wwr.Client) error { return nil },
-			OnSessionLookup:  func(_ string) (*wwr.Session, error) { return nil, nil },
-			OnSessionClosed:  func(_ *wwr.Client) error { return nil },
 		},
 	)
 
