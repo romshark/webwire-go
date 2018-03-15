@@ -27,9 +27,12 @@ type Client struct {
 	sessionLock sync.RWMutex
 	session     *webwire.Session
 
-	// Operation lock synchronizes concurrent access to:
-	// Connect, RestoreSession, CloseSession and Close
-	opLock   sync.Mutex
+	// The API lock synchronizes concurrent access to the public client interface.
+	// Request, TimedRequest and Signal methods are locked with a shared lock
+	// because performing multiple requests and/or signals simultaneously is fine.
+	// The Connect, RestoreSession, CloseSession and Close methods are locked exclusively
+	// because they should temporarily block any other interaction with this client instance.
+	apiLock  sync.RWMutex
 	connLock sync.Mutex
 	conn     *websocket.Conn
 
@@ -53,7 +56,7 @@ func NewClient(serverAddress string, opts Options) *Client {
 		sync.RWMutex{},
 		nil,
 
-		sync.Mutex{},
+		sync.RWMutex{},
 		sync.Mutex{},
 		nil,
 
@@ -81,8 +84,8 @@ func (clt *Client) IsConnected() bool {
 // returns an error in case of a connection failure.
 // Automatically tries to restore the previous session
 func (clt *Client) Connect() (err error) {
-	clt.opLock.Lock()
-	defer clt.opLock.Unlock()
+	clt.apiLock.Lock()
+	defer clt.apiLock.Unlock()
 
 	if atomic.LoadInt32(&clt.isConnected) > 0 {
 		return nil
@@ -167,6 +170,9 @@ func (clt *Client) Request(
 	name string,
 	payload webwire.Payload,
 ) (webwire.Payload, *webwire.Error) {
+	clt.apiLock.RLock()
+	defer clt.apiLock.RUnlock()
+
 	reqType := webwire.MsgRequestBinary
 	switch payload.Encoding {
 	case webwire.EncodingUtf8:
@@ -187,6 +193,9 @@ func (clt *Client) TimedRequest(
 	payload webwire.Payload,
 	timeout time.Duration,
 ) (webwire.Payload, error) {
+	clt.apiLock.RLock()
+	defer clt.apiLock.RUnlock()
+
 	reqType := webwire.MsgRequestBinary
 	switch payload.Encoding {
 	case webwire.EncodingUtf8:
@@ -199,6 +208,9 @@ func (clt *Client) TimedRequest(
 
 // Signal sends a signal containing the given payload to the server
 func (clt *Client) Signal(name string, payload webwire.Payload) error {
+	clt.apiLock.RLock()
+	defer clt.apiLock.RUnlock()
+
 	if atomic.LoadInt32(&clt.isConnected) < 1 {
 		return fmt.Errorf("Trying to send a signal on a disconnected client")
 	}
@@ -248,8 +260,8 @@ func (clt *Client) PendingRequests() int {
 // RestoreSession tries to restore the previously opened session.
 // Fails if a session is currently already active
 func (clt *Client) RestoreSession(sessionKey []byte) error {
-	clt.opLock.Lock()
-	defer clt.opLock.Unlock()
+	clt.apiLock.RLock()
+	defer clt.apiLock.RUnlock()
 
 	clt.sessionLock.RLock()
 	if clt.session != nil {
@@ -275,8 +287,8 @@ func (clt *Client) RestoreSession(sessionKey []byte) error {
 // If the client is not connected then the synchronization is skipped.
 // Does nothing if there's no active session
 func (clt *Client) CloseSession() error {
-	clt.opLock.Lock()
-	defer clt.opLock.Unlock()
+	clt.apiLock.Lock()
+	defer clt.apiLock.Unlock()
 
 	clt.sessionLock.RLock()
 	if clt.session == nil {
@@ -307,7 +319,7 @@ func (clt *Client) CloseSession() error {
 // Close gracefully closes the connection.
 // Does nothing if the client isn't connected
 func (clt *Client) Close() {
-	clt.opLock.Lock()
-	defer clt.opLock.Unlock()
+	clt.apiLock.Lock()
+	defer clt.apiLock.Unlock()
 	clt.close()
 }
