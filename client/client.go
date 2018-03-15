@@ -41,11 +41,10 @@ type Client struct {
 }
 
 // NewClient creates a new client instance.
-// TODO: return pointer to client instance, because copying the client object doesn't make sense
-func NewClient(serverAddress string, opts Options) Client {
+func NewClient(serverAddress string, opts Options) *Client {
 	opts.SetDefaults()
 
-	return Client{
+	return &Client{
 		serverAddress,
 		0,
 		opts.DefaultRequestTimeout,

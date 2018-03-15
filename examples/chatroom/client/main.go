@@ -9,7 +9,7 @@ import (
 	webwireClient "github.com/qbeon/webwire-go/client"
 )
 
-var client webwireClient.Client
+var client *webwireClient.Client
 
 var serverAddr = flag.String("addr", ":8081", "server address")
 var password = flag.String("pass", "", "password")

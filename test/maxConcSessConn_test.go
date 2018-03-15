@@ -61,7 +61,7 @@ func TestMaxConcSessConn(t *testing.T) {
 				DefaultRequestTimeout: 2 * time.Second,
 			},
 		)
-		clients[i] = &client
+		clients[i] = client
 
 		if err := client.Connect(); err != nil {
 			t.Fatalf("Couldn't connect client: %s", err)
