@@ -3,7 +3,6 @@ package test
 import (
 	"context"
 	"fmt"
-	"os"
 	"testing"
 	"time"
 
@@ -85,26 +84,26 @@ func TestClientInitiatedSessionDestruction(t *testing.T) {
 	// Initialize client
 	client := webwireClient.NewClient(
 		addr,
-		webwireClient.Hooks{
-			OnSessionCreated: func(_ *webwire.Session) {
-				// Mark the client-side session creation callback as executed
-				sessionCreationCallbackCalled.Done()
+		webwireClient.Options{
+			Hooks: webwireClient.Hooks{
+				OnSessionCreated: func(_ *webwire.Session) {
+					// Mark the client-side session creation callback as executed
+					sessionCreationCallbackCalled.Done()
+				},
+				OnSessionClosed: func() {
+					// Ensure this callback is called during the
+					if currentStep != 3 {
+						t.Errorf(
+							"Client-side session destruction callback "+
+								"called at wrong step (%d)",
+							currentStep,
+						)
+					}
+					sessionDestructionCallbackCalled.Done()
+				},
 			},
-			OnSessionClosed: func() {
-				// Ensure this callback is called during the
-				if currentStep != 3 {
-					t.Errorf(
-						"Client-side session destruction callback "+
-							"called at wrong step (%d)",
-						currentStep,
-					)
-				}
-				sessionDestructionCallbackCalled.Done()
-			},
+			DefaultRequestTimeout: 2 * time.Second,
 		},
-		5*time.Second,
-		os.Stdout,
-		os.Stderr,
 	)
 
 	/*****************************************************************\

@@ -3,7 +3,6 @@ package test
 import (
 	"context"
 	"fmt"
-	"os"
 	"testing"
 	"time"
 
@@ -46,15 +45,15 @@ func TestClientOnSessionCreated(t *testing.T) {
 	// Initialize client
 	client := webwireClient.NewClient(
 		addr,
-		webwireClient.Hooks{
-			OnSessionCreated: func(newSession *webwire.Session) {
-				sessionFromHook = newSession
-				hookCalled.Done()
+		webwireClient.Options{
+			Hooks: webwireClient.Hooks{
+				OnSessionCreated: func(newSession *webwire.Session) {
+					sessionFromHook = newSession
+					hookCalled.Done()
+				},
 			},
+			DefaultRequestTimeout: 2 * time.Second,
 		},
-		5*time.Second,
-		os.Stdout,
-		os.Stderr,
 	)
 	defer client.Close()
 

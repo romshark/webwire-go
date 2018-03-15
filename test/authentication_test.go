@@ -3,7 +3,6 @@ package test
 import (
 	"context"
 	"fmt"
-	"os"
 	"testing"
 	"time"
 
@@ -112,44 +111,44 @@ func TestAuthentication(t *testing.T) {
 	// Initialize client
 	client := wwrclt.NewClient(
 		addr,
-		wwrclt.Hooks{
-			OnSessionCreated: func(session *wwr.Session) {
-				// The session info object won't be of initial structure type
-				// because of intermediate JSON encoding
-				// it'll be a map of arbitrary values with string keys
-				info := session.Info.(map[string]interface{})
+		wwrclt.Options{
+			Hooks: wwrclt.Hooks{
+				OnSessionCreated: func(session *wwr.Session) {
+					// The session info object won't be of initial structure type
+					// because of intermediate JSON encoding
+					// it'll be a map of arbitrary values with string keys
+					info := session.Info.(map[string]interface{})
 
-				// Check uid
-				field := "session.info.uid"
-				expectedUID := "clientidentifiergoeshere"
-				actualUID, ok := info["uid"].(string)
-				if !ok {
-					t.Errorf("expected %s not string", field)
-					return
-				}
-				if actualUID != expectedUID {
-					t.Errorf("%s differs: %s | %s", field, actualUID, expectedUID)
-					return
-				}
+					// Check uid
+					field := "session.info.uid"
+					expectedUID := "clientidentifiergoeshere"
+					actualUID, ok := info["uid"].(string)
+					if !ok {
+						t.Errorf("expected %s not string", field)
+						return
+					}
+					if actualUID != expectedUID {
+						t.Errorf("%s differs: %s | %s", field, actualUID, expectedUID)
+						return
+					}
 
-				// Check some-number
-				field = "session.info.some-number"
-				expectedNumber := float64(12345)
-				actualNumber, ok := info["some-number"].(float64)
-				if !ok {
-					t.Errorf("expected %s not float64", field)
-					return
-				}
-				if actualNumber != expectedNumber {
-					t.Errorf("%s differs: %f | %f", field, actualNumber, expectedNumber)
-					return
-				}
-				onSessionCreatedHookExecuted.Done()
+					// Check some-number
+					field = "session.info.some-number"
+					expectedNumber := float64(12345)
+					actualNumber, ok := info["some-number"].(float64)
+					if !ok {
+						t.Errorf("expected %s not float64", field)
+						return
+					}
+					if actualNumber != expectedNumber {
+						t.Errorf("%s differs: %f | %f", field, actualNumber, expectedNumber)
+						return
+					}
+					onSessionCreatedHookExecuted.Done()
+				},
 			},
+			DefaultRequestTimeout: 2 * time.Second,
 		},
-		5*time.Second,
-		os.Stdout,
-		os.Stderr,
 	)
 	defer client.Close()
 

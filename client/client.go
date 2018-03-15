@@ -7,7 +7,6 @@ import (
 	reqman "github.com/qbeon/webwire-go/requestManager"
 
 	"fmt"
-	"io"
 	"log"
 	"net/url"
 	"sync"
@@ -41,21 +40,16 @@ type Client struct {
 	errorLog   *log.Logger
 }
 
-// NewClient creates a new disconnected client instance.
-func NewClient(
-	serverAddr string,
-	hooks Hooks,
-	defaultTimeout time.Duration,
-	warningLogWriter io.Writer,
-	errorLogWriter io.Writer,
-) Client {
-	hooks.SetDefaults()
+// NewClient creates a new client instance.
+// TODO: return pointer to client instance, because copying the client object doesn't make sense
+func NewClient(serverAddress string, opts Options) Client {
+	opts.SetDefaults()
 
 	return Client{
-		serverAddr,
+		serverAddress,
 		0,
-		defaultTimeout,
-		hooks,
+		opts.DefaultRequestTimeout,
+		opts.Hooks,
 
 		sync.RWMutex{},
 		nil,
@@ -67,12 +61,12 @@ func NewClient(
 		reqman.NewRequestManager(),
 
 		log.New(
-			warningLogWriter,
+			opts.WarnLog,
 			"WARNING: ",
 			log.Ldate|log.Ltime|log.Lshortfile,
 		),
 		log.New(
-			errorLogWriter,
+			opts.ErrorLog,
 			"ERROR: ",
 			log.Ldate|log.Ltime|log.Lshortfile,
 		),

@@ -1,7 +1,6 @@
 package test
 
 import (
-	"os"
 	"sync"
 	"testing"
 	"time"
@@ -58,10 +57,9 @@ func TestMaxConcSessConn(t *testing.T) {
 	for i := uint(0); i < concurrentConns; i++ {
 		client := wwrClient.NewClient(
 			addr,
-			wwrClient.Hooks{},
-			5*time.Second,
-			os.Stdout,
-			os.Stderr,
+			wwrClient.Options{
+				DefaultRequestTimeout: 2 * time.Second,
+			},
 		)
 		clients[i] = &client
 
@@ -82,10 +80,9 @@ func TestMaxConcSessConn(t *testing.T) {
 	// Ensure that the last superfluous client is rejected
 	superflousClient := wwrClient.NewClient(
 		addr,
-		wwrClient.Hooks{},
-		5*time.Second,
-		os.Stdout,
-		os.Stderr,
+		wwrClient.Options{
+			DefaultRequestTimeout: 2 * time.Second,
+		},
 	)
 
 	if err := superflousClient.Connect(); err != nil {

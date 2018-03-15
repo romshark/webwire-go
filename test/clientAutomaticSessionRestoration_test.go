@@ -3,9 +3,7 @@ package test
 import (
 	"context"
 	"fmt"
-	"os"
 	"testing"
-	"time"
 
 	webwire "github.com/qbeon/webwire-go"
 	webwireClient "github.com/qbeon/webwire-go/client"
@@ -82,13 +80,7 @@ func TestClientAutomaticSessionRestoration(t *testing.T) {
 	)
 
 	// Initialize client
-	client := webwireClient.NewClient(
-		addr,
-		webwireClient.Hooks{},
-		5*time.Second,
-		os.Stdout,
-		os.Stderr,
-	)
+	client := webwireClient.NewClient(addr, webwireClient.Options{})
 
 	if err := client.Connect(); err != nil {
 		t.Fatalf("Couldn't connect: %s", err)

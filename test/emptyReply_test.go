@@ -2,7 +2,6 @@ package test
 
 import (
 	"context"
-	"os"
 	"testing"
 	"time"
 
@@ -28,10 +27,9 @@ func TestEmptyReply(t *testing.T) {
 	// Initialize client
 	client := webwireClient.NewClient(
 		addr,
-		webwireClient.Hooks{},
-		5*time.Second,
-		os.Stdout,
-		os.Stderr,
+		webwireClient.Options{
+			DefaultRequestTimeout: 2 * time.Second,
+		},
 	)
 
 	if err := client.Connect(); err != nil {

@@ -1,7 +1,6 @@
 package test
 
 import (
-	"os"
 	"testing"
 	"time"
 
@@ -50,23 +49,23 @@ func TestServerSignal(t *testing.T) {
 	// Initialize client
 	client := webwireClient.NewClient(
 		addr,
-		webwireClient.Hooks{
-			OnServerSignal: func(signalPayload webwire.Payload) {
-				// Verify server signal payload
-				comparePayload(
-					t,
-					"server signal",
-					expectedSignalPayload,
-					signalPayload,
-				)
+		webwireClient.Options{
+			Hooks: webwireClient.Hooks{
+				OnServerSignal: func(signalPayload webwire.Payload) {
+					// Verify server signal payload
+					comparePayload(
+						t,
+						"server signal",
+						expectedSignalPayload,
+						signalPayload,
+					)
 
-				// Synchronize, unlock main goroutine to pass the test case
-				serverSignalArrived.Done()
+					// Synchronize, unlock main goroutine to pass the test case
+					serverSignalArrived.Done()
+				},
 			},
+			DefaultRequestTimeout: 2 * time.Second,
 		},
-		5*time.Second,
-		os.Stdout,
-		os.Stderr,
 	)
 	defer client.Close()
 

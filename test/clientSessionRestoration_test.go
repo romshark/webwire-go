@@ -3,7 +3,6 @@ package test
 import (
 	"context"
 	"fmt"
-	"os"
 	"testing"
 	"time"
 
@@ -83,10 +82,9 @@ func TestClientSessionRestoration(t *testing.T) {
 	// Initialize client
 	initialClient := webwireClient.NewClient(
 		addr,
-		webwireClient.Hooks{},
-		5*time.Second,
-		os.Stdout,
-		os.Stderr,
+		webwireClient.Options{
+			DefaultRequestTimeout: 2 * time.Second,
+		},
 	)
 
 	if err := initialClient.Connect(); err != nil {
@@ -119,10 +117,9 @@ func TestClientSessionRestoration(t *testing.T) {
 	// Initialize client
 	secondClient := webwireClient.NewClient(
 		addr,
-		webwireClient.Hooks{},
-		5*time.Second,
-		os.Stdout,
-		os.Stderr,
+		webwireClient.Options{
+			DefaultRequestTimeout: 2 * time.Second,
+		},
 	)
 
 	if err := secondClient.Connect(); err != nil {

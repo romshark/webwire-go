@@ -4,9 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"os"
 	"sync"
-	"time"
 
 	"github.com/qbeon/webwire-go"
 
@@ -26,24 +24,17 @@ func main() {
 
 	// Initialize client
 	client := webwireClient.NewClient(
-		// Address of the webwire server
 		*serverAddr,
-
-		// No hooks required in this example
-		webwireClient.Hooks{
-			OnServerSignal: func(payload webwire.Payload) {
-				counter++
-				log.Printf("Signal %d received: %s", counter, string(payload.Data))
-				todo.Done()
+		webwireClient.Options{
+			// No hooks required in this example
+			Hooks: webwireClient.Hooks{
+				OnServerSignal: func(payload webwire.Payload) {
+					counter++
+					log.Printf("Signal %d received: %s", counter, string(payload.Data))
+					todo.Done()
+				},
 			},
 		},
-
-		// Default timeout for timed requests
-		5*time.Second,
-
-		// Log writers
-		os.Stdout,
-		os.Stderr,
 	)
 
 	// Close the client connection in the end

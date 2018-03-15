@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"os"
 	"time"
 
 	webwireClient "github.com/qbeon/webwire-go/client"
@@ -22,19 +21,16 @@ func main() {
 
 	// Initialize client
 	client = webwireClient.NewClient(
-		// Address of the webwire server
 		*serverAddr,
-		webwireClient.Hooks{
-			OnServerSignal:   onSignal,
-			OnSessionCreated: onSessionCreated,
+		webwireClient.Options{
+			// Address of the webwire server
+			Hooks: webwireClient.Hooks{
+				OnServerSignal:   onSignal,
+				OnSessionCreated: onSessionCreated,
+			},
+			// Default timeout for timed requests
+			DefaultRequestTimeout: 5 * time.Second,
 		},
-
-		// Default timeout for timed requests
-		5*time.Second,
-
-		// Log writers
-		os.Stdout,
-		os.Stderr,
 	)
 	defer client.Close()
 

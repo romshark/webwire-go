@@ -3,9 +3,7 @@ package test
 import (
 	"context"
 	"fmt"
-	"os"
 	"testing"
-	"time"
 
 	webwire "github.com/qbeon/webwire-go"
 	webwireClient "github.com/qbeon/webwire-go/client"
@@ -55,10 +53,9 @@ func TestActiveSessionRegistry(t *testing.T) {
 	// Initialize client
 	client := webwireClient.NewClient(
 		addr,
-		webwireClient.Hooks{},
-		5*time.Second,
-		os.Stdout,
-		os.Stderr,
+		webwireClient.Options{
+			Hooks: webwireClient.Hooks{},
+		},
 	)
 	defer client.Close()
 
