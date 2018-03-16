@@ -514,8 +514,9 @@ func (srv *Server) deregisterSession(clt *Client) {
 }
 
 // Shutdown appoints a server shutdown and blocks the calling goroutine until the server
-// was gracefuly stopped finishing ongoing signals and requests. During the shutdown new
-// requests and incoming connections are rejected while incoming signals are ignored.
+// is gracefully stopped awaiting all currently processed signal and request handlers to return.
+// During the shutdown incoming connections are rejected with 503 service unavailable.
+// Incoming requests are rejected with an error while incoming signals are just ignored
 func (srv *Server) Shutdown() {
 	srv.opsLock.Lock()
 	srv.shutdown = true
