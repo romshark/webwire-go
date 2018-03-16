@@ -34,6 +34,10 @@ func (clt *Client) verifyProtocolVersion() error {
 		return fmt.Errorf("Couldn't read metadata response body: %s", err)
 	}
 
+	if response.StatusCode == http.StatusServiceUnavailable {
+		return fmt.Errorf("Endpoint unavailable: %s", response.Status)
+	}
+
 	// Unmarshal response
 	var metadata struct {
 		ProtocolVersion string `json:"protocol-version"`

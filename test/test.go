@@ -15,7 +15,7 @@ func setupServer(t *testing.T, opts wwr.ServerOptions) (*wwr.Server, string) {
 	// Setup headed server on arbitrary port
 	opts.WarnLog = os.Stdout
 	opts.ErrorLog = os.Stderr
-	srv, _, addr, run, err := wwr.SetupServer(wwr.SetupOptions{
+	srv, _, addr, run, _, err := wwr.SetupServer(wwr.SetupOptions{
 		ServerAddress: "127.0.0.1:0",
 		ServerOptions: opts,
 	})

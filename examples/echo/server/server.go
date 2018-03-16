@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/signal"
+	"syscall"
 
 	wwr "github.com/qbeon/webwire-go"
 )
@@ -27,7 +29,7 @@ func main() {
 	flag.Parse()
 
 	// Setup webwire server
-	_, _, addr, runServer, err := wwr.SetupServer(wwr.SetupOptions{
+	_, _, addr, runServer, stopServer, err := wwr.SetupServer(wwr.SetupOptions{
 		ServerAddress: *serverAddr,
 		ServerOptions: wwr.ServerOptions{
 			Hooks: wwr.Hooks{
@@ -41,8 +43,20 @@ func main() {
 		panic(fmt.Errorf("Failed setting up WebWire server: %s", err))
 	}
 
-	log.Printf("Listening on %s", addr)
+	// Listen for OS signals and shutdown server in case of demanded termination
+	osSignals := make(chan os.Signal, 1)
+	signal.Notify(osSignals, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		sig := <-osSignals
+		log.Printf("Termination demanded by the OS (%s), shutting down...", sig)
+		if err := stopServer(); err != nil {
+			log.Printf("Error during server shutdown: %s", err)
+		}
+		log.Println("Server gracefully terminated")
+	}()
 
+	// Launch echo server
+	log.Printf("Listening on %s", addr)
 	if err := runServer(); err != nil {
 		panic(fmt.Errorf("WebWire server failed: %s", err))
 	}

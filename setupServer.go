@@ -1,6 +1,7 @@
 package webwire
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"net/http"
@@ -40,6 +41,7 @@ func SetupServer(opts SetupOptions) (
 	httpServer *http.Server,
 	addr string,
 	runFunc func() error,
+	stopFunc func() error,
 	err error,
 ) {
 	wwrSrv = NewServer(opts.ServerOptions)
@@ -59,7 +61,7 @@ func SetupServer(opts SetupOptions) (
 	// Initialize TCP/IP listener
 	listener, err := net.Listen("tcp", addr)
 	if err != nil {
-		return nil, nil, "", nil, fmt.Errorf("Failed setting up TCP/IP listener: %s", err)
+		return nil, nil, "", nil, nil, fmt.Errorf("Failed setting up TCP/IP listener: %s", err)
 	}
 
 	runFunc = func() (err error) {
@@ -67,13 +69,21 @@ func SetupServer(opts SetupOptions) (
 		err = httpServer.Serve(
 			tcpKeepAliveListener{listener.(*net.TCPListener)},
 		)
-		if err != nil {
+		if err != http.ErrServerClosed {
 			return fmt.Errorf("HTTP Server failure: %s", err)
+		}
+		return nil
+	}
+
+	stopFunc = func() error {
+		wwrSrv.Shutdown()
+		if err := httpServer.Shutdown(context.Background()); err != nil {
+			return fmt.Errorf("Couldn't properly shutdown HTTP server: %s", err)
 		}
 		return nil
 	}
 
 	addr = listener.Addr().String()
 
-	return wwrSrv, httpServer, addr, runFunc, nil
+	return wwrSrv, httpServer, addr, runFunc, stopFunc, nil
 }

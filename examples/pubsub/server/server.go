@@ -29,7 +29,7 @@ func main() {
 	flag.Parse()
 
 	// Setup webwire server
-	_, _, addr, runServer, err := wwr.SetupServer(wwr.SetupOptions{
+	_, _, addr, runServer, _, err := wwr.SetupServer(wwr.SetupOptions{
 		ServerAddress: *serverAddr,
 		ServerOptions: wwr.ServerOptions{
 			Hooks: wwr.Hooks{

@@ -128,6 +128,10 @@ type Server struct {
 	hooks Hooks
 
 	// State
+	shutdown        bool
+	shutdownRdy     chan bool
+	currentOps      uint32
+	opsLock         sync.Mutex
 	clientsLock     *sync.Mutex
 	clients         []*Client
 	sessionsEnabled bool
@@ -154,6 +158,10 @@ func NewServer(opts ServerOptions) *Server {
 		hooks: opts.Hooks,
 
 		// State
+		shutdown:        false,
+		shutdownRdy:     make(chan bool),
+		currentOps:      0,
+		opsLock:         sync.Mutex{},
 		clients:         make([]*Client, 0),
 		clientsLock:     &sync.Mutex{},
 		sessionsEnabled: sessionsEnabled,
@@ -299,12 +307,43 @@ func (srv *Server) handleSessionClosure(msg *Message) error {
 // handleSignal handles incoming signals
 // and returns an error if the ongoing connection cannot be proceeded
 func (srv *Server) handleSignal(msg *Message) {
+	srv.opsLock.Lock()
+	// Ignore incoming signals during shutdown
+	if srv.shutdown {
+		srv.opsLock.Unlock()
+		return
+	}
+	srv.currentOps++
+	srv.opsLock.Unlock()
+
 	srv.hooks.OnSignal(context.WithValue(context.Background(), Msg, *msg))
+
+	// Mark signal as done and shutdown the server if scheduled and no ops are left
+	srv.opsLock.Lock()
+	srv.currentOps--
+	if srv.shutdown && srv.currentOps < 1 {
+		close(srv.shutdownRdy)
+	}
+	srv.opsLock.Unlock()
 }
 
 // handleRequest handles incoming requests
 // and returns an error if the ongoing connection cannot be proceeded
 func (srv *Server) handleRequest(msg *Message) {
+	srv.opsLock.Lock()
+	// Reject incoming requests during shutdown, return special shutdown error
+	if srv.shutdown {
+		srv.opsLock.Unlock()
+		// TODO: it'd be better to return a special shutdown error reply to avoid collision with
+		// user code which could make identical error codes cause reconnections on the client
+		msg.fail(Error{
+			Code: "SRV_SHUTDOWN",
+		})
+		return
+	}
+	srv.currentOps++
+	srv.opsLock.Unlock()
+
 	replyPayload, err := srv.hooks.OnRequest(
 		context.WithValue(context.Background(), Msg, *msg),
 	)
@@ -318,9 +357,17 @@ func (srv *Server) handleRequest(msg *Message) {
 				Message: err.Error(),
 			})
 		}
-		return
+	} else {
+		msg.fulfill(replyPayload)
 	}
-	msg.fulfill(replyPayload)
+
+	// Mark request as done and shutdown the server if scheduled and no ops are left
+	srv.opsLock.Lock()
+	srv.currentOps--
+	if srv.shutdown && srv.currentOps < 1 {
+		close(srv.shutdownRdy)
+	}
+	srv.opsLock.Unlock()
 }
 
 // handleMetadata handles endpoint metadata requests
@@ -365,6 +412,15 @@ func (srv *Server) ServeHTTP(
 	resp http.ResponseWriter,
 	req *http.Request,
 ) {
+	// Reject incoming connections during shutdown, pretend the server is temporarily unavailable
+	srv.opsLock.Lock()
+	if srv.shutdown {
+		srv.opsLock.Unlock()
+		http.Error(resp, "Server shutting down", http.StatusServiceUnavailable)
+		return
+	}
+	srv.opsLock.Unlock()
+
 	switch req.Method {
 	case "OPTIONS":
 		srv.hooks.OnOptions(resp)
@@ -455,4 +511,18 @@ func (srv *Server) deregisterSession(clt *Client) {
 	if err := srv.hooks.OnSessionClosed(clt); err != nil {
 		srv.errorLog.Printf("OnSessionClosed hook failed: %s", err)
 	}
+}
+
+// Shutdown appoints a server shutdown and blocks the calling goroutine until the server
+// was gracefuly stopped finishing ongoing signals and requests. During the shutdown new
+// requests and incoming connections are rejected while incoming signals are ignored.
+func (srv *Server) Shutdown() {
+	srv.opsLock.Lock()
+	srv.shutdown = true
+	// Don't block if there's no currently processed operations
+	if srv.currentOps < 1 {
+		return
+	}
+	srv.opsLock.Unlock()
+	<-srv.shutdownRdy
 }
