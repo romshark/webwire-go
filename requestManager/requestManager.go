@@ -16,7 +16,7 @@ type RequestIdentifier = [8]byte
 // of a request (both failed and succeeded)
 type reply struct {
 	Reply webwire.Payload
-	Error *webwire.Error
+	Error error
 }
 
 // Request represents a request created and tracked by the request manager
@@ -42,21 +42,22 @@ func (req *Request) Identifier() RequestIdentifier {
 // AwaitReply blocks the calling goroutine
 // until either the reply is fulfilled or failed or the request is timed out.
 // The timer is started when AwaitReply is called.
-func (req *Request) AwaitReply() (webwire.Payload, *webwire.Error) {
+func (req *Request) AwaitReply() (webwire.Payload, error) {
 	// Start timeout timer
 	timeoutTimer := time.NewTimer(req.timeout).C
 
 	// Block until timeout or reply
 	select {
 	case <-timeoutTimer:
-		timeoutError := webwire.Error{
+		// TODO: Use special error type for timeouts
+		timeoutError := webwire.ReqErr{
 			Message: fmt.Sprintf("Request timed out"),
 		}
 
 		req.manager.deregister(req.identifier)
 
 		// TODO: return typed TimeoutError
-		return webwire.Payload{}, &timeoutError
+		return webwire.Payload{}, timeoutError
 	case reply := <-req.reply:
 		if reply.Error != nil {
 			return webwire.Payload{}, reply.Error
@@ -140,7 +141,7 @@ func (manager *RequestManager) Fulfill(
 
 // Fail fails the request associated with the given request identifier with the provided error.
 // Returns true if a pending request was failed and deregistered, otherwise returns false
-func (manager *RequestManager) Fail(identifier RequestIdentifier, err webwire.Error) bool {
+func (manager *RequestManager) Fail(identifier RequestIdentifier, err error) bool {
 	manager.lock.RLock()
 	req, exists := manager.pending[identifier]
 	manager.lock.RUnlock()
@@ -149,7 +150,7 @@ func (manager *RequestManager) Fail(identifier RequestIdentifier, err webwire.Er
 	}
 	req.reply <- reply{
 		Reply: webwire.Payload{},
-		Error: &err,
+		Error: err,
 	}
 	manager.deregister(identifier)
 	return true

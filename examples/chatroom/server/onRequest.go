@@ -20,7 +20,7 @@ func onRequest(ctx context.Context) (wwr.Payload, error) {
 	client := msg.Client
 
 	if msg.Name != "auth" {
-		return wwr.Payload{}, wwr.Error{
+		return wwr.Payload{}, wwr.ReqErr{
 			Code:    "BAD_REQUEST",
 			Message: fmt.Sprintf("Unsupported request name: %s", msg.Name),
 		}
@@ -28,7 +28,7 @@ func onRequest(ctx context.Context) (wwr.Payload, error) {
 
 	credentialsText, err := msg.Payload.Utf8()
 	if err != nil {
-		return wwr.Payload{}, wwr.Error{
+		return wwr.Payload{}, wwr.ReqErr{
 			Code:    "DECODING_FAILURE",
 			Message: fmt.Sprintf("Failed decoding message: %s", err),
 		}
@@ -39,7 +39,7 @@ func onRequest(ctx context.Context) (wwr.Payload, error) {
 	// Try to parse credentials
 	var credentials shared.AuthenticationCredentials
 	if err := json.Unmarshal([]byte(credentialsText), &credentials); err != nil {
-		return wwr.Payload{}, wwr.Error{
+		return wwr.Payload{}, wwr.ReqErr{
 			Code:    "INTERNAL_ERROR",
 			Message: fmt.Sprintf("Failed parsing credentials: %s", err),
 		}
@@ -48,7 +48,7 @@ func onRequest(ctx context.Context) (wwr.Payload, error) {
 	// Verify username
 	password, userExists := userAccounts[credentials.Name]
 	if !userExists {
-		return wwr.Payload{}, wwr.Error{
+		return wwr.Payload{}, wwr.ReqErr{
 			Code:    "INEXISTENT_USER",
 			Message: fmt.Sprintf("No such user: '%s'", credentials.Name),
 		}
@@ -56,7 +56,7 @@ func onRequest(ctx context.Context) (wwr.Payload, error) {
 
 	// Verify password
 	if password != credentials.Password {
-		return wwr.Payload{}, wwr.Error{
+		return wwr.Payload{}, wwr.ReqErr{
 			Code:    "WRONG_PASSWORD",
 			Message: "Provided password is wrong",
 		}
@@ -64,7 +64,7 @@ func onRequest(ctx context.Context) (wwr.Payload, error) {
 
 	// Check if client already has an ongoing session
 	if state.State.HasSession(client) {
-		return wwr.Payload{}, wwr.Error{
+		return wwr.Payload{}, wwr.ReqErr{
 			Code:    "SESSION_ACTIVE",
 			Message: "Already have an ongoing session for this client",
 		}
@@ -74,7 +74,7 @@ func onRequest(ctx context.Context) (wwr.Payload, error) {
 	if err := client.CreateSession(map[string]string{
 		"username": credentials.Name,
 	}); err != nil {
-		return wwr.Payload{}, wwr.Error{
+		return wwr.Payload{}, wwr.ReqErr{
 			Code:    "INTERNAL_ERROR",
 			Message: fmt.Sprintf("Couldn't create session: %s", err),
 		}

@@ -13,16 +13,6 @@ const (
 	Msg ContextKey = iota
 )
 
-// Error represents an error returned in case of a wrong request
-type Error struct {
-	Code    string `json:"c"`
-	Message string `json:"m,omitempty"`
-}
-
-func (err Error) Error() string {
-	return err.Message
-}
-
 const (
 	// MsgMinLenSignal represents the minimum binary/UTF8 encoded signal message length
 	MsgMinLenSignal = int(3)
@@ -59,13 +49,15 @@ const (
 )
 
 const (
-	// SERVER/CLIENT
+	// SERVER
 
 	// MsgErrorReply is sent by the server
 	// and represents an error-reply to a previously sent request
 	MsgErrorReply = byte(0)
 
-	// SERVER
+	// MsgReplyShutdown is sent by the server when a request is received during server shutdown
+	// and can't therefore be processed
+	MsgReplyShutdown = byte(1)
 
 	// MsgSessionCreated is sent by the server
 	// to notify the client about the session creation
@@ -127,8 +119,9 @@ const (
 
 // Message represents a WebWire protocol message
 type Message struct {
-	fulfill func(reply Payload)
-	fail    func(Error)
+	fulfill           func(reply Payload)
+	fail              func(ReqErr)
+	failDueToShutdown func()
 
 	msgType byte
 	id      [8]byte
@@ -756,8 +749,8 @@ func (msg *Message) Parse(message []byte) (err error) {
 }
 
 func (msg *Message) createFailCallback(client *Client, srv *Server) {
-	msg.fail = func(errObj Error) {
-		encoded, err := json.Marshal(errObj)
+	msg.fail = func(reqErr ReqErr) {
+		encoded, err := json.Marshal(reqErr)
 		if err != nil {
 			encoded = []byte("CRITICAL: could not encode error report")
 		}
@@ -765,6 +758,12 @@ func (msg *Message) createFailCallback(client *Client, srv *Server) {
 		// Send request failure notification
 		header := append([]byte{MsgErrorReply}, msg.id[:]...)
 		if err = client.write(append(header, encoded...)); err != nil {
+			srv.errorLog.Println("Writing failed:", err)
+		}
+	}
+	msg.failDueToShutdown = func() {
+		// Send request failure notification due to current server shutdown
+		if err := client.write(append([]byte{MsgReplyShutdown}, msg.id[:]...)); err != nil {
 			srv.errorLog.Println("Writing failed:", err)
 		}
 	}

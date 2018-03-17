@@ -13,9 +13,9 @@ func (clt *Client) sendNamelessRequest(
 	messageType byte,
 	payload webwire.Payload,
 	timeout time.Duration,
-) (webwire.Payload, *webwire.Error) {
+) (webwire.Payload, error) {
 	if atomic.LoadInt32(&clt.isConnected) < 1 {
-		return webwire.Payload{}, &webwire.Error{
+		return webwire.Payload{}, webwire.ReqErr{
 			Code:    "DISCONNECTED",
 			Message: "Trying to send a request on a disconnected socket",
 		}
@@ -32,7 +32,7 @@ func (clt *Client) sendNamelessRequest(
 	clt.connLock.Unlock()
 	if err != nil {
 		// TODO: return typed error TransmissionFailure
-		return webwire.Payload{}, &webwire.Error{
+		return webwire.Payload{}, webwire.ReqErr{
 			Message: fmt.Sprintf("Couldn't send message: %s", err),
 		}
 	}

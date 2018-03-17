@@ -84,7 +84,7 @@ func TestServerInitiatedSessionDestruction(t *testing.T) {
 
 					// On step 1 - authenticate and create a new session
 					if err := msg.Client.CreateSession(nil); err != nil {
-						return webwire.Payload{}, webwire.Error{
+						return webwire.Payload{}, webwire.ReqErr{
 							Code:    "INTERNAL_ERROR",
 							Message: fmt.Sprintf("Internal server error: %s", err),
 						}

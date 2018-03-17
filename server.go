@@ -84,9 +84,9 @@ func (hooks *Hooks) SetDefaults() {
 
 	if hooks.OnRequest == nil {
 		hooks.OnRequest = func(_ context.Context) (Payload, error) {
-			return Payload{}, Error{
-				"NOT_IMPLEMENTED",
-				fmt.Sprintf("Request handling is not implemented " +
+			return Payload{}, ReqErr{
+				Code: "NOT_IMPLEMENTED",
+				Message: fmt.Sprintf("Request handling is not implemented " +
 					" on this server instance",
 				),
 			}
@@ -194,9 +194,9 @@ func NewServer(opts ServerOptions) *Server {
 // and returns an error if the ongoing connection cannot be proceeded
 func (srv *Server) handleSessionRestore(msg *Message) error {
 	if !srv.sessionsEnabled {
-		msg.fail(Error{
-			"SESSIONS_DISABLED",
-			"Sessions are disabled on this server instance",
+		msg.fail(ReqErr{
+			Code:    "SESSIONS_DISABLED",
+			Message: "Sessions are disabled on this server instance",
 		})
 		return nil
 	}
@@ -205,7 +205,7 @@ func (srv *Server) handleSessionRestore(msg *Message) error {
 
 	if srv.SessionRegistry.maxConns > 0 &&
 		srv.SessionRegistry.SessionConnections(key)+1 > srv.SessionRegistry.maxConns {
-		msg.fail(Error{
+		msg.fail(ReqErr{
 			Code: "MAX_CONN_REACHED",
 			Message: fmt.Sprintf(
 				"Session %s reached the maximum number of concurrent connections (%d)",
@@ -218,9 +218,9 @@ func (srv *Server) handleSessionRestore(msg *Message) error {
 
 	session, err := srv.hooks.OnSessionLookup(key)
 	if err != nil {
-		msg.fail(Error{
-			"INTERNAL_ERROR",
-			fmt.Sprintf(
+		msg.fail(ReqErr{
+			Code: "INTERNAL_ERROR",
+			Message: fmt.Sprintf(
 				// TODO: whoops, that's some master-yoda-style english, fix it
 				"Session restoration request not could have been fulfilled",
 			),
@@ -230,9 +230,9 @@ func (srv *Server) handleSessionRestore(msg *Message) error {
 		)
 	}
 	if session == nil {
-		msg.fail(Error{
-			"SESSION_NOT_FOUND",
-			fmt.Sprintf("No session associated with key: '%s'", key),
+		msg.fail(ReqErr{
+			Code:    "SESSION_NOT_FOUND",
+			Message: fmt.Sprintf("No session associated with key: '%s'", key),
 		})
 		return nil
 	}
@@ -240,9 +240,9 @@ func (srv *Server) handleSessionRestore(msg *Message) error {
 	// JSON encode the session
 	encodedSession, err := json.Marshal(session)
 	if err != nil {
-		msg.fail(Error{
-			"INTERNAL_ERROR",
-			fmt.Sprintf(
+		msg.fail(ReqErr{
+			Code: "INTERNAL_ERROR",
+			Message: fmt.Sprintf(
 				"Session restoration request not could have been fulfilled",
 			),
 		})
@@ -266,9 +266,9 @@ func (srv *Server) handleSessionRestore(msg *Message) error {
 // and returns an error if the ongoing connection cannot be proceeded
 func (srv *Server) handleSessionClosure(msg *Message) error {
 	if !srv.sessionsEnabled {
-		msg.fail(Error{
-			"SESSIONS_DISABLED",
-			"Sessions are disabled on this server instance",
+		msg.fail(ReqErr{
+			Code:    "SESSIONS_DISABLED",
+			Message: "Sessions are disabled on this server instance",
 		})
 		return nil
 	}
@@ -283,9 +283,9 @@ func (srv *Server) handleSessionClosure(msg *Message) error {
 
 	// Synchronize session destruction to the client
 	if err := msg.Client.notifySessionClosed(); err != nil {
-		msg.fail(Error{
-			"INTERNAL_ERROR",
-			fmt.Sprintf(
+		msg.fail(ReqErr{
+			Code: "INTERNAL_ERROR",
+			Message: fmt.Sprintf(
 				"Session destruction request not could have been fulfilled",
 			),
 		})
@@ -334,11 +334,7 @@ func (srv *Server) handleRequest(msg *Message) {
 	// Reject incoming requests during shutdown, return special shutdown error
 	if srv.shutdown {
 		srv.opsLock.Unlock()
-		// TODO: it'd be better to return a special shutdown error reply to avoid collision with
-		// user code which could make identical error codes cause reconnections on the client
-		msg.fail(Error{
-			Code: "SRV_SHUTDOWN",
-		})
+		msg.failDueToShutdown()
 		return
 	}
 	srv.currentOps++
@@ -348,11 +344,12 @@ func (srv *Server) handleRequest(msg *Message) {
 		context.WithValue(context.Background(), Msg, *msg),
 	)
 	if err != nil {
+		// TODO: ensure no special webwire error type is returned by the user code
 		switch errObj := err.(type) {
-		case Error:
+		case ReqErr:
 			msg.fail(errObj)
 		default:
-			msg.fail(Error{
+			msg.fail(ReqErr{
 				Code:    "INTERNAL_ERR",
 				Message: err.Error(),
 			})

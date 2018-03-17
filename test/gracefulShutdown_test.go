@@ -19,7 +19,6 @@ import (
 // LATE CONN:    ---------->|------------------- (must be rejected)
 // LATE REQ:     ----------->|------------------ (must be rejected)
 func TestGracefulShutdown(t *testing.T) {
-	expectedReqErrorCode := "SRV_SHUTDOWN"
 	expectedReqReply := []byte("ifinished")
 	timeDelta := time.Duration(1)
 	processesFinished := NewPending(2, 1*time.Second, true)
@@ -105,10 +104,14 @@ func TestGracefulShutdown(t *testing.T) {
 		}
 
 		// Verify request rejection during shutdown (LATE REQ)
-		if _, err := clientLateReq.Request("", wwr.Payload{Data: []byte("test")}); err == nil {
-			t.Errorf("Expected request during shutdown to be rejected")
-		} else if err.Code != expectedReqErrorCode {
-			t.Errorf("Expected error code '%s', got: %s", expectedReqErrorCode, err.Code)
+		_, lateReqErr := clientLateReq.Request("", wwr.Payload{Data: []byte("test")})
+		switch err := lateReqErr.(type) {
+		case wwr.ReqErrSrvShutdown:
+			break
+		case wwr.ReqErr:
+			t.Errorf("Expected special server shutdown error, got regular request error: %s", err)
+		default:
+			t.Errorf("Expected request during shutdown to be rejected with special error type")
 		}
 
 		processesFinished.Done()

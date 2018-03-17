@@ -32,13 +32,17 @@ func (clt *Client) handleSessionClosed() {
 
 func (clt *Client) handleFailure(reqID [8]byte, payload []byte) {
 	// Decode error
-	var replyErr webwire.Error
+	var replyErr webwire.ReqErr
 	if err := json.Unmarshal(payload, &replyErr); err != nil {
 		clt.errorLog.Printf("Failed unmarshalling error reply: %s", err)
 	}
 
 	// Fail request
 	clt.requestManager.Fail(reqID, replyErr)
+}
+
+func (clt *Client) handleReplyShutdown(reqIdent [8]byte) {
+	clt.requestManager.Fail(reqIdent, webwire.ReqErrSrvShutdown{})
 }
 
 func (clt *Client) handleReply(reqID [8]byte, payload webwire.Payload) {
@@ -74,6 +78,8 @@ func (clt *Client) handleMessage(message []byte) error {
 				Data:     message[9:],
 			},
 		)
+	case webwire.MsgReplyShutdown:
+		clt.handleReplyShutdown(extractMessageIdentifier(message))
 	case webwire.MsgErrorReply:
 		clt.handleFailure(extractMessageIdentifier(message), message[9:])
 	case webwire.MsgSignalBinary:

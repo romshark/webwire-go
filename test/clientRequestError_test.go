@@ -12,11 +12,7 @@ import (
 // TestClientRequestError verifies returned request errors properly
 // fail the request on the client
 func TestClientRequestError(t *testing.T) {
-	expectedRequestPayload := webwire.Payload{
-		Encoding: webwire.EncodingUtf8,
-		Data:     []byte("webwire_test_REQUEST_payload"),
-	}
-	expectedReplyError := webwire.Error{
+	expectedReplyError := webwire.ReqErr{
 		Code:    "SAMPLE_ERROR",
 		Message: "Sample error message",
 	}
@@ -47,27 +43,34 @@ func TestClientRequestError(t *testing.T) {
 	}
 
 	// Send request and await reply
-	reply, err := client.Request("", expectedRequestPayload)
+	reply, err := client.Request("", webwire.Payload{
+		Encoding: webwire.EncodingUtf8,
+		Data:     []byte("webwire_test_REQUEST_payload"),
+	})
 
 	// Verify returned error
 	if err == nil {
 		t.Fatal("Expected an error, got nil")
 	}
 
-	if err.Code != expectedReplyError.Code {
-		t.Fatalf(
-			"Unexpected error code: '%s' (%d)",
-			err.Code,
-			len(err.Code),
-		)
-	}
+	if err, isReqErr := err.(webwire.ReqErr); isReqErr {
+		if err.Code != expectedReplyError.Code {
+			t.Fatalf(
+				"Unexpected error code: '%s' (%d)",
+				err.Code,
+				len(err.Code),
+			)
+		}
 
-	if err.Message != expectedReplyError.Message {
-		t.Fatalf(
-			"Unexpected error message: '%s' (%d)",
-			err.Message,
-			len(err.Message),
-		)
+		if err.Message != expectedReplyError.Message {
+			t.Fatalf(
+				"Unexpected error message: '%s' (%d)",
+				err.Message,
+				len(err.Message),
+			)
+		}
+	} else {
+		t.Fatalf("Unexpected request failure: %v", err)
 	}
 
 	if len(reply.Data) > 0 {

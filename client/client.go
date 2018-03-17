@@ -169,7 +169,7 @@ func (clt *Client) Connect() (err error) {
 func (clt *Client) Request(
 	name string,
 	payload webwire.Payload,
-) (webwire.Payload, *webwire.Error) {
+) (webwire.Payload, error) {
 	clt.apiLock.RLock()
 	defer clt.apiLock.RUnlock()
 
