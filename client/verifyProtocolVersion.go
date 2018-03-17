@@ -7,6 +7,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"time"
+
+	"github.com/qbeon/webwire-go"
 )
 
 // to verify the server is running a supported protocol version
@@ -52,11 +54,7 @@ func (clt *Client) verifyProtocolVersion() error {
 
 	// Verify metadata
 	if metadata.ProtocolVersion != supportedProtocolVersion {
-		return fmt.Errorf(
-			"Unsupported protocol version: %s (%s is supported by this client)",
-			metadata.ProtocolVersion,
-			supportedProtocolVersion,
-		)
+		return webwire.NewConnErrIncomp(metadata.ProtocolVersion, supportedProtocolVersion)
 	}
 
 	return nil

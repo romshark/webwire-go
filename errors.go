@@ -5,6 +5,46 @@ import (
 	"time"
 )
 
+// ConnErrIncomp represents a connection error type indicating that the server
+// requires an incompatible version of the protocol and can't therefore be connected to.
+type ConnErrIncomp struct {
+	requiredVersion  string
+	supportedVersion string
+}
+
+func (err ConnErrIncomp) Error() string {
+	return fmt.Sprintf(
+		"Unsupported protocol version: %s (%s is supported by this client)",
+		err.requiredVersion,
+		err.supportedVersion,
+	)
+}
+
+// NewConnErrIncomp constructs and returns a new incompatible protocol version error
+// based on the required and supported protocol versions
+func NewConnErrIncomp(requiredVersion, supportedVersion string) ConnErrIncomp {
+	return ConnErrIncomp{
+		requiredVersion:  requiredVersion,
+		supportedVersion: supportedVersion,
+	}
+}
+
+// ConnErrDial represents a connection error type indicating that the dialing failed.
+type ConnErrDial struct {
+	msg string
+}
+
+func (err ConnErrDial) Error() string {
+	return err.msg
+}
+
+// NewConnErrDial constructs and returns a new connection dial error based on the actual err
+func NewConnErrDial(err error) ConnErrDial {
+	return ConnErrDial{
+		msg: err.Error(),
+	}
+}
+
 // ReqErrSrvShutdown represents a request error type indicating that the request cannot be
 // processed due to the server currently being shut down
 type ReqErrSrvShutdown struct{}

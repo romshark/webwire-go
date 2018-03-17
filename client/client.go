@@ -101,7 +101,7 @@ func (clt *Client) Connect() (err error) {
 	clt.conn, _, err = websocket.DefaultDialer.Dial(connURL.String(), nil)
 	if err != nil {
 		// TODO: return typed error ConnectionFailure
-		return fmt.Errorf("Could not connect: %s", err)
+		return webwire.NewConnErrDial(err)
 	}
 	clt.connLock.Unlock()
 
