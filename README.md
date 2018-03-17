@@ -26,6 +26,7 @@ The [webwire-go](https://github.com/qbeon/webwire-go) library provides both a cl
   - [Hooks](https://github.com/qbeon/webwire-go#hooks)
     - [Server-side Hooks](https://github.com/qbeon/webwire-go#server-side-hooks)
     - [Client-side Hooks](https://github.com/qbeon/webwire-go#client-side-hooks)
+  - [Graceful Shutdown](https://github.com/qbeon/webwire-go#graceful-shutdown)
   - [Seamless JavaScript Support](https://github.com/qbeon/webwire-go#seamless-javascript-support)
 - [Dependencies](https://github.com/qbeon/webwire-go#dependencies)
 
@@ -82,7 +83,7 @@ reply // Just in time!
 ```
 
 ### Client-side Signals
-Individual clients can send signals to the server. Signals are one-way messages guaranteed to arrive not requiring any reply though.
+Individual clients can send signals to the server. Signals are one-way messages guaranteed to arrive, though they're not guaranteed to be processed like requests are. In cases such as when the server is being shut down, incoming signals are ignored by the server and dropped while requests will acknowledge the failure.
 
 ```go
 // Send signal to server
@@ -186,6 +187,15 @@ Various hooks provide the ability to asynchronously react to different kinds of 
 - OnServerSignal
 - OnSessionCreated
 - OnSessionClosed
+
+### Graceful Shutdown
+The server will finish processing all ongoing signals and requests before closing when asked to shut down.
+```go
+// Will block the calling goroutine until all handlers have finished
+server.Shutdown()
+```
+While the server is shutting down new connections are refused with `503 Service Unavailable` and incoming new requests from connected clients will be rejected with a special error: `RegErrSrvShutdown`. Any incoming signals from connected clients will be ignored during the shutdown.
+
 
 ### Seamless JavaScript Support
 The [official JavaScript library](https://github.com/qbeon/webwire-js) enables seamless support for various JavaScript environments providing a fully compliant client implementation supporting the latest feature set of the [webwire-go](https://github.com/qbeon/webwire-go) library.
