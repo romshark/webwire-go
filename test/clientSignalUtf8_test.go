@@ -57,11 +57,11 @@ func TestClientSignal(t *testing.T) {
 	// Send signal
 	err := client.Signal("", expectedSignalPayload)
 	if err != nil {
-		t.Fatalf("Request failed: %s", err)
+		t.Fatalf("Couldn't send signal: %s", err)
 	}
 
 	// Synchronize, await signal arrival
 	if err := signalArrived.Wait(); err != nil {
-		t.Fatal("Signal didn't arrive")
+		t.Fatal("Signal wasn't processed")
 	}
 }
