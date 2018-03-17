@@ -2,7 +2,6 @@ package requestmanager
 
 import (
 	"encoding/binary"
-	"fmt"
 	"sync"
 	"time"
 
@@ -49,15 +48,8 @@ func (req *Request) AwaitReply() (webwire.Payload, error) {
 	// Block until timeout or reply
 	select {
 	case <-timeoutTimer:
-		// TODO: Use special error type for timeouts
-		timeoutError := webwire.ReqErr{
-			Message: fmt.Sprintf("Request timed out"),
-		}
-
 		req.manager.deregister(req.identifier)
-
-		// TODO: return typed TimeoutError
-		return webwire.Payload{}, timeoutError
+		return webwire.Payload{}, webwire.ReqErrTimeout{Target: req.timeout}
 	case reply := <-req.reply:
 		if reply.Error != nil {
 			return webwire.Payload{}, reply.Error

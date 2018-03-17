@@ -55,11 +55,17 @@ func TestClientRequestRegisterOnTimeout(t *testing.T) {
 	}
 
 	// Send request and await reply
-	if _, err := client.TimedRequest(
+	_, reqErr := client.TimedRequest(
 		"",
 		webwire.Payload{Data: []byte("t")},
 		200*time.Millisecond,
-	); err == nil {
+	)
+	switch err := reqErr.(type) {
+	case webwire.ReqErrTimeout:
+		if err.Target != 200*time.Millisecond {
+			t.Fatalf("Unexpected timeout target: %s", err.Target)
+		}
+	default:
 		t.Fatalf("Request must have failed (timeout)")
 	}
 
