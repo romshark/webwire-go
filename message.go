@@ -771,15 +771,23 @@ func (msg *Message) createFailCallback(client *Client, srv *Server) {
 
 func (msg *Message) createReplyCallback(client *Client, srv *Server) {
 	msg.fulfill = func(reply Payload) {
+		headerPadding := false
 		replyType := MsgReplyBinary
 		switch reply.Encoding {
 		case EncodingUtf8:
 			replyType = MsgReplyUtf8
 		case EncodingUtf16:
+			headerPadding = true
 			replyType = MsgReplyUtf16
 		}
 
 		header := append([]byte{replyType}, msg.id[:]...)
+
+		// Add header padding byte in case of UTF16 encoding
+		if headerPadding {
+			header = append(header, 0)
+		}
+
 		// Send reply
 		if err := client.write(append(header, reply.Data...)); err != nil {
 			srv.errorLog.Println("Writing failed:", err)

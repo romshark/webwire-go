@@ -75,7 +75,7 @@ func (clt *Client) handleMessage(message []byte) error {
 			extractMessageIdentifier(message),
 			webwire.Payload{
 				Encoding: webwire.EncodingUtf16,
-				Data:     message[9:],
+				Data:     message[10:],
 			},
 		)
 	case webwire.MsgReplyShutdown:
