@@ -100,7 +100,6 @@ func (clt *Client) Connect() (err error) {
 	clt.connLock.Lock()
 	clt.conn, _, err = websocket.DefaultDialer.Dial(connURL.String(), nil)
 	if err != nil {
-		// TODO: return typed error ConnectionFailure
 		return webwire.NewConnErrDial(err)
 	}
 	clt.connLock.Unlock()
@@ -272,8 +271,7 @@ func (clt *Client) RestoreSession(sessionKey []byte) error {
 
 	restoredSession, err := clt.requestSessionRestoration(sessionKey)
 	if err != nil {
-		// TODO: check for error types
-		return fmt.Errorf("Session restoration request failed: %s", err)
+		return err
 	}
 	clt.sessionLock.Lock()
 	clt.session = restoredSession

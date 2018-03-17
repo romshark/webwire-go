@@ -38,9 +38,27 @@ func (err ConnErrDial) Error() string {
 	return err.msg
 }
 
-// NewConnErrDial constructs and returns a new connection dial error based on the actual err
+// NewConnErrDial constructs and returns a new connection dial error
+// based on the actual error message
 func NewConnErrDial(err error) ConnErrDial {
 	return ConnErrDial{
+		msg: err.Error(),
+	}
+}
+
+// ReqErrTrans represents a connection error type indicating that the dialing failed.
+type ReqErrTrans struct {
+	msg string
+}
+
+func (err ReqErrTrans) Error() string {
+	return fmt.Sprintf("Message transmission failed: %s", err.msg)
+}
+
+// NewReqErrTrans constructs and returns a new request transmission error
+// based on the actual error message
+func NewReqErrTrans(err error) ReqErrTrans {
+	return ReqErrTrans{
 		msg: err.Error(),
 	}
 }

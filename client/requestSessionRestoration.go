@@ -20,8 +20,9 @@ func (clt *Client) requestSessionRestoration(sessionKey []byte) (*webwire.Sessio
 		clt.defaultTimeout,
 	)
 	if err != nil {
-		// TODO: check for error types
-		return nil, fmt.Errorf("Session restoration request failed: %s", err)
+		return nil, webwire.NewReqErrTrans(
+			fmt.Errorf("Session restoration request failed: %s", err),
+		)
 	}
 
 	var session webwire.Session

@@ -1,7 +1,6 @@
 package client
 
 import (
-	"fmt"
 	"sync/atomic"
 	"time"
 
@@ -32,10 +31,7 @@ func (clt *Client) sendRequest(
 	err := clt.conn.WriteMessage(websocket.BinaryMessage, msg)
 	clt.connLock.Unlock()
 	if err != nil {
-		// TODO: return typed error TransmissionFailure
-		return webwire.Payload{}, webwire.ReqErr{
-			Message: fmt.Sprintf("Couldn't send message: %s", err),
-		}
+		return webwire.Payload{}, webwire.NewReqErrTrans(err)
 	}
 
 	// Block until request either times out or a response is received
