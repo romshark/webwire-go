@@ -206,15 +206,7 @@ func (srv *Server) handleSessionRestore(msg *Message) error {
 
 	if srv.SessionRegistry.maxConns > 0 &&
 		srv.SessionRegistry.SessionConnections(key)+1 > srv.SessionRegistry.maxConns {
-		// TODO: Implement dedicated error message type for "max connection reached" errors
-		msg.fail(ReqErr{
-			Code: "MAX_CONN_REACHED",
-			Message: fmt.Sprintf(
-				"Session %s reached the maximum number of concurrent connections (%d)",
-				key,
-				srv.SessionRegistry.maxConns,
-			),
-		})
+		msg.fail(MaxSessConnsReached{})
 		return nil
 	}
 
@@ -224,11 +216,7 @@ func (srv *Server) handleSessionRestore(msg *Message) error {
 		return fmt.Errorf("CRITICAL: Session search handler failed: %s", err)
 	}
 	if session == nil {
-		// TODO: Implement dedicated error message type for "session not found" errors
-		msg.fail(ReqErr{
-			Code:    "SESSION_NOT_FOUND",
-			Message: fmt.Sprintf("No session associated with key: '%s'", key),
-		})
+		msg.fail(SessNotFound{})
 		return nil
 	}
 

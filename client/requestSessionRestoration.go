@@ -8,7 +8,7 @@ import (
 )
 
 // requestSessionRestoration sends a session restoration request
-// and decodes the session object from the received replied.
+// and decodes the session object from the received reply.
 // Expects the client to be connected beforehand
 func (clt *Client) requestSessionRestoration(sessionKey []byte) (*webwire.Session, error) {
 	reply, err := clt.sendNamelessRequest(
@@ -20,9 +20,7 @@ func (clt *Client) requestSessionRestoration(sessionKey []byte) (*webwire.Sessio
 		clt.defaultTimeout,
 	)
 	if err != nil {
-		return nil, webwire.NewReqErrTrans(
-			fmt.Errorf("Session restoration request failed: %s", err),
-		)
+		return nil, err
 	}
 
 	var session webwire.Session

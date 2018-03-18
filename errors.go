@@ -98,3 +98,19 @@ type ReqErr struct {
 func (err ReqErr) Error() string {
 	return err.Message
 }
+
+// SessNotFound represents a session restoration error type indicating that the server didn't
+// find the session to be restored
+type SessNotFound struct{}
+
+func (err SessNotFound) Error() string {
+	return "Session not found"
+}
+
+// MaxSessConnsReached represents an authentication error type indicating that the given session
+// already reched the maximum number of concurrent connections
+type MaxSessConnsReached struct{}
+
+func (err MaxSessConnsReached) Error() string {
+	return "Reached maximum number of concurrent session connections"
+}

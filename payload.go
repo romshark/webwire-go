@@ -20,7 +20,6 @@ func (pld *Payload) Utf8() (string, error) {
 			return "", fmt.Errorf("Cannot convert invalid UTF16 payload data to UTF8")
 		}
 		u16str := make([]uint16, 1)
-		// TODO: check whether the builtin append would be more efficient than bytes.Buffer
 		utf8str := &bytes.Buffer{}
 		utf8buf := make([]byte, 4)
 		for i := 0; i < len(pld.Data); i += 2 {

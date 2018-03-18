@@ -1,6 +1,7 @@
 package test
 
 import (
+	"reflect"
 	"sync"
 	"testing"
 	"time"
@@ -91,8 +92,13 @@ func TestMaxConcSessConn(t *testing.T) {
 
 	// Try to restore the session and expect this operation to fail due to reached limit
 	sessionKeyLock.RLock()
-	if err := superflousClient.RestoreSession([]byte(sessionKey)); err == nil {
-		t.Fatalf("Expected an error during superfluous client manual session restoration")
+	sessRestErr := superflousClient.RestoreSession([]byte(sessionKey))
+	if _, isMaxReachedErr := sessRestErr.(wwr.MaxSessConnsReached); !isMaxReachedErr {
+		t.Fatalf(
+			"Expected a MaxSessConnsReached error during manual session restoration, got: %s | %s",
+			reflect.TypeOf(sessRestErr),
+			sessRestErr,
+		)
 	}
 	sessionKeyLock.RUnlock()
 }

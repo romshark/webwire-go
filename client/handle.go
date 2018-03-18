@@ -50,6 +50,14 @@ func (clt *Client) handleReplyShutdown(reqIdent [8]byte) {
 	clt.requestManager.Fail(reqIdent, webwire.ReqErrSrvShutdown{})
 }
 
+func (clt *Client) handleSessionNotFound(reqIdent [8]byte) {
+	clt.requestManager.Fail(reqIdent, webwire.SessNotFound{})
+}
+
+func (clt *Client) handleMaxSessConnsReached(reqIdent [8]byte) {
+	clt.requestManager.Fail(reqIdent, webwire.MaxSessConnsReached{})
+}
+
 func (clt *Client) handleReply(reqID [8]byte, payload webwire.Payload) {
 	clt.requestManager.Fulfill(reqID, payload)
 }
@@ -85,6 +93,10 @@ func (clt *Client) handleMessage(message []byte) error {
 		)
 	case webwire.MsgReplyShutdown:
 		clt.handleReplyShutdown(extractMessageIdentifier(message))
+	case webwire.MsgSessionNotFound:
+		clt.handleSessionNotFound(extractMessageIdentifier(message))
+	case webwire.MsgMaxSessConnsReached:
+		clt.handleMaxSessConnsReached(extractMessageIdentifier(message))
 	case webwire.MsgErrorReply:
 		clt.handleFailure(extractMessageIdentifier(message), message[9:])
 	case webwire.MsgReplyInternalError:

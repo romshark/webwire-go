@@ -63,6 +63,14 @@ const (
 	// the processing of a request
 	MsgReplyInternalError = byte(2)
 
+	// MsgSessionNotFound is sent by the server in response to an unfilfilled session restoration
+	// request due to the session not being found
+	MsgSessionNotFound = byte(3)
+
+	// MsgMaxSessConnsReached is sent by the server in response to an authentication request
+	// when the maximum number of concurrent connections for a certain session was reached
+	MsgMaxSessConnsReached = byte(4)
+
 	// MsgSessionCreated is sent by the server
 	// to notify the client about the session creation
 	MsgSessionCreated = byte(21)
@@ -774,6 +782,10 @@ func (msg *Message) createFailCallback(client *Client, srv *Server) {
 			} else {
 				report = []byte(`{"c":""}`)
 			}
+		case MaxSessConnsReached:
+			msgType = MsgMaxSessConnsReached
+		case SessNotFound:
+			msgType = MsgSessionNotFound
 		default:
 			msgType = MsgReplyInternalError
 		}
