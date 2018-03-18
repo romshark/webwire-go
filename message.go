@@ -59,6 +59,10 @@ const (
 	// and can't therefore be processed
 	MsgReplyShutdown = byte(1)
 
+	// MsgReplyInternalError is sent by the server if an unexpected internal error arose during
+	// the processing of a request
+	MsgReplyInternalError = byte(2)
+
 	// MsgSessionCreated is sent by the server
 	// to notify the client about the session creation
 	MsgSessionCreated = byte(21)
@@ -120,7 +124,7 @@ const (
 // Message represents a WebWire protocol message
 type Message struct {
 	fulfill           func(reply Payload)
-	fail              func(ReqErr)
+	fail              func(error)
 	failDueToShutdown func()
 
 	msgType byte
@@ -749,15 +753,34 @@ func (msg *Message) Parse(message []byte) (err error) {
 }
 
 func (msg *Message) createFailCallback(client *Client, srv *Server) {
-	msg.fail = func(reqErr ReqErr) {
-		encoded, err := json.Marshal(reqErr)
-		if err != nil {
-			encoded = []byte("CRITICAL: could not encode error report")
+	msg.fail = func(reqErr error) {
+		msgType := MsgErrorReply
+		var report []byte
+
+		switch err := reqErr.(type) {
+		case ReqErr:
+			var jsonErr error
+			report, jsonErr = json.Marshal(err)
+			if jsonErr != nil {
+				panic("Failed encoding error report")
+			}
+		case *ReqErr:
+			if err != nil {
+				var jsonErr error
+				report, jsonErr = json.Marshal(*err)
+				if jsonErr != nil {
+					panic("Failed encoding error report")
+				}
+			} else {
+				report = []byte(`{"c":""}`)
+			}
+		default:
+			msgType = MsgReplyInternalError
 		}
 
 		// Send request failure notification
-		header := append([]byte{MsgErrorReply}, msg.id[:]...)
-		if err = client.write(append(header, encoded...)); err != nil {
+		header := append([]byte{msgType}, msg.id[:]...)
+		if err := client.write(append(header, report...)); err != nil {
 			srv.errorLog.Println("Writing failed:", err)
 		}
 	}

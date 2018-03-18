@@ -340,22 +340,19 @@ func (srv *Server) handleRequest(msg *Message) {
 	srv.currentOps++
 	srv.opsLock.Unlock()
 
-	replyPayload, err := srv.hooks.OnRequest(
+	replyPayload, returnedErr := srv.hooks.OnRequest(
 		context.WithValue(context.Background(), Msg, *msg),
 	)
-	if err != nil {
-		// TODO: ensure no special webwire error type is returned by the user code
-		switch errObj := err.(type) {
-		case ReqErr:
-			msg.fail(errObj)
-		default:
-			msg.fail(ReqErr{
-				Code:    "INTERNAL_ERR",
-				Message: err.Error(),
-			})
-		}
-	} else {
+	switch returnedErr.(type) {
+	case nil:
 		msg.fulfill(replyPayload)
+	case ReqErr:
+		msg.fail(returnedErr)
+	case *ReqErr:
+		msg.fail(returnedErr)
+	default:
+		srv.errorLog.Printf("Internal error during request handling: %s", returnedErr)
+		msg.fail(returnedErr)
 	}
 
 	// Mark request as done and shutdown the server if scheduled and no ops are left

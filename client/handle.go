@@ -41,6 +41,11 @@ func (clt *Client) handleFailure(reqID [8]byte, payload []byte) {
 	clt.requestManager.Fail(reqID, replyErr)
 }
 
+func (clt *Client) handleInternalError(reqIdent [8]byte) {
+	// Fail request
+	clt.requestManager.Fail(reqIdent, webwire.ReqErrInternal{})
+}
+
 func (clt *Client) handleReplyShutdown(reqIdent [8]byte) {
 	clt.requestManager.Fail(reqIdent, webwire.ReqErrSrvShutdown{})
 }
@@ -82,6 +87,8 @@ func (clt *Client) handleMessage(message []byte) error {
 		clt.handleReplyShutdown(extractMessageIdentifier(message))
 	case webwire.MsgErrorReply:
 		clt.handleFailure(extractMessageIdentifier(message), message[9:])
+	case webwire.MsgReplyInternalError:
+		clt.handleInternalError(extractMessageIdentifier(message))
 	case webwire.MsgSignalBinary:
 		clt.hooks.OnServerSignal(webwire.Payload{
 			Encoding: webwire.EncodingBinary,

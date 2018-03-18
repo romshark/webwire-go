@@ -71,6 +71,14 @@ func (err ReqErrSrvShutdown) Error() string {
 	return "Server is currently being shut down and won't process the request"
 }
 
+// ReqErrInternal represents a request error type indicating that the request failed due
+// to an internal server-side error
+type ReqErrInternal struct{}
+
+func (err ReqErrInternal) Error() string {
+	return "Internal server error"
+}
+
 // ReqErrTimeout represents a request error type indicating that the server
 // wasn't able to reply within the given time frame causing the request to time out.
 type ReqErrTimeout struct {
