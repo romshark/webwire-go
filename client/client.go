@@ -211,7 +211,7 @@ func (clt *Client) Signal(name string, payload webwire.Payload) error {
 	defer clt.apiLock.RUnlock()
 
 	if atomic.LoadInt32(&clt.isConnected) < 1 {
-		return fmt.Errorf("Trying to send a signal on a disconnected client")
+		return DisconnectedErr{}
 	}
 
 	msgBytes := webwire.NewSignalMessage(name, payload)

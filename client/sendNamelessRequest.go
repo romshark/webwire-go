@@ -14,10 +14,7 @@ func (clt *Client) sendNamelessRequest(
 	timeout time.Duration,
 ) (webwire.Payload, error) {
 	if atomic.LoadInt32(&clt.isConnected) < 1 {
-		return webwire.Payload{}, webwire.ReqErr{
-			Code:    "DISCONNECTED",
-			Message: "Trying to send a request on a disconnected socket",
-		}
+		return webwire.Payload{}, DisconnectedErr{}
 	}
 
 	request := clt.requestManager.Create(timeout)
