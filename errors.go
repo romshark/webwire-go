@@ -108,7 +108,7 @@ func (err SessNotFound) Error() string {
 }
 
 // MaxSessConnsReached represents an authentication error type indicating that the given session
-// already reched the maximum number of concurrent connections
+// already reached the maximum number of concurrent connections
 type MaxSessConnsReached struct{}
 
 func (err MaxSessConnsReached) Error() string {
