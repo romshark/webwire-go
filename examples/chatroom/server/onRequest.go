@@ -39,10 +39,7 @@ func onRequest(ctx context.Context) (wwr.Payload, error) {
 	// Try to parse credentials
 	var credentials shared.AuthenticationCredentials
 	if err := json.Unmarshal([]byte(credentialsText), &credentials); err != nil {
-		return wwr.Payload{}, wwr.ReqErr{
-			Code:    "INTERNAL_ERROR",
-			Message: fmt.Sprintf("Failed parsing credentials: %s", err),
-		}
+		return wwr.Payload{}, fmt.Errorf("Failed parsing credentials: %s", err)
 	}
 
 	// Verify username
@@ -74,10 +71,7 @@ func onRequest(ctx context.Context) (wwr.Payload, error) {
 	if err := client.CreateSession(map[string]string{
 		"username": credentials.Name,
 	}); err != nil {
-		return wwr.Payload{}, wwr.ReqErr{
-			Code:    "INTERNAL_ERROR",
-			Message: fmt.Sprintf("Couldn't create session: %s", err),
-		}
+		return wwr.Payload{}, fmt.Errorf("Couldn't create session: %s", err)
 	}
 
 	log.Printf(

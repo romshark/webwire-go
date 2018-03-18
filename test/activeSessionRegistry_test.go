@@ -2,7 +2,6 @@ package test
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	webwire "github.com/qbeon/webwire-go"
@@ -31,10 +30,7 @@ func TestActiveSessionRegistry(t *testing.T) {
 
 					// Try to create a new session
 					if err := msg.Client.CreateSession(nil); err != nil {
-						return webwire.Payload{}, webwire.ReqErr{
-							Code:    "INTERNAL_ERROR",
-							Message: fmt.Sprintf("Internal server error: %s", err),
-						}
+						return webwire.Payload{}, err
 					}
 
 					// Return the key of the newly created session (use default binary encoding)

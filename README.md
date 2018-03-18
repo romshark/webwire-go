@@ -145,10 +145,7 @@ func onRequest(ctx context.Context) (wwr.Payload, error) {
   }
   // Create session, will automatically synchronize to the client
   err := client.CreateSession(/*arbitrary data*/); err != nil {
-    return wwr.Payload{}, wwr.Error {
-      Code: "INTERNAL_ERROR",
-      Message: "Couldn't create session for some reason"
-    }
+    return wwr.Payload{}, fmt.Errorf("Couldn't create session for some reason")
   }
   client.Session // return wwr.Payload{}, nil
 }

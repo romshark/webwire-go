@@ -2,7 +2,6 @@ package test
 
 import (
 	"context"
-	"fmt"
 	"reflect"
 	"testing"
 	"time"
@@ -55,10 +54,7 @@ func TestClientSessionInfo(t *testing.T) {
 							SampleString: expectedStruct.SampleString,
 						},
 					}); err != nil {
-						return webwire.Payload{}, webwire.ReqErr{
-							Code:    "INTERNAL_ERROR",
-							Message: fmt.Sprintf("Internal server error: %s", err),
-						}
+						return webwire.Payload{}, err
 					}
 					return webwire.Payload{}, nil
 				},

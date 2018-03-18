@@ -2,7 +2,6 @@ package test
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
@@ -86,10 +85,7 @@ func TestAuthentication(t *testing.T) {
 
 					// Try to create a new session
 					if err := msg.Client.CreateSession(sessionInfo); err != nil {
-						return wwr.Payload{}, wwr.ReqErr{
-							Code:    "INTERNAL_ERROR",
-							Message: fmt.Sprintf("Internal server error: %s", err),
-						}
+						return wwr.Payload{}, err
 					}
 
 					// Authentication step is passed

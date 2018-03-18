@@ -194,6 +194,7 @@ func NewServer(opts ServerOptions) *Server {
 // and returns an error if the ongoing connection cannot be proceeded
 func (srv *Server) handleSessionRestore(msg *Message) error {
 	if !srv.sessionsEnabled {
+		// TODO: Implement dedicated error message type for "sessions disabled" errors
 		msg.fail(ReqErr{
 			Code:    "SESSIONS_DISABLED",
 			Message: "Sessions are disabled on this server instance",
@@ -205,6 +206,7 @@ func (srv *Server) handleSessionRestore(msg *Message) error {
 
 	if srv.SessionRegistry.maxConns > 0 &&
 		srv.SessionRegistry.SessionConnections(key)+1 > srv.SessionRegistry.maxConns {
+		// TODO: Implement dedicated error message type for "max connection reached" errors
 		msg.fail(ReqErr{
 			Code: "MAX_CONN_REACHED",
 			Message: fmt.Sprintf(
@@ -218,18 +220,11 @@ func (srv *Server) handleSessionRestore(msg *Message) error {
 
 	session, err := srv.hooks.OnSessionLookup(key)
 	if err != nil {
-		msg.fail(ReqErr{
-			Code: "INTERNAL_ERROR",
-			Message: fmt.Sprintf(
-				// TODO: whoops, that's some master-yoda-style english, fix it
-				"Session restoration request not could have been fulfilled",
-			),
-		})
-		return fmt.Errorf(
-			"CRITICAL: Session search handler failed: %s", err,
-		)
+		msg.fail(nil)
+		return fmt.Errorf("CRITICAL: Session search handler failed: %s", err)
 	}
 	if session == nil {
+		// TODO: Implement dedicated error message type for "session not found" errors
 		msg.fail(ReqErr{
 			Code:    "SESSION_NOT_FOUND",
 			Message: fmt.Sprintf("No session associated with key: '%s'", key),
@@ -240,12 +235,7 @@ func (srv *Server) handleSessionRestore(msg *Message) error {
 	// JSON encode the session
 	encodedSession, err := json.Marshal(session)
 	if err != nil {
-		msg.fail(ReqErr{
-			Code: "INTERNAL_ERROR",
-			Message: fmt.Sprintf(
-				"Session restoration request not could have been fulfilled",
-			),
-		})
+		msg.fail(nil)
 		return fmt.Errorf("Couldn't encode session object (%v): %s", session, err)
 	}
 
@@ -266,6 +256,7 @@ func (srv *Server) handleSessionRestore(msg *Message) error {
 // and returns an error if the ongoing connection cannot be proceeded
 func (srv *Server) handleSessionClosure(msg *Message) error {
 	if !srv.sessionsEnabled {
+		// TODO: Implement dedicated error message type for "max connection reached" errors
 		msg.fail(ReqErr{
 			Code:    "SESSIONS_DISABLED",
 			Message: "Sessions are disabled on this server instance",
@@ -283,12 +274,7 @@ func (srv *Server) handleSessionClosure(msg *Message) error {
 
 	// Synchronize session destruction to the client
 	if err := msg.Client.notifySessionClosed(); err != nil {
-		msg.fail(ReqErr{
-			Code: "INTERNAL_ERROR",
-			Message: fmt.Sprintf(
-				"Session destruction request not could have been fulfilled",
-			),
-		})
+		msg.fail(nil)
 		return fmt.Errorf("CRITICAL: Internal server error, "+
 			"couldn't notify client about the session destruction: %s",
 			err,

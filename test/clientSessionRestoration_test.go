@@ -34,10 +34,7 @@ func TestClientSessionRestoration(t *testing.T) {
 
 					// Try to create a new session
 					if err := msg.Client.CreateSession(nil); err != nil {
-						return webwire.Payload{}, webwire.ReqErr{
-							Code:    "INTERNAL_ERROR",
-							Message: fmt.Sprintf("Internal server error: %s", err),
-						}
+						return webwire.Payload{}, err
 					}
 
 					// Return the key of the newly created session
