@@ -14,7 +14,7 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-const protocolVersion = "1.1"
+const protocolVersion = "1.2"
 
 // Hooks represents all callback hook functions
 type Hooks struct {

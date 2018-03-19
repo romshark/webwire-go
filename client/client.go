@@ -15,7 +15,7 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-const supportedProtocolVersion = "1.1"
+const supportedProtocolVersion = "1.2"
 
 // Client represents an instance of one of the servers clients
 type Client struct {

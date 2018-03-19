@@ -1,6 +1,5 @@
 package client
 
-// verifyProtocolVersion requests the endpoint metadata
 import (
 	"encoding/json"
 	"fmt"
@@ -11,6 +10,7 @@ import (
 	"github.com/qbeon/webwire-go"
 )
 
+// verifyProtocolVersion requests the endpoint metadata
 // to verify the server is running a supported protocol version
 func (clt *Client) verifyProtocolVersion() error {
 	// Initialize HTTP client
