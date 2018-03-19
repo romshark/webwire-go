@@ -19,6 +19,7 @@ func TestClientOnSessionCreated(t *testing.T) {
 	_, addr := setupServer(
 		t,
 		webwire.ServerOptions{
+			SessionsEnabled: true,
 			Hooks: webwire.Hooks{
 				OnRequest: func(ctx context.Context) (webwire.Payload, error) {
 					// Extract request message and requesting client from the context

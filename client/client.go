@@ -302,7 +302,7 @@ func (clt *Client) CloseSession() error {
 			webwire.Payload{},
 			clt.defaultTimeout,
 		); err != nil {
-			return fmt.Errorf("Session destruction request failed: %s", err)
+			return err
 		}
 	}
 

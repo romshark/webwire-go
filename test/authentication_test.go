@@ -64,6 +64,7 @@ func TestAuthentication(t *testing.T) {
 	_, addr := setupServer(
 		t,
 		wwr.ServerOptions{
+			SessionsEnabled: true,
 			Hooks: wwr.Hooks{
 				OnSignal: func(ctx context.Context) {
 					defer clientSignalReceived.Done()

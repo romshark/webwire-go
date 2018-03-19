@@ -22,6 +22,7 @@ func TestMaxConcSessConn(t *testing.T) {
 	_, addr := setupServer(
 		t,
 		wwr.ServerOptions{
+			SessionsEnabled:       true,
 			MaxSessionConnections: concurrentConns,
 			Hooks: wwr.Hooks{
 				OnClientConnected: func(client *wwr.Client) {

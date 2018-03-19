@@ -104,6 +104,7 @@ func (hooks *Hooks) SetDefaults() {
 // ServerOptions represents the options used during the creation of a new WebWire server instance
 type ServerOptions struct {
 	Hooks                 Hooks
+	SessionsEnabled       bool
 	MaxSessionConnections uint
 	WarnLog               io.Writer
 	ErrorLog              io.Writer
@@ -147,11 +148,16 @@ type Server struct {
 func NewServer(opts ServerOptions) *Server {
 	opts.SetDefaults()
 
-	sessionsEnabled := false
-	if opts.Hooks.OnSessionCreated != nil &&
-		opts.Hooks.OnSessionLookup != nil &&
-		opts.Hooks.OnSessionClosed != nil {
-		sessionsEnabled = true
+	if opts.SessionsEnabled {
+		if opts.Hooks.OnSessionCreated == nil {
+			panic("Expected OnSessionCreated hook to be defined because sessions are enabled")
+		}
+		if opts.Hooks.OnSessionLookup == nil {
+			panic("Expected OnSessionLookup hook to be defined because sessions are enabled")
+		}
+		if opts.Hooks.OnSessionClosed == nil {
+			panic("Expected OnSessionClosed hook to be defined because sessions are enabled")
+		}
 	}
 
 	srv := Server{
@@ -164,7 +170,7 @@ func NewServer(opts ServerOptions) *Server {
 		opsLock:         sync.Mutex{},
 		clients:         make([]*Client, 0),
 		clientsLock:     &sync.Mutex{},
-		sessionsEnabled: sessionsEnabled,
+		sessionsEnabled: opts.SessionsEnabled,
 		SessionRegistry: newSessionRegistry(opts.MaxSessionConnections),
 
 		// Internals
@@ -194,11 +200,7 @@ func NewServer(opts ServerOptions) *Server {
 // and returns an error if the ongoing connection cannot be proceeded
 func (srv *Server) handleSessionRestore(msg *Message) error {
 	if !srv.sessionsEnabled {
-		// TODO: Implement dedicated error message type for "sessions disabled" errors
-		msg.fail(ReqErr{
-			Code:    "SESSIONS_DISABLED",
-			Message: "Sessions are disabled on this server instance",
-		})
+		msg.fail(SessionsDisabled{})
 		return nil
 	}
 
@@ -244,11 +246,7 @@ func (srv *Server) handleSessionRestore(msg *Message) error {
 // and returns an error if the ongoing connection cannot be proceeded
 func (srv *Server) handleSessionClosure(msg *Message) error {
 	if !srv.sessionsEnabled {
-		// TODO: Implement dedicated error message type for "max connection reached" errors
-		msg.fail(ReqErr{
-			Code:    "SESSIONS_DISABLED",
-			Message: "Sessions are disabled on this server instance",
-		})
+		msg.fail(SessionsDisabled{})
 		return nil
 	}
 

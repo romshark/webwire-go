@@ -71,6 +71,10 @@ const (
 	// when the maximum number of concurrent connections for a certain session was reached
 	MsgMaxSessConnsReached = byte(4)
 
+	// MsgSessionsDisabled is sent by the server in response to a session restoration request
+	// if sessions are disabled for the target server
+	MsgSessionsDisabled = byte(5)
+
 	// MsgSessionCreated is sent by the server
 	// to notify the client about the session creation
 	MsgSessionCreated = byte(21)
@@ -786,6 +790,8 @@ func (msg *Message) createFailCallback(client *Client, srv *Server) {
 			msgType = MsgMaxSessConnsReached
 		case SessNotFound:
 			msgType = MsgSessionNotFound
+		case SessionsDisabled:
+			msgType = MsgSessionsDisabled
 		default:
 			msgType = MsgReplyInternalError
 		}

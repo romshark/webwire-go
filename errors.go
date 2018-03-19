@@ -99,6 +99,13 @@ func (err ReqErr) Error() string {
 	return err.Message
 }
 
+// SessionsDisabled represents an error type indicating that the server has sessions disabled
+type SessionsDisabled struct{}
+
+func (err SessionsDisabled) Error() string {
+	return "Sessions are disabled for this server"
+}
+
 // SessNotFound represents a session restoration error type indicating that the server didn't
 // find the session to be restored
 type SessNotFound struct{}

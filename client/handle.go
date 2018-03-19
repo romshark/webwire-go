@@ -58,6 +58,10 @@ func (clt *Client) handleMaxSessConnsReached(reqIdent [8]byte) {
 	clt.requestManager.Fail(reqIdent, webwire.MaxSessConnsReached{})
 }
 
+func (clt *Client) handleSessionsDisabled(reqIdent [8]byte) {
+	clt.requestManager.Fail(reqIdent, webwire.SessionsDisabled{})
+}
+
 func (clt *Client) handleReply(reqID [8]byte, payload webwire.Payload) {
 	clt.requestManager.Fulfill(reqID, payload)
 }
@@ -97,6 +101,8 @@ func (clt *Client) handleMessage(message []byte) error {
 		clt.handleSessionNotFound(extractMessageIdentifier(message))
 	case webwire.MsgMaxSessConnsReached:
 		clt.handleMaxSessConnsReached(extractMessageIdentifier(message))
+	case webwire.MsgSessionsDisabled:
+		clt.handleSessionsDisabled(extractMessageIdentifier(message))
 	case webwire.MsgErrorReply:
 		clt.handleFailure(extractMessageIdentifier(message), message[9:])
 	case webwire.MsgReplyInternalError:
