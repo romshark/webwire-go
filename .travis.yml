@@ -1,39 +1,27 @@
-# borrowed from 
-# https://gist.github.com/y0ssar1an/df2dab474520c4086926f672c52db139
-
 language: go
 
 go:
   - 1.9.1
   - "1.10"
 
-# Skip the install step. Don't `go get` dependencies. Only build with the
-# code in vendor/
 install: true
 
 matrix:
-  # It's ok if our code fails on unstable development versions of Go.
   allow_failures:
     - go: master
-  # Don't wait for tip tests to finish. Mark the test run green if the
-  # tests pass on the stable versions of Go.
   fast_finish: true
 
-# Don't email-notify results of the test runs.
 notifications:
-  email: false
+  email: true
 
-# Anything in before_script that returns a nonzero exit code will
-# flunk the build and immediately stop. It's sorta like having
-# set -e enabled in bash. 
 before_script:
   - GO_FILES=$(find . -iname '*.go' -type f | grep -v /vendor/) # All the .go files, excluding vendor/
   - go get github.com/golang/lint/golint                        # Linter
   - go get honnef.co/go/tools/cmd/megacheck                     # Badass static analyzer/linter
   - go get github.com/fzipp/gocyclo
+  - go get golang.org/x/tools/cmd/cover
+  - go get github.com/mattn/goveralls
 
-# script always run to completion (set +e).
-# All of these code checks are must haves in a modern Go project.
 script:
   - pushd examples/chatroom/client && go build
   - pushd ../server && go build
@@ -47,15 +35,13 @@ script:
   - pushd ../server && go build
   - popd && popd
 
-  # Fail if a .go file hasn't been formatted with gofmt
-  # disabled because we don't want to enforce the go-coding style
-  # - test -z $(gofmt -s -l $GO_FILES)
-
   # Run all the tests with the race detector enabled
-  - go test -v -race ./test/...
+  - go test -v -covermode=atomic -coverprofile=coverage.out -race ./test/...
+  - $HOME/gopath/bin/goveralls -coverprofile=coverage.out -service=travis-ci -repotoken $COVERALLS_TOKEN
 
   # Run more tests
-  - go test -v
+  - go test -v -covermode=count -coverprofile=coverage.out
+  - $HOME/gopath/bin/goveralls -coverprofile=coverage.out -service=travis-ci -repotoken $COVERALLS_TOKEN
 
   # go vet is the official Go static analyzer
   - go vet ./...
