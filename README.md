@@ -1,5 +1,6 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Build Status](https://travis-ci.org/qbeon/webwire-go.svg?branch=master)](https://travis-ci.org/qbeon/webwire-go)
+[![Coverage Status](https://coveralls.io/repos/github/qbeon/webwire-go/badge.svg?branch=master)](https://coveralls.io/github/qbeon/webwire-go?branch=master)
 [![Go Report Card](https://goreportcard.com/badge/github.com/qbeon/webwire-go)](https://goreportcard.com/report/github.com/qbeon/webwire-go)
 [![GoDoc](https://godoc.org/github.com/zalando/skipper?status.svg)](https://godoc.org/github.com/qbeon/webwire-go)
 [![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.me/romshark)
