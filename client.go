@@ -14,8 +14,9 @@ import (
 type Client struct {
 	srv *Server
 
-	connLock sync.RWMutex
-	conn     *websocket.Conn
+	connected bool
+	connLock  sync.RWMutex
+	conn      *websocket.Conn
 
 	connectionTime time.Time
 	userAgent      string
@@ -28,6 +29,7 @@ type Client struct {
 func NewClientAgent(conn *websocket.Conn, userAgent string, srv *Server) *Client {
 	return &Client{
 		srv,
+		true,
 		sync.RWMutex{},
 		conn,
 		time.Now(),
@@ -47,7 +49,24 @@ func (clt *Client) UserAgent() string {
 func (clt *Client) write(data []byte) error {
 	clt.connLock.Lock()
 	defer clt.connLock.Unlock()
+	if !clt.connected {
+		return DisconnectedErr{
+			msg: "Can't write to a disconnected client agent",
+		}
+	}
 	return clt.conn.WriteMessage(websocket.BinaryMessage, data)
+}
+
+// unlink resets the client agent and marks it as disconnected preparing it for garbage collection
+func (clt *Client) unlink() {
+	clt.connLock.Lock()
+	clt.sessionLock.Lock()
+
+	clt.connected = false
+	clt.Session = nil
+
+	clt.sessionLock.Unlock()
+	clt.connLock.Unlock()
 }
 
 // ConnectionTime returns the time when the connection was established
@@ -68,6 +87,15 @@ func (clt *Client) RemoteAddr() net.Addr {
 	return clt.conn.RemoteAddr()
 }
 
+// IsConnected returns true if the client is currently connected to the server,
+// thus able to receive signals, otherwise returns false.
+// Disconnected client agents are no longer useful and will be garbage collected.
+func (clt *Client) IsConnected() bool {
+	clt.connLock.RLock()
+	defer clt.connLock.RUnlock()
+	return clt.connected
+}
+
 // Signal sends a named signal containing the given payload to the client
 func (clt *Client) Signal(name string, payload Payload) error {
 	return clt.write(NewSignalMessage(name, payload))
@@ -82,6 +110,15 @@ func (clt *Client) CreateSession(attachment interface{}) error {
 	if !clt.srv.sessionsEnabled {
 		return SessionsDisabled{}
 	}
+
+	clt.connLock.RLock()
+	if !clt.connected {
+		clt.connLock.RUnlock()
+		return DisconnectedErr{
+			msg: "Can't create session on disconnected client agent",
+		}
+	}
+	clt.connLock.RUnlock()
 
 	clt.sessionLock.Lock()
 	defer clt.sessionLock.Unlock()

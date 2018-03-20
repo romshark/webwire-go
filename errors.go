@@ -121,3 +121,12 @@ type MaxSessConnsReached struct{}
 func (err MaxSessConnsReached) Error() string {
 	return "Reached maximum number of concurrent session connections"
 }
+
+// DisconnectedErr represents an error type indicating that the targeted client is disconnected
+type DisconnectedErr struct {
+	msg string
+}
+
+func (err DisconnectedErr) Error() string {
+	return err.msg
+}

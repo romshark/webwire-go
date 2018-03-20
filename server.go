@@ -430,6 +430,7 @@ func (srv *Server) ServeHTTP(
 				srv.warnLog.Printf("Reading failed: %s", err)
 			}
 
+			newClient.unlink()
 			srv.hooks.OnClientDisconnected(newClient)
 			return
 		}
