@@ -14,12 +14,27 @@ import (
 type Client struct {
 	srv *Server
 
-	lock *sync.Mutex
-	conn *websocket.Conn
+	connLock sync.RWMutex
+	conn     *websocket.Conn
 
 	connectionTime time.Time
 	userAgent      string
-	Session        *Session
+
+	sessionLock sync.Mutex
+	Session     *Session
+}
+
+// NewClientAgent creates and returns a new client agent instance
+func NewClientAgent(conn *websocket.Conn, userAgent string, srv *Server) *Client {
+	return &Client{
+		srv,
+		sync.RWMutex{},
+		conn,
+		time.Now(),
+		userAgent,
+		sync.Mutex{},
+		nil,
+	}
 }
 
 // UserAgent returns the user agent string associated with this client
@@ -30,23 +45,23 @@ func (clt *Client) UserAgent() string {
 // write sends the given data to the other side of the socket,
 // it also protects the connection from concurrent writes
 func (clt *Client) write(data []byte) error {
-	clt.lock.Lock()
-	defer clt.lock.Unlock()
+	clt.connLock.Lock()
+	defer clt.connLock.Unlock()
 	return clt.conn.WriteMessage(websocket.BinaryMessage, data)
 }
 
 // ConnectionTime returns the time when the connection was established
 func (clt *Client) ConnectionTime() time.Time {
-	clt.lock.Lock()
-	defer clt.lock.Unlock()
+	clt.connLock.RLock()
+	defer clt.connLock.RUnlock()
 	return clt.connectionTime
 }
 
 // RemoteAddr returns the address of the client.
 // Returns empty string if the client is not connected.
 func (clt *Client) RemoteAddr() net.Addr {
-	clt.lock.Lock()
-	defer clt.lock.Unlock()
+	clt.connLock.RLock()
+	defer clt.connLock.RUnlock()
 	if clt.conn == nil {
 		return nil
 	}
@@ -68,7 +83,8 @@ func (clt *Client) CreateSession(attachment interface{}) error {
 		return SessionsDisabled{}
 	}
 
-	clt.lock.Lock()
+	clt.sessionLock.Lock()
+	defer clt.sessionLock.Unlock()
 
 	// Abort if there's already another active session
 	if clt.Session != nil {
@@ -77,8 +93,6 @@ func (clt *Client) CreateSession(attachment interface{}) error {
 			clt.Session.Key,
 		)
 	}
-
-	clt.lock.Unlock()
 
 	// Create a new session
 	newSession := NewSession(attachment)
@@ -89,10 +103,8 @@ func (clt *Client) CreateSession(attachment interface{}) error {
 	}
 
 	// Register the session
-	clt.lock.Lock()
 	clt.Session = &newSession
 	clt.srv.registerSession(clt)
-	clt.lock.Unlock()
 
 	return nil
 }
@@ -133,6 +145,10 @@ func (clt *Client) CloseSession() error {
 	if !clt.srv.sessionsEnabled {
 		return SessionsDisabled{}
 	}
+
+	clt.sessionLock.Lock()
+	defer clt.sessionLock.Unlock()
+
 	if clt.Session == nil {
 		return nil
 	}

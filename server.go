@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"os"
 	"sync"
-	"time"
 
 	"github.com/gorilla/websocket"
 )
@@ -405,14 +404,7 @@ func (srv *Server) ServeHTTP(
 	defer conn.Close()
 
 	// Register connected client
-	newClient := &Client{
-		srv,
-		&sync.Mutex{},
-		conn,
-		time.Now(),
-		req.Header.Get("User-Agent"),
-		nil,
-	}
+	newClient := NewClientAgent(conn, req.Header.Get("User-Agent"), srv)
 
 	srv.clientsLock.Lock()
 	srv.clients = append(srv.clients, newClient)
