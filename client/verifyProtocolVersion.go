@@ -22,22 +22,24 @@ func (clt *Client) verifyProtocolVersion() error {
 		"WEBWIRE", "http://"+clt.serverAddr+"/", nil,
 	)
 	if err != nil {
-		return fmt.Errorf("Couldn't create HTTP metadata request: %s", err)
+		panic(fmt.Errorf("Couldn't create HTTP metadata request: %s", err))
 	}
 	response, err := httpClient.Do(request)
 	if err != nil {
-		return fmt.Errorf("Endpoint metadata request failed: %s", err)
+		return webwire.NewDisconnectedErr(fmt.Errorf(
+			"Endpoint metadata request failed: %s", err,
+		))
 	}
 
 	// Read response body
 	defer response.Body.Close()
 	encodedData, err := ioutil.ReadAll(response.Body)
 	if err != nil {
-		return fmt.Errorf("Couldn't read metadata response body: %s", err)
+		return webwire.NewProtocolErr(fmt.Errorf("Couldn't read metadata response body: %s", err))
 	}
 
 	if response.StatusCode == http.StatusServiceUnavailable {
-		return fmt.Errorf("Endpoint unavailable: %s", response.Status)
+		return webwire.NewDisconnectedErr(fmt.Errorf("Endpoint unavailable: %s", response.Status))
 	}
 
 	// Unmarshal response
@@ -45,11 +47,11 @@ func (clt *Client) verifyProtocolVersion() error {
 		ProtocolVersion string `json:"protocol-version"`
 	}
 	if err := json.Unmarshal(encodedData, &metadata); err != nil {
-		return fmt.Errorf(
+		return webwire.NewProtocolErr(fmt.Errorf(
 			"Couldn't parse HTTP metadata response ('%s'): %s",
 			string(encodedData),
 			err,
-		)
+		))
 	}
 
 	// Verify metadata

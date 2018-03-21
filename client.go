@@ -51,7 +51,7 @@ func (clt *Client) write(data []byte) error {
 	defer clt.connLock.Unlock()
 	if !clt.connected {
 		return DisconnectedErr{
-			msg: "Can't write to a disconnected client agent",
+			cause: fmt.Errorf("Can't write to a disconnected client agent"),
 		}
 	}
 	return clt.conn.WriteMessage(websocket.BinaryMessage, data)
@@ -115,7 +115,7 @@ func (clt *Client) CreateSession(attachment interface{}) error {
 	if !clt.connected {
 		clt.connLock.RUnlock()
 		return DisconnectedErr{
-			msg: "Can't create session on disconnected client agent",
+			cause: fmt.Errorf("Can't create session on disconnected client agent"),
 		}
 	}
 	clt.connLock.RUnlock()

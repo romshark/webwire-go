@@ -8,7 +8,6 @@ import (
 
 	"fmt"
 	"log"
-	"net/url"
 	"sync"
 	"time"
 
@@ -19,10 +18,12 @@ const supportedProtocolVersion = "1.2"
 
 // Client represents an instance of one of the servers clients
 type Client struct {
-	serverAddr     string
-	isConnected    int32
-	defaultTimeout time.Duration
-	hooks          Hooks
+	serverAddr        string
+	isConnected       int32
+	defaultReqTimeout time.Duration
+	reconnInterval    time.Duration
+	autoconnect       bool
+	hooks             Hooks
 
 	sessionLock sync.RWMutex
 	session     *webwire.Session
@@ -32,9 +33,10 @@ type Client struct {
 	// because performing multiple requests and/or signals simultaneously is fine.
 	// The Connect, RestoreSession, CloseSession and Close methods are locked exclusively
 	// because they should temporarily block any other interaction with this client instance.
-	apiLock  sync.RWMutex
-	connLock sync.Mutex
-	conn     *websocket.Conn
+	apiLock     sync.RWMutex
+	connectLock sync.Mutex
+	connLock    sync.Mutex
+	conn        *websocket.Conn
 
 	requestManager reqman.RequestManager
 
@@ -47,16 +49,24 @@ type Client struct {
 func NewClient(serverAddress string, opts Options) *Client {
 	opts.SetDefaults()
 
+	autoconnect := true
+	if opts.Autoconnect == OptDisabled {
+		autoconnect = false
+	}
+
 	return &Client{
 		serverAddress,
 		0,
 		opts.DefaultRequestTimeout,
+		opts.ReconnectionInterval,
+		autoconnect,
 		opts.Hooks,
 
 		sync.RWMutex{},
 		nil,
 
 		sync.RWMutex{},
+		sync.Mutex{},
 		sync.Mutex{},
 		nil,
 
@@ -83,82 +93,8 @@ func (clt *Client) IsConnected() bool {
 // Connect connects the client to the configured server and
 // returns an error in case of a connection failure.
 // Automatically tries to restore the previous session
-func (clt *Client) Connect() (err error) {
-	clt.apiLock.Lock()
-	defer clt.apiLock.Unlock()
-
-	if atomic.LoadInt32(&clt.isConnected) > 0 {
-		return nil
-	}
-
-	if err := clt.verifyProtocolVersion(); err != nil {
-		return err
-	}
-
-	connURL := url.URL{Scheme: "ws", Host: clt.serverAddr, Path: "/"}
-
-	clt.connLock.Lock()
-	clt.conn, _, err = websocket.DefaultDialer.Dial(connURL.String(), nil)
-	if err != nil {
-		return webwire.NewConnDialErr(err)
-	}
-	clt.connLock.Unlock()
-
-	// Setup reader thread
-	go func() {
-		defer clt.close()
-		for {
-			_, message, err := clt.conn.ReadMessage()
-			if err != nil {
-				if websocket.IsUnexpectedCloseError(
-					err,
-					websocket.CloseGoingAway,
-					websocket.CloseAbnormalClosure,
-				) {
-					// Error while reading message
-					clt.errorLog.Print("Failed reading message:", err)
-					break
-				} else {
-					// Shutdown client due to clean disconnection
-					break
-				}
-			}
-			// Try to handle the message
-			if err = clt.handleMessage(message); err != nil {
-				clt.warningLog.Print("Failed handling message:", err)
-			}
-		}
-	}()
-
-	atomic.StoreInt32(&clt.isConnected, 1)
-
-	// Read the current sessions key if there is any
-	clt.sessionLock.RLock()
-	if clt.session == nil {
-		clt.sessionLock.RUnlock()
-		return nil
-	}
-	sessionKey := clt.session.Key
-	clt.sessionLock.RUnlock()
-
-	// Try to restore session if necessary
-	restoredSession, err := clt.requestSessionRestoration([]byte(sessionKey))
-	if err != nil {
-		// Just log a warning and still return nil, even if session restoration failed,
-		// because we only care about the connection establishment in this method
-		clt.warningLog.Printf("Couldn't restore session on reconnection: %s", err)
-
-		// Reset the session
-		clt.sessionLock.Lock()
-		clt.session = nil
-		clt.sessionLock.Unlock()
-		return nil
-	}
-
-	clt.sessionLock.Lock()
-	clt.session = restoredSession
-	clt.sessionLock.Unlock()
-	return nil
+func (clt *Client) Connect() error {
+	return clt.connect()
 }
 
 // Request sends a request containing the given payload to the server
@@ -172,6 +108,10 @@ func (clt *Client) Request(
 	clt.apiLock.RLock()
 	defer clt.apiLock.RUnlock()
 
+	if err := clt.tryAutoconnect(clt.defaultReqTimeout); err != nil {
+		return webwire.Payload{}, err
+	}
+
 	reqType := webwire.MsgRequestBinary
 	switch payload.Encoding {
 	case webwire.EncodingUtf8:
@@ -179,7 +119,7 @@ func (clt *Client) Request(
 	case webwire.EncodingUtf16:
 		reqType = webwire.MsgRequestUtf16
 	}
-	return clt.sendRequest(reqType, name, payload, clt.defaultTimeout)
+	return clt.sendRequest(reqType, name, payload, clt.defaultReqTimeout)
 }
 
 // TimedRequest sends a request containing the given payload to the server
@@ -194,6 +134,10 @@ func (clt *Client) TimedRequest(
 ) (webwire.Payload, error) {
 	clt.apiLock.RLock()
 	defer clt.apiLock.RUnlock()
+
+	if err := clt.tryAutoconnect(timeout); err != nil {
+		return webwire.Payload{}, err
+	}
 
 	reqType := webwire.MsgRequestBinary
 	switch payload.Encoding {
@@ -210,8 +154,8 @@ func (clt *Client) Signal(name string, payload webwire.Payload) error {
 	clt.apiLock.RLock()
 	defer clt.apiLock.RUnlock()
 
-	if atomic.LoadInt32(&clt.isConnected) < 1 {
-		return DisconnectedErr{}
+	if err := clt.connect(); err != nil {
+		return err
 	}
 
 	msgBytes := webwire.NewSignalMessage(name, payload)
@@ -269,6 +213,10 @@ func (clt *Client) RestoreSession(sessionKey []byte) error {
 	}
 	clt.sessionLock.RUnlock()
 
+	if err := clt.tryAutoconnect(clt.defaultReqTimeout); err != nil {
+		return err
+	}
+
 	restoredSession, err := clt.requestSessionRestoration(sessionKey)
 	if err != nil {
 		return err
@@ -300,7 +248,7 @@ func (clt *Client) CloseSession() error {
 		if _, err := clt.sendNamelessRequest(
 			webwire.MsgCloseSession,
 			webwire.Payload{},
-			clt.defaultTimeout,
+			clt.defaultReqTimeout,
 		); err != nil {
 			return err
 		}

@@ -17,7 +17,7 @@ func (clt *Client) requestSessionRestoration(sessionKey []byte) (*webwire.Sessio
 			Encoding: webwire.EncodingBinary,
 			Data:     sessionKey,
 		},
-		clt.defaultTimeout,
+		clt.defaultReqTimeout,
 	)
 	if err != nil {
 		return nil, err

@@ -22,6 +22,11 @@ type Hooks struct {
 	// using the HTTP OPTION method.
 	OnOptions func(resp http.ResponseWriter)
 
+	// BeforeUpgrade is an optional hook.
+	// It's invoked right before the upgrade of the HTTP connection to a WebSocket connection
+	// and can be used to intercept, prevent or monitor connection attempts
+	BeforeUpgrade func(resp http.ResponseWriter, req *http.Request) bool
+
 	// OnClientConnected is an optional hook.
 	// It's invoked when a new client establishes a connection to the server
 	OnClientConnected func(client *Client)
@@ -69,6 +74,12 @@ type Hooks struct {
 
 // SetDefaults sets undefined required hooks
 func (hooks *Hooks) SetDefaults() {
+	if hooks.BeforeUpgrade == nil {
+		hooks.BeforeUpgrade = func(_ http.ResponseWriter, _ *http.Request) bool {
+			return true
+		}
+	}
+
 	if hooks.OnClientConnected == nil {
 		hooks.OnClientConnected = func(_ *Client) {}
 	}
@@ -392,6 +403,10 @@ func (srv *Server) ServeHTTP(
 		return
 	case "WEBWIRE":
 		srv.handleMetadata(resp)
+		return
+	}
+
+	if !srv.hooks.BeforeUpgrade(resp, req) {
 		return
 	}
 

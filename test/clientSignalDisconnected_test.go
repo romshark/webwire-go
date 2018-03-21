@@ -17,7 +17,7 @@ func TestClientSignalDisconnected(t *testing.T) {
 		wwr.ServerOptions{},
 	)
 
-	// Initialize client
+	// Initialize client and skip manual connection establishment
 	client := wwrclt.NewClient(
 		addr,
 		wwrclt.Options{
@@ -26,10 +26,9 @@ func TestClientSignalDisconnected(t *testing.T) {
 	)
 
 	// Send request and await reply
-	err := client.Signal("", wwr.Payload{Data: []byte("testdata")})
-	if _, isDisconnErr := err.(wwrclt.DisconnectedErr); !isDisconnErr {
+	if err := client.Signal("", wwr.Payload{Data: []byte("testdata")}); err != nil {
 		t.Fatalf(
-			"Expected disconnected error, got: %s | %s",
+			"Expected signal to automatically connect, got error: %s | %s",
 			reflect.TypeOf(err),
 			err,
 		)

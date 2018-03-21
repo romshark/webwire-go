@@ -29,23 +29,6 @@ func NewConnIncompErr(requiredVersion, supportedVersion string) ConnIncompErr {
 	}
 }
 
-// ConnDialErr represents a connection error type indicating that the dialing failed.
-type ConnDialErr struct {
-	msg string
-}
-
-func (err ConnDialErr) Error() string {
-	return err.msg
-}
-
-// NewConnDialErr constructs and returns a new connection dial error
-// based on the actual error message
-func NewConnDialErr(err error) ConnDialErr {
-	return ConnDialErr{
-		msg: err.Error(),
-	}
-}
-
 // ReqTransErr represents a connection error type indicating that the dialing failed.
 type ReqTransErr struct {
 	msg string
@@ -124,9 +107,32 @@ func (err MaxSessConnsReachedErr) Error() string {
 
 // DisconnectedErr represents an error type indicating that the targeted client is disconnected
 type DisconnectedErr struct {
-	msg string
+	cause error
+}
+
+// NewDisconnectedErr constructs a new DisconnectedErr error based on the actual error
+func NewDisconnectedErr(err error) DisconnectedErr {
+	return DisconnectedErr{
+		cause: err,
+	}
 }
 
 func (err DisconnectedErr) Error() string {
-	return err.msg
+	return err.cause.Error()
+}
+
+// ProtocolErr represents an error type indicating an error in the protocol implementation
+type ProtocolErr struct {
+	cause error
+}
+
+// NewProtocolErr constructs a new ProtocolErr error based on the actual error
+func NewProtocolErr(err error) ProtocolErr {
+	return ProtocolErr{
+		cause: err,
+	}
+}
+
+func (err ProtocolErr) Error() string {
+	return err.cause.Error()
 }

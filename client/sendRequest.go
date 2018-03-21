@@ -1,7 +1,6 @@
 package client
 
 import (
-	"sync/atomic"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -14,10 +13,6 @@ func (clt *Client) sendRequest(
 	payload webwire.Payload,
 	timeout time.Duration,
 ) (webwire.Payload, error) {
-	if atomic.LoadInt32(&clt.isConnected) < 1 {
-		return webwire.Payload{}, DisconnectedErr{}
-	}
-
 	request := clt.requestManager.Create(timeout)
 	reqIdentifier := request.Identifier()
 

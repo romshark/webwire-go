@@ -1,6 +1,7 @@
 package test
 
 import (
+	"context"
 	"reflect"
 	"testing"
 	"time"
@@ -14,10 +15,16 @@ func TestClientRequestDisconnected(t *testing.T) {
 	// Initialize webwire server given only the request
 	_, addr := setupServer(
 		t,
-		wwr.ServerOptions{},
+		wwr.ServerOptions{
+			Hooks: wwr.Hooks{
+				OnRequest: func(_ context.Context) (wwr.Payload, error) {
+					return wwr.Payload{}, nil
+				},
+			},
+		},
 	)
 
-	// Initialize client
+	// Initialize client and skip manual connection establishment
 	client := wwrclt.NewClient(
 		addr,
 		wwrclt.Options{
@@ -26,10 +33,9 @@ func TestClientRequestDisconnected(t *testing.T) {
 	)
 
 	// Send request and await reply
-	_, err := client.Request("", wwr.Payload{Data: []byte("testdata")})
-	if _, isDisconnErr := err.(wwrclt.DisconnectedErr); !isDisconnErr {
+	if _, err := client.Request("", wwr.Payload{Data: []byte("testdata")}); err != nil {
 		t.Fatalf(
-			"Expected disconnected error, got: %s | %s",
+			"Expected request to automatically connect, got error: %s | %s",
 			reflect.TypeOf(err),
 			err,
 		)
