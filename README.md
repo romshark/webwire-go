@@ -173,10 +173,12 @@ Various hooks provide the ability to asynchronously react to different kinds of 
 
 #### Server-side Hooks
 - OnOptions
+- BeforeUpgrade
 - OnClientConnected
 - OnClientDisconnected
 - OnSignal
 - OnRequest
+- OnSessionKeyGeneration
 - OnSessionCreated
 - OnSessionLookup
 - OnSessionClosed
