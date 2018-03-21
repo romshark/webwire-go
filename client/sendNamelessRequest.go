@@ -27,7 +27,7 @@ func (clt *Client) sendNamelessRequest(
 	err := clt.conn.WriteMessage(websocket.BinaryMessage, msg)
 	clt.connLock.Unlock()
 	if err != nil {
-		return webwire.Payload{}, webwire.NewReqErrTrans(err)
+		return webwire.Payload{}, webwire.NewReqTransErr(err)
 	}
 
 	// Block until request either times out or a response is received

@@ -54,7 +54,7 @@ func (clt *Client) verifyProtocolVersion() error {
 
 	// Verify metadata
 	if metadata.ProtocolVersion != supportedProtocolVersion {
-		return webwire.NewConnErrIncomp(metadata.ProtocolVersion, supportedProtocolVersion)
+		return webwire.NewConnIncompErr(metadata.ProtocolVersion, supportedProtocolVersion)
 	}
 
 	return nil

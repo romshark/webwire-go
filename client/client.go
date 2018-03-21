@@ -100,7 +100,7 @@ func (clt *Client) Connect() (err error) {
 	clt.connLock.Lock()
 	clt.conn, _, err = websocket.DefaultDialer.Dial(connURL.String(), nil)
 	if err != nil {
-		return webwire.NewConnErrDial(err)
+		return webwire.NewConnDialErr(err)
 	}
 	clt.connLock.Unlock()
 

@@ -199,7 +199,7 @@ func NewServer(opts ServerOptions) *Server {
 // and returns an error if the ongoing connection cannot be proceeded
 func (srv *Server) handleSessionRestore(msg *Message) error {
 	if !srv.sessionsEnabled {
-		msg.fail(SessionsDisabled{})
+		msg.fail(SessionsDisabledErr{})
 		return nil
 	}
 
@@ -207,7 +207,7 @@ func (srv *Server) handleSessionRestore(msg *Message) error {
 
 	if srv.SessionRegistry.maxConns > 0 &&
 		srv.SessionRegistry.SessionConnections(key)+1 > srv.SessionRegistry.maxConns {
-		msg.fail(MaxSessConnsReached{})
+		msg.fail(MaxSessConnsReachedErr{})
 		return nil
 	}
 
@@ -217,7 +217,7 @@ func (srv *Server) handleSessionRestore(msg *Message) error {
 		return fmt.Errorf("CRITICAL: Session search handler failed: %s", err)
 	}
 	if session == nil {
-		msg.fail(SessNotFound{})
+		msg.fail(SessNotFoundErr{})
 		return nil
 	}
 
@@ -245,7 +245,7 @@ func (srv *Server) handleSessionRestore(msg *Message) error {
 // and returns an error if the ongoing connection cannot be proceeded
 func (srv *Server) handleSessionClosure(msg *Message) error {
 	if !srv.sessionsEnabled {
-		msg.fail(SessionsDisabled{})
+		msg.fail(SessionsDisabledErr{})
 		return nil
 	}
 

@@ -26,7 +26,7 @@ func authenticate() {
 		break
 	case webwire.ReqErr:
 		log.Printf("Authentication failed: %s : %s", err.Code, err.Message)
-	case webwire.ReqErrSrvShutdown:
+	case webwire.ReqSrvShutdownErr:
 		log.Print("Authentication failed, server is currently being shut down")
 	default:
 		log.Print("Authentication failed, unknown error")

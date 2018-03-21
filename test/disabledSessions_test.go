@@ -15,7 +15,7 @@ import (
 // and identify clients during request- and signal handling
 func TestDisabledSessions(t *testing.T) {
 	verifyError := func(err error) {
-		if _, isDisabledErr := err.(wwr.SessionsDisabled); !isDisabledErr {
+		if _, isDisabledErr := err.(wwr.SessionsDisabledErr); !isDisabledErr {
 			t.Errorf(
 				"Expected SessionsDisabled error, got: %s | %s",
 				reflect.TypeOf(err),

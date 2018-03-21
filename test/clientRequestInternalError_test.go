@@ -50,7 +50,7 @@ func TestClientRequestInternalError(t *testing.T) {
 		t.Fatal("Expected an error, got nil")
 	}
 
-	if _, isInternalErr := reqErr.(webwire.ReqErrInternal); !isInternalErr {
+	if _, isInternalErr := reqErr.(webwire.ReqInternalErr); !isInternalErr {
 		t.Fatalf("Expected an internal server error, got: %v", reqErr)
 	}
 

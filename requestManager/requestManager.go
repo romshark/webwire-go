@@ -49,7 +49,7 @@ func (req *Request) AwaitReply() (webwire.Payload, error) {
 	select {
 	case <-timeoutTimer:
 		req.manager.deregister(req.identifier)
-		return webwire.Payload{}, webwire.ReqErrTimeout{Target: req.timeout}
+		return webwire.Payload{}, webwire.ReqTimeoutErr{Target: req.timeout}
 	case reply := <-req.reply:
 		if reply.Error != nil {
 			return webwire.Payload{}, reply.Error

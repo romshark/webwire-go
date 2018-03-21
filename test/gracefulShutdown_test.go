@@ -106,7 +106,7 @@ func TestGracefulShutdown(t *testing.T) {
 		// Verify request rejection during shutdown (LATE REQ)
 		_, lateReqErr := clientLateReq.Request("", wwr.Payload{Data: []byte("test")})
 		switch err := lateReqErr.(type) {
-		case wwr.ReqErrSrvShutdown:
+		case wwr.ReqSrvShutdownErr:
 			break
 		case wwr.ReqErr:
 			t.Errorf("Expected special server shutdown error, got regular request error: %s", err)

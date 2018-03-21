@@ -60,12 +60,7 @@ func TestClientRequestRegisterOnTimeout(t *testing.T) {
 		webwire.Payload{Data: []byte("t")},
 		200*time.Millisecond,
 	)
-	switch err := reqErr.(type) {
-	case webwire.ReqErrTimeout:
-		if err.Target != 200*time.Millisecond {
-			t.Fatalf("Unexpected timeout target: %s", err.Target)
-		}
-	default:
+	if _, isTimeoutErr := reqErr.(webwire.ReqTimeoutErr); !isTimeoutErr {
 		t.Fatalf("Request must have failed (timeout)")
 	}
 

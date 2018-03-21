@@ -108,7 +108,7 @@ func (clt *Client) Signal(name string, payload Payload) error {
 // Returns an error if there's already another session active
 func (clt *Client) CreateSession(attachment interface{}) error {
 	if !clt.srv.sessionsEnabled {
-		return SessionsDisabled{}
+		return SessionsDisabledErr{}
 	}
 
 	clt.connLock.RLock()
@@ -180,7 +180,7 @@ func (clt *Client) notifySessionClosed() error {
 // Does nothing if there's no active session
 func (clt *Client) CloseSession() error {
 	if !clt.srv.sessionsEnabled {
-		return SessionsDisabled{}
+		return SessionsDisabledErr{}
 	}
 
 	clt.sessionLock.Lock()

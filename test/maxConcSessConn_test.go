@@ -94,7 +94,7 @@ func TestMaxConcSessConn(t *testing.T) {
 	// Try to restore the session and expect this operation to fail due to reached limit
 	sessionKeyLock.RLock()
 	sessRestErr := superflousClient.RestoreSession([]byte(sessionKey))
-	if _, isMaxReachedErr := sessRestErr.(wwr.MaxSessConnsReached); !isMaxReachedErr {
+	if _, isMaxReachedErr := sessRestErr.(wwr.MaxSessConnsReachedErr); !isMaxReachedErr {
 		t.Fatalf(
 			"Expected a MaxSessConnsReached error during manual session restoration, got: %s | %s",
 			reflect.TypeOf(sessRestErr),

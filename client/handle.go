@@ -43,23 +43,23 @@ func (clt *Client) handleFailure(reqID [8]byte, payload []byte) {
 
 func (clt *Client) handleInternalError(reqIdent [8]byte) {
 	// Fail request
-	clt.requestManager.Fail(reqIdent, webwire.ReqErrInternal{})
+	clt.requestManager.Fail(reqIdent, webwire.ReqInternalErr{})
 }
 
 func (clt *Client) handleReplyShutdown(reqIdent [8]byte) {
-	clt.requestManager.Fail(reqIdent, webwire.ReqErrSrvShutdown{})
+	clt.requestManager.Fail(reqIdent, webwire.ReqSrvShutdownErr{})
 }
 
 func (clt *Client) handleSessionNotFound(reqIdent [8]byte) {
-	clt.requestManager.Fail(reqIdent, webwire.SessNotFound{})
+	clt.requestManager.Fail(reqIdent, webwire.SessNotFoundErr{})
 }
 
 func (clt *Client) handleMaxSessConnsReached(reqIdent [8]byte) {
-	clt.requestManager.Fail(reqIdent, webwire.MaxSessConnsReached{})
+	clt.requestManager.Fail(reqIdent, webwire.MaxSessConnsReachedErr{})
 }
 
 func (clt *Client) handleSessionsDisabled(reqIdent [8]byte) {
-	clt.requestManager.Fail(reqIdent, webwire.SessionsDisabled{})
+	clt.requestManager.Fail(reqIdent, webwire.SessionsDisabledErr{})
 }
 
 func (clt *Client) handleReply(reqID [8]byte, payload webwire.Payload) {

@@ -786,11 +786,11 @@ func (msg *Message) createFailCallback(client *Client, srv *Server) {
 			} else {
 				report = []byte(`{"c":""}`)
 			}
-		case MaxSessConnsReached:
+		case MaxSessConnsReachedErr:
 			msgType = MsgMaxSessConnsReached
-		case SessNotFound:
+		case SessNotFoundErr:
 			msgType = MsgSessionNotFound
-		case SessionsDisabled:
+		case SessionsDisabledErr:
 			msgType = MsgSessionsDisabled
 		default:
 			msgType = MsgReplyInternalError

@@ -49,7 +49,7 @@ func TestRestoreInexistentSession(t *testing.T) {
 
 	// Try to restore the session and expect it to fail due to the session being inexistent
 	sessRestErr := client.RestoreSession([]byte("lalala"))
-	if _, isSessNotFoundErr := sessRestErr.(wwr.SessNotFound); !isSessNotFoundErr {
+	if _, isSessNotFoundErr := sessRestErr.(wwr.SessNotFoundErr); !isSessNotFoundErr {
 		t.Fatalf(
 			"Expected a SessNotFound error during manual session restoration, got: %s | %s",
 			reflect.TypeOf(sessRestErr),
