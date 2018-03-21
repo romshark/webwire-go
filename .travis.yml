@@ -21,6 +21,7 @@ before_script:
   - go get github.com/fzipp/gocyclo
   - go get golang.org/x/tools/cmd/cover
   - go get github.com/mattn/goveralls
+  - go get github.com/go-playground/overalls
 
 script:
   - pushd examples/chatroom/client && go build
@@ -36,12 +37,8 @@ script:
   - popd && popd
 
   # Run all the tests with the race detector enabled
-  - go test -v -covermode=atomic -coverprofile=coverage.out -race ./test/...
-  - $HOME/gopath/bin/goveralls -coverprofile=coverage.out -service=travis-ci -repotoken $COVERALLS_TOKEN
-
-  # Run more tests
-  - go test -v -covermode=count -coverprofile=coverage.out
-  - $HOME/gopath/bin/goveralls -coverprofile=coverage.out -service=travis-ci -repotoken $COVERALLS_TOKEN
+  - overalls -project=github.com/qbeon/webwire-go -covermode=atomic -debug -- -race -v
+  - $HOME/gopath/bin/goveralls -coverprofile=overalls.coverprofile -service=travis-ci -repotoken $COVERALLS_TOKEN
 
   # go vet is the official Go static analyzer
   - go vet ./...
