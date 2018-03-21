@@ -46,9 +46,21 @@ type Session struct {
 
 // NewSession generates a new session object
 // generating a cryptographically random secure key
-func NewSession(info interface{}) Session {
+func NewSession(info interface{}, customGenerator func() string) Session {
+	var key string
+	if customGenerator == nil {
+		// Use default generator
+		key = GenerateSessionKey()
+	} else {
+		key = customGenerator()
+		if len(key) < 1 {
+			panic(fmt.Errorf(
+				"Invalid session key returned by custom session key generator (empty)",
+			))
+		}
+	}
 	return Session{
-		GenerateSessionKey(),
+		key,
 		time.Now(),
 		info,
 	}

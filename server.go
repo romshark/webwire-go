@@ -44,6 +44,12 @@ type Hooks struct {
 	// It must return either a response payload or an error
 	OnRequest func(ctx context.Context) (response Payload, err error)
 
+	// OnSessionKeyGeneration is an optional hook.
+	// If defined it's invoked when the webwire server creates a new session and requires
+	// a new session key to be generated. This hook must not be used except the user
+	// knows exactly what he/she does as it would compromise security if implemented improperly
+	OnSessionKeyGeneration func() string
+
 	// OnSessionCreated is a required hook for sessions to be supported.
 	// It's invoked right after the synchronisation of the new session to the remote client.
 	// The WebWire server isn't responsible for permanently storing the sessions it creates,
