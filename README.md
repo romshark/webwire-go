@@ -23,6 +23,7 @@ The [webwire-go](https://github.com/qbeon/webwire-go) library provides both a cl
   - [Namespaces](https://github.com/qbeon/webwire-go#namespaces)
   - [Sessions](https://github.com/qbeon/webwire-go#sessions)
   - [Automatic Session Restoration](https://github.com/qbeon/webwire-go/blob/master/README.md#automatic-session-restoration)
+  - [Automatic Connection Maintenance](https://github.com/qbeon/webwire-go/blob/master/README.md#connection-guarantee)
   - [Thread-Safety](https://github.com/qbeon/webwire-go#thread-safety)
   - [Hooks](https://github.com/qbeon/webwire-go#hooks)
     - [Server-side Hooks](https://github.com/qbeon/webwire-go#server-side-hooks)
@@ -164,6 +165,15 @@ The session can also be restored manually given its key assuming the server didn
 ```go
 err := client.RestoreSession([]byte("yoursessionkeygoeshere"))
 ```
+
+### Automatic Connection Maintenance
+The WebWire client maintains the connection and will automatically try to reconnect in the background whenever the connection is lost.
+
+The only things to remember are:
+- Client API methods such as `client.Request`, `client.TimedRequest` and `client.RestoreSession` will timeout if the server is unavailable for the entire duration of the specified timeout and thus the client fails to reconnect.
+- `client.Signal` will immediately return a `DisconnectedErr` error if there's no connection at the time the signal was sent.
+
+This feature is entirely optional and can be disabled at will which will cause `client.Request`, `client.TimedRequest` and `client.RestoreSession` to immediately return a `DisconnectedErr` error when there's no connection at the time the request is made.
 
 ### Thread Safety
 It's safe to use both the session agents (those that are provided by the server through messages) and the client concurrently from multiple goroutines, the library automatically synchronizes concurrent operations.
