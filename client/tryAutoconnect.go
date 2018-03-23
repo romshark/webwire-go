@@ -3,8 +3,6 @@ package client
 import (
 	"sync/atomic"
 	"time"
-
-	webwire "github.com/qbeon/webwire-go"
 )
 
 func (clt *Client) tryAutoconnect(timeout time.Duration) error {
@@ -17,52 +15,23 @@ func (clt *Client) tryAutoconnect(timeout time.Duration) error {
 			return nil
 		}
 
-		clt.connectingLock.RLock()
 		// Start the reconnector goroutine if not already started.
 		// If it's already started then just proceed to wait until either connected or timed out
-		if clt.connecting == nil {
-			clt.connecting = make(chan error, 1)
-			go func() {
-				for {
-					err := clt.connect()
-					switch err := err.(type) {
-					case nil:
-						clt.connectingLock.Lock()
-						close(clt.connecting)
-						clt.connecting = nil
-						clt.connectingLock.Unlock()
-						return
-					case webwire.DisconnectedErr:
-						time.Sleep(clt.reconnInterval)
-					default:
-						// Unexpected error
-						clt.connecting <- err
-						return
-					}
-				}
-			}()
-		}
-		clt.connectingLock.RUnlock()
+		clt.backgroundReconnect()
 
 		if timeout > 0 {
-			select {
-			case err := <-clt.connecting:
-				return err
-			case <-time.After(timeout):
-				// TODO: set missing timeout target
-				return webwire.ReqTimeoutErr{}
-			}
-		} else {
-			// Try indefinitely
-			return <-clt.connecting
+			// Await with timeout
+			return clt.backReconn.await(timeout)
 		}
-	} else {
-		if atomic.LoadInt32(&clt.status) == StatConnected {
-			return nil
-		}
-		if err := clt.connect(); err != nil {
-			return err
-		}
+		// Await indefinitely
+		return clt.backReconn.await(0)
+	}
+
+	if atomic.LoadInt32(&clt.status) == StatConnected {
+		return nil
+	}
+	if err := clt.connect(); err != nil {
+		return err
 	}
 	return nil
 }

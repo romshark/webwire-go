@@ -50,7 +50,11 @@ func TestGracefulShutdown(t *testing.T) {
 	clientSig := wwrclt.NewClient(addr, cltOpts)
 	clientReq := wwrclt.NewClient(addr, cltOpts)
 	clientLateReq := wwrclt.NewClient(addr, cltOpts)
-	clientLateConn := wwrclt.NewClient(addr, cltOpts)
+
+	// Disable autoconnect for the late client to enable immediate errors
+	clientLateConn := wwrclt.NewClient(addr, wwrclt.Options{
+		Autoconnect: wwrclt.OptDisabled,
+	})
 
 	if err := clientSig.Connect(); err != nil {
 		t.Fatalf("Couldn't connect signal client: %s", err)

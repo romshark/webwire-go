@@ -103,7 +103,7 @@ func TestClientAutomaticSessionRestoration(t *testing.T) {
 	client.Close()
 
 	// Ensure the session isn't lost
-	if client.IsConnected() {
+	if client.Status() == webwireClient.StatConnected {
 		t.Fatal("Client is expected to be disconnected")
 	}
 	if client.Session().Key == "" {

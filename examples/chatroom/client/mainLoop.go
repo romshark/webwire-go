@@ -62,11 +62,13 @@ MAINLOOP:
 			fmt.Println("Logged out, you're anonymous now")
 		default:
 			// Send the message and await server reply for the message to be considered posted
-			if _, err := client.Request("msg", webwire.Payload{
-				Data: []byte(input),
-			}); err != nil {
-				log.Printf("WARNING: Couldn't send message: %s", err)
-			}
+			go func() {
+				if _, err := client.Request("msg", webwire.Payload{
+					Data: []byte(input),
+				}); err != nil {
+					log.Printf("WARNING: Couldn't send message: %s", err)
+				}
+			}()
 		}
 	}
 }

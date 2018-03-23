@@ -16,23 +16,24 @@ import (
 
 const supportedProtocolVersion = "1.2"
 
-type ClientStatus = int32
+// Status represents the status of a client instance
+type Status = int32
 
 const (
 	// StatDisabled represents a client instance that has been manually closed, thus disabled
-	StatDisabled ClientStatus = 0
+	StatDisabled Status = 0
 
 	// StatDisconnected represents a temporarily disconnected client instance
-	StatDisconnected ClientStatus = 1
+	StatDisconnected Status = 1
 
 	// StatConnected represents a connected client instance
-	StatConnected ClientStatus = 2
+	StatConnected Status = 2
 )
 
 // Client represents an instance of one of the servers clients
 type Client struct {
 	serverAddr        string
-	status            ClientStatus
+	status            Status
 	defaultReqTimeout time.Duration
 	reconnInterval    time.Duration
 	autoconnect       bool
@@ -48,13 +49,13 @@ type Client struct {
 	// because they should temporarily block any other interaction with this client instance.
 	apiLock sync.RWMutex
 
-	// connectingLock protects the connecting channel from direct concurrent mutations
+	// backReconn is a dam that's flushed when the client establishes a connection.
+	backReconn *dam
+	// connecting prevents multiple autoconnection attempts from spawning
+	// superfluous multiple goroutines each polling the server
+	connecting bool
+	// connectingLock protects the connecting flag from concurrent access
 	connectingLock sync.RWMutex
-	// connecting is a channel that is nil when the client is connected and is only initialized
-	// when the client loses connection and needs to spawn an autoconnector goroutine.
-	// It prevents multiple autoconnection attempts from spawning superfluous multiple goroutines
-	// each polling the server
-	connecting chan error
 
 	connectLock sync.Mutex
 	connLock    sync.Mutex
@@ -90,8 +91,9 @@ func NewClient(serverAddress string, opts Options) *Client {
 		nil,
 
 		sync.RWMutex{},
+		newDam(),
+		false,
 		sync.RWMutex{},
-		nil,
 		sync.Mutex{},
 		sync.Mutex{},
 		nil,
@@ -125,7 +127,7 @@ func NewClient(serverAddress string, opts Options) *Client {
 // The client is considered disabled when it was manually closed through client.Close,
 // while disconnected is considered a temporary connection loss.
 // A disabled client won't autoconnect until enabled again.
-func (clt *Client) Status() ClientStatus {
+func (clt *Client) Status() Status {
 	return atomic.LoadInt32(&clt.status)
 }
 

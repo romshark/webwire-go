@@ -30,11 +30,6 @@ func (clt *Client) connect() (err error) {
 	connURL := url.URL{Scheme: "ws", Host: clt.serverAddr, Path: "/"}
 
 	clt.connLock.Lock()
-	if clt.conn != nil {
-		if err := clt.conn.Close(); err != nil {
-			panic(err)
-		}
-	}
 	clt.conn, _, err = websocket.DefaultDialer.Dial(connURL.String(), nil)
 	if err != nil {
 		return webwire.NewDisconnectedErr(fmt.Errorf("Dial failure: %s", err))
