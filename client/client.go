@@ -244,9 +244,8 @@ func (clt *Client) PendingRequests() int {
 // RestoreSession tries to restore the previously opened session.
 // Fails if a session is currently already active
 func (clt *Client) RestoreSession(sessionKey []byte) error {
-	// TODO: restore session is a mutating method and should acquire an exclusive lock
-	clt.apiLock.RLock()
-	defer clt.apiLock.RUnlock()
+	clt.apiLock.Lock()
+	defer clt.apiLock.Unlock()
 
 	clt.sessionLock.RLock()
 	if clt.session != nil {

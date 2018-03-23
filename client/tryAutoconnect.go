@@ -30,8 +30,5 @@ func (clt *Client) tryAutoconnect(timeout time.Duration) error {
 	if atomic.LoadInt32(&clt.status) == StatConnected {
 		return nil
 	}
-	if err := clt.connect(); err != nil {
-		return err
-	}
-	return nil
+	return clt.connect()
 }
