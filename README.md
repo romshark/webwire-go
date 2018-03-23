@@ -23,7 +23,7 @@ The [webwire-go](https://github.com/qbeon/webwire-go) library provides both a cl
   - [Namespaces](https://github.com/qbeon/webwire-go#namespaces)
   - [Sessions](https://github.com/qbeon/webwire-go#sessions)
   - [Automatic Session Restoration](https://github.com/qbeon/webwire-go/blob/master/README.md#automatic-session-restoration)
-  - [Automatic Connection Maintenance](https://github.com/qbeon/webwire-go/blob/master/README.md#connection-guarantee)
+  - [Automatic Connection Maintenance](https://github.com/qbeon/webwire-go/blob/master/README.md#automatic-connection-maintenance)
   - [Thread-Safety](https://github.com/qbeon/webwire-go#thread-safety)
   - [Hooks](https://github.com/qbeon/webwire-go#hooks)
     - [Server-side Hooks](https://github.com/qbeon/webwire-go#server-side-hooks)
@@ -167,7 +167,7 @@ err := client.RestoreSession([]byte("yoursessionkeygoeshere"))
 ```
 
 ### Automatic Connection Maintenance
-The WebWire client maintains the connection and will automatically try to reconnect in the background whenever the connection is lost.
+The WebWire client maintains the connection fully automatically to guarantee maximum connection uptime. It will automatically reconnect in the background whenever the connection is lost.
 
 The only things to remember are:
 - Client API methods such as `client.Request`, `client.TimedRequest` and `client.RestoreSession` will timeout if the server is unavailable for the entire duration of the specified timeout and thus the client fails to reconnect.
@@ -197,6 +197,7 @@ Various hooks provide the ability to asynchronously react to different kinds of 
 - OnServerSignal
 - OnSessionCreated
 - OnSessionClosed
+- OnDisconnected
 
 ### Graceful Shutdown
 The server will finish processing all ongoing signals and requests before closing when asked to shut down.
