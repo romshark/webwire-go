@@ -30,11 +30,15 @@ func (clt *Client) connect() (err error) {
 	connURL := url.URL{Scheme: "ws", Host: clt.serverAddr, Path: "/"}
 
 	clt.connLock.Lock()
+	if clt.conn != nil {
+		if err := clt.conn.Close(); err != nil {
+			panic(err)
+		}
+	}
 	clt.conn, _, err = websocket.DefaultDialer.Dial(connURL.String(), nil)
 	if err != nil {
 		return webwire.NewDisconnectedErr(fmt.Errorf("Dial failure: %s", err))
 	}
-	fmt.Printf("CONN: %p | %s\n", clt.conn, clt.conn.RemoteAddr())
 	clt.connLock.Unlock()
 
 	// Setup reader thread
@@ -43,7 +47,6 @@ func (clt *Client) connect() (err error) {
 		for {
 			_, message, err := clt.conn.ReadMessage()
 			if err != nil {
-				fmt.Println("READ", err)
 				if websocket.IsUnexpectedCloseError(
 					err,
 					websocket.CloseGoingAway,
@@ -54,25 +57,23 @@ func (clt *Client) connect() (err error) {
 				}
 
 				// Set status to disconnected if it wasn't disabled
-				fmt.Println("CONNAFTER:", atomic.LoadInt32(&clt.status))
 				if atomic.LoadInt32(&clt.status) == StatConnected {
 					atomic.StoreInt32(&clt.status, StatDisconnected)
 				}
-				clt.conn = nil
 
 				// Call hook
 				clt.hooks.OnDisconnected()
 
-				// Try to reconnect if the client wasn't disabled and autoconnect is on
-				if clt.autoconnect && atomic.LoadInt32(&clt.status) != StatDisabled {
-					if err := clt.tryAutoconnect(0); err != nil {
-						clt.errorLog.Printf("Auto-reconnect failed after connection loss: %s", err)
-						return
+				// Try to reconnect if the client wasn't disabled and autoconnect is on.
+				// reconnect in another goroutine to let this one die and free up the socket
+				go func() {
+					if clt.autoconnect && atomic.LoadInt32(&clt.status) != StatDisabled {
+						if err := clt.tryAutoconnect(0); err != nil {
+							clt.errorLog.Printf("Auto-reconnect failed after connection loss: %s", err)
+							return
+						}
 					}
-					fmt.Println("CONTINUE LISTENING")
-					continue
-				}
-
+				}()
 				return
 			}
 			// Try to handle the message

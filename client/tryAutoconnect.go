@@ -1,7 +1,6 @@
 package client
 
 import (
-	"fmt"
 	"sync/atomic"
 	"time"
 
@@ -9,56 +8,58 @@ import (
 )
 
 func (clt *Client) tryAutoconnect(timeout time.Duration) error {
-	fmt.Println("TRY AUTOCONNECT")
-	if atomic.LoadInt32(&clt.status) == StatConnected {
-		fmt.Println("ALREADY CONNECTED")
-		return nil
-	}
-
+	// If autoconnect is enabled the client will spawn a new autoconnector goroutine which
+	// will periodically poll the server and check whether it's available again.
+	// If the autoconnector goroutine has already been spawned then tryAutoconnect will
+	// just await the connection or timeout respectively
 	if clt.autoconnect {
-		stopTrying := make(chan error, 1)
-		connected := make(chan error, 1)
-		go func() {
-			fmt.Println("AUTOCONNECT")
-			for {
-				select {
-				case <-stopTrying:
-					return
-				default:
-				}
+		if atomic.LoadInt32(&clt.status) == StatConnected {
+			return nil
+		}
 
-				err := clt.connect()
-				switch err := err.(type) {
-				case nil:
-					fmt.Println("CONNECTED!")
-					close(connected)
-					return
-				case webwire.DisconnectedErr:
-					fmt.Println("RETRY")
-					time.Sleep(clt.reconnInterval)
-				default:
-					// Unexpected error
-					connected <- err
-					return
+		clt.connectingLock.RLock()
+		// Start the reconnector goroutine if not already started.
+		// If it's already started then just proceed to wait until either connected or timed out
+		if clt.connecting == nil {
+			clt.connecting = make(chan error, 1)
+			go func() {
+				for {
+					err := clt.connect()
+					switch err := err.(type) {
+					case nil:
+						clt.connectingLock.Lock()
+						close(clt.connecting)
+						clt.connecting = nil
+						clt.connectingLock.Unlock()
+						return
+					case webwire.DisconnectedErr:
+						time.Sleep(clt.reconnInterval)
+					default:
+						// Unexpected error
+						clt.connecting <- err
+						return
+					}
 				}
-			}
-		}()
+			}()
+		}
+		clt.connectingLock.RUnlock()
 
 		if timeout > 0 {
 			select {
-			case err := <-connected:
+			case err := <-clt.connecting:
 				return err
 			case <-time.After(timeout):
-				// Stop reconnection trial loop and return timeout error
-				close(stopTrying)
 				// TODO: set missing timeout target
 				return webwire.ReqTimeoutErr{}
 			}
 		} else {
 			// Try indefinitely
-			return <-connected
+			return <-clt.connecting
 		}
 	} else {
+		if atomic.LoadInt32(&clt.status) == StatConnected {
+			return nil
+		}
 		if err := clt.connect(); err != nil {
 			return err
 		}

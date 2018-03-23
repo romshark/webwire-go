@@ -27,7 +27,8 @@ func main() {
 				OnSessionCreated: onSessionCreated,
 			},
 			// Default timeout for timed requests
-			DefaultRequestTimeout: 5 * time.Second,
+			DefaultRequestTimeout: 10 * time.Second,
+			ReconnectionInterval:  2 * time.Second,
 		},
 	)
 	defer client.Close()

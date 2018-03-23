@@ -46,7 +46,16 @@ type Client struct {
 	// because performing multiple requests and/or signals simultaneously is fine.
 	// The Connect, RestoreSession, CloseSession and Close methods are locked exclusively
 	// because they should temporarily block any other interaction with this client instance.
-	apiLock     sync.RWMutex
+	apiLock sync.RWMutex
+
+	// connectingLock protects the connecting channel from direct concurrent mutations
+	connectingLock sync.RWMutex
+	// connecting is a channel that is nil when the client is connected and is only initialized
+	// when the client loses connection and needs to spawn an autoconnector goroutine.
+	// It prevents multiple autoconnection attempts from spawning superfluous multiple goroutines
+	// each polling the server
+	connecting chan error
+
 	connectLock sync.Mutex
 	connLock    sync.Mutex
 	conn        *websocket.Conn
@@ -81,6 +90,8 @@ func NewClient(serverAddress string, opts Options) *Client {
 		nil,
 
 		sync.RWMutex{},
+		sync.RWMutex{},
+		nil,
 		sync.Mutex{},
 		sync.Mutex{},
 		nil,
@@ -231,6 +242,7 @@ func (clt *Client) PendingRequests() int {
 // RestoreSession tries to restore the previously opened session.
 // Fails if a session is currently already active
 func (clt *Client) RestoreSession(sessionKey []byte) error {
+	// TODO: restore session is a mutating method and should acquire an exclusive lock
 	clt.apiLock.RLock()
 	defer clt.apiLock.RUnlock()
 

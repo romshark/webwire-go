@@ -1,12 +1,10 @@
 package client
 
 import (
-	"fmt"
 	"sync/atomic"
 )
 
 func (clt *Client) close() {
-	fmt.Println("CLOSE")
 	clt.connLock.Lock()
 	defer clt.connLock.Unlock()
 	if atomic.LoadInt32(&clt.status) < StatConnected {
