@@ -30,7 +30,7 @@ func (dam *dam) await(timeout time.Duration) error {
 		case err := <-dam.barrier:
 			return err
 		case <-time.After(timeout):
-			return wwr.ReqTimeoutErr{}
+			return wwr.ReqTimeoutErr{Target: timeout}
 		}
 	} else {
 		return <-dam.barrier
