@@ -9,10 +9,17 @@ import (
 	webwire "github.com/qbeon/webwire-go"
 )
 
+// connect will try to establish a connection to the configured webwire server
+// and try to automatically restore the session if there is any.
+// If the session restoration fails connect won't fail, instead it will reset the current session
+// and return normally.
+// Before establishing the connection - connect verifies protocol compatibility and returns an
+// error if the protocol implemented by the server doesn't match the required protocol version
+// of this client instance.
 func (clt *Client) connect() (err error) {
 	clt.connectLock.Lock()
 	defer clt.connectLock.Unlock()
-	if atomic.LoadInt32(&clt.isConnected) > 0 {
+	if atomic.LoadInt32(&clt.status) == StatConnected {
 		return nil
 	}
 
@@ -23,6 +30,11 @@ func (clt *Client) connect() (err error) {
 	connURL := url.URL{Scheme: "ws", Host: clt.serverAddr, Path: "/"}
 
 	clt.connLock.Lock()
+	if clt.conn != nil {
+		if err := clt.conn.Close(); err != nil {
+			panic(err)
+		}
+	}
 	clt.conn, _, err = websocket.DefaultDialer.Dial(connURL.String(), nil)
 	if err != nil {
 		return webwire.NewDisconnectedErr(fmt.Errorf("Dial failure: %s", err))
@@ -42,11 +54,27 @@ func (clt *Client) connect() (err error) {
 				) {
 					// Error while reading message
 					clt.errorLog.Print("Failed reading message:", err)
-					break
-				} else {
-					// Shutdown client due to clean disconnection
-					break
 				}
+
+				// Set status to disconnected if it wasn't disabled
+				if atomic.LoadInt32(&clt.status) == StatConnected {
+					atomic.StoreInt32(&clt.status, StatDisconnected)
+				}
+
+				// Call hook
+				clt.hooks.OnDisconnected()
+
+				// Try to reconnect if the client wasn't disabled and autoconnect is on.
+				// reconnect in another goroutine to let this one die and free up the socket
+				go func() {
+					if clt.autoconnect && atomic.LoadInt32(&clt.status) != StatDisabled {
+						if err := clt.tryAutoconnect(0); err != nil {
+							clt.errorLog.Printf("Auto-reconnect failed after connection loss: %s", err)
+							return
+						}
+					}
+				}()
+				return
 			}
 			// Try to handle the message
 			if err = clt.handleMessage(message); err != nil {
@@ -55,7 +83,7 @@ func (clt *Client) connect() (err error) {
 		}
 	}()
 
-	atomic.StoreInt32(&clt.isConnected, 1)
+	atomic.StoreInt32(&clt.status, StatConnected)
 
 	// Read the current sessions key if there is any
 	clt.sessionLock.RLock()

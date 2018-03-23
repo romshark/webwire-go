@@ -11,7 +11,7 @@ import (
 	wwr "github.com/qbeon/webwire-go"
 )
 
-var serverAddr = flag.String("addr", ":8081", "server address")
+var serverAddr = flag.String("addr", ":9090", "server address")
 
 func main() {
 	// Parse command line arguments
@@ -21,10 +21,10 @@ func main() {
 	_, _, addr, runServer, stopServer, err := wwr.SetupServer(wwr.SetupOptions{
 		ServerAddress: *serverAddr,
 		ServerOptions: wwr.ServerOptions{
+			SessionsEnabled: true,
 			Hooks: wwr.Hooks{
 				OnClientConnected:    onClientConnected,
 				OnClientDisconnected: onClientDisconnected,
-				OnSignal:             onSignal,
 				OnRequest:            onRequest,
 				OnSessionCreated:     onSessionCreated,
 				OnSessionLookup:      onSessionLookup,

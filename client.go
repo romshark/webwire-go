@@ -64,6 +64,7 @@ func (clt *Client) unlink() {
 
 	clt.connected = false
 	clt.Session = nil
+	clt.conn.Close()
 
 	clt.sessionLock.Unlock()
 	clt.connLock.Unlock()
