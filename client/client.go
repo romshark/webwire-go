@@ -16,10 +16,23 @@ import (
 
 const supportedProtocolVersion = "1.2"
 
+type ClientStatus = int32
+
+const (
+	// StatDisabled represents a client instance that has been manually closed, thus disabled
+	StatDisabled ClientStatus = 0
+
+	// StatDisconnected represents a temporarily disconnected client instance
+	StatDisconnected ClientStatus = 1
+
+	// StatConnected represents a connected client instance
+	StatConnected ClientStatus = 2
+)
+
 // Client represents an instance of one of the servers clients
 type Client struct {
 	serverAddr        string
-	isConnected       int32
+	status            ClientStatus
 	defaultReqTimeout time.Duration
 	reconnInterval    time.Duration
 	autoconnect       bool
@@ -47,6 +60,7 @@ type Client struct {
 
 // NewClient creates a new client instance.
 func NewClient(serverAddress string, opts Options) *Client {
+	// Prepare configuration
 	opts.SetDefaults()
 
 	autoconnect := true
@@ -54,9 +68,10 @@ func NewClient(serverAddress string, opts Options) *Client {
 		autoconnect = false
 	}
 
-	return &Client{
+	// Initialize new client
+	newClt := &Client{
 		serverAddress,
-		0,
+		StatDisconnected,
 		opts.DefaultRequestTimeout,
 		opts.ReconnectionInterval,
 		autoconnect,
@@ -83,11 +98,24 @@ func NewClient(serverAddress string, opts Options) *Client {
 			log.Ldate|log.Ltime|log.Lshortfile,
 		),
 	}
+
+	if autoconnect {
+		// Asynchronously connect to the server immediately after initialization.
+		// Call in another goroutine to not block the contructor function caller.
+		// Set timeout to zero, try indefinitely until connected.
+		go newClt.tryAutoconnect(0)
+	}
+
+	return newClt
 }
 
-// IsConnected returns true if the client is connected to the server, otherwise false is returned
-func (clt *Client) IsConnected() bool {
-	return atomic.LoadInt32(&clt.isConnected) > 0
+// Status returns the current client status
+// which is either disabled, disconnected or connected.
+// The client is considered disabled when it was manually closed through client.Close,
+// while disconnected is considered a temporary connection loss.
+// A disabled client won't autoconnect until enabled again.
+func (clt *Client) Status() ClientStatus {
+	return atomic.LoadInt32(&clt.status)
 }
 
 // Connect connects the client to the configured server and
@@ -244,7 +272,7 @@ func (clt *Client) CloseSession() error {
 	clt.sessionLock.RUnlock()
 
 	// Synchronize session closure to the server if connected
-	if atomic.LoadInt32(&clt.isConnected) > 0 {
+	if atomic.LoadInt32(&clt.status) == StatConnected {
 		if _, err := clt.sendNamelessRequest(
 			webwire.MsgCloseSession,
 			webwire.Payload{},
@@ -262,8 +290,8 @@ func (clt *Client) CloseSession() error {
 	return nil
 }
 
-// Close gracefully closes the connection.
-// Does nothing if the client isn't connected
+// Close gracefully closes the connection and disables the client.
+// A disabled client won't autoconnect until enabled again.
 func (clt *Client) Close() {
 	clt.apiLock.Lock()
 	defer clt.apiLock.Unlock()

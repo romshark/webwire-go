@@ -61,7 +61,8 @@ MAINLOOP:
 			}
 			fmt.Println("Logged out, you're anonymous now")
 		default:
-			if err := client.Signal("", webwire.Payload{
+			// Send the message and await server reply for the message to be considered posted
+			if _, err := client.Request("msg", webwire.Payload{
 				Data: []byte(input),
 			}); err != nil {
 				log.Printf("WARNING: Couldn't send message: %s", err)

@@ -4,6 +4,10 @@ import webwire "github.com/qbeon/webwire-go"
 
 // Hooks represents all callback hook functions
 type Hooks struct {
+	// OnDisconnected is an optional callback.
+	// It's invoked when the client is disconnected from the server for any reason.
+	OnDisconnected func()
+
 	// OnServerSignal is an optional callback.
 	// It's invoked when the webwire client receives a signal from the server
 	OnServerSignal func(payload webwire.Payload)
@@ -20,6 +24,10 @@ type Hooks struct {
 
 // SetDefaults sets undefined required hooks
 func (hooks *Hooks) SetDefaults() {
+	if hooks.OnDisconnected == nil {
+		hooks.OnDisconnected = func() {}
+	}
+
 	if hooks.OnServerSignal == nil {
 		hooks.OnServerSignal = func(_ webwire.Payload) {}
 	}

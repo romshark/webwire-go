@@ -7,10 +7,10 @@ import (
 	wwr "github.com/qbeon/webwire-go"
 )
 
-// onSignal handles incoming client signals interpreted as chat messages.
+// onMessage handles incoming chat messages.
 // The server tries to identify the client by its session
 // and falls back to "anonymous" if the client has no ongoing session
-func onSignal(ctx context.Context) {
+func onMessage(ctx context.Context) (wwr.Payload, error) {
 	msg := ctx.Value(wwr.Msg).(wwr.Message)
 	client := msg.Client
 
@@ -21,7 +21,7 @@ func onSignal(ctx context.Context) {
 			client.RemoteAddr(),
 			err,
 		)
-		return
+		return wwr.Payload{}, nil
 	}
 
 	log.Printf(
@@ -39,4 +39,6 @@ func onSignal(ctx context.Context) {
 	}
 
 	broadcastMessage(name, msgStr)
+
+	return wwr.Payload{}, nil
 }
