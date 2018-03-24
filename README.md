@@ -22,8 +22,8 @@ The [webwire-go](https://github.com/qbeon/webwire-go) library provides both a cl
   - [Server-side Signals](https://github.com/qbeon/webwire-go#server-side-signals)
   - [Namespaces](https://github.com/qbeon/webwire-go#namespaces)
   - [Sessions](https://github.com/qbeon/webwire-go#sessions)
-  - [Automatic Session Restoration](https://github.com/qbeon/webwire-go/blob/master/README.md#automatic-session-restoration)
-  - [Automatic Connection Maintenance](https://github.com/qbeon/webwire-go/blob/master/README.md#automatic-connection-maintenance)
+  - [Automatic Session Restoration](https://github.com/qbeon/webwire-go#automatic-session-restoration)
+  - [Automatic Connection Maintenance](https://github.com/qbeon/webwire-go#automatic-connection-maintenance)
   - [Thread-Safety](https://github.com/qbeon/webwire-go#thread-safety)
   - [Hooks](https://github.com/qbeon/webwire-go#hooks)
     - [Server-side Hooks](https://github.com/qbeon/webwire-go#server-side-hooks)
@@ -49,7 +49,7 @@ Feel free to report bugs and propose new features or changes in the [Issues sect
 WebWire is built for speed and portability implementing an open source binary protocol.
 ![Protocol Subset Diagram](https://github.com/qbeon/webwire-go/blob/master/docs/img/wwr_msgproto_diagram.svg)
 
-The first byte defines the [type of the message](https://github.com/qbeon/webwire-go/blob/master/message.go#L71). Requests and replies contain an incremental 8-byte identifier that must be unique in the context of the senders' session. A 0 to 255 bytes long 7-bit ASCII encoded name is contained in the header of a signal or request message.
+The first byte defines the [type of the message](https://github.com/qbeon/webwire-go/blob/master/message.go#L51). Requests and replies contain an incremental 8-byte identifier that must be unique in the context of the senders' session. A 0 to 255 bytes long 7-bit ASCII encoded name is contained in the header of a signal or request message.
 A header-padding byte is applied in case of UTF16 payload encoding to properly align the payload sequence.
 Fraudulent messages are recognized by analyzing the message length, out-of-range memory access attacks are therefore prevented.
 
