@@ -33,19 +33,19 @@ func newSessionRegistry(maxConns uint) sessionRegistry {
 func (asr *sessionRegistry) register(clt *Client) bool {
 	asr.lock.Lock()
 	defer asr.lock.Unlock()
-	if entry, exists := asr.registry[clt.Session.Key]; exists {
+	if entry, exists := asr.registry[clt.session.Key]; exists {
 		// Ensure max connections isn't exceeded
 		if asr.maxConns > 0 && entry.connections+1 > asr.maxConns {
 			return false
 		}
 		// Overwrite the current entry incrementing the number of connections
-		asr.registry[clt.Session.Key] = sessionRegistryEntry{
+		asr.registry[clt.session.Key] = sessionRegistryEntry{
 			connections: entry.connections + 1,
 			client:      entry.client,
 		}
 		return true
 	}
-	asr.registry[clt.Session.Key] = sessionRegistryEntry{
+	asr.registry[clt.session.Key] = sessionRegistryEntry{
 		connections: 1,
 		client:      clt,
 	}
@@ -58,14 +58,14 @@ func (asr *sessionRegistry) register(clt *Client) bool {
 func (asr *sessionRegistry) deregister(clt *Client) bool {
 	asr.lock.Lock()
 	defer asr.lock.Unlock()
-	if entry, exists := asr.registry[clt.Session.Key]; exists {
+	if entry, exists := asr.registry[clt.session.Key]; exists {
 		// If a single connection is left then remove the session
 		if entry.connections < 2 {
-			delete(asr.registry, clt.Session.Key)
+			delete(asr.registry, clt.session.Key)
 			return false
 		}
 		// Overwrite the current entry decrementing the number of connections
-		asr.registry[clt.Session.Key] = sessionRegistryEntry{
+		asr.registry[clt.session.Key] = sessionRegistryEntry{
 			connections: entry.connections - 1,
 			client:      entry.client,
 		}

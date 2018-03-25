@@ -4,10 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
-	"os"
 	"sync"
 
 	"github.com/gorilla/websocket"
@@ -49,33 +47,6 @@ type Hooks struct {
 	// a new session key to be generated. This hook must not be used except the user
 	// knows exactly what he/she does as it would compromise security if implemented improperly
 	OnSessionKeyGeneration func() string
-
-	// OnSessionCreated is a required hook for sessions to be supported.
-	// It's invoked right after the synchronisation of the new session to the remote client.
-	// The WebWire server isn't responsible for permanently storing the sessions it creates,
-	// it's up to the user to save the given session in this hook either to a database,
-	// a filesystem or any other kind of persistent or volatile storage
-	// for OnSessionLookup to later be able to restore it by the session key.
-	// If OnSessionCreated fails returning an error then the failure is logged
-	// but the session isn't destroyed and remains active.
-	// The only consequence of OnSessionCreation failing is that the server won't be able
-	// to restore the session after the client is disconnected
-	OnSessionCreated func(client *Client) error
-
-	// OnSessionLookup is a required hook for sessions to be supported.
-	// It's invoked when the server is looking for a specific session given its key.
-	// The user is responsible for returning the exact copy of the session object
-	// associated with the given key for sessions to be restorable.
-	// If OnSessionLookup fails returning an error then the failure is logged
-	OnSessionLookup func(key string) (*Session, error)
-
-	// OnSessionClosed is a required hook for sessions to be supported.
-	// It's invoked when the active session of the given client
-	// is closed (thus destroyed) either by the server or the client himself.
-	// The user is responsible for removing the current session of the given client
-	// from its storage for the session to be actually and properly destroyed.
-	// If OnSessionClosed fails returning an error then the failure is logged
-	OnSessionClosed func(client *Client) error
 }
 
 // SetDefaults sets undefined required hooks
@@ -117,32 +88,11 @@ func (hooks *Hooks) SetDefaults() {
 	}
 }
 
-// ServerOptions represents the options used during the creation of a new WebWire server instance
-type ServerOptions struct {
-	Hooks                 Hooks
-	SessionsEnabled       bool
-	MaxSessionConnections uint
-	WarnLog               io.Writer
-	ErrorLog              io.Writer
-}
-
-// SetDefaults sets the defaults for undefined required values
-func (srvOpt *ServerOptions) SetDefaults() {
-	srvOpt.Hooks.SetDefaults()
-
-	if srvOpt.WarnLog == nil {
-		srvOpt.WarnLog = os.Stdout
-	}
-
-	if srvOpt.ErrorLog == nil {
-		srvOpt.ErrorLog = os.Stderr
-	}
-}
-
 // Server represents a headless WebWire server instance,
 // where headless means there's no HTTP server that's hosting it
 type Server struct {
-	hooks Hooks
+	hooks          Hooks
+	sessionManager SessionManager
 
 	// State
 	shutdown        bool
@@ -164,20 +114,9 @@ type Server struct {
 func NewServer(opts ServerOptions) *Server {
 	opts.SetDefaults()
 
-	if opts.SessionsEnabled {
-		if opts.Hooks.OnSessionCreated == nil {
-			panic("Expected OnSessionCreated hook to be defined because sessions are enabled")
-		}
-		if opts.Hooks.OnSessionLookup == nil {
-			panic("Expected OnSessionLookup hook to be defined because sessions are enabled")
-		}
-		if opts.Hooks.OnSessionClosed == nil {
-			panic("Expected OnSessionClosed hook to be defined because sessions are enabled")
-		}
-	}
-
 	srv := Server{
-		hooks: opts.Hooks,
+		hooks:          opts.Hooks,
+		sessionManager: opts.SessionManager,
 
 		// State
 		shutdown:        false,
@@ -228,7 +167,7 @@ func (srv *Server) handleSessionRestore(msg *Message) error {
 		return nil
 	}
 
-	session, err := srv.hooks.OnSessionLookup(key)
+	session, err := srv.sessionManager.OnSessionLookup(key)
 	if err != nil {
 		msg.fail(nil)
 		return fmt.Errorf("CRITICAL: Session search handler failed: %s", err)
@@ -245,7 +184,7 @@ func (srv *Server) handleSessionRestore(msg *Message) error {
 		return fmt.Errorf("Couldn't encode session object (%v): %s", session, err)
 	}
 
-	msg.Client.Session = session
+	msg.Client.setSession(session)
 	if okay := srv.SessionRegistry.register(msg.Client); !okay {
 		panic(fmt.Errorf("The number of concurrent session connections was unexpectedly exceeded"))
 	}
@@ -266,7 +205,7 @@ func (srv *Server) handleSessionClosure(msg *Message) error {
 		return nil
 	}
 
-	if msg.Client.Session == nil {
+	if !msg.Client.HasSession() {
 		// Send confirmation even though no session was closed
 		msg.fulfill(Payload{})
 		return nil
@@ -284,7 +223,7 @@ func (srv *Server) handleSessionClosure(msg *Message) error {
 	}
 
 	// Reset the session on the client agent
-	msg.Client.Session = nil
+	msg.Client.setSession(nil)
 
 	// Send confirmation
 	msg.fulfill(Payload{})
@@ -438,7 +377,7 @@ func (srv *Server) ServeHTTP(
 		// Await message
 		_, message, err := conn.ReadMessage()
 		if err != nil {
-			if newClient.Session != nil {
+			if newClient.HasSession() {
 				// Decrement number of connections for this clients session
 				srv.SessionRegistry.deregister(newClient)
 			}
@@ -478,17 +417,9 @@ func (srv *Server) ServeHTTP(
 	}
 }
 
-func (srv *Server) registerSession(clt *Client) {
-	srv.SessionRegistry.register(clt)
-	// Execute session creation hook
-	if err := srv.hooks.OnSessionCreated(clt); err != nil {
-		srv.errorLog.Printf("OnSessionCreated hook failed: %s", err)
-	}
-}
-
 func (srv *Server) deregisterSession(clt *Client) {
 	srv.SessionRegistry.deregister(clt)
-	if err := srv.hooks.OnSessionClosed(clt); err != nil {
+	if err := srv.sessionManager.OnSessionClosed(clt); err != nil {
 		srv.errorLog.Printf("OnSessionClosed hook failed: %s", err)
 	}
 }

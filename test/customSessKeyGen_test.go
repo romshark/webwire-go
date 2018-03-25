@@ -31,7 +31,7 @@ func TestCustomSessKeyGen(t *testing.T) {
 						return wwr.Payload{}, err
 					}
 
-					key := msg.Client.Session.Key
+					key := msg.Client.SessionKey()
 					if key != expectedSessionKey {
 						t.Errorf("Unexpected session key: %s | %s", expectedSessionKey, key)
 					}
@@ -41,10 +41,6 @@ func TestCustomSessKeyGen(t *testing.T) {
 						Data: []byte(key),
 					}, nil
 				},
-				// Define dummy hooks to enable sessions on this server
-				OnSessionCreated: func(_ *wwr.Client) error { return nil },
-				OnSessionLookup:  func(_ string) (*wwr.Session, error) { return nil, nil },
-				OnSessionClosed:  func(_ *wwr.Client) error { return nil },
 			},
 		},
 	)

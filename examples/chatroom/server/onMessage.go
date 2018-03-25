@@ -25,17 +25,17 @@ func onMessage(ctx context.Context) (wwr.Payload, error) {
 	}
 
 	log.Printf(
-		"Received message from %s: '%s' (%d)",
+		"Received message from %s: '%s' (%d, %s)",
 		client.RemoteAddr(),
 		msgStr,
 		len(msg.Payload.Data),
+		msg.Payload.Encoding.String(),
 	)
 
 	name := "Anonymous"
 	// Try to read the name from the session
-	if msg.Client.Session != nil {
-		sessionInfo := msg.Client.Session.Info.(map[string]string)
-		name = sessionInfo["username"]
+	if msg.Client.HasSession() {
+		name = msg.Client.SessionInfo("username").(string)
 	}
 
 	broadcastMessage(name, msgStr)

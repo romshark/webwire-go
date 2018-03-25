@@ -39,10 +39,6 @@ func TestCustomSessKeyGenInvalid(t *testing.T) {
 					// Return the key of the newly created session (use default binary encoding)
 					return wwr.Payload{}, nil
 				},
-				// Define dummy hooks to enable sessions on this server
-				OnSessionCreated: func(_ *wwr.Client) error { return nil },
-				OnSessionLookup:  func(_ string) (*wwr.Session, error) { return nil, nil },
-				OnSessionClosed:  func(_ *wwr.Client) error { return nil },
 			},
 		},
 	)

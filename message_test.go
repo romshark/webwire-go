@@ -575,9 +575,9 @@ func TestMsgParseSignalUtf16CorruptInput(t *testing.T) {
 func TestMsgParseSessCreatedSig(t *testing.T) {
 	sessionKey := GenerateSessionKey()
 	session := Session{
-		Key:          sessionKey,
-		CreationDate: time.Now(),
-		Info:         nil,
+		Key:      sessionKey,
+		Creation: time.Now(),
+		Info:     nil,
 	}
 	marshalledSession, err := json.Marshal(&session)
 	if err != nil {

@@ -2,6 +2,7 @@ package test
 
 import (
 	"context"
+	"reflect"
 	"testing"
 	"time"
 
@@ -15,27 +16,27 @@ import (
 func TestAuthentication(t *testing.T) {
 	// Because compareSessions doesn't compare the sessions attached info:
 	compareSessionInfo := func(actual *wwr.Session) {
-		info, ok := actual.Info.(struct {
-			UserID     string `json:"uid"`
-			SomeNumber int    `json:"some-number"`
-		})
-		if !ok {
-			t.Errorf("Couldn't cast info from: %v", actual.Info)
-		}
-
 		// Check uid
 		field := "session.info.UserID"
-		expectedUID := "clientidentifiergoeshere"
-		if info.UserID != expectedUID {
-			t.Errorf("%s differs: %s | %s", field, info.UserID, expectedUID)
+		expectedUserIdent := "clientidentifiergoeshere"
+		actualUserIdent, correctType := actual.Info["uid"].(string)
+		if !correctType {
+			t.Errorf("%s incorrect type: %s", field, reflect.TypeOf(actual.Info["uid"]))
+		}
+		if actualUserIdent != expectedUserIdent {
+			t.Errorf("%s differs: %s | %s", field, actualUserIdent, expectedUserIdent)
 			return
 		}
 
 		// Check some-number
 		field = "session.info.some-number"
 		expectedNumber := int(12345)
-		if info.SomeNumber != expectedNumber {
-			t.Errorf("%s differs: %d | %d", field, info.SomeNumber, expectedNumber)
+		actualNumber, correctType := actual.Info["some-number"].(int)
+		if !correctType {
+			t.Errorf("%s incorrect type: %s", field, reflect.TypeOf(actual.Info["some-number"]))
+		}
+		if actualNumber != expectedNumber {
+			t.Errorf("%s differs: %d | %d", field, actualNumber, expectedNumber)
 			return
 		}
 	}
@@ -43,13 +44,9 @@ func TestAuthentication(t *testing.T) {
 	onSessionCreatedHookExecuted := NewPending(1, 1*time.Second, true)
 	clientSignalReceived := NewPending(1, 1*time.Second, true)
 	var createdSession *wwr.Session
-	sessionInfo := struct {
-		UserID     string `json:"uid"`
-		SomeNumber int    `json:"some-number"`
-	}{
-		"clientidentifiergoeshere",
-		12345,
-	}
+	sessionInfo := make(wwr.SessionInfo)
+	sessionInfo["uid"] = "clientidentifiergoeshere"
+	sessionInfo["some-number"] = 12345
 	expectedCredentials := wwr.Payload{
 		Encoding: wwr.EncodingUtf8,
 		Data:     []byte("secret_credentials"),
@@ -70,8 +67,9 @@ func TestAuthentication(t *testing.T) {
 					defer clientSignalReceived.Done()
 					// Extract request message and requesting client from the context
 					msg := ctx.Value(wwr.Msg).(wwr.Message)
-					compareSessions(t, createdSession, msg.Client.Session)
-					compareSessionInfo(msg.Client.Session)
+					sess := msg.Client.Session()
+					compareSessions(t, createdSession, sess)
+					compareSessionInfo(sess)
 				},
 				OnRequest: func(ctx context.Context) (wwr.Payload, error) {
 					// Extract request message and requesting client from the context
@@ -79,8 +77,9 @@ func TestAuthentication(t *testing.T) {
 
 					// If already authenticated then check session
 					if currentStep > 1 {
-						compareSessions(t, createdSession, msg.Client.Session)
-						compareSessionInfo(msg.Client.Session)
+						sess := msg.Client.Session()
+						compareSessions(t, createdSession, sess)
+						compareSessionInfo(sess)
 						return expectedConfirmation, nil
 					}
 
@@ -94,13 +93,9 @@ func TestAuthentication(t *testing.T) {
 
 					// Return the key of the newly created session (use default binary encoding)
 					return wwr.Payload{
-						Data: []byte(msg.Client.Session.Key),
+						Data: []byte(msg.Client.SessionKey()),
 					}, nil
 				},
-				// Define dummy hooks to enable sessions on this server
-				OnSessionCreated: func(_ *wwr.Client) error { return nil },
-				OnSessionLookup:  func(_ string) (*wwr.Session, error) { return nil, nil },
-				OnSessionClosed:  func(_ *wwr.Client) error { return nil },
 			},
 		},
 	)
@@ -114,18 +109,18 @@ func TestAuthentication(t *testing.T) {
 					// The session info object won't be of initial structure type
 					// because of intermediate JSON encoding
 					// it'll be a map of arbitrary values with string keys
-					info := session.Info.(map[string]interface{})
+					info := session.Info
 
 					// Check uid
 					field := "session.info.uid"
-					expectedUID := "clientidentifiergoeshere"
+					expectedUserIdent := "clientidentifiergoeshere"
 					actualUID, ok := info["uid"].(string)
 					if !ok {
 						t.Errorf("expected %s not string", field)
 						return
 					}
-					if actualUID != expectedUID {
-						t.Errorf("%s differs: %s | %s", field, actualUID, expectedUID)
+					if actualUID != expectedUserIdent {
+						t.Errorf("%s differs: %s | %s", field, actualUID, expectedUserIdent)
 						return
 					}
 

@@ -7,7 +7,6 @@ import (
 	"log"
 
 	wwr "github.com/qbeon/webwire-go"
-	"github.com/qbeon/webwire-go/examples/chatroom/server/state"
 	"github.com/qbeon/webwire-go/examples/chatroom/shared"
 )
 
@@ -51,16 +50,8 @@ func onAuth(ctx context.Context) (wwr.Payload, error) {
 		}
 	}
 
-	// Check if client already has an ongoing session
-	if state.State.HasSession(client) {
-		return wwr.Payload{}, wwr.ReqErr{
-			Code:    "SESSION_ACTIVE",
-			Message: "Already have an ongoing session for this client",
-		}
-	}
-
 	// Finally create a new session
-	if err := client.CreateSession(map[string]string{
+	if err := client.CreateSession(wwr.SessionInfo{
 		"username": credentials.Name,
 	}); err != nil {
 		return wwr.Payload{}, fmt.Errorf("Couldn't create session: %s", err)
@@ -74,6 +65,6 @@ func onAuth(ctx context.Context) (wwr.Payload, error) {
 
 	// Reply to the request, use default binary encoding
 	return wwr.Payload{
-		Data: []byte(client.Session.Key),
+		Data: []byte(client.SessionKey()),
 	}, nil
 }

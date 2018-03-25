@@ -37,13 +37,14 @@ func TestClientInitiatedSessionDestruction(t *testing.T) {
 
 					// On step 2 - verify session creation and correctness
 					if currentStep == 2 {
-						compareSessions(t, createdSession, msg.Client.Session)
-						if string(msg.Payload.Data) != msg.Client.Session.Key {
+						sess := msg.Client.Session()
+						compareSessions(t, createdSession, sess)
+						if string(msg.Payload.Data) != sess.Key {
 							t.Errorf(
 								"Clients session key doesn't match: "+
 									"client: '%s' | server: '%s'",
 								string(msg.Payload.Data),
-								msg.Client.Session.Key,
+								sess.Key,
 							)
 						}
 						return webwire.Payload{}, nil
@@ -51,10 +52,11 @@ func TestClientInitiatedSessionDestruction(t *testing.T) {
 
 					// On step 4 - verify session destruction
 					if currentStep == 4 {
-						if msg.Client.Session != nil {
+						sess := msg.Client.Session()
+						if sess != nil {
 							t.Errorf(
 								"Expected the session to be destroyed, got: %v",
-								msg.Client.Session,
+								sess,
 							)
 						}
 						return webwire.Payload{}, nil
@@ -67,13 +69,9 @@ func TestClientInitiatedSessionDestruction(t *testing.T) {
 
 					// Return the key of the newly created session
 					return webwire.Payload{
-						Data: []byte(msg.Client.Session.Key),
+						Data: []byte(msg.Client.SessionKey()),
 					}, nil
 				},
-				// Define dummy hooks to enable sessions on this server
-				OnSessionCreated: func(_ *webwire.Client) error { return nil },
-				OnSessionLookup:  func(_ string) (*webwire.Session, error) { return nil, nil },
-				OnSessionClosed:  func(_ *webwire.Client) error { return nil },
 			},
 		},
 	)

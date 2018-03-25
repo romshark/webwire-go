@@ -34,35 +34,23 @@ func TestClientSessionInfo(t *testing.T) {
 					msg := ctx.Value(webwire.Msg).(webwire.Message)
 
 					// Try to create a new session
-					if err := msg.Client.CreateSession(struct {
-						SampleBool   bool     `json:"bool"`
-						SampleString string   `json:"string"`
-						SampleInt    uint32   `json:"int"`
-						SampleNumber float64  `json:"number"`
-						SampleArray  []string `json:"array"`
-						SampleStruct struct {
-							SampleString string `json:"struct_string"`
-						} `json:"struct"`
+					sessInfo := make(webwire.SessionInfo)
+					sessInfo["bool"] = expectedBool
+					sessInfo["string"] = expectedString
+					sessInfo["int"] = expectedInt
+					sessInfo["number"] = expectedNumber
+					sessInfo["array"] = expectedArray
+					sessInfo["struct"] = struct {
+						SampleString string `json:"struct_string"`
 					}{
-						SampleBool:   expectedBool,
-						SampleString: expectedString,
-						SampleInt:    expectedInt,
-						SampleNumber: expectedNumber,
-						SampleArray:  expectedArray,
-						SampleStruct: struct {
-							SampleString string `json:"struct_string"`
-						}{
-							SampleString: expectedStruct.SampleString,
-						},
-					}); err != nil {
+						SampleString: expectedStruct.SampleString,
+					}
+
+					if err := msg.Client.CreateSession(sessInfo); err != nil {
 						return webwire.Payload{}, err
 					}
 					return webwire.Payload{}, nil
 				},
-				// Define dummy hooks to enable sessions on this server
-				OnSessionCreated: func(_ *webwire.Client) error { return nil },
-				OnSessionLookup:  func(_ string) (*webwire.Session, error) { return nil, nil },
-				OnSessionClosed:  func(_ *webwire.Client) error { return nil },
 			},
 		},
 	)
@@ -163,7 +151,7 @@ func TestClientSessionInfo(t *testing.T) {
 	}
 
 	// Verify field: struct
-	samplestruct, ok := client.SessionInfo("struct").(map[string]interface{})
+	samplestruct, ok := client.SessionInfo("struct").(webwire.SessionInfo)
 	if !ok {
 		t.Fatalf(
 			"Expected field 'struct' to be a map of string -> empty interface, got: %v",

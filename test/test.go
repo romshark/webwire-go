@@ -9,12 +9,20 @@ import (
 	wwr "github.com/qbeon/webwire-go"
 )
 
-// setupServer helps setting up
-// and launching the server together with the hosting http server
+// setupServer helps setting up and launching the server together with the hosting http server
+// setting up a headed server on a randomly assigned port
 func setupServer(t *testing.T, opts wwr.ServerOptions) (*wwr.Server, string) {
 	// Setup headed server on arbitrary port
+
+	// Use default global loggers
 	opts.WarnLog = os.Stdout
 	opts.ErrorLog = os.Stderr
+
+	// Use default session manager if no specific one is defined
+	if opts.SessionManager == nil {
+		opts.SessionManager = NewInMemSessManager()
+	}
+
 	srv, _, addr, run, _, err := wwr.SetupServer(wwr.SetupOptions{
 		ServerAddress: "127.0.0.1:0",
 		ServerOptions: opts,
@@ -70,10 +78,10 @@ func compareSessions(t *testing.T, expected, actual *wwr.Session) {
 			expected.Key,
 			actual.Key,
 		)
-	} else if actual.CreationDate.Unix() != expected.CreationDate.Unix() {
+	} else if actual.Creation.Unix() != expected.Creation.Unix() {
 		t.Errorf("Session creation dates differ:\n expected: '%s'\n actual:   '%s'",
-			expected.CreationDate,
-			actual.CreationDate,
+			expected.Creation,
+			actual.Creation,
 		)
 	}
 }

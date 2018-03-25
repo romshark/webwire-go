@@ -21,8 +21,8 @@ type Client struct {
 	connectionTime time.Time
 	userAgent      string
 
-	sessionLock sync.Mutex
-	Session     *Session
+	sessionLock sync.RWMutex
+	session     *Session
 }
 
 // NewClientAgent creates and returns a new client agent instance
@@ -34,7 +34,7 @@ func NewClientAgent(conn *websocket.Conn, userAgent string, srv *Server) *Client
 		conn,
 		time.Now(),
 		userAgent,
-		sync.Mutex{},
+		sync.RWMutex{},
 		nil,
 	}
 }
@@ -42,6 +42,13 @@ func NewClientAgent(conn *websocket.Conn, userAgent string, srv *Server) *Client
 // UserAgent returns the user agent string associated with this client
 func (clt *Client) UserAgent() string {
 	return clt.userAgent
+}
+
+// setSession sets a new session for this client
+func (clt *Client) setSession(newSess *Session) {
+	clt.sessionLock.Lock()
+	clt.session = newSess
+	clt.sessionLock.Unlock()
 }
 
 // write sends the given data to the other side of the socket,
@@ -63,7 +70,7 @@ func (clt *Client) unlink() {
 	clt.sessionLock.Lock()
 
 	clt.connected = false
-	clt.Session = nil
+	clt.session = nil
 	clt.conn.Close()
 
 	clt.sessionLock.Unlock()
@@ -78,7 +85,7 @@ func (clt *Client) ConnectionTime() time.Time {
 }
 
 // RemoteAddr returns the address of the client.
-// Returns empty string if the client is not connected.
+// Returns empty string if the client is not connected
 func (clt *Client) RemoteAddr() net.Addr {
 	clt.connLock.RLock()
 	defer clt.connLock.RUnlock()
@@ -90,7 +97,7 @@ func (clt *Client) RemoteAddr() net.Addr {
 
 // IsConnected returns true if the client is currently connected to the server,
 // thus able to receive signals, otherwise returns false.
-// Disconnected client agents are no longer useful and will be garbage collected.
+// Disconnected client agents are no longer useful and will be garbage collected
 func (clt *Client) IsConnected() bool {
 	clt.connLock.RLock()
 	defer clt.connLock.RUnlock()
@@ -107,7 +114,7 @@ func (clt *Client) Signal(name string, payload Payload) error {
 // The synchronization happens asynchronously using a signal
 // and doesn't block the calling goroutine.
 // Returns an error if there's already another session active
-func (clt *Client) CreateSession(attachment interface{}) error {
+func (clt *Client) CreateSession(attachment SessionInfo) error {
 	if !clt.srv.sessionsEnabled {
 		return SessionsDisabledErr{}
 	}
@@ -122,13 +129,13 @@ func (clt *Client) CreateSession(attachment interface{}) error {
 	clt.connLock.RUnlock()
 
 	clt.sessionLock.Lock()
-	defer clt.sessionLock.Unlock()
 
 	// Abort if there's already another active session
-	if clt.Session != nil {
+	if clt.session != nil {
+		clt.sessionLock.Unlock()
 		return fmt.Errorf(
 			"Another session (%s) on this client is already active",
-			clt.Session.Key,
+			clt.session.Key,
 		)
 	}
 
@@ -137,12 +144,20 @@ func (clt *Client) CreateSession(attachment interface{}) error {
 
 	// Try to notify about session creation
 	if err := clt.notifySessionCreated(&newSession); err != nil {
+		clt.sessionLock.Unlock()
 		return fmt.Errorf("Couldn't notify client about the session creation: %s", err)
 	}
 
 	// Register the session
-	clt.Session = &newSession
-	clt.srv.registerSession(clt)
+	clt.session = &newSession
+
+	clt.srv.SessionRegistry.register(clt)
+	clt.sessionLock.Unlock()
+
+	// Call session creation hook
+	if err := clt.srv.sessionManager.OnSessionCreated(clt); err != nil {
+		clt.srv.errorLog.Printf("OnSessionCreated hook failed: %s", err)
+	}
 
 	return nil
 }
@@ -185,14 +200,84 @@ func (clt *Client) CloseSession() error {
 	}
 
 	clt.sessionLock.Lock()
-	defer clt.sessionLock.Unlock()
-
-	if clt.Session == nil {
+	if clt.session == nil {
+		clt.sessionLock.Unlock()
 		return nil
 	}
+	clt.srv.SessionRegistry.deregister(clt)
+	clt.sessionLock.Unlock()
 
-	clt.srv.deregisterSession(clt)
-	clt.Session = nil
+	// Call session closure hook
+	if err := clt.srv.sessionManager.OnSessionClosed(clt); err != nil {
+		clt.srv.errorLog.Printf("OnSessionClosed hook failed: %s", err)
+	}
+
+	// Finally reset the session
+	clt.sessionLock.Lock()
+	clt.session = nil
+	clt.sessionLock.Unlock()
 
 	return clt.notifySessionClosed()
+}
+
+// HasSession returns true if the client refered by this client agent instance
+// currently has a session assigned, otherwise returns false
+func (clt *Client) HasSession() bool {
+	clt.sessionLock.RLock()
+	defer clt.sessionLock.RUnlock()
+	return clt.session != nil
+}
+
+// Session returns either a shallow copy of the session if there's a session currently assigned
+// to the server this user agent refers to, or nil if there's none
+func (clt *Client) Session() *Session {
+	clt.sessionLock.RLock()
+	defer clt.sessionLock.RUnlock()
+	if clt.session == nil {
+		return nil
+	}
+	return &Session{
+		Key:      clt.session.Key,
+		Creation: clt.session.Creation,
+		Info:     clt.session.Info,
+	}
+}
+
+// SessionKey returns the key of the currently assigned session of the client this client agent
+// refers to. Returns an empty string if there's no session assigned for this client
+func (clt *Client) SessionKey() string {
+	clt.sessionLock.RLock()
+	defer clt.sessionLock.RUnlock()
+	if clt.session == nil {
+		return ""
+	}
+	return clt.session.Key
+}
+
+// SessionCreation returns the time of creation of the currently assigned session.
+// Warning: be sure to check whether there's a session beforehand as this function will return
+// garbage if there's currently no session assigned to the client this user agent refers to
+func (clt *Client) SessionCreation() time.Time {
+	clt.sessionLock.RLock()
+	defer clt.sessionLock.RUnlock()
+	if clt.session == nil {
+		return time.Time{}
+	}
+	return clt.session.Creation
+}
+
+// SessionInfo returns the value of a session info field identified by the given key
+// in the form of an empty interface that could be casted to either a string, bool, float64 number
+// a map[string]interface{} object or an []interface{} array according to JSON data types.
+// Returns nil if either there's no session or if the given field doesn't exist
+func (clt *Client) SessionInfo(key string) interface{} {
+	clt.sessionLock.RLock()
+	defer clt.sessionLock.RUnlock()
+	if clt.session == nil || clt.session.Info == nil {
+		return nil
+	}
+	if value, exists := clt.session.Info[key]; exists {
+		return value
+	}
+	return nil
 }

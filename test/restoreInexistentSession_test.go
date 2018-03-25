@@ -16,20 +16,6 @@ func TestRestoreInexistentSession(t *testing.T) {
 		t,
 		wwr.ServerOptions{
 			SessionsEnabled: true,
-			Hooks: wwr.Hooks{
-				// Permanently store the session
-				OnSessionCreated: func(_ *wwr.Client) error {
-					return nil
-				},
-				// Find session by key
-				OnSessionLookup: func(_ string) (*wwr.Session, error) {
-					return nil, nil
-				},
-				// Define dummy hook to enable sessions on this server
-				OnSessionClosed: func(_ *wwr.Client) error {
-					return nil
-				},
-			},
 		},
 	)
 

@@ -44,10 +44,6 @@ func TestClientOnSessionClosed(t *testing.T) {
 
 					return webwire.Payload{}, nil
 				},
-				// Define dummy hooks to enable sessions on this server
-				OnSessionCreated: func(_ *webwire.Client) error { return nil },
-				OnSessionLookup:  func(_ string) (*webwire.Session, error) { return nil, nil },
-				OnSessionClosed:  func(_ *webwire.Client) error { return nil },
 			},
 		},
 	)

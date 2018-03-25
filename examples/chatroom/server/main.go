@@ -9,9 +9,20 @@ import (
 	"syscall"
 
 	wwr "github.com/qbeon/webwire-go"
+	"github.com/qbeon/webwire-go/examples/chatroom/server/state"
 )
 
 var serverAddr = flag.String("addr", ":9090", "server address")
+
+func onClientConnected(newClient *wwr.Client) {
+	state.State.AddConnected(newClient)
+	log.Printf("New client connected: %s | %s", newClient.RemoteAddr(), newClient.UserAgent())
+}
+
+func onClientDisconnected(client *wwr.Client) {
+	state.State.RemoveConnected(client)
+	log.Printf("Client %s disconnected", client.RemoteAddr())
+}
 
 func main() {
 	// Parse command line arguments
@@ -26,9 +37,6 @@ func main() {
 				OnClientConnected:    onClientConnected,
 				OnClientDisconnected: onClientDisconnected,
 				OnRequest:            onRequest,
-				OnSessionCreated:     onSessionCreated,
-				OnSessionLookup:      onSessionLookup,
-				OnSessionClosed:      onSessionClosed,
 			},
 			WarnLog:  os.Stdout,
 			ErrorLog: os.Stderr,

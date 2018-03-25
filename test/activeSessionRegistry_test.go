@@ -3,6 +3,7 @@ package test
 import (
 	"context"
 	"testing"
+	"time"
 
 	webwire "github.com/qbeon/webwire-go"
 	webwireClient "github.com/qbeon/webwire-go/client"
@@ -36,13 +37,9 @@ func TestActiveSessionRegistry(t *testing.T) {
 
 					// Return the key of the newly created session (use default binary encoding)
 					return webwire.Payload{
-						Data: []byte(msg.Client.Session.Key),
+						Data: []byte(msg.Client.SessionKey()),
 					}, nil
 				},
-				// Define dummy hooks for sessions to be enabled on this server
-				OnSessionCreated: func(_ *webwire.Client) error { return nil },
-				OnSessionLookup:  func(_ string) (*webwire.Session, error) { return nil, nil },
-				OnSessionClosed:  func(_ *webwire.Client) error { return nil },
 			},
 		},
 	)
@@ -52,6 +49,7 @@ func TestActiveSessionRegistry(t *testing.T) {
 		addr,
 		webwireClient.Options{
 			Hooks: webwireClient.Hooks{},
+			DefaultRequestTimeout: time.Second * 2,
 		},
 	)
 	defer client.Close()

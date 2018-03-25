@@ -24,6 +24,21 @@ func TestMaxConcSessConn(t *testing.T) {
 		wwr.ServerOptions{
 			SessionsEnabled:       true,
 			MaxSessionConnections: concurrentConns,
+			SessionManager: &CallbackPoweredSessionManager{
+				// Saves the session
+				SessionCreated: func(client *wwr.Client) error {
+					sess := client.Session()
+					sessionStorage[sess.Key] = sess
+					return nil
+				},
+				// Finds session by key
+				SessionLookup: func(key string) (*wwr.Session, error) {
+					if session, exists := sessionStorage[key]; exists {
+						return session, nil
+					}
+					return nil, nil
+				},
+			},
 			Hooks: wwr.Hooks{
 				OnClientConnected: func(client *wwr.Client) {
 					// Created the session for the first connecting client only
@@ -33,23 +48,9 @@ func TestMaxConcSessConn(t *testing.T) {
 						if err := client.CreateSession(nil); err != nil {
 							t.Errorf("Unexpected error during session creation: %s", err)
 						}
-						sessionKey = client.Session.Key
+						sessionKey = client.SessionKey()
 					}
 				},
-				// Permanently store the session
-				OnSessionCreated: func(client *wwr.Client) error {
-					sessionStorage[client.Session.Key] = client.Session
-					return nil
-				},
-				// Find session by key
-				OnSessionLookup: func(key string) (*wwr.Session, error) {
-					if session, exists := sessionStorage[key]; exists {
-						return session, nil
-					}
-					return nil, nil
-				},
-				// Define dummy hook to enable sessions on this server
-				OnSessionClosed: func(_ *wwr.Client) error { return nil },
 			},
 		},
 	)

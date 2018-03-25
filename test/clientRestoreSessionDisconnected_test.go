@@ -17,11 +17,6 @@ func TestClientRestoreSessionDisconnected(t *testing.T) {
 		t,
 		wwr.ServerOptions{
 			SessionsEnabled: true,
-			Hooks: wwr.Hooks{
-				OnSessionCreated: func(_ *wwr.Client) error { return nil },
-				OnSessionLookup:  func(_ string) (*wwr.Session, error) { return nil, nil },
-				OnSessionClosed:  func(_ *wwr.Client) error { return nil },
-			},
 		},
 	)
 

@@ -223,14 +223,10 @@ func (clt *Client) Session() webwire.Session {
 func (clt *Client) SessionInfo(key string) interface{} {
 	clt.sessionLock.RLock()
 	defer clt.sessionLock.RUnlock()
-	if clt.session == nil {
+	if clt.session == nil || clt.session.Info == nil {
 		return nil
 	}
-	infoMap, converted := clt.session.Info.(map[string]interface{})
-	if !converted {
-		return nil
-	}
-	if value, exists := infoMap[key]; exists {
+	if value, exists := clt.session.Info[key]; exists {
 		return value
 	}
 	return nil
