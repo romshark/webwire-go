@@ -220,7 +220,7 @@ func (clt *Client) CloseSession() error {
 	return clt.notifySessionClosed()
 }
 
-// HasSession returns true if the client refered by this client agent instance
+// HasSession returns true if the client referred by this client agent instance
 // currently has a session assigned, otherwise returns false
 func (clt *Client) HasSession() bool {
 	clt.sessionLock.RLock()
