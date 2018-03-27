@@ -7,8 +7,6 @@ import (
 	"log"
 	"net/http"
 	"sync"
-
-	"github.com/gorilla/websocket"
 )
 
 const protocolVersion = "1.2"
@@ -105,9 +103,9 @@ type Server struct {
 	SessionRegistry sessionRegistry
 
 	// Internals
-	upgrader websocket.Upgrader
-	warnLog  *log.Logger
-	errorLog *log.Logger
+	connUpgrader ConnUpgrader
+	warnLog      *log.Logger
+	errorLog     *log.Logger
 }
 
 // NewServer creates a new WebWire server instance
@@ -129,6 +127,7 @@ func NewServer(opts ServerOptions) *Server {
 		SessionRegistry: newSessionRegistry(opts.MaxSessionConnections),
 
 		// Internals
+		connUpgrader: newConnUpgrader(),
 		warnLog: log.New(
 			opts.WarnLog,
 			"WARNING: ",
@@ -139,13 +138,6 @@ func NewServer(opts ServerOptions) *Server {
 			"ERROR: ",
 			log.Ldate|log.Ltime|log.Lshortfile,
 		),
-	}
-
-	// Initialize HTTP connection upgrader
-	srv.upgrader = websocket.Upgrader{
-		CheckOrigin: func(_ *http.Request) bool {
-			return true
-		},
 	}
 
 	return &srv
@@ -356,15 +348,14 @@ func (srv *Server) ServeHTTP(
 	}
 
 	// Establish connection
-	conn, err := srv.upgrader.Upgrade(resp, req, nil)
+	conn, err := srv.connUpgrader.Upgrade(resp, req)
 	if err != nil {
 		srv.errorLog.Print("Upgrade failed:", err)
 		return
 	}
-	defer conn.Close()
 
 	// Register connected client
-	newClient := NewClientAgent(conn, req.Header.Get("User-Agent"), srv)
+	newClient := newClientAgent(conn, req.Header.Get("User-Agent"), srv)
 
 	srv.clientsLock.Lock()
 	srv.clients = append(srv.clients, newClient)
@@ -375,19 +366,15 @@ func (srv *Server) ServeHTTP(
 
 	for {
 		// Await message
-		_, message, err := conn.ReadMessage()
+		message, err := conn.Read()
 		if err != nil {
 			if newClient.HasSession() {
 				// Decrement number of connections for this clients session
 				srv.SessionRegistry.deregister(newClient)
 			}
 
-			if websocket.IsUnexpectedCloseError(
-				err,
-				websocket.CloseGoingAway,
-				websocket.CloseAbnormalClosure,
-			) {
-				srv.warnLog.Printf("Reading failed: %s", err)
+			if err.IsAbnormalCloseErr() {
+				srv.warnLog.Printf("Abnormal closure error: %s", err)
 			}
 
 			newClient.unlink()

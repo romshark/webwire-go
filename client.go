@@ -6,17 +6,12 @@ import (
 	"net"
 	"sync"
 	"time"
-
-	"github.com/gorilla/websocket"
 )
 
 // Client represents a client connected to the server
 type Client struct {
-	srv *Server
-
-	connected bool
-	connLock  sync.RWMutex
-	conn      *websocket.Conn
+	srv  *Server
+	conn Socket
 
 	connectionTime time.Time
 	userAgent      string
@@ -25,23 +20,16 @@ type Client struct {
 	session     *Session
 }
 
-// NewClientAgent creates and returns a new client agent instance
-func NewClientAgent(conn *websocket.Conn, userAgent string, srv *Server) *Client {
+// newClientAgent creates and returns a new client agent instance
+func newClientAgent(socket Socket, userAgent string, srv *Server) *Client {
 	return &Client{
 		srv,
-		true,
-		sync.RWMutex{},
-		conn,
+		socket,
 		time.Now(),
 		userAgent,
 		sync.RWMutex{},
 		nil,
 	}
-}
-
-// UserAgent returns the user agent string associated with this client
-func (clt *Client) UserAgent() string {
-	return clt.userAgent
 }
 
 // setSession sets a new session for this client
@@ -51,47 +39,27 @@ func (clt *Client) setSession(newSess *Session) {
 	clt.sessionLock.Unlock()
 }
 
-// write sends the given data to the other side of the socket,
-// it also protects the connection from concurrent writes
-func (clt *Client) write(data []byte) error {
-	clt.connLock.Lock()
-	defer clt.connLock.Unlock()
-	if !clt.connected {
-		return DisconnectedErr{
-			cause: fmt.Errorf("Can't write to a disconnected client agent"),
-		}
-	}
-	return clt.conn.WriteMessage(websocket.BinaryMessage, data)
-}
-
 // unlink resets the client agent and marks it as disconnected preparing it for garbage collection
 func (clt *Client) unlink() {
-	clt.connLock.Lock()
 	clt.sessionLock.Lock()
-
-	clt.connected = false
 	clt.session = nil
 	clt.conn.Close()
-
 	clt.sessionLock.Unlock()
-	clt.connLock.Unlock()
+}
+
+// UserAgent returns the user agent string associated with this client
+func (clt *Client) UserAgent() string {
+	return clt.userAgent
 }
 
 // ConnectionTime returns the time when the connection was established
 func (clt *Client) ConnectionTime() time.Time {
-	clt.connLock.RLock()
-	defer clt.connLock.RUnlock()
 	return clt.connectionTime
 }
 
 // RemoteAddr returns the address of the client.
 // Returns empty string if the client is not connected
 func (clt *Client) RemoteAddr() net.Addr {
-	clt.connLock.RLock()
-	defer clt.connLock.RUnlock()
-	if clt.conn == nil {
-		return nil
-	}
 	return clt.conn.RemoteAddr()
 }
 
@@ -99,14 +67,12 @@ func (clt *Client) RemoteAddr() net.Addr {
 // thus able to receive signals, otherwise returns false.
 // Disconnected client agents are no longer useful and will be garbage collected
 func (clt *Client) IsConnected() bool {
-	clt.connLock.RLock()
-	defer clt.connLock.RUnlock()
-	return clt.connected
+	return clt.conn.IsConnected()
 }
 
 // Signal sends a named signal containing the given payload to the client
 func (clt *Client) Signal(name string, payload Payload) error {
-	return clt.write(NewSignalMessage(name, payload))
+	return clt.conn.Write(NewSignalMessage(name, payload))
 }
 
 // CreateSession creates a new session for this client.
@@ -119,14 +85,11 @@ func (clt *Client) CreateSession(attachment SessionInfo) error {
 		return SessionsDisabledErr{}
 	}
 
-	clt.connLock.RLock()
-	if !clt.connected {
-		clt.connLock.RUnlock()
+	if !clt.conn.IsConnected() {
 		return DisconnectedErr{
-			cause: fmt.Errorf("Can't create session on disconnected client agent"),
+			Cause: fmt.Errorf("Can't create session on disconnected client agent"),
 		}
 	}
-	clt.connLock.RUnlock()
 
 	clt.sessionLock.Lock()
 
@@ -175,12 +138,12 @@ func (clt *Client) notifySessionCreated(newSession *Session) error {
 	for i := 0; i < len(encoded); i++ {
 		msg[1+i] = encoded[i]
 	}
-	return clt.write(msg)
+	return clt.conn.Write(msg)
 }
 
 func (clt *Client) notifySessionClosed() error {
 	// Notify client about the session destruction
-	if err := clt.write([]byte{MsgSessionClosed}); err != nil {
+	if err := clt.conn.Write([]byte{MsgSessionClosed}); err != nil {
 		return fmt.Errorf(
 			"Couldn't notify client about the session destruction: %s",
 			err,

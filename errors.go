@@ -107,18 +107,18 @@ func (err MaxSessConnsReachedErr) Error() string {
 
 // DisconnectedErr represents an error type indicating that the targeted client is disconnected
 type DisconnectedErr struct {
-	cause error
+	Cause error
 }
 
 // NewDisconnectedErr constructs a new DisconnectedErr error based on the actual error
 func NewDisconnectedErr(err error) DisconnectedErr {
 	return DisconnectedErr{
-		cause: err,
+		Cause: err,
 	}
 }
 
 func (err DisconnectedErr) Error() string {
-	return err.cause.Error()
+	return err.Cause.Error()
 }
 
 // ProtocolErr represents an error type indicating an error in the protocol implementation

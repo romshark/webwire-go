@@ -3,7 +3,6 @@ package client
 import (
 	"time"
 
-	"github.com/gorilla/websocket"
 	webwire "github.com/qbeon/webwire-go"
 )
 
@@ -18,10 +17,7 @@ func (clt *Client) sendNamelessRequest(
 	msg := webwire.NewNamelessRequestMessage(messageType, reqIdentifier, payload.Data)
 
 	// Send request
-	clt.connLock.Lock()
-	err := clt.conn.WriteMessage(websocket.BinaryMessage, msg)
-	clt.connLock.Unlock()
-	if err != nil {
+	if err := clt.conn.Write(msg); err != nil {
 		return webwire.Payload{}, webwire.NewReqTransErr(err)
 	}
 

@@ -10,8 +10,6 @@ import (
 	"log"
 	"sync"
 	"time"
-
-	"github.com/gorilla/websocket"
 )
 
 const supportedProtocolVersion = "1.2"
@@ -58,8 +56,7 @@ type Client struct {
 	connectingLock sync.RWMutex
 
 	connectLock sync.Mutex
-	connLock    sync.Mutex
-	conn        *websocket.Conn
+	conn        webwire.Socket
 
 	requestManager reqman.RequestManager
 
@@ -95,8 +92,7 @@ func NewClient(serverAddress string, opts Options) *Client {
 		false,
 		sync.RWMutex{},
 		sync.Mutex{},
-		sync.Mutex{},
-		nil,
+		newSocket(nil),
 
 		reqman.NewRequestManager(),
 
@@ -201,9 +197,7 @@ func (clt *Client) Signal(name string, payload webwire.Payload) error {
 
 	msgBytes := webwire.NewSignalMessage(name, payload)
 
-	clt.connLock.Lock()
-	defer clt.connLock.Unlock()
-	return clt.conn.WriteMessage(websocket.BinaryMessage, msgBytes)
+	return clt.conn.Write(msgBytes)
 }
 
 // Session returns information about the current session

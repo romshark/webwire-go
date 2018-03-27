@@ -798,13 +798,13 @@ func (msg *Message) createFailCallback(client *Client, srv *Server) {
 
 		// Send request failure notification
 		header := append([]byte{msgType}, msg.id[:]...)
-		if err := client.write(append(header, report...)); err != nil {
+		if err := client.conn.Write(append(header, report...)); err != nil {
 			srv.errorLog.Println("Writing failed:", err)
 		}
 	}
 	msg.failDueToShutdown = func() {
 		// Send request failure notification due to current server shutdown
-		if err := client.write(append([]byte{MsgReplyShutdown}, msg.id[:]...)); err != nil {
+		if err := client.conn.Write(append([]byte{MsgReplyShutdown}, msg.id[:]...)); err != nil {
 			srv.errorLog.Println("Writing failed:", err)
 		}
 	}
@@ -830,7 +830,7 @@ func (msg *Message) createReplyCallback(client *Client, srv *Server) {
 		}
 
 		// Send reply
-		if err := client.write(append(header, reply.Data...)); err != nil {
+		if err := client.conn.Write(append(header, reply.Data...)); err != nil {
 			srv.errorLog.Println("Writing failed:", err)
 		}
 	}

@@ -1,12 +1,7 @@
 package client
 
 import (
-	"fmt"
-	"net/url"
 	"sync/atomic"
-
-	"github.com/gorilla/websocket"
-	webwire "github.com/qbeon/webwire-go"
 )
 
 // connect will try to establish a connection to the configured webwire server
@@ -16,7 +11,7 @@ import (
 // Before establishing the connection - connect verifies protocol compatibility and returns an
 // error if the protocol implemented by the server doesn't match the required protocol version
 // of this client instance.
-func (clt *Client) connect() (err error) {
+func (clt *Client) connect() error {
 	clt.connectLock.Lock()
 	defer clt.connectLock.Unlock()
 	if atomic.LoadInt32(&clt.status) == StatConnected {
@@ -27,28 +22,19 @@ func (clt *Client) connect() (err error) {
 		return err
 	}
 
-	connURL := url.URL{Scheme: "ws", Host: clt.serverAddr, Path: "/"}
-
-	clt.connLock.Lock()
-	clt.conn, _, err = websocket.DefaultDialer.Dial(connURL.String(), nil)
-	if err != nil {
-		return webwire.NewDisconnectedErr(fmt.Errorf("Dial failure: %s", err))
+	if err := clt.conn.Dial(clt.serverAddr); err != nil {
+		return err
 	}
-	clt.connLock.Unlock()
 
 	// Setup reader thread
 	go func() {
 		defer clt.close()
 		for {
-			_, message, err := clt.conn.ReadMessage()
+			message, err := clt.conn.Read()
 			if err != nil {
-				if websocket.IsUnexpectedCloseError(
-					err,
-					websocket.CloseGoingAway,
-					websocket.CloseAbnormalClosure,
-				) {
+				if err.IsAbnormalCloseErr() {
 					// Error while reading message
-					clt.errorLog.Print("Failed reading message:", err)
+					clt.errorLog.Print("Abnormal closure error:", err)
 				}
 
 				// Set status to disconnected if it wasn't disabled
@@ -72,7 +58,7 @@ func (clt *Client) connect() (err error) {
 				return
 			}
 			// Try to handle the message
-			if err = clt.handleMessage(message); err != nil {
+			if err := clt.handleMessage(message); err != nil {
 				clt.warningLog.Print("Failed handling message:", err)
 			}
 		}
