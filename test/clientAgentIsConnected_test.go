@@ -17,7 +17,7 @@ func TestClientAgentIsConnected(t *testing.T) {
 	testerGoroutineFinished := NewPending(1, 1*time.Second, true)
 
 	// Initialize webwire server
-	_, addr := setupServer(
+	server := setupServer(
 		t,
 		wwr.ServerOptions{
 			Hooks: wwr.Hooks{
@@ -63,7 +63,7 @@ func TestClientAgentIsConnected(t *testing.T) {
 
 	// Initialize client
 	client := wwrclt.NewClient(
-		addr,
+		server.Addr().String(),
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},

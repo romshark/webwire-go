@@ -58,7 +58,7 @@ func TestAuthentication(t *testing.T) {
 	currentStep := 1
 
 	// Initialize webwire server
-	_, addr := setupServer(
+	server := setupServer(
 		t,
 		wwr.ServerOptions{
 			SessionsEnabled: true,
@@ -102,7 +102,7 @@ func TestAuthentication(t *testing.T) {
 
 	// Initialize client
 	client := wwrclt.NewClient(
-		addr,
+		server.Addr().String(),
 		wwrclt.Options{
 			Hooks: wwrclt.Hooks{
 				OnSessionCreated: func(session *wwr.Session) {

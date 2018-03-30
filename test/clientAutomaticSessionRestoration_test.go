@@ -18,7 +18,7 @@ func TestClientAutomaticSessionRestoration(t *testing.T) {
 	var createdSession *webwire.Session
 
 	// Initialize webwire server
-	_, addr := setupServer(
+	server := setupServer(
 		t,
 		webwire.ServerOptions{
 			SessionsEnabled: true,
@@ -79,7 +79,10 @@ func TestClientAutomaticSessionRestoration(t *testing.T) {
 	)
 
 	// Initialize client
-	client := webwireClient.NewClient(addr, webwireClient.Options{})
+	client := webwireClient.NewClient(
+		server.Addr().String(),
+		webwireClient.Options{},
+	)
 
 	if err := client.Connect(); err != nil {
 		t.Fatalf("Couldn't connect: %s", err)

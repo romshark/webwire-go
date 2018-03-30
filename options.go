@@ -32,3 +32,15 @@ func (srvOpt *ServerOptions) SetDefaults() {
 		srvOpt.ErrorLog = os.Stderr
 	}
 }
+
+// HeadedServerOptions represents the options used during the creation of
+// a new headed WebWire server instance
+type HeadedServerOptions struct {
+	ServerAddress string
+	ServerOptions ServerOptions
+}
+
+// SetDefaults sets default values to undefined options
+func (opts *HeadedServerOptions) SetDefaults() {
+	opts.ServerOptions.SetDefaults()
+}

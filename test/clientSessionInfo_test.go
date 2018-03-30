@@ -24,7 +24,7 @@ func TestClientSessionInfo(t *testing.T) {
 	}
 
 	// Initialize webwire server
-	_, addr := setupServer(
+	server := setupServer(
 		t,
 		webwire.ServerOptions{
 			SessionsEnabled: true,
@@ -57,7 +57,7 @@ func TestClientSessionInfo(t *testing.T) {
 
 	// Initialize client
 	client := webwireClient.NewClient(
-		addr,
+		server.Addr().String(),
 		webwireClient.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},

@@ -25,7 +25,7 @@ func TestServerInitiatedSessionDestruction(t *testing.T) {
 	currentStep := 1
 
 	// Initialize webwire server
-	_, addr := setupServer(
+	server := setupServer(
 		t,
 		webwire.ServerOptions{
 			SessionsEnabled: true,
@@ -104,7 +104,7 @@ func TestServerInitiatedSessionDestruction(t *testing.T) {
 
 	// Initialize client
 	client := webwireClient.NewClient(
-		addr,
+		server.Addr().String(),
 		webwireClient.Options{
 			Hooks: webwireClient.Hooks{
 				OnSessionCreated: func(_ *webwire.Session) {

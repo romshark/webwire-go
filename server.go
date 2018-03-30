@@ -100,7 +100,7 @@ type Server struct {
 	clientsLock     *sync.Mutex
 	clients         []*Client
 	sessionsEnabled bool
-	SessionRegistry sessionRegistry
+	sessionRegistry *sessionRegistry
 
 	// Internals
 	connUpgrader ConnUpgrader
@@ -124,7 +124,7 @@ func NewServer(opts ServerOptions) *Server {
 		clients:         make([]*Client, 0),
 		clientsLock:     &sync.Mutex{},
 		sessionsEnabled: opts.SessionsEnabled,
-		SessionRegistry: newSessionRegistry(opts.MaxSessionConnections),
+		sessionRegistry: newSessionRegistry(opts.MaxSessionConnections),
 
 		// Internals
 		connUpgrader: newConnUpgrader(),
@@ -153,8 +153,8 @@ func (srv *Server) handleSessionRestore(msg *Message) error {
 
 	key := string(msg.Payload.Data)
 
-	if srv.SessionRegistry.maxConns > 0 &&
-		srv.SessionRegistry.SessionConnections(key)+1 > srv.SessionRegistry.maxConns {
+	if srv.sessionRegistry.maxConns > 0 &&
+		srv.sessionRegistry.SessionConnections(key)+1 > srv.sessionRegistry.maxConns {
 		msg.fail(MaxSessConnsReachedErr{})
 		return nil
 	}
@@ -177,7 +177,7 @@ func (srv *Server) handleSessionRestore(msg *Message) error {
 	}
 
 	msg.Client.setSession(session)
-	if okay := srv.SessionRegistry.register(msg.Client); !okay {
+	if okay := srv.sessionRegistry.register(msg.Client); !okay {
 		panic(fmt.Errorf("The number of concurrent session connections was unexpectedly exceeded"))
 	}
 
@@ -370,7 +370,7 @@ func (srv *Server) ServeHTTP(
 		if err != nil {
 			if newClient.HasSession() {
 				// Decrement number of connections for this clients session
-				srv.SessionRegistry.deregister(newClient)
+				srv.sessionRegistry.deregister(newClient)
 			}
 
 			if err.IsAbnormalCloseErr() {
@@ -405,7 +405,7 @@ func (srv *Server) ServeHTTP(
 }
 
 func (srv *Server) deregisterSession(clt *Client) {
-	srv.SessionRegistry.deregister(clt)
+	srv.sessionRegistry.deregister(clt)
 	if err := srv.sessionManager.OnSessionClosed(clt); err != nil {
 		srv.errorLog.Printf("OnSessionClosed hook failed: %s", err)
 	}
@@ -424,4 +424,9 @@ func (srv *Server) Shutdown() {
 	}
 	srv.opsLock.Unlock()
 	<-srv.shutdownRdy
+}
+
+// SessionRegistry returns the public interface of the servers session registry
+func (srv *Server) SessionRegistry() SessionRegistry {
+	return srv.sessionRegistry
 }

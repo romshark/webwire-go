@@ -19,7 +19,7 @@ func TestClientSignal(t *testing.T) {
 	signalArrived := NewPending(1, 1*time.Second, true)
 
 	// Initialize webwire server given only the signal handler
-	_, addr := setupServer(
+	server := setupServer(
 		t,
 		webwire.ServerOptions{
 			Hooks: webwire.Hooks{
@@ -44,7 +44,7 @@ func TestClientSignal(t *testing.T) {
 
 	// Initialize client
 	client := webwireClient.NewClient(
-		addr,
+		server.Addr().String(),
 		webwireClient.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},

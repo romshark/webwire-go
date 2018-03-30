@@ -114,7 +114,7 @@ func (clt *Client) CreateSession(attachment SessionInfo) error {
 	// Register the session
 	clt.session = &newSession
 
-	clt.srv.SessionRegistry.register(clt)
+	clt.srv.sessionRegistry.register(clt)
 	clt.sessionLock.Unlock()
 
 	// Call session creation hook
@@ -167,7 +167,7 @@ func (clt *Client) CloseSession() error {
 		clt.sessionLock.Unlock()
 		return nil
 	}
-	clt.srv.SessionRegistry.deregister(clt)
+	clt.srv.sessionRegistry.deregister(clt)
 	clt.sessionLock.Unlock()
 
 	// Call session closure hook

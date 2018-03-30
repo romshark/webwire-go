@@ -16,7 +16,7 @@ func TestClientOnSessionCreated(t *testing.T) {
 	var sessionFromHook *webwire.Session
 
 	// Initialize webwire server
-	_, addr := setupServer(
+	server := setupServer(
 		t,
 		webwire.ServerOptions{
 			SessionsEnabled: true,
@@ -37,7 +37,7 @@ func TestClientOnSessionCreated(t *testing.T) {
 
 	// Initialize client
 	client := webwireClient.NewClient(
-		addr,
+		server.Addr().String(),
 		webwireClient.Options{
 			Hooks: webwireClient.Hooks{
 				OnSessionCreated: func(newSession *webwire.Session) {

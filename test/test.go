@@ -11,7 +11,7 @@ import (
 
 // setupServer helps setting up and launching the server together with the hosting http server
 // setting up a headed server on a randomly assigned port
-func setupServer(t *testing.T, opts wwr.ServerOptions) (*wwr.Server, string) {
+func setupServer(t *testing.T, opts wwr.ServerOptions) *wwr.HeadedServer {
 	// Setup headed server on arbitrary port
 
 	// Use default global loggers
@@ -23,7 +23,7 @@ func setupServer(t *testing.T, opts wwr.ServerOptions) (*wwr.Server, string) {
 		opts.SessionManager = NewInMemSessManager()
 	}
 
-	srv, _, addr, run, _, err := wwr.SetupServer(wwr.SetupOptions{
+	server, err := wwr.NewHeadedServer(wwr.HeadedServerOptions{
 		ServerAddress: "127.0.0.1:0",
 		ServerOptions: opts,
 	})
@@ -33,13 +33,13 @@ func setupServer(t *testing.T, opts wwr.ServerOptions) (*wwr.Server, string) {
 
 	// Run server in a separate goroutine
 	go func() {
-		if err := run(); err != nil {
+		if err := server.Run(); err != nil {
 			panic(fmt.Errorf("Server failed: %s", err))
 		}
 	}()
 
 	// Return reference to the server and the address its bound to
-	return srv, addr
+	return server
 }
 
 func comparePayload(t *testing.T, name string, expected, actual wwr.Payload) {

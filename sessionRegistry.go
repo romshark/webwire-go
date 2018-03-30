@@ -4,6 +4,17 @@ import (
 	"sync"
 )
 
+// SessionRegistry defines the public interface of a session registry
+type SessionRegistry interface {
+	// ActiveSessions returns the number of currently active sessions
+	ActiveSessions() int
+
+	// SessionConnections returns the number of concurrent connections
+	// associated with the session identified by the given key.
+	// Returns zero if the session doesn't exist.
+	SessionConnections(sessionKey string) uint
+}
+
 // sessionRegistryEntry represents a session registry entry
 type sessionRegistryEntry struct {
 	connections uint
@@ -20,8 +31,8 @@ type sessionRegistry struct {
 // newSessionRegistry returns a new instance of a session registry.
 // maxConns defines the maximum number of concurrent connections for a single session
 // while zero stands for unlimited
-func newSessionRegistry(maxConns uint) sessionRegistry {
-	return sessionRegistry{
+func newSessionRegistry(maxConns uint) *sessionRegistry {
+	return &sessionRegistry{
 		lock:     sync.RWMutex{},
 		maxConns: maxConns,
 		registry: make(map[string]sessionRegistryEntry),
@@ -82,8 +93,8 @@ func (asr *sessionRegistry) ActiveSessions() int {
 }
 
 // SessionConnections returns the number of concurrent connections
-// associated with the session associated with the given key.
-// Returns zero if the session associated with the given key doesn't exist.
+// associated with the session identified by the given key.
+// Returns zero if the session doesn't exist.
 func (asr *sessionRegistry) SessionConnections(sessionKey string) uint {
 	asr.lock.RLock()
 	defer asr.lock.RUnlock()

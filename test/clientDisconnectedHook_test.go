@@ -15,7 +15,7 @@ func TestClientDisconnectedHook(t *testing.T) {
 	var connectedClient *webwire.Client
 
 	// Initialize webwire server given only the request
-	_, addr := setupServer(
+	server := setupServer(
 		t,
 		webwire.ServerOptions{
 			Hooks: webwire.Hooks{
@@ -39,7 +39,7 @@ func TestClientDisconnectedHook(t *testing.T) {
 
 	// Initialize client
 	client := webwireClient.NewClient(
-		addr,
+		server.Addr().String(),
 		webwireClient.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},

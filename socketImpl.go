@@ -111,7 +111,7 @@ func (sock *socket) Read() ([]byte, SockReadErr) {
 	return message, nil
 }
 
-// IsConnected implementes the webwire.Socket interface
+// IsConnected implements the webwire.Socket interface
 func (sock *socket) IsConnected() bool {
 	sock.lock.RLock()
 	defer sock.lock.RUnlock()

@@ -28,8 +28,8 @@ func main() {
 	// Parse command line arguments
 	flag.Parse()
 
-	// Setup webwire server
-	_, _, addr, runServer, stopServer, err := wwr.SetupServer(wwr.SetupOptions{
+	// Setup headed webwire server
+	server, err := wwr.NewHeadedServer(wwr.HeadedServerOptions{
 		ServerAddress: *serverAddr,
 		ServerOptions: wwr.ServerOptions{
 			SessionsEnabled: true,
@@ -52,15 +52,15 @@ func main() {
 	go func() {
 		sig := <-osSignals
 		log.Printf("Termination demanded by the OS (%s), shutting down...", sig)
-		if err := stopServer(); err != nil {
+		if err := server.Shutdown(); err != nil {
 			log.Printf("Error during server shutdown: %s", err)
 		}
 		log.Println("Server gracefully terminated")
 	}()
 
 	// Launch server
-	log.Printf("Listening on %s", addr)
-	if err := runServer(); err != nil {
+	log.Printf("Listening on %s", server.Addr().String())
+	if err := server.Run(); err != nil {
 		panic(fmt.Errorf("WebWire server failed: %s", err))
 	}
 }

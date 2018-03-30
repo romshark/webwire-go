@@ -11,11 +11,11 @@ import (
 // TestClientIsConnected verifies correct client.IsConnected reporting
 func TestClientIsConnected(t *testing.T) {
 	// Initialize webwire server given only the request
-	_, addr := setupServer(t, webwire.ServerOptions{})
+	server := setupServer(t, webwire.ServerOptions{})
 
 	// Initialize client
 	client := webwireClient.NewClient(
-		addr,
+		server.Addr().String(),
 		webwireClient.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},

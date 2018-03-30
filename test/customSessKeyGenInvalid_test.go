@@ -12,7 +12,7 @@ import (
 // TestCustomSessKeyGenInvalid tests custom session key generators returning invalid keys
 func TestCustomSessKeyGenInvalid(t *testing.T) {
 	// Initialize webwire server
-	_, addr := setupServer(
+	server := setupServer(
 		t,
 		wwr.ServerOptions{
 			SessionsEnabled: true,
@@ -45,7 +45,7 @@ func TestCustomSessKeyGenInvalid(t *testing.T) {
 
 	// Initialize client
 	client := wwrclt.NewClient(
-		addr,
+		server.Addr().String(),
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},

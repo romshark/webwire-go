@@ -15,7 +15,7 @@ func TestClientOnSessionClosed(t *testing.T) {
 	hookCalled := NewPending(1, 1*time.Second, true)
 
 	// Initialize webwire server
-	_, addr := setupServer(
+	server := setupServer(
 		t,
 		webwire.ServerOptions{
 			SessionsEnabled: true,
@@ -50,7 +50,7 @@ func TestClientOnSessionClosed(t *testing.T) {
 
 	// Initialize client
 	client := webwireClient.NewClient(
-		addr,
+		server.Addr().String(),
 		webwireClient.Options{
 			Hooks: webwireClient.Hooks{
 				OnSessionClosed: func() {

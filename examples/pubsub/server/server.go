@@ -6,6 +6,9 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/signal"
+	"sync"
+	"syscall"
 	"time"
 	"unicode/utf16"
 
@@ -15,21 +18,26 @@ import (
 var serverAddr = flag.String("addr", ":8081", "server address")
 
 var connectedClients = make(map[*wwr.Client]bool)
+var mapLock = sync.Mutex{}
 
 func onClientConnected(client *wwr.Client) {
+	mapLock.Lock()
 	connectedClients[client] = true
+	mapLock.Unlock()
 }
 
 func onClientDisconnected(client *wwr.Client) {
+	mapLock.Lock()
 	delete(connectedClients, client)
+	mapLock.Unlock()
 }
 
 func main() {
 	// Parse command line arguments
 	flag.Parse()
 
-	// Setup webwire server
-	_, _, addr, runServer, _, err := wwr.SetupServer(wwr.SetupOptions{
+	// Setup headed webwire server
+	server, err := wwr.NewHeadedServer(wwr.HeadedServerOptions{
 		ServerAddress: *serverAddr,
 		ServerOptions: wwr.ServerOptions{
 			Hooks: wwr.Hooks{
@@ -79,9 +87,21 @@ func main() {
 		}
 	}()
 
-	log.Printf("Listening on %s", addr)
+	// Listen for OS signals and shutdown server in case of demanded termination
+	osSignals := make(chan os.Signal, 1)
+	signal.Notify(osSignals, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		sig := <-osSignals
+		log.Printf("Termination demanded by the OS (%s), shutting down...", sig)
+		if err := server.Shutdown(); err != nil {
+			log.Printf("Error during server shutdown: %s", err)
+		}
+		log.Println("Server gracefully terminated")
+	}()
 
-	if err := runServer(); err != nil {
+	// Launch server
+	log.Printf("Listening on %s", server.Addr().String())
+	if err := server.Run(); err != nil {
 		panic(fmt.Errorf("WebWire server failed: %s", err))
 	}
 }

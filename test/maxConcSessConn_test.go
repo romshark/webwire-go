@@ -19,7 +19,7 @@ func TestMaxConcSessConn(t *testing.T) {
 	concurrentConns := uint(4)
 
 	// Initialize server
-	_, addr := setupServer(
+	server := setupServer(
 		t,
 		wwr.ServerOptions{
 			SessionsEnabled:       true,
@@ -59,7 +59,7 @@ func TestMaxConcSessConn(t *testing.T) {
 	clients := make([]*wwrClient.Client, concurrentConns)
 	for i := uint(0); i < concurrentConns; i++ {
 		client := wwrClient.NewClient(
-			addr,
+			server.Addr().String(),
 			wwrClient.Options{
 				DefaultRequestTimeout: 2 * time.Second,
 			},
@@ -82,7 +82,7 @@ func TestMaxConcSessConn(t *testing.T) {
 
 	// Ensure that the last superfluous client is rejected
 	superflousClient := wwrClient.NewClient(
-		addr,
+		server.Addr().String(),
 		wwrClient.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},

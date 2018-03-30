@@ -21,7 +21,7 @@ func TestServerSignal(t *testing.T) {
 
 	// Initialize webwire server
 	go func() {
-		_, addr = setupServer(
+		server := setupServer(
 			t,
 			webwire.ServerOptions{
 				Hooks: webwire.Hooks{
@@ -34,6 +34,7 @@ func TestServerSignal(t *testing.T) {
 				},
 			},
 		)
+		addr = server.Addr().String()
 
 		// Synchronize, initialize client
 		initClient <- true

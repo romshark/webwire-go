@@ -12,7 +12,7 @@ import (
 // TestEmptyReply verifies empty binary reply acceptance
 func TestEmptyReply(t *testing.T) {
 	// Initialize webwire server given only the request
-	_, addr := setupServer(
+	server := setupServer(
 		t,
 		wwr.ServerOptions{
 			Hooks: wwr.Hooks{
@@ -26,7 +26,7 @@ func TestEmptyReply(t *testing.T) {
 
 	// Initialize client
 	client := webwireClient.NewClient(
-		addr,
+		server.Addr().String(),
 		webwireClient.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},

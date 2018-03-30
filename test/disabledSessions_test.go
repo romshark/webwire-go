@@ -25,7 +25,7 @@ func TestDisabledSessions(t *testing.T) {
 	}
 
 	// Initialize webwire server
-	_, addr := setupServer(
+	server := setupServer(
 		t,
 		wwr.ServerOptions{
 			SessionsEnabled: false,
@@ -50,7 +50,7 @@ func TestDisabledSessions(t *testing.T) {
 
 	// Initialize client
 	client := wwrclt.NewClient(
-		addr,
+		server.Addr().String(),
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},

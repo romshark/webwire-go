@@ -18,7 +18,7 @@ func TestClientOfflineSessionClosure(t *testing.T) {
 	var createdSession *webwire.Session
 
 	// Initialize webwire server
-	_, addr := setupServer(
+	server := setupServer(
 		t,
 		webwire.ServerOptions{
 			SessionsEnabled: true,
@@ -82,7 +82,7 @@ func TestClientOfflineSessionClosure(t *testing.T) {
 
 	// Initialize client
 	client := webwireClient.NewClient(
-		addr,
+		server.Addr().String(),
 		webwireClient.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},

@@ -21,7 +21,7 @@ func TestRequestNamespaces(t *testing.T) {
 	longestPossibleName := string(buf)
 
 	// Initialize server
-	_, addr := setupServer(
+	server := setupServer(
 		t,
 		webwire.ServerOptions{
 			Hooks: webwire.Hooks{
@@ -46,7 +46,7 @@ func TestRequestNamespaces(t *testing.T) {
 
 	// Initialize client
 	client := webwireClient.NewClient(
-		addr,
+		server.Addr().String(),
 		webwireClient.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},

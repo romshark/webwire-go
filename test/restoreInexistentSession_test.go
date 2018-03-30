@@ -12,7 +12,7 @@ import (
 // TestRestoreInexistentSession tests the restoration of an inexistent session
 func TestRestoreInexistentSession(t *testing.T) {
 	// Initialize server
-	_, addr := setupServer(
+	server := setupServer(
 		t,
 		wwr.ServerOptions{
 			SessionsEnabled: true,
@@ -23,7 +23,7 @@ func TestRestoreInexistentSession(t *testing.T) {
 
 	// Ensure that the last superfluous client is rejected
 	client := wwrClient.NewClient(
-		addr,
+		server.Addr().String(),
 		wwrClient.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},

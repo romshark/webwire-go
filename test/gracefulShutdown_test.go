@@ -25,7 +25,7 @@ func TestGracefulShutdown(t *testing.T) {
 	serverShutDown := NewPending(1, timeDelta*500*time.Millisecond, true)
 
 	// Initialize webwire server
-	server, addr := setupServer(
+	server := setupServer(
 		t,
 		wwr.ServerOptions{
 			Hooks: wwr.Hooks{
@@ -41,18 +41,20 @@ func TestGracefulShutdown(t *testing.T) {
 		},
 	)
 
+	serverAddr := server.Addr().String()
+
 	// Initialize different clients for the signal, the request and the late request and conn
 	// to avoid serializing them because every client is handled in a separate goroutine
 	cltOpts := wwrclt.Options{
 		Hooks: wwrclt.Hooks{},
 		DefaultRequestTimeout: 5 * time.Second,
 	}
-	clientSig := wwrclt.NewClient(addr, cltOpts)
-	clientReq := wwrclt.NewClient(addr, cltOpts)
-	clientLateReq := wwrclt.NewClient(addr, cltOpts)
+	clientSig := wwrclt.NewClient(serverAddr, cltOpts)
+	clientReq := wwrclt.NewClient(serverAddr, cltOpts)
+	clientLateReq := wwrclt.NewClient(serverAddr, cltOpts)
 
 	// Disable autoconnect for the late client to enable immediate errors
-	clientLateConn := wwrclt.NewClient(addr, wwrclt.Options{
+	clientLateConn := wwrclt.NewClient(serverAddr, wwrclt.Options{
 		Autoconnect: wwrclt.OptDisabled,
 	})
 

@@ -13,7 +13,7 @@ import (
 // and expects client.RestoreSession to automatically establish a connection
 func TestClientRestoreSessionDisconnected(t *testing.T) {
 	// Initialize webwire server
-	_, addr := setupServer(
+	server := setupServer(
 		t,
 		wwr.ServerOptions{
 			SessionsEnabled: true,
@@ -22,7 +22,7 @@ func TestClientRestoreSessionDisconnected(t *testing.T) {
 
 	// Initialize client and skip manual connection establishment
 	client := wwrclt.NewClient(
-		addr,
+		server.Addr().String(),
 		wwrclt.Options{
 			DefaultRequestTimeout: 100 * time.Millisecond,
 		},

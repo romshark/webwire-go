@@ -12,14 +12,14 @@ import (
 // TestClientSignalDisconnected tests sending signals on disconnected clients
 func TestClientSignalDisconnected(t *testing.T) {
 	// Initialize webwire server given only the request
-	_, addr := setupServer(
+	server := setupServer(
 		t,
 		wwr.ServerOptions{},
 	)
 
 	// Initialize client and skip manual connection establishment
 	client := wwrclt.NewClient(
-		addr,
+		server.Addr().String(),
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
