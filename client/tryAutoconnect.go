@@ -10,7 +10,7 @@ func (clt *Client) tryAutoconnect(timeout time.Duration) error {
 	// will periodically poll the server and check whether it's available again.
 	// If the autoconnector goroutine has already been spawned then tryAutoconnect will
 	// just await the connection or timeout respectively
-	if clt.autoconnect {
+	if atomic.LoadInt32(&clt.autoconnect) == AutoconnectEnabled {
 		if atomic.LoadInt32(&clt.status) == StatConnected {
 			return nil
 		}

@@ -10,6 +10,7 @@ import (
 	wwrclt "github.com/qbeon/webwire-go/client"
 )
 
+// TODO: change wrong test case description
 // TestDisabledSessions verifies the server is connectable,
 // and is able to receives requests and signals, create sessions
 // and identify clients during request- and signal handling
@@ -53,6 +54,11 @@ func TestDisabledSessions(t *testing.T) {
 		server.Addr().String(),
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
+			Hooks: wwrclt.Hooks{
+				OnSessionCreated: func(*wwr.Session) {
+					t.Errorf("OnSessionCreated was not expected to be called")
+				},
+			},
 		},
 	)
 	defer client.Close()

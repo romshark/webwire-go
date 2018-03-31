@@ -28,7 +28,14 @@ func (clt *Client) connect() error {
 
 	// Setup reader thread
 	go func() {
-		defer clt.close()
+		defer func() {
+			// Set status
+			atomic.StoreInt32(&clt.status, StatDisconnected)
+			select {
+			case clt.readerClosing <- true:
+			default:
+			}
+		}()
 		for {
 			message, err := clt.conn.Read()
 			if err != nil {
@@ -37,18 +44,14 @@ func (clt *Client) connect() error {
 					clt.errorLog.Print("Abnormal closure error:", err)
 				}
 
-				// Set status to disconnected if it wasn't disabled
-				if atomic.LoadInt32(&clt.status) == StatConnected {
-					atomic.StoreInt32(&clt.status, StatDisconnected)
-				}
-
 				// Call hook
 				clt.hooks.OnDisconnected()
 
-				// Try to reconnect if the client wasn't disabled and autoconnect is on.
-				// reconnect in another goroutine to let this one die and free up the socket
+				// Try to reconnect if autoconn wasn't disabled.
+				// reconnect in another goroutine to let this one die
+				// and free up the socket
 				go func() {
-					if clt.autoconnect && atomic.LoadInt32(&clt.status) != StatDisabled {
+					if atomic.LoadInt32(&clt.autoconnect) == AutoconnectEnabled {
 						if err := clt.tryAutoconnect(0); err != nil {
 							clt.errorLog.Printf("Auto-reconnect failed after connection loss: %s", err)
 							return

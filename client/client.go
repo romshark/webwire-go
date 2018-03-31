@@ -18,14 +18,22 @@ const supportedProtocolVersion = "1.2"
 type Status = int32
 
 const (
-	// StatDisabled represents a client instance that has been manually closed, thus disabled
-	StatDisabled Status = 0
-
 	// StatDisconnected represents a temporarily disconnected client instance
-	StatDisconnected Status = 1
+	StatDisconnected Status = 0
 
 	// StatConnected represents a connected client instance
-	StatConnected Status = 2
+	StatConnected Status = 1
+)
+
+// Autoconnect represents the activation of automatic reconnection
+type Autoconnect = int32
+
+const (
+	// AutoconnectDisabled represents deactivated automatic reconnection
+	AutoconnectDisabled = 0
+
+	// AutoconnectEnabled represents activated automatic reconnection
+	AutoconnectEnabled = 1
 )
 
 // Client represents an instance of one of the servers clients
@@ -34,7 +42,7 @@ type Client struct {
 	status            Status
 	defaultReqTimeout time.Duration
 	reconnInterval    time.Duration
-	autoconnect       bool
+	autoconnect       int32
 	hooks             Hooks
 
 	sessionLock sync.RWMutex
@@ -55,8 +63,9 @@ type Client struct {
 	// connectingLock protects the connecting flag from concurrent access
 	connectingLock sync.RWMutex
 
-	connectLock sync.Mutex
-	conn        webwire.Socket
+	connectLock   sync.Mutex
+	conn          webwire.Socket
+	readerClosing chan bool
 
 	requestManager reqman.RequestManager
 
@@ -70,9 +79,9 @@ func NewClient(serverAddress string, opts Options) *Client {
 	// Prepare configuration
 	opts.SetDefaults()
 
-	autoconnect := true
+	autoconnect := int32(1)
 	if opts.Autoconnect == OptDisabled {
-		autoconnect = false
+		autoconnect = int32(0)
 	}
 
 	// Initialize new client
@@ -93,6 +102,7 @@ func NewClient(serverAddress string, opts Options) *Client {
 		sync.RWMutex{},
 		sync.Mutex{},
 		newSocket(nil),
+		make(chan bool, 1),
 
 		reqman.NewRequestManager(),
 
@@ -108,7 +118,7 @@ func NewClient(serverAddress string, opts Options) *Client {
 		),
 	}
 
-	if autoconnect {
+	if autoconnect == AutoconnectEnabled {
 		// Asynchronously connect to the server immediately after initialization.
 		// Call in another goroutine to not block the contructor function caller.
 		// Set timeout to zero, try indefinitely until connected.
@@ -129,8 +139,10 @@ func (clt *Client) Status() Status {
 
 // Connect connects the client to the configured server and
 // returns an error in case of a connection failure.
-// Automatically tries to restore the previous session
+// Automatically tries to restore the previous session.
+// Enables autoconnect if it was disabled
 func (clt *Client) Connect() error {
+	atomic.StoreInt32(&clt.autoconnect, AutoconnectEnabled)
 	return clt.connect()
 }
 
@@ -298,5 +310,16 @@ func (clt *Client) CloseSession() error {
 func (clt *Client) Close() {
 	clt.apiLock.Lock()
 	defer clt.apiLock.Unlock()
-	clt.close()
+
+	atomic.StoreInt32(&clt.autoconnect, AutoconnectDisabled)
+
+	if atomic.LoadInt32(&clt.status) != StatConnected {
+		return
+	}
+	if err := clt.conn.Close(); err != nil {
+		clt.errorLog.Printf("Failed closing connection: %s", err)
+	}
+
+	// Wait for the reader goroutine to die before returning
+	<-clt.readerClosing
 }
