@@ -33,7 +33,10 @@ func TestClientRequestDisconnected(t *testing.T) {
 	)
 
 	// Send request and await reply
-	if _, err := client.Request("", wwr.Payload{Data: []byte("testdata")}); err != nil {
+	if _, err := client.Request(
+		"",
+		wwr.Payload{Data: []byte("testdata")},
+	); err != nil {
 		t.Fatalf(
 			"Expected request to automatically connect, got error: %s | %s",
 			reflect.TypeOf(err),

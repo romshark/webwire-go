@@ -9,7 +9,8 @@ import (
 	wwrclt "github.com/qbeon/webwire-go/client"
 )
 
-// TestCustomSessKeyGenInvalid tests custom session key generators returning invalid keys
+// TestCustomSessKeyGenInvalid tests custom session key generators
+// returning invalid keys
 func TestCustomSessKeyGenInvalid(t *testing.T) {
 	// Initialize webwire server
 	server := setupServer(
@@ -24,11 +25,14 @@ func TestCustomSessKeyGenInvalid(t *testing.T) {
 				OnRequest: func(ctx context.Context) (wwr.Payload, error) {
 					defer func() {
 						if err := recover(); err == nil {
-							t.Errorf("Expected server to panic on invalid session key")
+							t.Errorf("Expected server to panic" +
+								"on invalid session key",
+							)
 						}
 					}()
 
-					// Extract request message and requesting client from the context
+					// Extract request message
+					// and requesting client from the context
 					msg := ctx.Value(wwr.Msg).(wwr.Message)
 
 					// Try to create a new session
@@ -36,7 +40,8 @@ func TestCustomSessKeyGenInvalid(t *testing.T) {
 						return wwr.Payload{}, err
 					}
 
-					// Return the key of the newly created session (use default binary encoding)
+					// Return the key of the newly created session
+					// (use default binary encoding)
 					return wwr.Payload{}, nil
 				},
 			},
@@ -53,7 +58,10 @@ func TestCustomSessKeyGenInvalid(t *testing.T) {
 	defer client.Close()
 
 	// Send authentication request and await reply
-	if _, err := client.Request("login", wwr.Payload{Data: []byte("testdata")}); err != nil {
+	if _, err := client.Request(
+		"login",
+		wwr.Payload{Data: []byte("testdata")},
+	); err != nil {
 		t.Fatalf("Request failed: %s", err)
 	}
 }

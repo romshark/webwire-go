@@ -31,7 +31,8 @@ func TestServerInitiatedSessionDestruction(t *testing.T) {
 			SessionsEnabled: true,
 			Hooks: webwire.Hooks{
 				OnRequest: func(ctx context.Context) (webwire.Payload, error) {
-					// Extract request message and requesting client from the context
+					// Extract request message
+					// and requesting client from the context
 					msg := ctx.Value(webwire.Msg).(webwire.Message)
 
 					// On step 2 - verify session creation and correctness
@@ -51,15 +52,16 @@ func TestServerInitiatedSessionDestruction(t *testing.T) {
 
 					// on step 3 - close session and verify its destruction
 					if currentStep == 3 {
-						/***********************************************************\
+						/******************************************************\
 							Server-side session destruction initiation
-						\***********************************************************/
+						\******************************************************/
 						// Attempt to destroy this clients session
 						// on the end of the first step
 						err := msg.Client.CloseSession()
 						if err != nil {
 							t.Errorf(
-								"Couldn't close the active session on the server: %s",
+								"Couldn't close the active session "+
+									"on the server: %s",
 								err,
 							)
 						}
@@ -108,7 +110,7 @@ func TestServerInitiatedSessionDestruction(t *testing.T) {
 		webwireClient.Options{
 			Hooks: webwireClient.Hooks{
 				OnSessionCreated: func(_ *webwire.Session) {
-					// Mark the client-side session creation callback as executed
+					// Mark the client-side session creation callback executed
 					sessionCreationCallbackCalled.Done()
 				},
 				OnSessionClosed: func() {

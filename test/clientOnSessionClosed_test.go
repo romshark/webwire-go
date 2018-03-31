@@ -9,7 +9,7 @@ import (
 	webwireClient "github.com/qbeon/webwire-go/client"
 )
 
-// TestClientOnSessionClosed verifies the OnSessionClosed hook of the client is called properly.
+// TestClientOnSessionClosed tests the OnSessionClosed hook of the client
 func TestClientOnSessionClosed(t *testing.T) {
 	authenticated := NewPending(1, 1*time.Second, true)
 	hookCalled := NewPending(1, 1*time.Second, true)
@@ -21,7 +21,8 @@ func TestClientOnSessionClosed(t *testing.T) {
 			SessionsEnabled: true,
 			Hooks: webwire.Hooks{
 				OnRequest: func(ctx context.Context) (webwire.Payload, error) {
-					// Extract request message and requesting client from the context
+					// Extract request message
+					// and requesting client from the context
 					msg := ctx.Value(webwire.Msg).(webwire.Message)
 
 					// Try to create a new session

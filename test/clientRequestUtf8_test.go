@@ -9,8 +9,7 @@ import (
 	webwireClient "github.com/qbeon/webwire-go/client"
 )
 
-// TestClientRequest verifies the server is connectable,
-// receives requests and answers them correctly
+// TestClientRequest tests requests with UTF8 encoded payloads
 func TestClientRequest(t *testing.T) {
 	expectedRequestPayload := webwire.Payload{
 		Encoding: webwire.EncodingUtf8,

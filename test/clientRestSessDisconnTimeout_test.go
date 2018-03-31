@@ -9,7 +9,8 @@ import (
 	wwrclt "github.com/qbeon/webwire-go/client"
 )
 
-// TestClientRestSessDisconnTimeout tests autoconnect timeout when the server is unreachable
+// TestClientRestSessDisconnTimeout tests autoconnect timeout
+// when the server is unreachable
 func TestClientRestSessDisconnTimeout(t *testing.T) {
 	// Initialize client
 	client := wwrclt.NewClient(

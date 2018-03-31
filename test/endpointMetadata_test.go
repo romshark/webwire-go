@@ -10,7 +10,7 @@ import (
 	webwire "github.com/qbeon/webwire-go"
 )
 
-// TestEndpointMetadata verifies the server endpoint provides correct metadata
+// TestEndpointMetadata tests server endpoint metadata
 func TestEndpointMetadata(t *testing.T) {
 	expectedVersion := "1.2"
 
@@ -48,7 +48,11 @@ func TestEndpointMetadata(t *testing.T) {
 		ProtocolVersion string `json:"protocol-version"`
 	}
 	if err := json.Unmarshal(encodedData, &metadata); err != nil {
-		t.Fatalf("Couldn't parse HTTP response ('%s'): %s", string(encodedData), err)
+		t.Fatalf(
+			"Couldn't parse HTTP response ('%s'): %s",
+			string(encodedData),
+			err,
+		)
 	}
 
 	// Verify metadata

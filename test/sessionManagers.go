@@ -12,7 +12,8 @@ type InMemSessManager struct {
 	lock     sync.RWMutex
 }
 
-// NewInMemSessManager constructs a new default session manager instance for testing purposes.
+// NewInMemSessManager constructs a new default session manager instance
+// for testing purposes.
 func NewInMemSessManager() *InMemSessManager {
 	return &InMemSessManager{
 		sessions: make(map[string]*wwr.Client),
@@ -49,31 +50,41 @@ func (mng *InMemSessManager) OnSessionClosed(client *wwr.Client) error {
 	return nil
 }
 
-// CallbackPoweredSessionManager represents a callback-powered session manager for testing purposes
+// CallbackPoweredSessionManager represents a callback-powered session manager
+// for testing purposes
 type CallbackPoweredSessionManager struct {
 	SessionCreated func(client *wwr.Client) error
 	SessionLookup  func(key string) (*wwr.Session, error)
 	SessionClosed  func(client *wwr.Client) error
 }
 
-// OnSessionCreated implements the session manager interface calling the configured callback
-func (mng *CallbackPoweredSessionManager) OnSessionCreated(client *wwr.Client) error {
+// OnSessionCreated implements the session manager interface
+// calling the configured callback
+func (mng *CallbackPoweredSessionManager) OnSessionCreated(
+	client *wwr.Client,
+) error {
 	if mng.SessionCreated == nil {
 		return nil
 	}
 	return mng.SessionCreated(client)
 }
 
-// OnSessionLookup implements the session manager interface calling the configured callback
-func (mng *CallbackPoweredSessionManager) OnSessionLookup(key string) (*wwr.Session, error) {
+// OnSessionLookup implements the session manager interface
+// calling the configured callback
+func (mng *CallbackPoweredSessionManager) OnSessionLookup(
+	key string,
+) (*wwr.Session, error) {
 	if mng.SessionLookup == nil {
 		return nil, nil
 	}
 	return mng.SessionLookup(key)
 }
 
-// OnSessionClosed implements the session manager interface calling the configured callback
-func (mng *CallbackPoweredSessionManager) OnSessionClosed(client *wwr.Client) error {
+// OnSessionClosed implements the session manager interface
+// calling the configured callback
+func (mng *CallbackPoweredSessionManager) OnSessionClosed(
+	client *wwr.Client,
+) error {
 	if mng.SessionClosed == nil {
 		return nil
 	}

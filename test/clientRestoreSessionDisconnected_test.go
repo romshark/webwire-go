@@ -9,8 +9,9 @@ import (
 	wwrclt "github.com/qbeon/webwire-go/client"
 )
 
-// TestClientRestoreSessionDisconnected tests manual session restoration on disconnected client
-// and expects client.RestoreSession to automatically establish a connection
+// TestClientRestoreSessionDisconnected tests manual session restoration
+// on disconnected client expecting client.RestoreSession
+// to automatically establish a connection
 func TestClientRestoreSessionDisconnected(t *testing.T) {
 	// Initialize webwire server
 	server := setupServer(

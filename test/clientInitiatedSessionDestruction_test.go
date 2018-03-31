@@ -9,7 +9,7 @@ import (
 	webwireClient "github.com/qbeon/webwire-go/client"
 )
 
-// TestClientInitiatedSessionDestruction verifies
+// TestClientInitiatedSessionDestruction tests
 // client-initiated session destruction
 func TestClientInitiatedSessionDestruction(t *testing.T) {
 	sessionCreationCallbackCalled := NewPending(1, 1*time.Second, true)

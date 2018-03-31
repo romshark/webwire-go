@@ -8,8 +8,7 @@ import (
 	webwireClient "github.com/qbeon/webwire-go/client"
 )
 
-// TestServerSignal verifies the server is connectable
-// and sends signals correctly
+// TestServerSignal tests server-side signals
 func TestServerSignal(t *testing.T) {
 	expectedSignalPayload := webwire.Payload{
 		Data: []byte("webwire_test_SERVER_SIGNAL_payload"),
@@ -27,7 +26,10 @@ func TestServerSignal(t *testing.T) {
 				Hooks: webwire.Hooks{
 					OnClientConnected: func(client *webwire.Client) {
 						// Send signal
-						if err := client.Signal("", expectedSignalPayload); err != nil {
+						if err := client.Signal(
+							"",
+							expectedSignalPayload,
+						); err != nil {
 							t.Fatalf("Couldn't send signal to client: %s", err)
 						}
 					},

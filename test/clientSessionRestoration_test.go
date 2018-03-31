@@ -10,7 +10,7 @@ import (
 	webwireClient "github.com/qbeon/webwire-go/client"
 )
 
-// TestClientSessionRestoration verifies manual session restoration from a session key
+// TestClientSessionRestoration tests manual session restoration by key
 func TestClientSessionRestoration(t *testing.T) {
 	sessionStorage := make(map[string]*webwire.Session)
 
@@ -34,7 +34,7 @@ func TestClientSessionRestoration(t *testing.T) {
 					// Expect the key of the created session to be looked up
 					if key != createdSession.Key {
 						err := fmt.Errorf(
-							"Expected and looked up session keys differ: %s | %s",
+							"Expected and found session keys differ: %s | %s",
 							createdSession.Key,
 							key,
 						)
@@ -57,11 +57,12 @@ func TestClientSessionRestoration(t *testing.T) {
 			},
 			Hooks: webwire.Hooks{
 				OnRequest: func(ctx context.Context) (webwire.Payload, error) {
-					// Extract request message and requesting client from the context
+					// Extract request message
+					// and requesting client from the context
 					msg := ctx.Value(webwire.Msg).(webwire.Message)
 
 					if currentStep == 2 {
-						// Expect the session to have been automatically restored
+						// Expect the session to be automatically restored
 						compareSessions(t, createdSession, msg.Client.Session())
 						return webwire.Payload{}, nil
 					}
@@ -128,18 +129,27 @@ func TestClientSessionRestoration(t *testing.T) {
 	// Ensure there's no active session on the second client
 	sessionBefore := secondClient.Session()
 	if sessionBefore.Key != "" {
-		t.Fatalf("Expected the second client to have no session, got: %v", sessionBefore)
+		t.Fatalf(
+			"Expected the second client to have no session, got: %v",
+			sessionBefore,
+		)
 	}
 
-	// Try to manually restore the session using the initial clients session key
-	if err := secondClient.RestoreSession([]byte(createdSession.Key)); err != nil {
+	// Try to manually restore the session
+	// using the initial clients session key
+	if err := secondClient.RestoreSession(
+		[]byte(createdSession.Key),
+	); err != nil {
 		t.Fatalf("Manual session restoration failed: %s", err)
 	}
 
 	// Verify session
 	sessionAfter := secondClient.Session()
 	if sessionAfter.Key == "" {
-		t.Fatalf("Expected the second client to have an active session, got: %v", sessionAfter)
+		t.Fatalf(
+			"Expected the second client to have an active session, got: %v",
+			sessionAfter,
+		)
 	}
 	compareSessions(t, createdSession, &sessionAfter)
 }

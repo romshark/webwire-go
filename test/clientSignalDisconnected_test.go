@@ -26,7 +26,10 @@ func TestClientSignalDisconnected(t *testing.T) {
 	)
 
 	// Send request and await reply
-	if err := client.Signal("", wwr.Payload{Data: []byte("testdata")}); err != nil {
+	if err := client.Signal(
+		"",
+		wwr.Payload{Data: []byte("testdata")},
+	); err != nil {
 		t.Fatalf(
 			"Expected signal to automatically connect, got error: %s | %s",
 			reflect.TypeOf(err),

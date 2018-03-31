@@ -9,8 +9,8 @@ import (
 	webwireClient "github.com/qbeon/webwire-go/client"
 )
 
-// TestClientRequestRegisterOnTimeout verifies the request register of the client
-// is correctly updated when the request times out
+// TestClientRequestRegisterOnTimeout verifies the request register
+// of the client is correctly updated when the request times out
 func TestClientRequestRegisterOnTimeout(t *testing.T) {
 	var client *webwireClient.Client
 

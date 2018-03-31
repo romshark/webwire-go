@@ -10,7 +10,7 @@ import (
 	webwireClient "github.com/qbeon/webwire-go/client"
 )
 
-// TestClientOfflineSessionClosure verifies session restoration
+// TestClientOfflineSessionClosure tests offline session closure
 func TestClientOfflineSessionClosure(t *testing.T) {
 	sessionStorage := make(map[string]*webwire.Session)
 
@@ -61,7 +61,7 @@ func TestClientOfflineSessionClosure(t *testing.T) {
 					msg := ctx.Value(webwire.Msg).(webwire.Message)
 
 					if currentStep == 2 {
-						// Expect the session to have been automatically restored
+						// Expect the session to be removed
 						if msg.Client.HasSession() {
 							t.Errorf("Expected client to be anonymous")
 						}
@@ -127,7 +127,7 @@ func TestClientOfflineSessionClosure(t *testing.T) {
 		t.Fatalf("Offline session closure failed: %s", err)
 	}
 
-	// Ensure the session is removed
+	// Ensure the session is removed locally
 	if client.Session().Key != "" {
 		t.Fatal("Session not removed")
 	}
@@ -137,8 +137,7 @@ func TestClientOfflineSessionClosure(t *testing.T) {
 		t.Fatalf("Couldn't reconnect: %s", err)
 	}
 
-	// Verify whether the previous session was restored automatically
-	// and the server authenticates the user
+	// Ensure the client is anonymous
 	if _, err := client.Request(
 		"verify-restored",
 		webwire.Payload{Data: []byte("isrestored?")},

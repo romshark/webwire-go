@@ -9,7 +9,7 @@ import (
 	webwireClient "github.com/qbeon/webwire-go/client"
 )
 
-// TestRequestNamespaces correct handling of namespaced requests
+// TestRequestNamespaces tests correct handling of namespaced requests
 func TestRequestNamespaces(t *testing.T) {
 	currentStep := 1
 
@@ -29,13 +29,22 @@ func TestRequestNamespaces(t *testing.T) {
 					msg := ctx.Value(webwire.Msg).(webwire.Message)
 
 					if currentStep == 1 && msg.Name != "" {
-						t.Errorf("Expected unnamed request, got: '%s'", msg.Name)
+						t.Errorf(
+							"Expected unnamed request, got: '%s'",
+							msg.Name,
+						)
 					}
 					if currentStep == 2 && msg.Name != shortestPossibleName {
-						t.Errorf("Expected shortest possible request name, got: '%s'", msg.Name)
+						t.Errorf("Expected shortest possible "+
+							"request name, got: '%s'",
+							msg.Name,
+						)
 					}
 					if currentStep == 3 && msg.Name != longestPossibleName {
-						t.Errorf("Expected longest possible request name, got: '%s'", msg.Name)
+						t.Errorf("Expected longest possible "+
+							"request name, got: '%s'",
+							msg.Name,
+						)
 					}
 
 					return webwire.Payload{}, nil
@@ -70,7 +79,10 @@ func TestRequestNamespaces(t *testing.T) {
 	\*****************************************************************/
 	currentStep = 2
 	// Send request with the shortest possible name
-	_, err = client.Request(shortestPossibleName, webwire.Payload{Data: []byte("dummy")})
+	_, err = client.Request(
+		shortestPossibleName,
+		webwire.Payload{Data: []byte("dummy")},
+	)
 	if err != nil {
 		t.Fatalf("Request failed: %s", err)
 	}
@@ -80,7 +92,10 @@ func TestRequestNamespaces(t *testing.T) {
 	\*****************************************************************/
 	currentStep = 3
 	// Send request with the longest possible name
-	_, err = client.Request(longestPossibleName, webwire.Payload{Data: []byte("dummy")})
+	_, err = client.Request(
+		longestPossibleName,
+		webwire.Payload{Data: []byte("dummy")},
+	)
 	if err != nil {
 		t.Fatalf("Request failed: %s", err)
 	}

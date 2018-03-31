@@ -9,7 +9,8 @@ import (
 	wwr "github.com/qbeon/webwire-go"
 )
 
-// setupServer helps setting up and launching the server together with the hosting http server
+// setupServer helps setting up and launching the server
+// together with the hosting http server
 // setting up a headed server on a randomly assigned port
 func setupServer(t *testing.T, opts wwr.ServerOptions) *wwr.HeadedServer {
 	// Setup headed server on arbitrary port
@@ -79,7 +80,8 @@ func compareSessions(t *testing.T, expected, actual *wwr.Session) {
 			actual.Key,
 		)
 	} else if actual.Creation.Unix() != expected.Creation.Unix() {
-		t.Errorf("Session creation dates differ:\n expected: '%s'\n actual:   '%s'",
+		t.Errorf("Session creation dates differ:\n"+
+			" expected: '%s'\n actual:   '%s'",
 			expected.Creation,
 			actual.Creation,
 		)

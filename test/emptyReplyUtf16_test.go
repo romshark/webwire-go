@@ -46,7 +46,10 @@ func TestEmptyReplyUtf16(t *testing.T) {
 
 	// Verify reply is empty
 	if reply.Encoding != wwr.EncodingUtf16 {
-		t.Fatalf("Expected empty UTF16 reply, but encoding was: %s", reply.Encoding.String())
+		t.Fatalf(
+			"Expected empty UTF16 reply, but encoding was: %s",
+			reply.Encoding.String(),
+		)
 	}
 	if len(reply.Data) > 0 {
 		t.Fatalf("Expected empty UTF16 reply, but payload was: %v", reply.Data)

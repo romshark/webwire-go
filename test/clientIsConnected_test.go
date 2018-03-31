@@ -8,7 +8,7 @@ import (
 	webwireClient "github.com/qbeon/webwire-go/client"
 )
 
-// TestClientIsConnected verifies correct client.IsConnected reporting
+// TestClientIsConnected tests the client.Status method
 func TestClientIsConnected(t *testing.T) {
 	// Initialize webwire server given only the request
 	server := setupServer(t, webwire.ServerOptions{})

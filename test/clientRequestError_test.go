@@ -9,8 +9,8 @@ import (
 	webwireClient "github.com/qbeon/webwire-go/client"
 )
 
-// TestClientRequestError verifies returned request errors properly
-// fail the request on the client
+// TestClientRequestError tests server-side request errors properly
+// failing the client-side requests
 func TestClientRequestError(t *testing.T) {
 	expectedReplyError := webwire.ReqErr{
 		Code:    "SAMPLE_ERROR",

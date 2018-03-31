@@ -9,7 +9,7 @@ import (
 	webwireClient "github.com/qbeon/webwire-go/client"
 )
 
-// TestSignalNamespaces correct handling of namespaced signals
+// TestSignalNamespaces tests correct handling of namespaced signals
 func TestSignalNamespaces(t *testing.T) {
 	unnamedSignalArrived := NewPending(1, 1*time.Second, true)
 	shortestNameSignalArrived := NewPending(1, 1*time.Second, true)
@@ -35,10 +35,16 @@ func TestSignalNamespaces(t *testing.T) {
 						t.Errorf("Expected unnamed signal, got: '%s'", msg.Name)
 					}
 					if currentStep == 2 && msg.Name != shortestPossibleName {
-						t.Errorf("Expected shortest possible signal name, got: '%s'", msg.Name)
+						t.Errorf(
+							"Expected shortest possible signal name, got: '%s'",
+							msg.Name,
+						)
 					}
 					if currentStep == 3 && msg.Name != longestPossibleName {
-						t.Errorf("Expected longest possible signal name, got: '%s'", msg.Name)
+						t.Errorf(
+							"Expected longest possible signal name, got: '%s'",
+							msg.Name,
+						)
 					}
 
 					switch currentStep {
@@ -83,7 +89,10 @@ func TestSignalNamespaces(t *testing.T) {
 	\*****************************************************************/
 	currentStep = 2
 	// Send request with the shortest possible name
-	err = client.Signal(shortestPossibleName, webwire.Payload{Data: []byte("dummy")})
+	err = client.Signal(
+		shortestPossibleName,
+		webwire.Payload{Data: []byte("dummy")},
+	)
 	if err != nil {
 		t.Fatalf("Request failed: %s", err)
 	}
@@ -96,7 +105,10 @@ func TestSignalNamespaces(t *testing.T) {
 	\*****************************************************************/
 	currentStep = 3
 	// Send request with the longest possible name
-	err = client.Signal(longestPossibleName, webwire.Payload{Data: []byte("dummy")})
+	err = client.Signal(
+		longestPossibleName,
+		webwire.Payload{Data: []byte("dummy")},
+	)
 	if err != nil {
 		t.Fatalf("Request failed: %s", err)
 	}

@@ -17,14 +17,21 @@ func TestClientSignalUtf16(t *testing.T) {
 	}
 	verifyPayload := func(payload webwire.Payload) {
 		if payload.Encoding != webwire.EncodingUtf16 {
-			t.Errorf("Unexpected payload encoding: %s", payload.Encoding.String())
+			t.Errorf(
+				"Unexpected payload encoding: %s",
+				payload.Encoding.String(),
+			)
 		}
 		if len(testPayload.Data) != len(payload.Data) {
 			t.Errorf("Corrupt payload: %s", payload.Data)
 		}
 		for i := 0; i < len(testPayload.Data); i++ {
 			if testPayload.Data[i] != payload.Data[i] {
-				t.Errorf("Corrupt payload, mismatching byte at position %d: %s", i, payload.Data)
+				t.Errorf(
+					"Corrupt payload, mismatching byte at position %d: %s",
+					i,
+					payload.Data,
+				)
 				return
 			}
 		}

@@ -10,10 +10,8 @@ import (
 	wwrclt "github.com/qbeon/webwire-go/client"
 )
 
-// TODO: change wrong test case description
-// TestDisabledSessions verifies the server is connectable,
-// and is able to receives requests and signals, create sessions
-// and identify clients during request- and signal handling
+// TestDisabledSessions tests errors returned by CreateSession, CloseSession
+// and client.RestoreSession when sessions are disabled
 func TestDisabledSessions(t *testing.T) {
 	verifyError := func(err error) {
 		if _, isDisabledErr := err.(wwr.SessionsDisabledErr); !isDisabledErr {
@@ -32,7 +30,8 @@ func TestDisabledSessions(t *testing.T) {
 			SessionsEnabled: false,
 			Hooks: wwr.Hooks{
 				OnRequest: func(ctx context.Context) (wwr.Payload, error) {
-					// Extract request message and requesting client from the context
+					// Extract request message
+					// and requesting client from the context
 					msg := ctx.Value(wwr.Msg).(wwr.Message)
 
 					// Try to create a new session and expect an error

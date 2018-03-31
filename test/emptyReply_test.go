@@ -44,7 +44,10 @@ func TestEmptyReply(t *testing.T) {
 
 	// Verify reply is empty
 	if reply.Encoding != wwr.EncodingBinary {
-		t.Fatalf("Expected empty binary reply, but encoding was: %s", reply.Encoding.String())
+		t.Fatalf(
+			"Expected empty binary reply, but encoding was: %s",
+			reply.Encoding.String(),
+		)
 	}
 	if len(reply.Data) > 0 {
 		t.Fatalf("Expected empty binary reply, but payload was: %v", reply.Data)

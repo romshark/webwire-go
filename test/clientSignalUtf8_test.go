@@ -9,8 +9,7 @@ import (
 	webwireClient "github.com/qbeon/webwire-go/client"
 )
 
-// TestClientSignal verifies the server is connectable
-// and receives signals correctly
+// TestClientSignal tests client-side signals with UTF8 encoded payloads
 func TestClientSignal(t *testing.T) {
 	expectedSignalPayload := webwire.Payload{
 		Encoding: webwire.EncodingUtf8,

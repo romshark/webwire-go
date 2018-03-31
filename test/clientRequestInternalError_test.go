@@ -10,7 +10,8 @@ import (
 	webwireClient "github.com/qbeon/webwire-go/client"
 )
 
-// TestClientRequestInternalError tests returning of non-ReqErr errors from the request handler
+// TestClientRequestInternalError tests returning of non-ReqErr errors
+// from the request handler
 func TestClientRequestInternalError(t *testing.T) {
 	// Initialize webwire server given only the request
 	server := setupServer(

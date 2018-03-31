@@ -10,9 +10,8 @@ import (
 	wwrclt "github.com/qbeon/webwire-go/client"
 )
 
-// TestAuthentication verifies the server is connectable,
-// and is able to receives requests and signals, create sessions
-// and identify clients during request- and signal handling
+// TestAuthentication tests session creation and client authentication
+// during request- and signal handling
 func TestAuthentication(t *testing.T) {
 	// Because compareSessions doesn't compare the sessions attached info:
 	compareSessionInfo := func(actual *wwr.Session) {

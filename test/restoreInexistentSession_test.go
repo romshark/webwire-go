@@ -33,11 +33,14 @@ func TestRestoreInexistentSession(t *testing.T) {
 		t.Fatalf("Couldn't connect client: %s", err)
 	}
 
-	// Try to restore the session and expect it to fail due to the session being inexistent
+	// Try to restore the session and expect it to fail
+	// due to the session being inexistent
 	sessRestErr := client.RestoreSession([]byte("lalala"))
-	if _, isSessNotFoundErr := sessRestErr.(wwr.SessNotFoundErr); !isSessNotFoundErr {
+	_, isSessNotFoundErr := sessRestErr.(wwr.SessNotFoundErr)
+	if !isSessNotFoundErr {
 		t.Fatalf(
-			"Expected a SessNotFound error during manual session restoration, got: %s | %s",
+			"Expected a SessNotFound error during manual session restoration"+
+				", got: %s | %s",
 			reflect.TypeOf(sessRestErr),
 			sessRestErr,
 		)

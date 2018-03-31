@@ -9,8 +9,9 @@ import (
 	wwrclt "github.com/qbeon/webwire-go/client"
 )
 
-// TestClientReqDisconnNoAutoconn tests disconnected error when trying to send a request
-// while the server is unreachable and autoconn is disabled
+// TestClientReqDisconnNoAutoconn tests disconnected error
+// when trying to send a request while the server is unreachable
+// and autoconn is disabled
 func TestClientReqDisconnNoAutoconn(t *testing.T) {
 	// Initialize client
 	client := wwrclt.NewClient(
