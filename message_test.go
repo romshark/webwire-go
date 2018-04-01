@@ -80,6 +80,24 @@ func genRndName() string {
 	return string(nameBytes)
 }
 
+// TestMsgParseInvalidSessCloseReqTooShort tests parsing of an invalid session destruction request
+// message which is too short to be considered valid
+func TestMsgParseInvalidSessCloseReqTooShort(t *testing.T) {
+	lenTooShort := MsgMinLenCloseSession - 1
+	invalidMessage := make([]byte, lenTooShort)
+
+	invalidMessage[0] = MsgCloseSession
+
+	var actual Message
+	if err := actual.Parse(invalidMessage); err == nil {
+		t.Fatalf(
+			"Expected error while parsing invalid session destruction request message "+
+				"(too short: %d)",
+			lenTooShort,
+		)
+	}
+}
+
 // TestMsgParseCloseSessReq tests parsing of a session destruction request
 func TestMsgParseCloseSessReq(t *testing.T) {
 	id := genRndMsgID()
@@ -109,6 +127,24 @@ func TestMsgParseCloseSessReq(t *testing.T) {
 
 	// Compare
 	compareMessages(t, expected, actual)
+}
+
+// TestMsgParseInvalidRestrSessReqTooShort tests parsing of an invalid session restoration request
+// message which is too short to be considered valid
+func TestMsgParseInvalidRestrSessReqTooShort(t *testing.T) {
+	lenTooShort := MsgMinLenRestoreSession - 1
+	invalidMessage := make([]byte, lenTooShort)
+
+	invalidMessage[0] = MsgRestoreSession
+
+	var actual Message
+	if err := actual.Parse(invalidMessage); err == nil {
+		t.Fatalf(
+			"Expected error while parsing invalid session restoration request message "+
+				"(too short: %d)",
+			lenTooShort,
+		)
+	}
 }
 
 // TestMsgParseRestrSessReq tests parsing of a session restoration request
@@ -143,6 +179,23 @@ func TestMsgParseRestrSessReq(t *testing.T) {
 
 	// Compare
 	compareMessages(t, expected, actual)
+}
+
+// TestMsgParseInvalidRequestTooShort tests parsing of an invalid binary/UTF8 request message
+// which is too short to be considered valid
+func TestMsgParseInvalidRequestTooShort(t *testing.T) {
+	lenTooShort := MsgMinLenRequest - 1
+	invalidMessage := make([]byte, lenTooShort)
+
+	invalidMessage[0] = MsgRequestBinary
+
+	var actual Message
+	if err := actual.Parse(invalidMessage); err == nil {
+		t.Fatalf(
+			"Expected error while parsing invalid request message (too short: %d)",
+			lenTooShort,
+		)
+	}
 }
 
 // TestMsgParseRequestBinary tests parsing of a named binary encoded request
@@ -223,6 +276,23 @@ func TestMsgParseRequestUtf8(t *testing.T) {
 	compareMessages(t, expected, actual)
 }
 
+// TestMsgParseInvalidRequestUtf16TooShort tests parsing of an invalid utf16 request message
+// which is too short to be considered valid
+func TestMsgParseInvalidRequestUtf16TooShort(t *testing.T) {
+	lenTooShort := MsgMinLenRequestUtf16 - 1
+	invalidMessage := make([]byte, lenTooShort)
+
+	invalidMessage[0] = MsgRequestUtf16
+
+	var actual Message
+	if err := actual.Parse(invalidMessage); err == nil {
+		t.Fatalf(
+			"Expected error while parsing invalid UTF16 encoded request message (too short: %d)",
+			lenTooShort,
+		)
+	}
+}
+
 // TestMsgParseRequestUtf16 tests parsing of a named UTF16 encoded request
 func TestMsgParseRequestUtf16(t *testing.T) {
 	id := genRndMsgID()
@@ -299,6 +369,23 @@ func TestMsgParseRequestUtf16CorruptInput(t *testing.T) {
 	}
 }
 
+// TestMsgParseInvalidReplyTooShort tests parsing of an invalid binary/UTF8 reply message
+// which is too short to be considered valid
+func TestMsgParseInvalidReplyTooShort(t *testing.T) {
+	lenTooShort := MsgMinLenReply - 1
+	invalidMessage := make([]byte, lenTooShort)
+
+	invalidMessage[0] = MsgReplyBinary
+
+	var actual Message
+	if err := actual.Parse(invalidMessage); err == nil {
+		t.Fatalf(
+			"Expected error while parsing invalid reply message (too short: %d)",
+			lenTooShort,
+		)
+	}
+}
+
 // TestMsgParseReplyBinary tests parsing of binary encoded reply message
 func TestMsgParseReplyBinary(t *testing.T) {
 	id := genRndMsgID()
@@ -367,6 +454,23 @@ func TestMsgParseReplyUtf8(t *testing.T) {
 	compareMessages(t, expected, actual)
 }
 
+// TestMsgParseInvalidReplyUtf16TooShort tests parsing of an invalid UTF16 reply message
+// which is too short to be considered valid
+func TestMsgParseInvalidReplyUtf16TooShort(t *testing.T) {
+	lenTooShort := MsgMinLenReplyUtf16 - 1
+	invalidMessage := make([]byte, lenTooShort)
+
+	invalidMessage[0] = MsgRequestUtf16
+
+	var actual Message
+	if err := actual.Parse(invalidMessage); err == nil {
+		t.Fatalf(
+			"Expected error while parsing invalid UTF16 reply message (too short: %d)",
+			lenTooShort,
+		)
+	}
+}
+
 // TestMsgParseReplyUtf16 tests parsing of UTF16 encoded reply message
 func TestMsgParseReplyUtf16(t *testing.T) {
 	id := genRndMsgID()
@@ -426,6 +530,23 @@ func TestMsgParseReplyUtf16CorruptInput(t *testing.T) {
 	var actual Message
 	if err := actual.Parse(encoded); err == nil {
 		t.Fatal("Expected Parse to return an error due to corrupt input stream")
+	}
+}
+
+// TestMsgParseInvalidSignalTooShort tests parsing of an invalid binary/UTF8 signal message
+// which is too short to be considered valid
+func TestMsgParseInvalidSignalTooShort(t *testing.T) {
+	lenTooShort := MsgMinLenSignal - 1
+	invalidMessage := make([]byte, lenTooShort)
+
+	invalidMessage[0] = MsgSignalBinary
+
+	var actual Message
+	if err := actual.Parse(invalidMessage); err == nil {
+		t.Fatalf(
+			"Expected error while parsing invalid signal message (too short: %d)",
+			lenTooShort,
+		)
 	}
 }
 
@@ -501,6 +622,23 @@ func TestMsgParseSignalUtf8(t *testing.T) {
 	compareMessages(t, expected, actual)
 }
 
+// TestMsgParseInvalidSignalUtf16TooShort tests parsing of an invalid UTF16 signal message
+// which is too short to be considered valid
+func TestMsgParseInvalidSignalUtf16TooShort(t *testing.T) {
+	lenTooShort := MsgMinLenSignalUtf16 - 1
+	invalidMessage := make([]byte, lenTooShort)
+
+	invalidMessage[0] = MsgSignalUtf16
+
+	var actual Message
+	if err := actual.Parse(invalidMessage); err == nil {
+		t.Fatalf(
+			"Expected error while parsing invalid UTF16 signal message (too short: %d)",
+			lenTooShort,
+		)
+	}
+}
+
 // TestMsgParseSignalUtf16 tests parsing of a named UTF16 encoded signal
 func TestMsgParseSignalUtf16(t *testing.T) {
 	name := genRndName()
@@ -568,6 +706,24 @@ func TestMsgParseSignalUtf16CorruptInput(t *testing.T) {
 	var actual Message
 	if err := actual.Parse(encoded); err == nil {
 		t.Fatal("Expected Parse to return an error due to corrupt input stream")
+	}
+}
+
+// TestMsgParseInvalidSessCreatedSigTooShort tests parsing of an invalid session creation
+// notification message which is too short to be considered valid
+func TestMsgParseInvalidSessCreatedSigTooShort(t *testing.T) {
+	lenTooShort := MsgMinLenSessionCreated - 1
+	invalidMessage := make([]byte, lenTooShort)
+
+	invalidMessage[0] = MsgSessionCreated
+
+	var actual Message
+	if err := actual.Parse(invalidMessage); err == nil {
+		t.Fatalf(
+			"Expected error while parsing invalid session creation notification message "+
+				"(too short: %d)",
+			lenTooShort,
+		)
 	}
 }
 
