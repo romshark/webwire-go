@@ -673,6 +673,24 @@ func TestMsgNewEmptyReqMsg(t *testing.T) {
 	}
 }
 
+// TestMsgNewReqMsgNameTooLong tests the NewRequestMessage method with a too long name
+func TestMsgNewReqMsgNameTooLong(t *testing.T) {
+	defer func() {
+		err := recover()
+		if err == nil {
+			t.Fatalf("Expected panic after passing a too long request name")
+		}
+	}()
+
+	tooLongNamelength := 256
+	nameBuf := make([]byte, tooLongNamelength)
+	for i := 0; i < tooLongNamelength; i++ {
+		nameBuf[i] = 'a'
+	}
+
+	NewRequestMessage(genRndMsgID(), string(nameBuf), Payload{})
+}
+
 // TestMsgNewReqMsgBinary tests the NewRequestMessage method using default binary payload encoding
 func TestMsgNewReqMsgBinary(t *testing.T) {
 	id := genRndMsgID()
@@ -870,6 +888,24 @@ func TestMsgNewReplyMsgUtf16CorruptPayload(t *testing.T) {
 		// Payload is corrupt, only 7 bytes long, not power 2
 		Data: []byte("invalid"),
 	})
+}
+
+// TestMsgNewSigMsgNameTooLong tests the NewSignalMessage method with a too long name
+func TestMsgNewSigMsgNameTooLong(t *testing.T) {
+	defer func() {
+		err := recover()
+		if err == nil {
+			t.Fatalf("Expected panic after passing a too long signal name")
+		}
+	}()
+
+	tooLongNamelength := 256
+	nameBuf := make([]byte, tooLongNamelength)
+	for i := 0; i < tooLongNamelength; i++ {
+		nameBuf[i] = 'a'
+	}
+
+	NewSignalMessage(string(nameBuf), Payload{})
 }
 
 // TestMsgNewSigMsgBinary tests the NewSignalMessage method using the default binary encoding
