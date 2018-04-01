@@ -14,37 +14,86 @@ const (
 )
 
 const (
-	// MsgMinLenSignal represents the minimum binary/UTF8 encoded signal message length
+	// MsgMinLenSignal represents the minimum binary/UTF8 encoded signal message length.
+	// binary/UTF8 signal message structure:
+	//  1. message type (1 byte)
+	//  2. name length flag (1 byte)
+	//  3. name (n bytes, optional if name length flag is 0)
+	//  4. payload (n bytes, at least 1 byte)
 	MsgMinLenSignal = int(3)
 
-	// MsgMinLenSignalUtf16 represents the minimum UTF16 encoded signal message length
+	// MsgMinLenSignalUtf16 represents the minimum UTF16 encoded signal message length.
+	// UTF16 signal message structure:
+	//  1. message type (1 byte)
+	//  2. name length flag (1 byte)
+	//  3. name (n bytes, optional if name length flag is 0)
+	//  4. header padding (1 byte, required if name length flag is odd)
+	//  5. payload (n bytes, at least 2 bytes)
 	MsgMinLenSignalUtf16 = int(4)
 
-	// MsgMinLenRequest represents the minimum binary/UTF8 encoded request message length
+	// MsgMinLenRequest represents the minimum binary/UTF8 encoded request message length.
+	// binary/UTF8 request message structure:
+	//  1. message type (1 byte)
+	//  2. message id (8 bytes)
+	//  3. name length flag (1 byte)
+	//  4. name (from 0 to 255 bytes, optional if name length flag is 0)
+	//  5. payload (n bytes, at least 1 byte)
 	MsgMinLenRequest = int(11)
 
-	// MsgMinLenRequestUtf16 represents the minimum UTF16 encoded request message length
+	// MsgMinLenRequestUtf16 represents the minimum UTF16 encoded request message length.
+	// UTF16 request message structure:
+	//  1. message type (1 byte)
+	//  2. message id (8 bytes)
+	//  3. name length flag (1 byte)
+	//  4. name (n bytes, optional if name length flag is 0)
+	//  5. header padding (1 byte, required if name length flag is odd)
+	//  6. payload (n bytes, at least 2 bytes)
 	MsgMinLenRequestUtf16 = int(12)
 
-	// MsgMinLenReply represents the minimum binary/UTF8 encoded reply message length
+	// MsgMinLenReply represents the minimum binary/UTF8 encoded reply message length.
+	// binary/UTF8 reply message structure:
+	//  1. message type (1 byte)
+	//  2. message id (8 bytes)
+	//  3. payload (n bytes, optional or at least 1 byte)
 	MsgMinLenReply = int(9)
 
 	// MsgMinLenReplyUtf16 represents the minimum UTF16 encoded reply message length
+	// UTF16 reply message structure:
+	//  1. message type (1 byte)
+	//  2. message id (8 bytes)
+	//  3. header padding (1 byte)
+	//  4. payload (n bytes, optional or at least 2 bytes)
 	MsgMinLenReplyUtf16 = int(10)
 
 	// MsgMinLenErrorReply represents the minimum error reply message length
-	MsgMinLenErrorReply = int(10)
+	// Error reply message structure:
+	//  1. message type (1 byte)
+	//  2. message id (8 bytes)
+	//  3. payload (n bytes, JSON encoded, optional or at least 2 bytes)
+	MsgMinLenErrorReply = int(11)
 
 	// MsgMinLenRestoreSession represents the minimum session restoration request message length
+	// Session restoration request message structure:
+	//  1. message type (1 byte)
+	//  2. message id (8 bytes)
+	//  3. session key (n bytes, 7-bit ASCII encoded, at least 1 byte)
 	MsgMinLenRestoreSession = int(10)
 
 	// MsgMinLenCloseSession represents the minimum session destruction request message length
+	// Session destruction request message structure:
+	//  1. message type (1 byte)
+	//  2. message id (8 bytes)
 	MsgMinLenCloseSession = int(9)
 
 	// MsgMinLenSessionCreated represents the minimum session creation notification message length
+	// Session creation notification message structure:
+	//  1. message type (1 byte)
+	//  2. session key (n bytes, 7-bit ASCII encoded, at least 1 byte)
 	MsgMinLenSessionCreated = int(2)
 
 	// MsgMinLenSessionClosed represents the minimum session creation notification message length
+	// Session destruction notification message structure:
+	//  1. message type (1 byte)
 	MsgMinLenSessionClosed = int(1)
 )
 
@@ -366,11 +415,6 @@ func NewEmptyRequestMessage(msgType byte, id [8]byte) (msg []byte) {
 }
 
 func (msg *Message) parseSignal(message []byte) error {
-	// Minimum UTF16 signal message structure:
-	// 1. message type (1 byte)
-	// 2. name length flag (1 byte)
-	// 3. name (n bytes, required if name length flag is bigger zero)
-	// 4. payload (n bytes, at least 1 byte)
 	if len(message) < MsgMinLenSignal {
 		return fmt.Errorf("Invalid signal message, too short")
 	}
@@ -404,12 +448,6 @@ func (msg *Message) parseSignal(message []byte) error {
 }
 
 func (msg *Message) parseSignalUtf16(message []byte) error {
-	// Minimum UTF16 signal message structure:
-	// 1. message type (1 byte)
-	// 2. name length flag (1 byte)
-	// 3. name (n bytes, required if name length flag is bigger zero)
-	// 4. header padding (1 byte, present if name length is odd)
-	// 5. payload (n bytes, at least 2 bytes)
 	if len(message) < MsgMinLenSignalUtf16 {
 		return fmt.Errorf("Invalid signal message, too short")
 	}
@@ -458,12 +496,6 @@ func (msg *Message) parseSignalUtf16(message []byte) error {
 }
 
 func (msg *Message) parseRequest(message []byte) error {
-	// Minimum binary/UTF8 request message structure:
-	// 1. message type (1 byte)
-	// 2. message id (8 bytes)
-	// 3. name length flag (1 byte)
-	// 4. name (n bytes, optional)
-	// 5. payload (n bytes, at least 1 byte)
 	if len(message) < MsgMinLenRequest {
 		return fmt.Errorf("Invalid request message, too short")
 	}
@@ -503,13 +535,6 @@ func (msg *Message) parseRequest(message []byte) error {
 }
 
 func (msg *Message) parseRequestUtf16(message []byte) error {
-	// Minimum UTF16 request message structure:
-	// 1. message type (1 byte)
-	// 2. message id (8 bytes)
-	// 3. name length flag (1 byte)
-	// 4. name (n bytes, required if name length flag is bigger zero)
-	// 5. header padding (1 byte, present if name length is odd)
-	// 6. payload (n bytes, at least 2 bytes)
 	if len(message) < MsgMinLenRequestUtf16 {
 		return fmt.Errorf("Invalid request message, too short")
 	}
@@ -564,10 +589,6 @@ func (msg *Message) parseRequestUtf16(message []byte) error {
 }
 
 func (msg *Message) parseReply(message []byte) error {
-	// Minimum binary/UTF8 reply message structure:
-	// 1. message type (1 byte)
-	// 2. message id (8 bytes)
-	// 3. payload (n bytes, optional, at least 1 byte)
 	if len(message) < MsgMinLenReply {
 		return fmt.Errorf("Invalid reply message, too short")
 	}
@@ -590,11 +611,6 @@ func (msg *Message) parseReply(message []byte) error {
 }
 
 func (msg *Message) parseReplyUtf16(message []byte) error {
-	// Minimum UTF16 reply message structure:
-	// 1. message type (1 byte)
-	// 2. message id (8 bytes)
-	// 3. header padding (1 byte)
-	// 4. payload (n bytes, optional, at least 2 bytes)
 	if len(message) < MsgMinLenReplyUtf16 {
 		return fmt.Errorf("Invalid UTF16 reply message, too short")
 	}
@@ -626,6 +642,8 @@ func (msg *Message) parseReplyUtf16(message []byte) error {
 	return nil
 }
 
+// TODO: use length flags for both, the error code and the error message
+// and parse them as UTF8 fields instead of using JSON
 func (msg *Message) parseErrorReply(message []byte) error {
 	if len(message) < MsgMinLenErrorReply {
 		return fmt.Errorf("Invalid error reply message, too short")
