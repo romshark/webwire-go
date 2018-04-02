@@ -20,6 +20,28 @@ func TestClientOfflineSessionClosure(t *testing.T) {
 	// Initialize webwire server
 	server := setupServer(
 		t,
+		&serverImpl{
+			onRequest: func(ctx context.Context) (webwire.Payload, error) {
+				// Extract request message and requesting client from the context
+				msg := ctx.Value(webwire.Msg).(webwire.Message)
+
+				if currentStep == 2 {
+					// Expect the session to be removed
+					if msg.Client.HasSession() {
+						t.Errorf("Expected client to be anonymous")
+					}
+					return webwire.Payload{}, nil
+				}
+
+				// Try to create a new session
+				if err := msg.Client.CreateSession(nil); err != nil {
+					return webwire.Payload{}, err
+				}
+
+				// Return the key of the newly created session
+				return webwire.Payload{}, nil
+			},
+		},
 		webwire.ServerOptions{
 			SessionsEnabled: true,
 			SessionManager: &CallbackPoweredSessionManager{
@@ -53,28 +75,6 @@ func TestClientOfflineSessionClosure(t *testing.T) {
 						sessionStorage,
 					)
 					return nil, nil
-				},
-			},
-			Hooks: webwire.Hooks{
-				OnRequest: func(ctx context.Context) (webwire.Payload, error) {
-					// Extract request message and requesting client from the context
-					msg := ctx.Value(webwire.Msg).(webwire.Message)
-
-					if currentStep == 2 {
-						// Expect the session to be removed
-						if msg.Client.HasSession() {
-							t.Errorf("Expected client to be anonymous")
-						}
-						return webwire.Payload{}, nil
-					}
-
-					// Try to create a new session
-					if err := msg.Client.CreateSession(nil); err != nil {
-						return webwire.Payload{}, err
-					}
-
-					// Return the key of the newly created session
-					return webwire.Payload{}, nil
 				},
 			},
 		},

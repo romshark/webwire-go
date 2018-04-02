@@ -21,6 +21,22 @@ func TestMaxConcSessConn(t *testing.T) {
 	// Initialize server
 	server := setupServer(
 		t,
+		&serverImpl{
+			onClientConnected: func(client *wwr.Client) {
+				// Created the session for the first connecting client only
+				sessionKeyLock.Lock()
+				defer sessionKeyLock.Unlock()
+				if len(sessionKey) < 1 {
+					if err := client.CreateSession(nil); err != nil {
+						t.Errorf(
+							"Unexpected error during session creation: %s",
+							err,
+						)
+					}
+					sessionKey = client.SessionKey()
+				}
+			},
+		},
 		wwr.ServerOptions{
 			SessionsEnabled:       true,
 			MaxSessionConnections: concurrentConns,
@@ -37,22 +53,6 @@ func TestMaxConcSessConn(t *testing.T) {
 						return session, nil
 					}
 					return nil, nil
-				},
-			},
-			Hooks: wwr.Hooks{
-				OnClientConnected: func(client *wwr.Client) {
-					// Created the session for the first connecting client only
-					sessionKeyLock.Lock()
-					defer sessionKeyLock.Unlock()
-					if len(sessionKey) < 1 {
-						if err := client.CreateSession(nil); err != nil {
-							t.Errorf(
-								"Unexpected error during session creation: %s",
-								err,
-							)
-						}
-						sessionKey = client.SessionKey()
-					}
 				},
 			},
 		},

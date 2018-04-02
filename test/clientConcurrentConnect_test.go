@@ -15,7 +15,7 @@ func TestClientConcurrentConnect(t *testing.T) {
 	finished := NewPending(concurrentAccessors, 2*time.Second, true)
 
 	// Initialize webwire server
-	server := setupServer(t, webwire.ServerOptions{})
+	server := setupServer(t, &serverImpl{}, webwire.ServerOptions{})
 
 	// Initialize client
 	client := webwireClient.NewClient(

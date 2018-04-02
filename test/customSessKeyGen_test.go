@@ -16,30 +16,32 @@ func TestCustomSessKeyGen(t *testing.T) {
 	// Initialize webwire server
 	server := setupServer(
 		t,
+		&serverImpl{
+			onRequest: func(ctx context.Context) (wwr.Payload, error) {
+				// Extract request message and requesting client from the context
+				msg := ctx.Value(wwr.Msg).(wwr.Message)
+
+				// Try to create a new session
+				if err := msg.Client.CreateSession(nil); err != nil {
+					return wwr.Payload{}, err
+				}
+
+				key := msg.Client.SessionKey()
+				if key != expectedSessionKey {
+					t.Errorf("Unexpected session key: %s | %s", expectedSessionKey, key)
+				}
+
+				// Return the key of the newly created session (use default binary encoding)
+				return wwr.Payload{
+					Data: []byte(key),
+				}, nil
+			},
+		},
 		wwr.ServerOptions{
 			SessionsEnabled: true,
-			Hooks: wwr.Hooks{
-				OnSessionKeyGeneration: func() string {
+			SessionKeyGenerator: &sessionKeyGen{
+				generate: func() string {
 					return expectedSessionKey
-				},
-				OnRequest: func(ctx context.Context) (wwr.Payload, error) {
-					// Extract request message and requesting client from the context
-					msg := ctx.Value(wwr.Msg).(wwr.Message)
-
-					// Try to create a new session
-					if err := msg.Client.CreateSession(nil); err != nil {
-						return wwr.Payload{}, err
-					}
-
-					key := msg.Client.SessionKey()
-					if key != expectedSessionKey {
-						t.Errorf("Unexpected session key: %s | %s", expectedSessionKey, key)
-					}
-
-					// Return the key of the newly created session (use default binary encoding)
-					return wwr.Payload{
-						Data: []byte(key),
-					}, nil
 				},
 			},
 		},

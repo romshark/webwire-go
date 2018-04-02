@@ -14,6 +14,7 @@ func TestRestoreInexistentSession(t *testing.T) {
 	// Initialize server
 	server := setupServer(
 		t,
+		&serverImpl{},
 		wwr.ServerOptions{
 			SessionsEnabled: true,
 		},

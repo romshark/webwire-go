@@ -26,38 +26,37 @@ func TestSignalNamespaces(t *testing.T) {
 	// Initialize server
 	server := setupServer(
 		t,
-		webwire.ServerOptions{
-			Hooks: webwire.Hooks{
-				OnSignal: func(ctx context.Context) {
-					msg := ctx.Value(webwire.Msg).(webwire.Message)
+		&serverImpl{
+			onSignal: func(ctx context.Context) {
+				msg := ctx.Value(webwire.Msg).(webwire.Message)
 
-					if currentStep == 1 && msg.Name != "" {
-						t.Errorf("Expected unnamed signal, got: '%s'", msg.Name)
-					}
-					if currentStep == 2 && msg.Name != shortestPossibleName {
-						t.Errorf(
-							"Expected shortest possible signal name, got: '%s'",
-							msg.Name,
-						)
-					}
-					if currentStep == 3 && msg.Name != longestPossibleName {
-						t.Errorf(
-							"Expected longest possible signal name, got: '%s'",
-							msg.Name,
-						)
-					}
+				if currentStep == 1 && msg.Name != "" {
+					t.Errorf("Expected unnamed signal, got: '%s'", msg.Name)
+				}
+				if currentStep == 2 && msg.Name != shortestPossibleName {
+					t.Errorf(
+						"Expected shortest possible signal name, got: '%s'",
+						msg.Name,
+					)
+				}
+				if currentStep == 3 && msg.Name != longestPossibleName {
+					t.Errorf(
+						"Expected longest possible signal name, got: '%s'",
+						msg.Name,
+					)
+				}
 
-					switch currentStep {
-					case 1:
-						unnamedSignalArrived.Done()
-					case 2:
-						shortestNameSignalArrived.Done()
-					case 3:
-						longestNameSignalArrived.Done()
-					}
-				},
+				switch currentStep {
+				case 1:
+					unnamedSignalArrived.Done()
+				case 2:
+					shortestNameSignalArrived.Done()
+				case 3:
+					longestNameSignalArrived.Done()
+				}
 			},
 		},
+		webwire.ServerOptions{},
 	)
 
 	// Initialize client

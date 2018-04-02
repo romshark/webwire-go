@@ -15,32 +15,32 @@ func TestActiveSessionRegistry(t *testing.T) {
 	// Initialize webwire server
 	server := setupServer(
 		t,
+		&serverImpl{
+			onRequest: func(ctx context.Context) (webwire.Payload, error) {
+				// Extract request message and requesting client from the context
+				msg := ctx.Value(webwire.Msg).(webwire.Message)
+
+				// Close session on logout
+				if msg.Name == "logout" {
+					if err := msg.Client.CloseSession(); err != nil {
+						t.Errorf("Couldn't close session: %s", err)
+					}
+					return webwire.Payload{}, nil
+				}
+
+				// Try to create a new session
+				if err := msg.Client.CreateSession(nil); err != nil {
+					return webwire.Payload{}, err
+				}
+
+				// Return the key of the newly created session (use default binary encoding)
+				return webwire.Payload{
+					Data: []byte(msg.Client.SessionKey()),
+				}, nil
+			},
+		},
 		webwire.ServerOptions{
 			SessionsEnabled: true,
-			Hooks: webwire.Hooks{
-				OnRequest: func(ctx context.Context) (webwire.Payload, error) {
-					// Extract request message and requesting client from the context
-					msg := ctx.Value(webwire.Msg).(webwire.Message)
-
-					// Close session on logout
-					if msg.Name == "logout" {
-						if err := msg.Client.CloseSession(); err != nil {
-							t.Errorf("Couldn't close session: %s", err)
-						}
-						return webwire.Payload{}, nil
-					}
-
-					// Try to create a new session
-					if err := msg.Client.CreateSession(nil); err != nil {
-						return webwire.Payload{}, err
-					}
-
-					// Return the key of the newly created session (use default binary encoding)
-					return webwire.Payload{
-						Data: []byte(msg.Client.SessionKey()),
-					}, nil
-				},
-			},
 		},
 	)
 

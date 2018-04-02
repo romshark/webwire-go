@@ -33,21 +33,20 @@ func TestClientRequestUtf16(t *testing.T) {
 	// Initialize webwire server given only the request
 	server := setupServer(
 		t,
-		webwire.ServerOptions{
-			Hooks: webwire.Hooks{
-				OnRequest: func(ctx context.Context) (webwire.Payload, error) {
-					// Extract request message from the context
-					msg := ctx.Value(webwire.Msg).(webwire.Message)
+		&serverImpl{
+			onRequest: func(ctx context.Context) (webwire.Payload, error) {
+				// Extract request message from the context
+				msg := ctx.Value(webwire.Msg).(webwire.Message)
 
-					verifyPayload(msg.Payload)
+				verifyPayload(msg.Payload)
 
-					return webwire.Payload{
-						Encoding: webwire.EncodingUtf16,
-						Data:     []byte{00, 115, 00, 97, 00, 109, 00, 112, 00, 108, 00, 101},
-					}, nil
-				},
+				return webwire.Payload{
+					Encoding: webwire.EncodingUtf16,
+					Data:     []byte{00, 115, 00, 97, 00, 109, 00, 112, 00, 108, 00, 101},
+				}, nil
 			},
 		},
+		webwire.ServerOptions{},
 	)
 
 	// Initialize client

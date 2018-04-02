@@ -150,7 +150,7 @@ func TestMsgParseInvalidRestrSessReqTooShort(t *testing.T) {
 // TestMsgParseRestrSessReq tests parsing of a session restoration request
 func TestMsgParseRestrSessReq(t *testing.T) {
 	id := genRndMsgID()
-	sessionKey := GenerateSessionKey()
+	sessionKey := generateSessionKey()
 
 	// Compose encoded message
 	// Add type flag
@@ -729,7 +729,7 @@ func TestMsgParseInvalidSessCreatedSigTooShort(t *testing.T) {
 
 // TestMsgParseSessCreatedSig tests parsing of session created signal
 func TestMsgParseSessCreatedSig(t *testing.T) {
-	sessionKey := GenerateSessionKey()
+	sessionKey := generateSessionKey()
 	session := Session{
 		Key:      sessionKey,
 		Creation: time.Now(),
@@ -795,7 +795,7 @@ func TestMsgParseSessClosedSig(t *testing.T) {
 // TestMsgNewNamelessReqMsg tests the NewNamelessRequestMessage method
 func TestMsgNewNamelessReqMsg(t *testing.T) {
 	id := genRndMsgID()
-	sessionKey := GenerateSessionKey()
+	sessionKey := generateSessionKey()
 
 	// Compose encoded message
 	// Add type flag

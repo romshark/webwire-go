@@ -20,25 +20,24 @@ func TestClientSignal(t *testing.T) {
 	// Initialize webwire server given only the signal handler
 	server := setupServer(
 		t,
-		webwire.ServerOptions{
-			Hooks: webwire.Hooks{
-				OnSignal: func(ctx context.Context) {
-					// Extract signal message from the context
-					msg := ctx.Value(webwire.Msg).(webwire.Message)
+		&serverImpl{
+			onSignal: func(ctx context.Context) {
+				// Extract signal message from the context
+				msg := ctx.Value(webwire.Msg).(webwire.Message)
 
-					// Verify signal payload
-					comparePayload(
-						t,
-						"client signal",
-						expectedSignalPayload,
-						msg.Payload,
-					)
+				// Verify signal payload
+				comparePayload(
+					t,
+					"client signal",
+					expectedSignalPayload,
+					msg.Payload,
+				)
 
-					// Synchronize, notify signal arrival
-					signalArrived.Done()
-				},
+				// Synchronize, notify signal arrival
+				signalArrived.Done()
 			},
 		},
+		webwire.ServerOptions{},
 	)
 
 	// Initialize client

@@ -22,19 +22,18 @@ func TestServerSignal(t *testing.T) {
 	go func() {
 		server := setupServer(
 			t,
-			webwire.ServerOptions{
-				Hooks: webwire.Hooks{
-					OnClientConnected: func(client *webwire.Client) {
-						// Send signal
-						if err := client.Signal(
-							"",
-							expectedSignalPayload,
-						); err != nil {
-							t.Fatalf("Couldn't send signal to client: %s", err)
-						}
-					},
+			&serverImpl{
+				onClientConnected: func(client *webwire.Client) {
+					// Send signal
+					if err := client.Signal(
+						"",
+						expectedSignalPayload,
+					); err != nil {
+						t.Fatalf("Couldn't send signal to client: %s", err)
+					}
 				},
 			},
+			webwire.ServerOptions{},
 		)
 		addr = server.Addr().String()
 

@@ -103,7 +103,7 @@ func (clt *Client) CreateSession(attachment SessionInfo) error {
 	}
 
 	// Create a new session
-	newSession := NewSession(attachment, clt.srv.hooks.OnSessionKeyGeneration)
+	newSession := NewSession(attachment, clt.srv.sessionKeyGen.Generate)
 
 	// Try to notify about session creation
 	if err := clt.notifySessionCreated(&newSession); err != nil {

@@ -17,35 +17,35 @@ func TestClientOnSessionClosed(t *testing.T) {
 	// Initialize webwire server
 	server := setupServer(
 		t,
-		webwire.ServerOptions{
-			SessionsEnabled: true,
-			Hooks: webwire.Hooks{
-				OnRequest: func(ctx context.Context) (webwire.Payload, error) {
-					// Extract request message
-					// and requesting client from the context
-					msg := ctx.Value(webwire.Msg).(webwire.Message)
+		&serverImpl{
+			onRequest: func(ctx context.Context) (webwire.Payload, error) {
+				// Extract request message
+				// and requesting client from the context
+				msg := ctx.Value(webwire.Msg).(webwire.Message)
 
-					// Try to create a new session
-					if err := msg.Client.CreateSession(nil); err != nil {
-						return webwire.Payload{}, err
+				// Try to create a new session
+				if err := msg.Client.CreateSession(nil); err != nil {
+					return webwire.Payload{}, err
+				}
+
+				go func() {
+					// Wait until the authentication request is finished
+					if err := authenticated.Wait(); err != nil {
+						t.Errorf("Authentication timed out")
+						return
 					}
 
-					go func() {
-						// Wait until the authentication request is finished
-						if err := authenticated.Wait(); err != nil {
-							t.Errorf("Authentication timed out")
-							return
-						}
+					// Close the session
+					if err := msg.Client.CloseSession(); err != nil {
+						t.Errorf("Couldn't close session: %s", err)
+					}
+				}()
 
-						// Close the session
-						if err := msg.Client.CloseSession(); err != nil {
-							t.Errorf("Couldn't close session: %s", err)
-						}
-					}()
-
-					return webwire.Payload{}, nil
-				},
+				return webwire.Payload{}, nil
 			},
+		},
+		webwire.ServerOptions{
+			SessionsEnabled: true,
 		},
 	)
 

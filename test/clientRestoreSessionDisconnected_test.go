@@ -16,6 +16,7 @@ func TestClientRestoreSessionDisconnected(t *testing.T) {
 	// Initialize webwire server
 	server := setupServer(
 		t,
+		&serverImpl{},
 		wwr.ServerOptions{
 			SessionsEnabled: true,
 		},

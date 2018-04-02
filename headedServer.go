@@ -34,8 +34,11 @@ type HeadedServer struct {
 
 // NewHeadedServer sets up a new headed WebWire server
 // with an HTTP server hosting it
-func NewHeadedServer(opts HeadedServerOptions) (*HeadedServer, error) {
-	newWwrSrv := NewServer(opts.ServerOptions)
+func NewHeadedServer(
+	implementation ServerImplementation,
+	opts HeadedServerOptions,
+) (*HeadedServer, error) {
+	newWwrSrv := NewServer(implementation, opts.ServerOptions)
 
 	// Initialize HTTP server
 	httpServer := &http.Server{

@@ -9,39 +9,26 @@ import (
 	"syscall"
 
 	wwr "github.com/qbeon/webwire-go"
-	"github.com/qbeon/webwire-go/examples/chatroom/server/state"
 )
 
 var serverAddr = flag.String("addr", ":9090", "server address")
-
-func onClientConnected(newClient *wwr.Client) {
-	state.State.AddConnected(newClient)
-	log.Printf("New client connected: %s | %s", newClient.RemoteAddr(), newClient.UserAgent())
-}
-
-func onClientDisconnected(client *wwr.Client) {
-	state.State.RemoveConnected(client)
-	log.Printf("Client %s disconnected", client.RemoteAddr())
-}
 
 func main() {
 	// Parse command line arguments
 	flag.Parse()
 
 	// Setup headed webwire server
-	server, err := wwr.NewHeadedServer(wwr.HeadedServerOptions{
-		ServerAddress: *serverAddr,
-		ServerOptions: wwr.ServerOptions{
-			SessionsEnabled: true,
-			Hooks: wwr.Hooks{
-				OnClientConnected:    onClientConnected,
-				OnClientDisconnected: onClientDisconnected,
-				OnRequest:            onRequest,
+	server, err := wwr.NewHeadedServer(
+		NewChatRoomServer(),
+		wwr.HeadedServerOptions{
+			ServerAddress: *serverAddr,
+			ServerOptions: wwr.ServerOptions{
+				SessionsEnabled: true,
+				WarnLog:         os.Stdout,
+				ErrorLog:        os.Stderr,
 			},
-			WarnLog:  os.Stdout,
-			ErrorLog: os.Stderr,
 		},
-	})
+	)
 	if err != nil {
 		panic(fmt.Errorf("Failed setting up WebWire server: %s", err))
 	}

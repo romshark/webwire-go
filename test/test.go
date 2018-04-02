@@ -1,7 +1,9 @@
 package test
 
 import (
+	"context"
 	"fmt"
+	"net/http"
 	"os"
 	"reflect"
 	"testing"
@@ -12,8 +14,32 @@ import (
 // setupServer helps setting up and launching the server
 // together with the hosting http server
 // setting up a headed server on a randomly assigned port
-func setupServer(t *testing.T, opts wwr.ServerOptions) *wwr.HeadedServer {
+func setupServer(
+	t *testing.T,
+	impl *serverImpl,
+	opts wwr.ServerOptions,
+) *wwr.HeadedServer {
 	// Setup headed server on arbitrary port
+
+	if impl.beforeUpgrade == nil {
+		impl.beforeUpgrade = func(_ http.ResponseWriter, _ *http.Request) bool {
+			return true
+		}
+	}
+	if impl.onClientConnected == nil {
+		impl.onClientConnected = func(_ *wwr.Client) {}
+	}
+	if impl.onClientDisconnected == nil {
+		impl.onClientDisconnected = func(_ *wwr.Client) {}
+	}
+	if impl.onSignal == nil {
+		impl.onSignal = func(_ context.Context) {}
+	}
+	if impl.onRequest == nil {
+		impl.onRequest = func(_ context.Context) (response wwr.Payload, err error) {
+			return wwr.Payload{}, nil
+		}
+	}
 
 	// Use default global loggers
 	opts.WarnLog = os.Stdout
@@ -24,10 +50,13 @@ func setupServer(t *testing.T, opts wwr.ServerOptions) *wwr.HeadedServer {
 		opts.SessionManager = NewInMemSessManager()
 	}
 
-	server, err := wwr.NewHeadedServer(wwr.HeadedServerOptions{
-		ServerAddress: "127.0.0.1:0",
-		ServerOptions: opts,
-	})
+	server, err := wwr.NewHeadedServer(
+		impl,
+		wwr.HeadedServerOptions{
+			ServerAddress: "127.0.0.1:0",
+			ServerOptions: opts,
+		},
+	)
 	if err != nil {
 		t.Fatalf("Failed setting up server instance: %s", err)
 	}

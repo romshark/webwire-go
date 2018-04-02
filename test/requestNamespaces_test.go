@@ -23,34 +23,33 @@ func TestRequestNamespaces(t *testing.T) {
 	// Initialize server
 	server := setupServer(
 		t,
-		webwire.ServerOptions{
-			Hooks: webwire.Hooks{
-				OnRequest: func(ctx context.Context) (webwire.Payload, error) {
-					msg := ctx.Value(webwire.Msg).(webwire.Message)
+		&serverImpl{
+			onRequest: func(ctx context.Context) (webwire.Payload, error) {
+				msg := ctx.Value(webwire.Msg).(webwire.Message)
 
-					if currentStep == 1 && msg.Name != "" {
-						t.Errorf(
-							"Expected unnamed request, got: '%s'",
-							msg.Name,
-						)
-					}
-					if currentStep == 2 && msg.Name != shortestPossibleName {
-						t.Errorf("Expected shortest possible "+
-							"request name, got: '%s'",
-							msg.Name,
-						)
-					}
-					if currentStep == 3 && msg.Name != longestPossibleName {
-						t.Errorf("Expected longest possible "+
-							"request name, got: '%s'",
-							msg.Name,
-						)
-					}
+				if currentStep == 1 && msg.Name != "" {
+					t.Errorf(
+						"Expected unnamed request, got: '%s'",
+						msg.Name,
+					)
+				}
+				if currentStep == 2 && msg.Name != shortestPossibleName {
+					t.Errorf("Expected shortest possible "+
+						"request name, got: '%s'",
+						msg.Name,
+					)
+				}
+				if currentStep == 3 && msg.Name != longestPossibleName {
+					t.Errorf("Expected longest possible "+
+						"request name, got: '%s'",
+						msg.Name,
+					)
+				}
 
-					return webwire.Payload{}, nil
-				},
+				return webwire.Payload{}, nil
 			},
 		},
+		webwire.ServerOptions{},
 	)
 
 	// Initialize client

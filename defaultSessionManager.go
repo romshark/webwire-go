@@ -9,33 +9,6 @@ import (
 	"time"
 )
 
-// SessionManager defines the session manager interface of the webwire server
-type SessionManager interface {
-	// OnSessionCreated is invoked after synchronizing the new session to the remote client.
-	// The WebWire server isn't responsible for permanently storing the sessions it creates,
-	// it's up to the user to save the given session in this hook either to a database,
-	// a filesystem or any other kind of persistent or volatile storage
-	// for OnSessionLookup to later be able to restore it by the session key.
-	// If OnSessionCreated fails returning an error then the failure is logged
-	// but the session isn't destroyed and remains active.
-	// The only consequence of OnSessionCreation failing is that the server won't be able
-	// to restore the session after the client is disconnected
-	OnSessionCreated(client *Client) error
-
-	// OnSessionLookup is invoked when the server is looking for a specific session given its key.
-	// The user is responsible for returning the exact copy of the session object
-	// associated with the given key for sessions to be restorable.
-	// If OnSessionLookup fails returning an error then the failure is logged
-	OnSessionLookup(key string) (*Session, error)
-
-	// OnSessionClosed is invoked when the active session of the given client
-	// is closed (thus destroyed) either by the server or the client himself.
-	// The user is responsible for removing the current session of the given client
-	// from its storage for the session to be actually and properly destroyed.
-	// If OnSessionClosed fails returning an error then the failure is logged
-	OnSessionClosed(client *Client) error
-}
-
 // SessionFile represents the serialization structure of a default session file
 type SessionFile struct {
 	Creation time.Time   `json:"c"`

@@ -14,6 +14,7 @@ func TestClientSignalDisconnected(t *testing.T) {
 	// Initialize webwire server given only the request
 	server := setupServer(
 		t,
+		&serverImpl{},
 		wwr.ServerOptions{},
 	)
 

@@ -15,13 +15,12 @@ func TestClientRequestDisconnected(t *testing.T) {
 	// Initialize webwire server given only the request
 	server := setupServer(
 		t,
-		wwr.ServerOptions{
-			Hooks: wwr.Hooks{
-				OnRequest: func(_ context.Context) (wwr.Payload, error) {
-					return wwr.Payload{}, nil
-				},
+		&serverImpl{
+			onRequest: func(_ context.Context) (wwr.Payload, error) {
+				return wwr.Payload{}, nil
 			},
 		},
+		wwr.ServerOptions{},
 	)
 
 	// Initialize client and skip manual connection establishment

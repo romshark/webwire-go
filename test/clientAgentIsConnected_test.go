@@ -19,46 +19,45 @@ func TestClientAgentIsConnected(t *testing.T) {
 	// Initialize webwire server
 	server := setupServer(
 		t,
-		wwr.ServerOptions{
-			Hooks: wwr.Hooks{
-				OnClientConnected: func(newClt *wwr.Client) {
-					if !newClt.IsConnected() {
-						t.Errorf("Expected client agent to be connected")
+		&serverImpl{
+			onClientConnected: func(newClt *wwr.Client) {
+				if !newClt.IsConnected() {
+					t.Errorf("Expected client agent to be connected")
+				}
+				clientAgent = newClt
+				clientAgentDefined.Done()
+
+				go func() {
+					if err := clientDisconnected.Wait(); err != nil {
+						t.Errorf("Client didn't disconnect")
 					}
-					clientAgent = newClt
-					clientAgentDefined.Done()
 
-					go func() {
-						if err := clientDisconnected.Wait(); err != nil {
-							t.Errorf("Client didn't disconnect")
-						}
-
-						if clientAgent.IsConnected() {
-							t.Errorf("Expected client agent to be disconnected")
-						}
-
-						testerGoroutineFinished.Done()
-					}()
-				},
-				OnClientDisconnected: func(clt *wwr.Client) {
 					if clientAgent.IsConnected() {
 						t.Errorf("Expected client agent to be disconnected")
 					}
 
-					// Try to send a signal to a disconnected client and expect an error
-					sigErr := clientAgent.Signal("", wwr.Payload{Data: []byte("testdata")})
-					if _, isDisconnErr := sigErr.(wwr.DisconnectedErr); !isDisconnErr {
-						t.Errorf(
-							"Expected a DisconnectedErr, got: %s | %s",
-							reflect.TypeOf(sigErr),
-							sigErr,
-						)
-					}
+					testerGoroutineFinished.Done()
+				}()
+			},
+			onClientDisconnected: func(clt *wwr.Client) {
+				if clientAgent.IsConnected() {
+					t.Errorf("Expected client agent to be disconnected")
+				}
 
-					clientDisconnected.Done()
-				},
+				// Try to send a signal to a disconnected client and expect an error
+				sigErr := clientAgent.Signal("", wwr.Payload{Data: []byte("testdata")})
+				if _, isDisconnErr := sigErr.(wwr.DisconnectedErr); !isDisconnErr {
+					t.Errorf(
+						"Expected a DisconnectedErr, got: %s | %s",
+						reflect.TypeOf(sigErr),
+						sigErr,
+					)
+				}
+
+				clientDisconnected.Done()
 			},
 		},
+		wwr.ServerOptions{},
 	)
 
 	// Initialize client

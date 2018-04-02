@@ -18,13 +18,12 @@ func TestClientConcurrentSignal(t *testing.T) {
 	// Initialize webwire server
 	server := setupServer(
 		t,
-		webwire.ServerOptions{
-			Hooks: webwire.Hooks{
-				OnSignal: func(_ context.Context) {
-					finished.Done()
-				},
+		&serverImpl{
+			onSignal: func(_ context.Context) {
+				finished.Done()
 			},
 		},
+		webwire.ServerOptions{},
 	)
 
 	// Initialize client

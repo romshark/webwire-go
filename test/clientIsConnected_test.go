@@ -11,7 +11,7 @@ import (
 // TestClientIsConnected tests the client.Status method
 func TestClientIsConnected(t *testing.T) {
 	// Initialize webwire server given only the request
-	server := setupServer(t, webwire.ServerOptions{})
+	server := setupServer(t, &serverImpl{}, webwire.ServerOptions{})
 
 	// Initialize client
 	client := webwireClient.NewClient(

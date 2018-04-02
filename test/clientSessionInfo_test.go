@@ -26,32 +26,32 @@ func TestClientSessionInfo(t *testing.T) {
 	// Initialize webwire server
 	server := setupServer(
 		t,
+		&serverImpl{
+			onRequest: func(ctx context.Context) (webwire.Payload, error) {
+				// Extract request message and requesting client from the context
+				msg := ctx.Value(webwire.Msg).(webwire.Message)
+
+				// Try to create a new session
+				sessInfo := make(webwire.SessionInfo)
+				sessInfo["bool"] = expectedBool
+				sessInfo["string"] = expectedString
+				sessInfo["int"] = expectedInt
+				sessInfo["number"] = expectedNumber
+				sessInfo["array"] = expectedArray
+				sessInfo["struct"] = struct {
+					SampleString string `json:"struct_string"`
+				}{
+					SampleString: expectedStruct.SampleString,
+				}
+
+				if err := msg.Client.CreateSession(sessInfo); err != nil {
+					return webwire.Payload{}, err
+				}
+				return webwire.Payload{}, nil
+			},
+		},
 		webwire.ServerOptions{
 			SessionsEnabled: true,
-			Hooks: webwire.Hooks{
-				OnRequest: func(ctx context.Context) (webwire.Payload, error) {
-					// Extract request message and requesting client from the context
-					msg := ctx.Value(webwire.Msg).(webwire.Message)
-
-					// Try to create a new session
-					sessInfo := make(webwire.SessionInfo)
-					sessInfo["bool"] = expectedBool
-					sessInfo["string"] = expectedString
-					sessInfo["int"] = expectedInt
-					sessInfo["number"] = expectedNumber
-					sessInfo["array"] = expectedArray
-					sessInfo["struct"] = struct {
-						SampleString string `json:"struct_string"`
-					}{
-						SampleString: expectedStruct.SampleString,
-					}
-
-					if err := msg.Client.CreateSession(sessInfo); err != nil {
-						return webwire.Payload{}, err
-					}
-					return webwire.Payload{}, nil
-				},
-			},
 		},
 	)
 

@@ -28,18 +28,17 @@ func TestGracefulShutdown(t *testing.T) {
 	// Initialize webwire server
 	server := setupServer(
 		t,
-		wwr.ServerOptions{
-			Hooks: wwr.Hooks{
-				OnSignal: func(ctx context.Context) {
-					time.Sleep(timeDelta * 100 * time.Millisecond)
-					processesFinished.Done()
-				},
-				OnRequest: func(ctx context.Context) (wwr.Payload, error) {
-					time.Sleep(timeDelta * 100 * time.Millisecond)
-					return wwr.Payload{Data: expectedReqReply}, nil
-				},
+		&serverImpl{
+			onSignal: func(ctx context.Context) {
+				time.Sleep(timeDelta * 100 * time.Millisecond)
+				processesFinished.Done()
+			},
+			onRequest: func(ctx context.Context) (wwr.Payload, error) {
+				time.Sleep(timeDelta * 100 * time.Millisecond)
+				return wwr.Payload{Data: expectedReqReply}, nil
 			},
 		},
+		wwr.ServerOptions{},
 	)
 
 	serverAddr := server.Addr().String()

@@ -15,34 +15,36 @@ func TestCustomSessKeyGenInvalid(t *testing.T) {
 	// Initialize webwire server
 	server := setupServer(
 		t,
+		&serverImpl{
+			onRequest: func(ctx context.Context) (wwr.Payload, error) {
+				defer func() {
+					if err := recover(); err == nil {
+						t.Errorf("Expected server to panic" +
+							"on invalid session key",
+						)
+					}
+				}()
+
+				// Extract request message
+				// and requesting client from the context
+				msg := ctx.Value(wwr.Msg).(wwr.Message)
+
+				// Try to create a new session
+				if err := msg.Client.CreateSession(nil); err != nil {
+					return wwr.Payload{}, err
+				}
+
+				// Return the key of the newly created session
+				// (use default binary encoding)
+				return wwr.Payload{}, nil
+			},
+		},
 		wwr.ServerOptions{
 			SessionsEnabled: true,
-			Hooks: wwr.Hooks{
-				OnSessionKeyGeneration: func() string {
+			SessionKeyGenerator: &sessionKeyGen{
+				generate: func() string {
 					// Return invalid session key
 					return ""
-				},
-				OnRequest: func(ctx context.Context) (wwr.Payload, error) {
-					defer func() {
-						if err := recover(); err == nil {
-							t.Errorf("Expected server to panic" +
-								"on invalid session key",
-							)
-						}
-					}()
-
-					// Extract request message
-					// and requesting client from the context
-					msg := ctx.Value(wwr.Msg).(wwr.Message)
-
-					// Try to create a new session
-					if err := msg.Client.CreateSession(nil); err != nil {
-						return wwr.Payload{}, err
-					}
-
-					// Return the key of the newly created session
-					// (use default binary encoding)
-					return wwr.Payload{}, nil
 				},
 			},
 		},

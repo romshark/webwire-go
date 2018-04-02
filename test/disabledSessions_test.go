@@ -26,25 +26,25 @@ func TestDisabledSessions(t *testing.T) {
 	// Initialize webwire server
 	server := setupServer(
 		t,
+		&serverImpl{
+			onRequest: func(ctx context.Context) (wwr.Payload, error) {
+				// Extract request message
+				// and requesting client from the context
+				msg := ctx.Value(wwr.Msg).(wwr.Message)
+
+				// Try to create a new session and expect an error
+				createErr := msg.Client.CreateSession(nil)
+				verifyError(createErr)
+
+				// Try to create a new session and expect an error
+				closeErr := msg.Client.CloseSession()
+				verifyError(closeErr)
+
+				return wwr.Payload{}, nil
+			},
+		},
 		wwr.ServerOptions{
 			SessionsEnabled: false,
-			Hooks: wwr.Hooks{
-				OnRequest: func(ctx context.Context) (wwr.Payload, error) {
-					// Extract request message
-					// and requesting client from the context
-					msg := ctx.Value(wwr.Msg).(wwr.Message)
-
-					// Try to create a new session and expect an error
-					createErr := msg.Client.CreateSession(nil)
-					verifyError(createErr)
-
-					// Try to create a new session and expect an error
-					closeErr := msg.Client.CloseSession()
-					verifyError(closeErr)
-
-					return wwr.Payload{}, nil
-				},
-			},
 		},
 	)
 

@@ -18,14 +18,13 @@ func TestClientConcurrentRequest(t *testing.T) {
 	// Initialize webwire server
 	server := setupServer(
 		t,
-		webwire.ServerOptions{
-			Hooks: webwire.Hooks{
-				OnRequest: func(_ context.Context) (webwire.Payload, error) {
-					finished.Done()
-					return webwire.Payload{}, nil
-				},
+		&serverImpl{
+			onRequest: func(_ context.Context) (webwire.Payload, error) {
+				finished.Done()
+				return webwire.Payload{}, nil
 			},
 		},
+		webwire.ServerOptions{},
 	)
 
 	// Initialize client

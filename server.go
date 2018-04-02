@@ -11,86 +11,12 @@ import (
 
 const protocolVersion = "1.2"
 
-// Hooks represents all callback hook functions
-type Hooks struct {
-	// OnOptions is an optional hook.
-	// It's invoked when the websocket endpoint is examined by the client
-	// using the HTTP OPTION method.
-	OnOptions func(resp http.ResponseWriter)
-
-	// BeforeUpgrade is an optional hook.
-	// It's invoked right before the upgrade of the HTTP connection to a WebSocket connection
-	// and can be used to intercept, prevent or monitor connection attempts
-	BeforeUpgrade func(resp http.ResponseWriter, req *http.Request) bool
-
-	// OnClientConnected is an optional hook.
-	// It's invoked when a new client establishes a connection to the server
-	OnClientConnected func(client *Client)
-
-	// OnClientDisconnected is an optional hook.
-	// It's invoked when a client closes the connection to the server
-	OnClientDisconnected func(client *Client)
-
-	// OnSignal is a required hook.
-	// It's invoked when the webwire server receives a signal from the client
-	OnSignal func(ctx context.Context)
-
-	// OnRequest is an optional hook.
-	// It's invoked when the webwire server receives a request from the client.
-	// It must return either a response payload or an error
-	OnRequest func(ctx context.Context) (response Payload, err error)
-
-	// OnSessionKeyGeneration is an optional hook.
-	// If defined it's invoked when the webwire server creates a new session and requires
-	// a new session key to be generated. This hook must not be used except the user
-	// knows exactly what he/she does as it would compromise security if implemented improperly
-	OnSessionKeyGeneration func() string
-}
-
-// SetDefaults sets undefined required hooks
-func (hooks *Hooks) SetDefaults() {
-	if hooks.BeforeUpgrade == nil {
-		hooks.BeforeUpgrade = func(_ http.ResponseWriter, _ *http.Request) bool {
-			return true
-		}
-	}
-
-	if hooks.OnClientConnected == nil {
-		hooks.OnClientConnected = func(_ *Client) {}
-	}
-
-	if hooks.OnClientDisconnected == nil {
-		hooks.OnClientDisconnected = func(_ *Client) {}
-	}
-
-	if hooks.OnSignal == nil {
-		hooks.OnSignal = func(_ context.Context) {}
-	}
-
-	if hooks.OnRequest == nil {
-		hooks.OnRequest = func(_ context.Context) (Payload, error) {
-			return Payload{}, ReqErr{
-				Code: "NOT_IMPLEMENTED",
-				Message: fmt.Sprintf("Request handling is not implemented " +
-					" on this server instance",
-				),
-			}
-		}
-	}
-
-	if hooks.OnOptions == nil {
-		hooks.OnOptions = func(resp http.ResponseWriter) {
-			resp.Header().Set("Access-Control-Allow-Origin", "*")
-			resp.Header().Set("Access-Control-Allow-Methods", "WEBWIRE")
-		}
-	}
-}
-
 // Server represents a headless WebWire server instance,
 // where headless means there's no HTTP server that's hosting it
 type Server struct {
-	hooks          Hooks
+	impl           ServerImplementation
 	sessionManager SessionManager
+	sessionKeyGen  SessionKeyGenerator
 
 	// State
 	shutdown        bool
@@ -109,12 +35,17 @@ type Server struct {
 }
 
 // NewServer creates a new WebWire server instance
-func NewServer(opts ServerOptions) *Server {
+func NewServer(implementation ServerImplementation, opts ServerOptions) *Server {
+	if implementation == nil {
+		panic(fmt.Errorf("A headed webwire server requires a server implementation, got nil"))
+	}
+
 	opts.SetDefaults()
 
 	srv := Server{
-		hooks:          opts.Hooks,
+		impl:           implementation,
 		sessionManager: opts.SessionManager,
+		sessionKeyGen:  opts.SessionKeyGenerator,
 
 		// State
 		shutdown:        false,
@@ -235,7 +166,7 @@ func (srv *Server) handleSignal(msg *Message) {
 	srv.currentOps++
 	srv.opsLock.Unlock()
 
-	srv.hooks.OnSignal(context.WithValue(context.Background(), Msg, *msg))
+	srv.impl.OnSignal(context.WithValue(context.Background(), Msg, *msg))
 
 	// Mark signal as done and shutdown the server if scheduled and no ops are left
 	srv.opsLock.Lock()
@@ -259,7 +190,7 @@ func (srv *Server) handleRequest(msg *Message) {
 	srv.currentOps++
 	srv.opsLock.Unlock()
 
-	replyPayload, returnedErr := srv.hooks.OnRequest(
+	replyPayload, returnedErr := srv.impl.OnRequest(
 		context.WithValue(context.Background(), Msg, *msg),
 	)
 	switch returnedErr.(type) {
@@ -336,14 +267,14 @@ func (srv *Server) ServeHTTP(
 
 	switch req.Method {
 	case "OPTIONS":
-		srv.hooks.OnOptions(resp)
+		srv.impl.OnOptions(resp)
 		return
 	case "WEBWIRE":
 		srv.handleMetadata(resp)
 		return
 	}
 
-	if !srv.hooks.BeforeUpgrade(resp, req) {
+	if !srv.impl.BeforeUpgrade(resp, req) {
 		return
 	}
 
@@ -362,7 +293,7 @@ func (srv *Server) ServeHTTP(
 	srv.clientsLock.Unlock()
 
 	// Call hook on successful connection
-	srv.hooks.OnClientConnected(newClient)
+	srv.impl.OnClientConnected(newClient)
 
 	for {
 		// Await message
@@ -378,7 +309,7 @@ func (srv *Server) ServeHTTP(
 			}
 
 			newClient.unlink()
-			srv.hooks.OnClientDisconnected(newClient)
+			srv.impl.OnClientDisconnected(newClient)
 			return
 		}
 

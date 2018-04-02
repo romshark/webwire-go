@@ -27,80 +27,80 @@ func TestServerInitiatedSessionDestruction(t *testing.T) {
 	// Initialize webwire server
 	server := setupServer(
 		t,
+		&serverImpl{
+			onRequest: func(ctx context.Context) (webwire.Payload, error) {
+				// Extract request message
+				// and requesting client from the context
+				msg := ctx.Value(webwire.Msg).(webwire.Message)
+
+				// On step 2 - verify session creation and correctness
+				if currentStep == 2 {
+					sess := msg.Client.Session()
+					compareSessions(t, createdSession, sess)
+					if string(msg.Payload.Data) != sess.Key {
+						t.Errorf(
+							"Clients session key doesn't match: "+
+								"client: '%s' | server: '%s'",
+							string(msg.Payload.Data),
+							sess.Key,
+						)
+					}
+					return webwire.Payload{}, nil
+				}
+
+				// on step 3 - close session and verify its destruction
+				if currentStep == 3 {
+					/******************************************************\
+						Server-side session destruction initiation
+					\******************************************************/
+					// Attempt to destroy this clients session
+					// on the end of the first step
+					err := msg.Client.CloseSession()
+					if err != nil {
+						t.Errorf(
+							"Couldn't close the active session "+
+								"on the server: %s",
+							err,
+						)
+					}
+
+					// Verify destruction
+					sess := msg.Client.Session()
+					if sess != nil {
+						t.Errorf(
+							"Expected the session to be destroyed, got: %v",
+							sess,
+						)
+					}
+
+					return webwire.Payload{}, nil
+				}
+
+				// On step 4 - verify session destruction
+				if currentStep == 4 {
+					sess := msg.Client.Session()
+					if sess != nil {
+						t.Errorf(
+							"Expected the session to be destroyed, got: %v",
+							sess,
+						)
+					}
+					return webwire.Payload{}, nil
+				}
+
+				// On step 1 - authenticate and create a new session
+				if err := msg.Client.CreateSession(nil); err != nil {
+					return webwire.Payload{}, err
+				}
+
+				// Return the key of the newly created session
+				return webwire.Payload{
+					Data: []byte(msg.Client.SessionKey()),
+				}, nil
+			},
+		},
 		webwire.ServerOptions{
 			SessionsEnabled: true,
-			Hooks: webwire.Hooks{
-				OnRequest: func(ctx context.Context) (webwire.Payload, error) {
-					// Extract request message
-					// and requesting client from the context
-					msg := ctx.Value(webwire.Msg).(webwire.Message)
-
-					// On step 2 - verify session creation and correctness
-					if currentStep == 2 {
-						sess := msg.Client.Session()
-						compareSessions(t, createdSession, sess)
-						if string(msg.Payload.Data) != sess.Key {
-							t.Errorf(
-								"Clients session key doesn't match: "+
-									"client: '%s' | server: '%s'",
-								string(msg.Payload.Data),
-								sess.Key,
-							)
-						}
-						return webwire.Payload{}, nil
-					}
-
-					// on step 3 - close session and verify its destruction
-					if currentStep == 3 {
-						/******************************************************\
-							Server-side session destruction initiation
-						\******************************************************/
-						// Attempt to destroy this clients session
-						// on the end of the first step
-						err := msg.Client.CloseSession()
-						if err != nil {
-							t.Errorf(
-								"Couldn't close the active session "+
-									"on the server: %s",
-								err,
-							)
-						}
-
-						// Verify destruction
-						sess := msg.Client.Session()
-						if sess != nil {
-							t.Errorf(
-								"Expected the session to be destroyed, got: %v",
-								sess,
-							)
-						}
-
-						return webwire.Payload{}, nil
-					}
-
-					// On step 4 - verify session destruction
-					if currentStep == 4 {
-						sess := msg.Client.Session()
-						if sess != nil {
-							t.Errorf(
-								"Expected the session to be destroyed, got: %v",
-								sess,
-							)
-						}
-						return webwire.Payload{}, nil
-					}
-
-					// On step 1 - authenticate and create a new session
-					if err := msg.Client.CreateSession(nil); err != nil {
-						return webwire.Payload{}, err
-					}
-
-					// Return the key of the newly created session
-					return webwire.Payload{
-						Data: []byte(msg.Client.SessionKey()),
-					}, nil
-				},
-			},
 		},
 	)
 

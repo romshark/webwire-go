@@ -20,6 +20,26 @@ func TestClientAutomaticSessionRestoration(t *testing.T) {
 	// Initialize webwire server
 	server := setupServer(
 		t,
+		&serverImpl{
+			onRequest: func(ctx context.Context) (webwire.Payload, error) {
+				// Extract request message and requesting client from the context
+				msg := ctx.Value(webwire.Msg).(webwire.Message)
+
+				if currentStep == 2 {
+					// Expect the session to have been automatically restored
+					compareSessions(t, createdSession, msg.Client.Session())
+					return webwire.Payload{}, nil
+				}
+
+				// Try to create a new session
+				if err := msg.Client.CreateSession(nil); err != nil {
+					return webwire.Payload{}, err
+				}
+
+				// Return the key of the newly created session
+				return webwire.Payload{}, nil
+			},
+		},
 		webwire.ServerOptions{
 			SessionsEnabled: true,
 			SessionManager: &CallbackPoweredSessionManager{
@@ -53,26 +73,6 @@ func TestClientAutomaticSessionRestoration(t *testing.T) {
 						sessionStorage,
 					)
 					return nil, nil
-				},
-			},
-			Hooks: webwire.Hooks{
-				OnRequest: func(ctx context.Context) (webwire.Payload, error) {
-					// Extract request message and requesting client from the context
-					msg := ctx.Value(webwire.Msg).(webwire.Message)
-
-					if currentStep == 2 {
-						// Expect the session to have been automatically restored
-						compareSessions(t, createdSession, msg.Client.Session())
-						return webwire.Payload{}, nil
-					}
-
-					// Try to create a new session
-					if err := msg.Client.CreateSession(nil); err != nil {
-						return webwire.Payload{}, err
-					}
-
-					// Return the key of the newly created session
-					return webwire.Payload{}, nil
 				},
 			},
 		},
