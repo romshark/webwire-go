@@ -17,7 +17,7 @@ type ServerImplementation interface {
 	// then the connection won't be established and will be canceled immediately
 	BeforeUpgrade(resp http.ResponseWriter, req *http.Request) bool
 
-	// OnClientConnected is invoked when a new client successfuly established a connection
+	// OnClientConnected is invoked when a new client successfully established a connection
 	// to the server.
 	//
 	// This hook will be invoked by the goroutine serving the client and thus will block the
