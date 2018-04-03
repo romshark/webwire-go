@@ -183,10 +183,6 @@ const (
 
 // Message represents a WebWire protocol message
 type Message struct {
-	fulfill           func(reply Payload)
-	fail              func(error)
-	failDueToShutdown func()
-
 	msgType byte
 	id      [8]byte
 
