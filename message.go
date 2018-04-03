@@ -1,7 +1,6 @@
 package webwire
 
 import (
-	"encoding/json"
 	"fmt"
 )
 
@@ -780,76 +779,4 @@ func (msg *Message) Parse(message []byte) (err error) {
 	msg.msgType = msgType
 	msg.Payload.Encoding = payloadEncoding
 	return err
-}
-
-func (msg *Message) createFailCallback(client *Client, srv *Server) {
-	msg.fail = func(reqErr error) {
-		msgType := MsgErrorReply
-		var report []byte
-
-		switch err := reqErr.(type) {
-		case ReqErr:
-			var jsonErr error
-			report, jsonErr = json.Marshal(err)
-			if jsonErr != nil {
-				panic("Failed encoding error report")
-			}
-		case *ReqErr:
-			if err != nil {
-				var jsonErr error
-				report, jsonErr = json.Marshal(*err)
-				if jsonErr != nil {
-					panic("Failed encoding error report")
-				}
-			} else {
-				report = []byte(`{"c":""}`)
-			}
-		case MaxSessConnsReachedErr:
-			msgType = MsgMaxSessConnsReached
-		case SessNotFoundErr:
-			msgType = MsgSessionNotFound
-		case SessionsDisabledErr:
-			msgType = MsgSessionsDisabled
-		default:
-			msgType = MsgReplyInternalError
-		}
-
-		// Send request failure notification
-		header := append([]byte{msgType}, msg.id[:]...)
-		if err := client.conn.Write(append(header, report...)); err != nil {
-			srv.errorLog.Println("Writing failed:", err)
-		}
-	}
-	msg.failDueToShutdown = func() {
-		// Send request failure notification due to current server shutdown
-		if err := client.conn.Write(append([]byte{MsgReplyShutdown}, msg.id[:]...)); err != nil {
-			srv.errorLog.Println("Writing failed:", err)
-		}
-	}
-}
-
-func (msg *Message) createReplyCallback(client *Client, srv *Server) {
-	msg.fulfill = func(reply Payload) {
-		headerPadding := false
-		replyType := MsgReplyBinary
-		switch reply.Encoding {
-		case EncodingUtf8:
-			replyType = MsgReplyUtf8
-		case EncodingUtf16:
-			headerPadding = true
-			replyType = MsgReplyUtf16
-		}
-
-		header := append([]byte{replyType}, msg.id[:]...)
-
-		// Add header padding byte in case of UTF16 encoding
-		if headerPadding {
-			header = append(header, 0)
-		}
-
-		// Send reply
-		if err := client.conn.Write(append(header, reply.Data...)); err != nil {
-			srv.errorLog.Println("Writing failed:", err)
-		}
-	}
 }
