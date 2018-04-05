@@ -32,8 +32,11 @@ func NewPubSubServer() *PubSubServer {
 }
 
 // OnOptions implements the webwire.ServerImplementation interface.
-// Does nothing, not needed in this example
-func (srv *PubSubServer) OnOptions(_ http.ResponseWriter) {}
+// Sets HTTP access control headers to satisfy CORS
+func (srv *PubSubServer) OnOptions(resp http.ResponseWriter) {
+	resp.Header().Set("Access-Control-Allow-Origin", "*")
+	resp.Header().Set("Access-Control-Allow-Methods", "WEBWIRE")
+}
 
 // OnSignal implements the webwire.ServerImplementation interface
 // Does nothing, not needed in this example

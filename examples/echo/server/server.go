@@ -17,8 +17,11 @@ import (
 type EchoServer struct{}
 
 // OnOptions implements the webwire.ServerImplementation interface.
-// Does nothing, not needed in this example
-func (srv *EchoServer) OnOptions(_ http.ResponseWriter) {}
+// Sets HTTP access control headers to satisfy CORS
+func (srv *EchoServer) OnOptions(resp http.ResponseWriter) {
+	resp.Header().Set("Access-Control-Allow-Origin", "*")
+	resp.Header().Set("Access-Control-Allow-Methods", "WEBWIRE")
+}
 
 // OnSignal implements the webwire.ServerImplementation interface
 // Does nothing, not needed in this example
