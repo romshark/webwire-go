@@ -23,7 +23,7 @@ func TestGracefulShutdown(t *testing.T) {
 	expectedReqReply := []byte("ifinished")
 	timeDelta := time.Duration(1)
 	processesFinished := NewPending(2, 1*time.Second, true)
-	serverShutDown := NewPending(1, timeDelta*500*time.Millisecond, true)
+	serverShutDown := NewPending(1, timeDelta*500*time.Millisecond+1*time.Second, true)
 
 	// Initialize webwire server
 	server := setupServer(
