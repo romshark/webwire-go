@@ -18,7 +18,6 @@ before_script:
   - GO_FILES=$(find . -iname '*.go' -type f | grep -v /vendor/) # All the .go files, excluding vendor/
   - go get github.com/golang/lint/golint                        # Linter
   - go get honnef.co/go/tools/cmd/megacheck                     # Badass static analyzer/linter
-  - go get github.com/fzipp/gocyclo
   - go get golang.org/x/tools/cmd/cover
   - go get github.com/mattn/goveralls
   - go get github.com/go-playground/overalls
@@ -45,9 +44,6 @@ script:
 
   # "go vet on steroids" + linter
   - megacheck ./...
-
-  # forbid code with huge functions
-  - gocyclo -over 20 $GO_FILES
 
   # one last linter
   - golint -set_exit_status $(go list ./...)
