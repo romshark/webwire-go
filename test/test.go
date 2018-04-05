@@ -33,10 +33,19 @@ func setupServer(
 		impl.onClientDisconnected = func(_ *wwr.Client) {}
 	}
 	if impl.onSignal == nil {
-		impl.onSignal = func(_ context.Context) {}
+		impl.onSignal = func(
+			_ context.Context,
+			_ *wwr.Client,
+			_ *wwr.Message,
+		) {
+		}
 	}
 	if impl.onRequest == nil {
-		impl.onRequest = func(_ context.Context) (response wwr.Payload, err error) {
+		impl.onRequest = func(
+			_ context.Context,
+			_ *wwr.Client,
+			_ *wwr.Message,
+		) (response wwr.Payload, err error) {
 			return wwr.Payload{}, nil
 		}
 	}

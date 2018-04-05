@@ -21,9 +21,11 @@ func TestClientSignal(t *testing.T) {
 	server := setupServer(
 		t,
 		&serverImpl{
-			onSignal: func(ctx context.Context) {
-				// Extract signal message from the context
-				msg := ctx.Value(webwire.Msg).(webwire.Message)
+			onSignal: func(
+				_ context.Context,
+				_ *webwire.Client,
+				msg *webwire.Message,
+			) {
 
 				// Verify signal payload
 				comparePayload(

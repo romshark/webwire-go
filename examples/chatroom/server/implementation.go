@@ -68,11 +68,12 @@ func (srv *ChatRoomServer) broadcastMessage(name string, msg string) {
 // onAuth handles incoming authentication requests.
 // It parses and verifies the provided credentials and either rejects the authentication
 // or confirms it eventually creating a session and returning the session key
-func (srv *ChatRoomServer) handleAuth(ctx context.Context) (wwr.Payload, error) {
-	msg := ctx.Value(wwr.Msg).(wwr.Message)
-	client := msg.Client
-
-	credentialsText, err := msg.Payload.Utf8()
+func (srv *ChatRoomServer) handleAuth(
+	_ context.Context,
+	client *wwr.Client,
+	message *wwr.Message,
+) (wwr.Payload, error) {
+	credentialsText, err := message.Payload.Utf8()
 	if err != nil {
 		return wwr.Payload{}, wwr.ReqErr{
 			Code:    "DECODING_FAILURE",
@@ -128,11 +129,12 @@ func (srv *ChatRoomServer) handleAuth(ctx context.Context) (wwr.Payload, error) 
 	Message Handler
 \****************************************************************/
 
-func (srv *ChatRoomServer) handleMessage(ctx context.Context) (wwr.Payload, error) {
-	msg := ctx.Value(wwr.Msg).(wwr.Message)
-	client := msg.Client
-
-	msgStr, err := msg.Payload.Utf8()
+func (srv *ChatRoomServer) handleMessage(
+	_ context.Context,
+	client *wwr.Client,
+	message *wwr.Message,
+) (wwr.Payload, error) {
+	msgStr, err := message.Payload.Utf8()
 	if err != nil {
 		log.Printf(
 			"Received invalid message from %s, couldn't convert payload to UTF8: %s",
@@ -146,14 +148,14 @@ func (srv *ChatRoomServer) handleMessage(ctx context.Context) (wwr.Payload, erro
 		"Received message from %s: '%s' (%d, %s)",
 		client.RemoteAddr(),
 		msgStr,
-		len(msg.Payload.Data),
-		msg.Payload.Encoding.String(),
+		len(message.Payload.Data),
+		message.Payload.Encoding.String(),
 	)
 
 	name := "Anonymous"
 	// Try to read the name from the session
-	if msg.Client.HasSession() {
-		name = msg.Client.SessionInfo("username").(string)
+	if client.HasSession() {
+		name = client.SessionInfo("username").(string)
 	}
 
 	srv.broadcastMessage(name, msgStr)
@@ -171,7 +173,12 @@ func (srv *ChatRoomServer) OnOptions(_ http.ResponseWriter) {}
 
 // OnSignal implements the webwire.ServerImplementation interface
 // Does nothing, not needed in this example
-func (srv *ChatRoomServer) OnSignal(ctx context.Context) {}
+func (srv *ChatRoomServer) OnSignal(
+	_ context.Context,
+	_ *wwr.Client,
+	_ *wwr.Message,
+) {
+}
 
 // BeforeUpgrade implements the webwire.ServerImplementation interface.
 // Must return true to ensure incoming connections are accepted
@@ -181,18 +188,20 @@ func (srv *ChatRoomServer) BeforeUpgrade(resp http.ResponseWriter, req *http.Req
 
 // OnRequest implements the webwire.ServerImplementation interface.
 // Receives the message and dispatches it to the according handler
-func (srv *ChatRoomServer) OnRequest(ctx context.Context) (response wwr.Payload, err error) {
-	msg := ctx.Value(wwr.Msg).(wwr.Message)
-
-	switch msg.Name {
+func (srv *ChatRoomServer) OnRequest(
+	ctx context.Context,
+	client *wwr.Client,
+	message *wwr.Message,
+) (response wwr.Payload, err error) {
+	switch message.Name {
 	case "auth":
-		return srv.handleAuth(ctx)
+		return srv.handleAuth(ctx, client, message)
 	case "msg":
-		return srv.handleMessage(ctx)
+		return srv.handleMessage(ctx, client, message)
 	}
 	return wwr.Payload{}, wwr.ReqErr{
 		Code:    "BAD_REQUEST",
-		Message: fmt.Sprintf("Unsupported request name: %s", msg.Name),
+		Message: fmt.Sprintf("Unsupported request name: %s", message.Name),
 	}
 }
 

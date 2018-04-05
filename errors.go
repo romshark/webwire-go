@@ -74,8 +74,8 @@ func (err ReqTimeoutErr) Error() string {
 
 // ReqErr represents an error returned in case of a request that couldn't be processed
 type ReqErr struct {
-	Code    string `json:"c"`
-	Message string `json:"m,omitempty"`
+	Code    string
+	Message string
 }
 
 func (err ReqErr) Error() string {

@@ -21,19 +21,19 @@ func TestClientSessionRestoration(t *testing.T) {
 	server := setupServer(
 		t,
 		&serverImpl{
-			onRequest: func(ctx context.Context) (webwire.Payload, error) {
-				// Extract request message
-				// and requesting client from the context
-				msg := ctx.Value(webwire.Msg).(webwire.Message)
-
+			onRequest: func(
+				_ context.Context,
+				clt *webwire.Client,
+				_ *webwire.Message,
+			) (webwire.Payload, error) {
 				if currentStep == 2 {
 					// Expect the session to be automatically restored
-					compareSessions(t, createdSession, msg.Client.Session())
+					compareSessions(t, createdSession, clt.Session())
 					return webwire.Payload{}, nil
 				}
 
 				// Try to create a new session
-				if err := msg.Client.CreateSession(nil); err != nil {
+				if err := clt.CreateSession(nil); err != nil {
 					return webwire.Payload{}, err
 				}
 

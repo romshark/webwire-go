@@ -17,7 +17,11 @@ func TestClientRequestInternalError(t *testing.T) {
 	server := setupServer(
 		t,
 		&serverImpl{
-			onRequest: func(_ context.Context) (webwire.Payload, error) {
+			onRequest: func(
+				_ context.Context,
+				_ *webwire.Client,
+				_ *webwire.Message,
+			) (webwire.Payload, error) {
 				// Fail the request by returning a non-ReqErr error
 				return webwire.Payload{}, fmt.Errorf(
 					"don't worry, this internal error is expected",

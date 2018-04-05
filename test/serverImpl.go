@@ -12,8 +12,16 @@ type serverImpl struct {
 	beforeUpgrade        func(resp http.ResponseWriter, req *http.Request) bool
 	onClientConnected    func(client *wwr.Client)
 	onClientDisconnected func(client *wwr.Client)
-	onSignal             func(ctx context.Context)
-	onRequest            func(ctx context.Context) (response wwr.Payload, err error)
+	onSignal             func(
+		ctx context.Context,
+		client *wwr.Client,
+		message *wwr.Message,
+	)
+	onRequest func(
+		ctx context.Context,
+		client *wwr.Client,
+		message *wwr.Message,
+	) (response wwr.Payload, err error)
 }
 
 // OnOptions implements the webwire.ServerImplementation interface
@@ -38,11 +46,19 @@ func (srv *serverImpl) OnClientDisconnected(client *wwr.Client) {
 }
 
 // OnSignal implements the webwire.ServerImplementation interface
-func (srv *serverImpl) OnSignal(ctx context.Context) {
-	srv.onSignal(ctx)
+func (srv *serverImpl) OnSignal(
+	ctx context.Context,
+	clt *wwr.Client,
+	msg *wwr.Message,
+) {
+	srv.onSignal(ctx, clt, msg)
 }
 
 // OnRequest implements the webwire.ServerImplementation interface
-func (srv *serverImpl) OnRequest(ctx context.Context) (response wwr.Payload, err error) {
-	return srv.onRequest(ctx)
+func (srv *serverImpl) OnRequest(
+	ctx context.Context,
+	clt *wwr.Client,
+	msg *wwr.Message,
+) (response wwr.Payload, err error) {
+	return srv.onRequest(ctx, clt, msg)
 }

@@ -17,16 +17,17 @@ func TestCustomSessKeyGen(t *testing.T) {
 	server := setupServer(
 		t,
 		&serverImpl{
-			onRequest: func(ctx context.Context) (wwr.Payload, error) {
-				// Extract request message and requesting client from the context
-				msg := ctx.Value(wwr.Msg).(wwr.Message)
-
+			onRequest: func(
+				_ context.Context,
+				clt *wwr.Client,
+				_ *wwr.Message,
+			) (wwr.Payload, error) {
 				// Try to create a new session
-				if err := msg.Client.CreateSession(nil); err != nil {
+				if err := clt.CreateSession(nil); err != nil {
 					return wwr.Payload{}, err
 				}
 
-				key := msg.Client.SessionKey()
+				key := clt.SessionKey()
 				if key != expectedSessionKey {
 					t.Errorf("Unexpected session key: %s | %s", expectedSessionKey, key)
 				}

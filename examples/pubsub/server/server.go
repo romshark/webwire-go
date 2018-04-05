@@ -37,12 +37,24 @@ func (srv *PubSubServer) OnOptions(_ http.ResponseWriter) {}
 
 // OnSignal implements the webwire.ServerImplementation interface
 // Does nothing, not needed in this example
-func (srv *PubSubServer) OnSignal(ctx context.Context) {}
+func (srv *PubSubServer) OnSignal(
+	_ context.Context,
+	_ *wwr.Client,
+	_ *wwr.Message,
+) {
+}
 
 // OnRequest implements the webwire.ServerImplementation interface.
 // Does nothing, not needed in this example
-func (srv *PubSubServer) OnRequest(ctx context.Context) (response wwr.Payload, err error) {
-	return wwr.Payload{}, nil
+func (srv *PubSubServer) OnRequest(
+	_ context.Context,
+	_ *wwr.Client,
+	_ *wwr.Message,
+) (response wwr.Payload, err error) {
+	return wwr.Payload{}, wwr.ReqErr{
+		Code:    "REQ_NOT_SUPPORTED",
+		Message: "Requests are not supported on this server",
+	}
 }
 
 // BeforeUpgrade implements the webwire.ServerImplementation interface.

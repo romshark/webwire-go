@@ -15,7 +15,11 @@ func TestEmptyReplyUtf16(t *testing.T) {
 	server := setupServer(
 		t,
 		&serverImpl{
-			onRequest: func(_ context.Context) (wwr.Payload, error) {
+			onRequest: func(
+				_ context.Context,
+				_ *wwr.Client,
+				_ *wwr.Message,
+			) (wwr.Payload, error) {
 				// Return empty reply
 				return wwr.Payload{
 					Encoding: wwr.EncodingUtf16,

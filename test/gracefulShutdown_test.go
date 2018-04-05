@@ -29,11 +29,19 @@ func TestGracefulShutdown(t *testing.T) {
 	server := setupServer(
 		t,
 		&serverImpl{
-			onSignal: func(ctx context.Context) {
+			onSignal: func(
+				_ context.Context,
+				_ *wwr.Client,
+				_ *wwr.Message,
+			) {
 				time.Sleep(timeDelta * 100 * time.Millisecond)
 				processesFinished.Done()
 			},
-			onRequest: func(ctx context.Context) (wwr.Payload, error) {
+			onRequest: func(
+				_ context.Context,
+				_ *wwr.Client,
+				_ *wwr.Message,
+			) (wwr.Payload, error) {
 				time.Sleep(timeDelta * 100 * time.Millisecond)
 				return wwr.Payload{Data: expectedReqReply}, nil
 			},

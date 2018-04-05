@@ -27,10 +27,11 @@ func TestClientSessionInfo(t *testing.T) {
 	server := setupServer(
 		t,
 		&serverImpl{
-			onRequest: func(ctx context.Context) (webwire.Payload, error) {
-				// Extract request message and requesting client from the context
-				msg := ctx.Value(webwire.Msg).(webwire.Message)
-
+			onRequest: func(
+				_ context.Context,
+				clt *webwire.Client,
+				_ *webwire.Message,
+			) (webwire.Payload, error) {
 				// Try to create a new session
 				sessInfo := make(webwire.SessionInfo)
 				sessInfo["bool"] = expectedBool
@@ -44,7 +45,7 @@ func TestClientSessionInfo(t *testing.T) {
 					SampleString: expectedStruct.SampleString,
 				}
 
-				if err := msg.Client.CreateSession(sessInfo); err != nil {
+				if err := clt.CreateSession(sessInfo); err != nil {
 					return webwire.Payload{}, err
 				}
 				return webwire.Payload{}, nil

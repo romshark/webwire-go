@@ -19,7 +19,11 @@ func TestClientConcurrentSignal(t *testing.T) {
 	server := setupServer(
 		t,
 		&serverImpl{
-			onSignal: func(_ context.Context) {
+			onSignal: func(
+				_ context.Context,
+				_ *webwire.Client,
+				_ *webwire.Message,
+			) {
 				finished.Done()
 			},
 		},

@@ -22,7 +22,12 @@ func (srv *EchoServer) OnOptions(_ http.ResponseWriter) {}
 
 // OnSignal implements the webwire.ServerImplementation interface
 // Does nothing, not needed in this example
-func (srv *EchoServer) OnSignal(ctx context.Context) {}
+func (srv *EchoServer) OnSignal(
+	_ context.Context,
+	_ *wwr.Client,
+	_ *wwr.Message,
+) {
+}
 
 // OnClientConnected implements the webwire.ServerImplementation interface.
 // Does nothing, not needed in this example
@@ -40,13 +45,15 @@ func (srv *EchoServer) BeforeUpgrade(resp http.ResponseWriter, req *http.Request
 
 // OnRequest implements the webwire.ServerImplementation interface.
 // Returns the received message back to the client
-func (srv *EchoServer) OnRequest(ctx context.Context) (response wwr.Payload, err error) {
-	msg := ctx.Value(wwr.Msg).(wwr.Message)
-
-	log.Printf("Replied to client: %s", msg.Client.RemoteAddr())
+func (srv *EchoServer) OnRequest(
+	_ context.Context,
+	client *wwr.Client,
+	message *wwr.Message,
+) (response wwr.Payload, err error) {
+	log.Printf("Replied to client: %s", client.RemoteAddr())
 
 	// Reply to the request using the same data and encoding
-	return msg.Payload, nil
+	return message.Payload, nil
 }
 
 var serverAddr = flag.String("addr", ":8081", "server address")

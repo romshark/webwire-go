@@ -18,7 +18,11 @@ func TestClientRequestRegisterOnReply(t *testing.T) {
 	server := setupServer(
 		t,
 		&serverImpl{
-			onRequest: func(ctx context.Context) (webwire.Payload, error) {
+			onRequest: func(
+				_ context.Context,
+				_ *webwire.Client,
+				_ *webwire.Message,
+			) (webwire.Payload, error) {
 				// Verify pending requests
 				pendingReqs := client.PendingRequests()
 				if pendingReqs != 1 {

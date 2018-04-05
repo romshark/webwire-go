@@ -33,18 +33,12 @@ type ServerImplementation interface {
 
 	// OnSignal is invoked when the webwire server receives a signal from a client.
 	//
-	// The client agent can be retrieved from the message object, which can be retrieved from the
-	// context passed using the webwire.Msg context key.
-	//
 	// This hook will be invoked by the goroutine serving the calling client and will block any
 	// other interactions with this client while executing
-	OnSignal(ctx context.Context)
+	OnSignal(ctx context.Context, client *Client, message *Message)
 
 	// OnRequest is invoked when the webwire server receives a request from a client.
 	// It must return either a response payload or an error.
-	//
-	// The client agent can be retrieved from the message object, which can be retrieved from the
-	// context passed using the webwire.Msg context key.
 	//
 	// A webwire.ReqErr error can be returned to reply with an error code and an error message,
 	// this is useful when the clients user code needs to be able to understand the error
@@ -56,7 +50,11 @@ type ServerImplementation interface {
 	//
 	// This hook will be invoked by the goroutine serving the calling client and will block any
 	// other interactions with this client while executing
-	OnRequest(ctx context.Context) (response Payload, err error)
+	OnRequest(
+		ctx context.Context,
+		client *Client,
+		message *Message,
+	) (response Payload, err error)
 }
 
 // SessionManager defines the interface of a webwire server's session manager

@@ -6,11 +6,11 @@ import (
 	webwire "github.com/qbeon/webwire-go"
 )
 
-func (clt *Client) handleSessionCreated(sessionKey []byte) {
+func (clt *Client) handleSessionCreated(msgPayload webwire.Payload) {
 	// Set new session
 	var session webwire.Session
 
-	if err := json.Unmarshal(sessionKey, &session); err != nil {
+	if err := json.Unmarshal(msgPayload.Data, &session); err != nil {
 		clt.errorLog.Printf("Failed unmarshalling session object: %s", err)
 		return
 	}
@@ -30,15 +30,16 @@ func (clt *Client) handleSessionClosed() {
 	clt.hooks.OnSessionClosed()
 }
 
-func (clt *Client) handleFailure(reqID [8]byte, payload []byte) {
-	// Decode error
-	var replyErr webwire.ReqErr
-	if err := json.Unmarshal(payload, &replyErr); err != nil {
-		clt.errorLog.Printf("Failed unmarshalling error reply: %s", err)
-	}
-
+func (clt *Client) handleFailure(
+	reqIdent [8]byte,
+	errCode,
+	errMessage string,
+) {
 	// Fail request
-	clt.requestManager.Fail(reqID, replyErr)
+	clt.requestManager.Fail(reqIdent, webwire.ReqErr{
+		Code:    errCode,
+		Message: errMessage,
+	})
 }
 
 func (clt *Client) handleInternalError(reqIdent [8]byte) {
@@ -62,74 +63,60 @@ func (clt *Client) handleSessionsDisabled(reqIdent [8]byte) {
 	clt.requestManager.Fail(reqIdent, webwire.SessionsDisabledErr{})
 }
 
-func (clt *Client) handleReply(reqID [8]byte, payload webwire.Payload) {
-	clt.requestManager.Fulfill(reqID, payload)
+func (clt *Client) handleReply(reqIdent [8]byte, payload webwire.Payload) {
+	clt.requestManager.Fulfill(reqIdent, payload)
 }
 
 func (clt *Client) handleMessage(message []byte) error {
 	if len(message) < 1 {
 		return nil
 	}
-	switch message[0:1][0] {
+
+	var msg webwire.Message
+	if err := msg.Parse(message); err != nil {
+		return err
+	}
+
+	switch msg.MessageType() {
 	case webwire.MsgReplyBinary:
-		clt.handleReply(
-			extractMessageIdentifier(message),
-			webwire.Payload{
-				Encoding: webwire.EncodingBinary,
-				Data:     message[9:],
-			},
-		)
+		clt.handleReply(msg.Identifier(), msg.Payload)
 	case webwire.MsgReplyUtf8:
-		clt.handleReply(
-			extractMessageIdentifier(message),
-			webwire.Payload{
-				Encoding: webwire.EncodingUtf8,
-				Data:     message[9:],
-			},
-		)
+		clt.handleReply(msg.Identifier(), msg.Payload)
 	case webwire.MsgReplyUtf16:
-		clt.handleReply(
-			extractMessageIdentifier(message),
-			webwire.Payload{
-				Encoding: webwire.EncodingUtf16,
-				Data:     message[10:],
-			},
-		)
+		clt.handleReply(msg.Identifier(), msg.Payload)
 	case webwire.MsgReplyShutdown:
-		clt.handleReplyShutdown(extractMessageIdentifier(message))
+		clt.handleReplyShutdown(msg.Identifier())
 	case webwire.MsgSessionNotFound:
-		clt.handleSessionNotFound(extractMessageIdentifier(message))
+		clt.handleSessionNotFound(msg.Identifier())
 	case webwire.MsgMaxSessConnsReached:
-		clt.handleMaxSessConnsReached(extractMessageIdentifier(message))
+		clt.handleMaxSessConnsReached(msg.Identifier())
 	case webwire.MsgSessionsDisabled:
-		clt.handleSessionsDisabled(extractMessageIdentifier(message))
+		clt.handleSessionsDisabled(msg.Identifier())
 	case webwire.MsgErrorReply:
-		clt.handleFailure(extractMessageIdentifier(message), message[9:])
-	case webwire.MsgReplyInternalError:
-		clt.handleInternalError(extractMessageIdentifier(message))
+		// The message name contains the error code in case of
+		// error reply messages, while the UTF8 encoded error message is
+		// contained in the message payload
+		clt.handleFailure(
+			msg.Identifier(),
+			msg.Name,
+			string(msg.Payload.Data),
+		)
+	case webwire.MsgInternalError:
+		clt.handleInternalError(msg.Identifier())
 	case webwire.MsgSignalBinary:
-		clt.hooks.OnServerSignal(webwire.Payload{
-			Encoding: webwire.EncodingBinary,
-			Data:     message[2:],
-		})
+		clt.hooks.OnServerSignal(msg.Payload)
 	case webwire.MsgSignalUtf8:
-		clt.hooks.OnServerSignal(webwire.Payload{
-			Encoding: webwire.EncodingUtf8,
-			Data:     message[2:],
-		})
+		clt.hooks.OnServerSignal(msg.Payload)
 	case webwire.MsgSignalUtf16:
-		clt.hooks.OnServerSignal(webwire.Payload{
-			Encoding: webwire.EncodingUtf16,
-			Data:     message[2:],
-		})
+		clt.hooks.OnServerSignal(msg.Payload)
 	case webwire.MsgSessionCreated:
-		clt.handleSessionCreated(message[1:])
+		clt.handleSessionCreated(msg.Payload)
 	case webwire.MsgSessionClosed:
 		clt.handleSessionClosed()
 	default:
 		clt.warningLog.Printf(
-			"Strange message type received: '%c'\n",
-			message[0:1][0],
+			"Strange message type received: '%d'\n",
+			msg.MessageType(),
 		)
 	}
 	return nil

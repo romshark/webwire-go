@@ -34,9 +34,11 @@ func TestClientRequestUtf16(t *testing.T) {
 	server := setupServer(
 		t,
 		&serverImpl{
-			onRequest: func(ctx context.Context) (webwire.Payload, error) {
-				// Extract request message from the context
-				msg := ctx.Value(webwire.Msg).(webwire.Message)
+			onRequest: func(
+				_ context.Context,
+				_ *webwire.Client,
+				msg *webwire.Message,
+			) (webwire.Payload, error) {
 
 				verifyPayload(msg.Payload)
 

@@ -1,7 +1,6 @@
 package webwire
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -77,9 +76,9 @@ func NewServer(implementation ServerImplementation, opts ServerOptions) *Server 
 
 // handleSessionRestore handles session restoration (by session key) requests
 // and returns an error if the ongoing connection cannot be proceeded
-func (srv *Server) handleSessionRestore(msg *Message) error {
+func (srv *Server) handleSessionRestore(clt *Client, msg *Message) error {
 	if !srv.sessionsEnabled {
-		srv.failMsg(msg, SessionsDisabledErr{})
+		srv.failMsg(clt, msg, SessionsDisabledErr{})
 		return nil
 	}
 
@@ -87,18 +86,18 @@ func (srv *Server) handleSessionRestore(msg *Message) error {
 
 	if srv.sessionRegistry.maxConns > 0 &&
 		srv.sessionRegistry.SessionConnections(key)+1 > srv.sessionRegistry.maxConns {
-		srv.failMsg(msg, MaxSessConnsReachedErr{})
+		srv.failMsg(clt, msg, MaxSessConnsReachedErr{})
 		return nil
 	}
 
 	session, err := srv.sessionManager.OnSessionLookup(key)
 	if err != nil {
 		// TODO: return internal server error and log it
-		srv.failMsg(msg, nil)
+		srv.failMsg(clt, msg, nil)
 		return fmt.Errorf("CRITICAL: Session search handler failed: %s", err)
 	}
 	if session == nil {
-		srv.failMsg(msg, SessNotFoundErr{})
+		srv.failMsg(clt, msg, SessNotFoundErr{})
 		return nil
 	}
 
@@ -106,16 +105,16 @@ func (srv *Server) handleSessionRestore(msg *Message) error {
 	encodedSession, err := json.Marshal(session)
 	if err != nil {
 		// TODO: return internal server error and log it
-		srv.failMsg(msg, nil)
+		srv.failMsg(clt, msg, nil)
 		return fmt.Errorf("Couldn't encode session object (%v): %s", session, err)
 	}
 
-	msg.Client.setSession(session)
-	if okay := srv.sessionRegistry.register(msg.Client); !okay {
+	clt.setSession(session)
+	if okay := srv.sessionRegistry.register(clt); !okay {
 		panic(fmt.Errorf("The number of concurrent session connections was unexpectedly exceeded"))
 	}
 
-	srv.fulfillMsg(msg, Payload{
+	srv.fulfillMsg(clt, msg, Payload{
 		Encoding: EncodingUtf8,
 		Data:     encodedSession,
 	})
@@ -125,23 +124,23 @@ func (srv *Server) handleSessionRestore(msg *Message) error {
 
 // handleSessionClosure handles session destruction requests
 // and returns an error if the ongoing connection cannot be proceeded
-func (srv *Server) handleSessionClosure(msg *Message) error {
+func (srv *Server) handleSessionClosure(clt *Client, msg *Message) error {
 	if !srv.sessionsEnabled {
-		srv.failMsg(msg, SessionsDisabledErr{})
+		srv.failMsg(clt, msg, SessionsDisabledErr{})
 		return nil
 	}
 
-	if !msg.Client.HasSession() {
+	if !clt.HasSession() {
 		// Send confirmation even though no session was closed
-		srv.fulfillMsg(msg, Payload{})
+		srv.fulfillMsg(clt, msg, Payload{})
 		return nil
 	}
 
-	srv.deregisterSession(msg.Client)
+	srv.deregisterSession(clt)
 
 	// Synchronize session destruction to the client
-	if err := msg.Client.notifySessionClosed(); err != nil {
-		srv.failMsg(msg, nil)
+	if err := clt.notifySessionClosed(); err != nil {
+		srv.failMsg(clt, msg, nil)
 		return fmt.Errorf("CRITICAL: Internal server error, "+
 			"couldn't notify client about the session destruction: %s",
 			err,
@@ -149,17 +148,17 @@ func (srv *Server) handleSessionClosure(msg *Message) error {
 	}
 
 	// Reset the session on the client agent
-	msg.Client.setSession(nil)
+	clt.setSession(nil)
 
 	// Send confirmation
-	srv.fulfillMsg(msg, Payload{})
+	srv.fulfillMsg(clt, msg, Payload{})
 
 	return nil
 }
 
 // handleSignal handles incoming signals
 // and returns an error if the ongoing connection cannot be proceeded
-func (srv *Server) handleSignal(msg *Message) {
+func (srv *Server) handleSignal(clt *Client, msg *Message) {
 	srv.opsLock.Lock()
 	// Ignore incoming signals during shutdown
 	if srv.shutdown {
@@ -169,7 +168,11 @@ func (srv *Server) handleSignal(msg *Message) {
 	srv.currentOps++
 	srv.opsLock.Unlock()
 
-	srv.impl.OnSignal(context.WithValue(context.Background(), Msg, *msg))
+	srv.impl.OnSignal(
+		context.Background(),
+		clt,
+		msg,
+	)
 
 	// Mark signal as done and shutdown the server if scheduled and no ops are left
 	srv.opsLock.Lock()
@@ -182,30 +185,32 @@ func (srv *Server) handleSignal(msg *Message) {
 
 // handleRequest handles incoming requests
 // and returns an error if the ongoing connection cannot be proceeded
-func (srv *Server) handleRequest(msg *Message) {
+func (srv *Server) handleRequest(clt *Client, msg *Message) {
 	srv.opsLock.Lock()
 	// Reject incoming requests during shutdown, return special shutdown error
 	if srv.shutdown {
 		srv.opsLock.Unlock()
-		srv.failMsgShutdown(msg)
+		srv.failMsgShutdown(clt, msg)
 		return
 	}
 	srv.currentOps++
 	srv.opsLock.Unlock()
 
 	replyPayload, returnedErr := srv.impl.OnRequest(
-		context.WithValue(context.Background(), Msg, *msg),
+		context.Background(),
+		clt,
+		msg,
 	)
 	switch returnedErr.(type) {
 	case nil:
-		srv.fulfillMsg(msg, replyPayload)
+		srv.fulfillMsg(clt, msg, replyPayload)
 	case ReqErr:
-		srv.failMsg(msg, returnedErr)
+		srv.failMsg(clt, msg, returnedErr)
 	case *ReqErr:
-		srv.failMsg(msg, returnedErr)
+		srv.failMsg(clt, msg, returnedErr)
 	default:
 		srv.errorLog.Printf("Internal error during request handling: %s", returnedErr)
-		srv.failMsg(msg, returnedErr)
+		srv.failMsg(clt, msg, returnedErr)
 	}
 
 	// Mark request as done and shutdown the server if scheduled and no ops are left
@@ -229,119 +234,82 @@ func (srv *Server) handleMetadata(resp http.ResponseWriter) {
 }
 
 // handleMessage handles incoming messages
-func (srv *Server) handleMessage(msg *Message) error {
+func (srv *Server) handleMessage(clt *Client, msg *Message) error {
 	switch msg.msgType {
 	case MsgSignalBinary:
 		fallthrough
 	case MsgSignalUtf8:
 		fallthrough
 	case MsgSignalUtf16:
-		srv.handleSignal(msg)
+		srv.handleSignal(clt, msg)
 
 	case MsgRequestBinary:
 		fallthrough
 	case MsgRequestUtf8:
 		fallthrough
 	case MsgRequestUtf16:
-		srv.handleRequest(msg)
+		srv.handleRequest(clt, msg)
 
 	case MsgRestoreSession:
-		return srv.handleSessionRestore(msg)
+		return srv.handleSessionRestore(clt, msg)
 	case MsgCloseSession:
-		return srv.handleSessionClosure(msg)
+		return srv.handleSessionClosure(clt, msg)
 	}
 	return nil
 }
 
 // fulfillMsg filfills the message sending the reply
-func (srv *Server) fulfillMsg(msg *Message, reply Payload) {
-	msgCap := 9 + len(reply.Data)
-
-	headerPadding := false
-	replyType := MsgReplyBinary
-	switch reply.Encoding {
-	case EncodingUtf8:
-		replyType = MsgReplyUtf8
-	case EncodingUtf16:
-		headerPadding = true
-		replyType = MsgReplyUtf16
-	}
-
-	// Add header padding byte in case of UTF16 encoding
-	if headerPadding {
-		msgCap++
-	}
-
-	// Construct message
-	buf := &bytes.Buffer{}
-	buf.Grow(msgCap)
-	buf.WriteByte(replyType)
-	buf.Write(msg.id[:])
-	if headerPadding {
-		buf.WriteByte(0)
-	}
-	buf.Write(reply.Data)
-
+func (srv *Server) fulfillMsg(clt *Client, msg *Message, reply Payload) {
 	// Send reply
-	if err := msg.Client.conn.Write(buf.Bytes()); err != nil {
+	if err := clt.conn.Write(
+		NewReplyMessage(msg.id, reply),
+	); err != nil {
 		srv.errorLog.Println("Writing failed:", err)
 	}
 }
 
 // failMsg fails the message returning an error reply
-func (srv *Server) failMsg(msg *Message, reqErr error) {
-	msgType := MsgErrorReply
-	var report []byte
-
+func (srv *Server) failMsg(clt *Client, msg *Message, reqErr error) {
+	var replyMsg []byte
 	switch err := reqErr.(type) {
 	case ReqErr:
-		var jsonErr error
-		report, jsonErr = json.Marshal(err)
-		if jsonErr != nil {
-			panic("Failed encoding error report")
-		}
+		replyMsg = NewErrorReplyMessage(msg.id, err.Code, err.Message)
 	case *ReqErr:
-		if err != nil {
-			var jsonErr error
-			report, jsonErr = json.Marshal(*err)
-			if jsonErr != nil {
-				panic("Failed encoding error report")
-			}
-		} else {
-			report = []byte(`{"c":""}`)
-		}
+		replyMsg = NewErrorReplyMessage(msg.id, err.Code, err.Message)
 	case MaxSessConnsReachedErr:
-		msgType = MsgMaxSessConnsReached
+		replyMsg = NewSpecialRequestReplyMessage(
+			MsgMaxSessConnsReached,
+			msg.id,
+		)
 	case SessNotFoundErr:
-		msgType = MsgSessionNotFound
+		replyMsg = NewSpecialRequestReplyMessage(
+			MsgSessionNotFound,
+			msg.id,
+		)
 	case SessionsDisabledErr:
-		msgType = MsgSessionsDisabled
+		replyMsg = NewSpecialRequestReplyMessage(
+			MsgSessionsDisabled,
+			msg.id,
+		)
 	default:
-		msgType = MsgReplyInternalError
+		replyMsg = NewSpecialRequestReplyMessage(
+			MsgInternalError,
+			msg.id,
+		)
 	}
 
-	// Construct message
-	buf := &bytes.Buffer{}
-	buf.Grow(9 + len(report))
-	buf.WriteByte(msgType)
-	buf.Write(msg.id[:])
-	buf.Write(report)
-
 	// Send request failure notification
-	if err := msg.Client.conn.Write(buf.Bytes()); err != nil {
+	if err := clt.conn.Write(replyMsg); err != nil {
 		srv.errorLog.Println("Writing failed:", err)
 	}
 }
 
 // failMsgShutdown sends request failure reply due to current server shutdown
-func (srv *Server) failMsgShutdown(msg *Message) {
-	// Construct message
-	buf := &bytes.Buffer{}
-	buf.Grow(9)
-	buf.WriteByte(MsgReplyShutdown)
-	buf.Write(msg.id[:])
-
-	if err := msg.Client.conn.Write(buf.Bytes()); err != nil {
+func (srv *Server) failMsgShutdown(clt *Client, msg *Message) {
+	if err := clt.conn.Write(NewSpecialRequestReplyMessage(
+		MsgReplyShutdown,
+		msg.id,
+	)); err != nil {
 		srv.errorLog.Println("Writing failed:", err)
 	}
 }
@@ -411,18 +379,14 @@ func (srv *Server) ServeHTTP(
 		}
 
 		// Parse message
-		var msg Message
-		if err := msg.Parse(message); err != nil {
+		var msgObject Message
+		if err := msgObject.Parse(message); err != nil {
 			srv.errorLog.Println("Failed parsing message:", err)
 			break
 		}
 
-		// Prepare message
-		// Reference the client associated with this message
-		msg.Client = newClient
-
 		// Handle message
-		if err := srv.handleMessage(&msg); err != nil {
+		if err := srv.handleMessage(newClient, &msgObject); err != nil {
 			srv.errorLog.Printf("CRITICAL FAILURE: %s", err)
 			break
 		}

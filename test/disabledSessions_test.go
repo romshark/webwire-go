@@ -27,17 +27,17 @@ func TestDisabledSessions(t *testing.T) {
 	server := setupServer(
 		t,
 		&serverImpl{
-			onRequest: func(ctx context.Context) (wwr.Payload, error) {
-				// Extract request message
-				// and requesting client from the context
-				msg := ctx.Value(wwr.Msg).(wwr.Message)
-
+			onRequest: func(
+				_ context.Context,
+				clt *wwr.Client,
+				_ *wwr.Message,
+			) (wwr.Payload, error) {
 				// Try to create a new session and expect an error
-				createErr := msg.Client.CreateSession(nil)
+				createErr := clt.CreateSession(nil)
 				verifyError(createErr)
 
 				// Try to create a new session and expect an error
-				closeErr := msg.Client.CloseSession()
+				closeErr := clt.CloseSession()
 				verifyError(closeErr)
 
 				return wwr.Payload{}, nil

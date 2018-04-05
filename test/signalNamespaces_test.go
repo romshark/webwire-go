@@ -27,19 +27,27 @@ func TestSignalNamespaces(t *testing.T) {
 	server := setupServer(
 		t,
 		&serverImpl{
-			onSignal: func(ctx context.Context) {
-				msg := ctx.Value(webwire.Msg).(webwire.Message)
+			onSignal: func(
+				_ context.Context,
+				_ *webwire.Client,
+				msg *webwire.Message,
+			) {
 
 				if currentStep == 1 && msg.Name != "" {
-					t.Errorf("Expected unnamed signal, got: '%s'", msg.Name)
+					t.Errorf(
+						"Expected unnamed signal, got: '%s'",
+						msg.Name,
+					)
 				}
-				if currentStep == 2 && msg.Name != shortestPossibleName {
+				if currentStep == 2 &&
+					msg.Name != shortestPossibleName {
 					t.Errorf(
 						"Expected shortest possible signal name, got: '%s'",
 						msg.Name,
 					)
 				}
-				if currentStep == 3 && msg.Name != longestPossibleName {
+				if currentStep == 3 &&
+					msg.Name != longestPossibleName {
 					t.Errorf(
 						"Expected longest possible signal name, got: '%s'",
 						msg.Name,

@@ -96,10 +96,13 @@ err := client.Signal("eventA", wwr.Payload{Data: []byte("something")})
 The server also can send signals to individual connected clients.
 
 ```go
-func onRequest(ctx context.Context) (wwr.Payload, error) {
-  msg := ctx.Value(wwr.Msg).(wwr.Message)
+func onRequest(
+  client *wwr.Client,
+  _ *wwr.Message,
+  _ context.Context,
+) (wwr.Payload, error) {
   // Send a signal to the client before replying to the request
-  msg.Client.Signal("", wwr.Payload{Data: []byte("ping!")})
+  client.Signal("", wwr.Payload{Data: []byte("ping!")})
   return wwr.Payload{}, nil
 }
 ```
@@ -108,9 +111,12 @@ func onRequest(ctx context.Context) (wwr.Payload, error) {
 Different kinds of requests and signals can be differentiated using the builtin namespacing feature.
 
 ```go
-func onRequest(ctx context.Context) (wwr.Payload, error) {
-  msg := ctx.Value(wwr.Msg).(wwr.Message)
-  switch msg.Name {
+func onRequest(
+  client *wwr.Client,
+  message *wwr.Message,
+  _ context.Context,
+) (wwr.Payload, error) {
+  switch message.Name {
   case "auth":
     // Authentication request
   case "query":
@@ -120,9 +126,12 @@ func onRequest(ctx context.Context) (wwr.Payload, error) {
 }
 ```
 ```go
-func onSignal(ctx context.Context) {
-  msg := ctx.Value(wwr.Msg).(wwr.Message)
-  switch msg.Name {
+func onSignal(
+  client *wwr.Client,
+  message *wwr.Message,
+  _ context.Context,
+) {
+  switch message.Name {
   case "event A":
     // handle event A
   case "event B":
@@ -135,11 +144,13 @@ func onSignal(ctx context.Context) {
 Individual connections can get sessions assigned to identify them. The state of the session is automagically synchronized between the client and the server. WebWire doesn't enforce any kind of authentication technique though, it just provides you a way to authenticate a connection. WebWire also doesn't enforce any kind of session storage, it's up to the user to implement any kind of volatile or persistent session storage, be it a database or a simple map.
 
 ```go
-func onRequest(ctx context.Context) (wwr.Payload, error) {
-  msg := ctx.Value(wwr.Msg).(wwr.Message)
-  client := msg.Client
+func onRequest(
+  client *wwr.Client,
+  message *wwr.Message,
+  _ context.Context,
+) (wwr.Payload, error) {
   // Verify credentials
-  if string(msg.Payload.Data) != "secret:pass" {
+  if string(message.Payload.Data) != "secret:pass" {
     return wwr.Payload{}, wwr.Error {
       Code: "WRONG_CREDENTIALS",
       Message: "Incorrect username or password, try again"

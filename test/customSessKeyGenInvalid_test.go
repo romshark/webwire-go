@@ -16,7 +16,11 @@ func TestCustomSessKeyGenInvalid(t *testing.T) {
 	server := setupServer(
 		t,
 		&serverImpl{
-			onRequest: func(ctx context.Context) (wwr.Payload, error) {
+			onRequest: func(
+				_ context.Context,
+				clt *wwr.Client,
+				_ *wwr.Message,
+			) (wwr.Payload, error) {
 				defer func() {
 					if err := recover(); err == nil {
 						t.Errorf("Expected server to panic" +
@@ -25,12 +29,8 @@ func TestCustomSessKeyGenInvalid(t *testing.T) {
 					}
 				}()
 
-				// Extract request message
-				// and requesting client from the context
-				msg := ctx.Value(wwr.Msg).(wwr.Message)
-
 				// Try to create a new session
-				if err := msg.Client.CreateSession(nil); err != nil {
+				if err := clt.CreateSession(nil); err != nil {
 					return wwr.Payload{}, err
 				}
 

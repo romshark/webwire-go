@@ -21,9 +21,6 @@ func comparePayload(t *testing.T, expected, actual []byte) {
 }
 
 func compareMessages(t *testing.T, expected, actual Message) {
-	if actual.Client != expected.Client {
-		t.Errorf("message.Client differs: %p | %p", expected.Client, actual.Client)
-	}
 	if actual.msgType != expected.msgType {
 		t.Errorf(
 			"message.msgType differs:"+

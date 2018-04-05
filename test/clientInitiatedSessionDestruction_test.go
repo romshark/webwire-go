@@ -29,13 +29,14 @@ func TestClientInitiatedSessionDestruction(t *testing.T) {
 	server := setupServer(
 		t,
 		&serverImpl{
-			onRequest: func(ctx context.Context) (webwire.Payload, error) {
-				// Extract request message and requesting client from the context
-				msg := ctx.Value(webwire.Msg).(webwire.Message)
-
+			onRequest: func(
+				_ context.Context,
+				clt *webwire.Client,
+				msg *webwire.Message,
+			) (webwire.Payload, error) {
 				// On step 2 - verify session creation and correctness
 				if currentStep == 2 {
-					sess := msg.Client.Session()
+					sess := clt.Session()
 					compareSessions(t, createdSession, sess)
 					if string(msg.Payload.Data) != sess.Key {
 						t.Errorf(
@@ -50,7 +51,7 @@ func TestClientInitiatedSessionDestruction(t *testing.T) {
 
 				// On step 4 - verify session destruction
 				if currentStep == 4 {
-					sess := msg.Client.Session()
+					sess := clt.Session()
 					if sess != nil {
 						t.Errorf(
 							"Expected the session to be destroyed, got: %v",
@@ -61,13 +62,13 @@ func TestClientInitiatedSessionDestruction(t *testing.T) {
 				}
 
 				// On step 1 - authenticate and create a new session
-				if err := msg.Client.CreateSession(nil); err != nil {
+				if err := clt.CreateSession(nil); err != nil {
 					return webwire.Payload{}, err
 				}
 
 				// Return the key of the newly created session
 				return webwire.Payload{
-					Data: []byte(msg.Client.SessionKey()),
+					Data: []byte(clt.SessionKey()),
 				}, nil
 			},
 		},

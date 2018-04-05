@@ -24,9 +24,11 @@ func TestRequestNamespaces(t *testing.T) {
 	server := setupServer(
 		t,
 		&serverImpl{
-			onRequest: func(ctx context.Context) (webwire.Payload, error) {
-				msg := ctx.Value(webwire.Msg).(webwire.Message)
-
+			onRequest: func(
+				_ context.Context,
+				_ *webwire.Client,
+				msg *webwire.Message,
+			) (webwire.Payload, error) {
 				if currentStep == 1 && msg.Name != "" {
 					t.Errorf(
 						"Expected unnamed request, got: '%s'",

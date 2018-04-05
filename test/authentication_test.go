@@ -60,37 +60,41 @@ func TestAuthentication(t *testing.T) {
 	server := setupServer(
 		t,
 		&serverImpl{
-			onSignal: func(ctx context.Context) {
+			onSignal: func(
+				_ context.Context,
+				clt *wwr.Client,
+				_ *wwr.Message,
+			) {
 				defer clientSignalReceived.Done()
-				// Extract request message and requesting client from the context
-				msg := ctx.Value(wwr.Msg).(wwr.Message)
-				sess := msg.Client.Session()
+				sess := clt.Session()
 				compareSessions(t, createdSession, sess)
 				compareSessionInfo(sess)
 			},
-			onRequest: func(ctx context.Context) (wwr.Payload, error) {
-				// Extract request message and requesting client from the context
-				msg := ctx.Value(wwr.Msg).(wwr.Message)
-
+			onRequest: func(
+				_ context.Context,
+				clt *wwr.Client,
+				_ *wwr.Message,
+			) (wwr.Payload, error) {
 				// If already authenticated then check session
 				if currentStep > 1 {
-					sess := msg.Client.Session()
+					sess := clt.Session()
 					compareSessions(t, createdSession, sess)
 					compareSessionInfo(sess)
 					return expectedConfirmation, nil
 				}
 
 				// Try to create a new session
-				if err := msg.Client.CreateSession(sessionInfo); err != nil {
+				if err := clt.CreateSession(sessionInfo); err != nil {
 					return wwr.Payload{}, err
 				}
 
 				// Authentication step is passed
 				currentStep = 2
 
-				// Return the key of the newly created session (use default binary encoding)
+				// Return the key of the newly created session
+				// (use default binary encoding)
 				return wwr.Payload{
-					Data: []byte(msg.Client.SessionKey()),
+					Data: []byte(clt.SessionKey()),
 				}, nil
 			},
 		},

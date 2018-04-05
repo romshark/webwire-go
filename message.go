@@ -4,14 +4,6 @@ import (
 	"fmt"
 )
 
-// ContextKey represents the identifiers of objects passed to the handlers context
-type ContextKey int
-
-const (
-	// Msg identifies the message object stored in the handler context
-	Msg ContextKey = iota
-)
-
 const (
 	// MsgMinLenSignal represents the minimum binary/UTF8 encoded signal message length.
 	// binary/UTF8 signal message structure:
@@ -68,7 +60,9 @@ const (
 	// Error reply message structure:
 	//  1. message type (1 byte)
 	//  2. message id (8 bytes)
-	//  3. payload (n bytes, JSON encoded, optional or at least 2 bytes)
+	//  3. error code length flag (1 byte, cannot be 0)
+	//  4. error code (from 1 to 255 bytes, length must correspond to the length flag)
+	//  5. error message (n bytes, UTF8 encoded, optional)
 	MsgMinLenErrorReply = int(11)
 
 	// MsgMinLenRestoreSession represents the minimum session restoration request message length
@@ -107,9 +101,9 @@ const (
 	// and can't therefore be processed
 	MsgReplyShutdown = byte(1)
 
-	// MsgReplyInternalError is sent by the server if an unexpected internal error arose during
+	// MsgInternalError is sent by the server if an unexpected internal error arose during
 	// the processing of a request
-	MsgReplyInternalError = byte(2)
+	MsgInternalError = byte(2)
 
 	// MsgSessionNotFound is sent by the server in response to an unfilfilled session restoration
 	// request due to the session not being found
@@ -185,10 +179,18 @@ const (
 type Message struct {
 	msgType byte
 	id      [8]byte
-
 	Name    string
 	Payload Payload
-	Client  *Client
+}
+
+// MessageType returns the type of the message
+func (msg *Message) MessageType() byte {
+	return msg.msgType
+}
+
+// Identifier returns the message identifier
+func (msg *Message) Identifier() [8]byte {
+	return msg.id
 }
 
 // NewSignalMessage composes a new named signal message and returns its binary representation
@@ -371,6 +373,61 @@ func NewReplyMessage(requestID [8]byte, payload Payload) (msg []byte) {
 	return msg
 }
 
+// NewErrorReplyMessage composes a new error reply message
+// and returns its binary representation
+func NewErrorReplyMessage(
+	requestIdent [8]byte,
+	code,
+	message string,
+) (msg []byte) {
+	if len(code) < 1 {
+		panic(fmt.Errorf(
+			"Missing error code while creating a new error reply message",
+		))
+	} else if len(code) > 255 {
+		panic(fmt.Errorf(
+			"Invalid error code while creating a new error reply message,"+
+				"too long (%d)",
+			len(code),
+		))
+	}
+
+	// Determine total message length
+	msg = make([]byte, 10+len(code)+len(message))
+
+	// Write message type flag
+	msg[0] = MsgErrorReply
+
+	// Write request identifier
+	for i := 0; i < 8; i++ {
+		msg[1+i] = requestIdent[i]
+	}
+
+	// Write code length flag
+	msg[9] = byte(len(code))
+
+	// Write error code
+	for i := 0; i < len(code); i++ {
+		char := code[i]
+		if char < 32 || char > 126 {
+			panic(fmt.Errorf(
+				"Unsupported character in reply error - error code: %s",
+				string(char),
+			))
+		}
+		msg[10+i] = code[i]
+	}
+
+	errMessageOffset := 10 + len(code)
+
+	// Write error message
+	for i := 0; i < len(message); i++ {
+		msg[errMessageOffset+i] = message[i]
+	}
+
+	return msg
+}
+
 // NewNamelessRequestMessage composes a new nameless (initially without a name) request message
 // and returns its binary representation
 func NewNamelessRequestMessage(reqType byte, id [8]byte, payload []byte) (msg []byte) {
@@ -404,6 +461,39 @@ func NewEmptyRequestMessage(msgType byte, id [8]byte) (msg []byte) {
 	// Write request identifier
 	for i := 0; i < 8; i++ {
 		msg[1+i] = id[i]
+	}
+
+	return msg
+}
+
+// NewSpecialRequestReplyMessage composes a new special request reply message
+func NewSpecialRequestReplyMessage(msgType byte, reqIdent [8]byte) []byte {
+	switch msgType {
+	case MsgInternalError:
+		break
+	case MsgMaxSessConnsReached:
+		break
+	case MsgSessionNotFound:
+		break
+	case MsgSessionsDisabled:
+		break
+	case MsgReplyShutdown:
+		break
+	default:
+		panic(fmt.Errorf(
+			"Message type (%d) doesn't represent a special reply message",
+			msgType,
+		))
+	}
+
+	msg := make([]byte, 9)
+
+	// Write message type flag
+	msg[0] = msgType
+
+	// Write request identifier
+	for i := 0; i < 8; i++ {
+		msg[1+i] = reqIdent[i]
 	}
 
 	return msg
@@ -637,8 +727,8 @@ func (msg *Message) parseReplyUtf16(message []byte) error {
 	return nil
 }
 
-// TODO: use length flags for both, the error code and the error message
-// and parse them as UTF8 fields instead of using JSON
+// parseErrorReply parses the given message assuming it's an error reply message
+// parsing the error code into the name field and the UTF8 encoded error message into the payload
 func (msg *Message) parseErrorReply(message []byte) error {
 	if len(message) < MsgMinLenErrorReply {
 		return fmt.Errorf("Invalid error reply message, too short")
@@ -649,9 +739,30 @@ func (msg *Message) parseErrorReply(message []byte) error {
 	copy(id[:], message[1:9])
 	msg.id = id
 
-	// Read payload
+	// Read error code length flag
+	errCodeLen := int(byte(message[9:10][0]))
+	errMessageOffset := 10 + errCodeLen
+
+	// Verify error code length (must be at least 1 character long)
+	if errCodeLen < 1 {
+		return fmt.Errorf("Invalid error reply message, error code length flag is zero")
+	}
+
+	// Verify total message size to prevent segmentation faults caused by inconsistent flags,
+	// this could happen if the specified error code length
+	// doesn't correspond to the actual length of the provided error code
+	if len(message) < MsgMinLenErrorReply+errCodeLen {
+		return fmt.Errorf(
+			"Invalid error reply message, too short for specified code length (%d)",
+			errCodeLen,
+		)
+	}
+
+	// Read UTF8 encoded error message into the payload
+	msg.Name = string(message[10 : 10+errCodeLen])
 	msg.Payload = Payload{
-		Data: message[9:],
+		Encoding: EncodingUtf8,
+		Data:     message[errMessageOffset:],
 	}
 	return nil
 }
@@ -704,6 +815,19 @@ func (msg *Message) parseSessionClosed(message []byte) error {
 	return nil
 }
 
+func (msg *Message) parseSpecialReplyMessage(message []byte) error {
+	if len(message) < 9 {
+		return fmt.Errorf("Invalid special reply message, too short")
+	}
+
+	// Read identifier
+	var id [8]byte
+	copy(id[:], message[1:9])
+	msg.id = id
+
+	return nil
+}
+
 // Parse tries to parse the message from a byte slice
 func (msg *Message) Parse(message []byte) (err error) {
 	if len(message) < 1 {
@@ -714,23 +838,23 @@ func (msg *Message) Parse(message []byte) (err error) {
 
 	switch msgType {
 
-	// Request message format: [1 (type), 32 (id), | 1+ (payload)]
+	// Request error reply message
 	case MsgErrorReply:
 		err = msg.parseErrorReply(message)
 
-	// Session creation notification format [1 (type), 32 (id), | 1+ (payload)]
+	// Session creation notification message
 	case MsgSessionCreated:
 		err = msg.parseSessionCreated(message)
 
-	// Session closure notification message format [1 (type), 32 (id)]
+	// Session closure notification message
 	case MsgSessionClosed:
 		err = msg.parseSessionClosed(message)
 
-	// Session destruction request message format [1 (type), 32 (id)]
+	// Session destruction request message
 	case MsgCloseSession:
 		err = msg.parseCloseSession(message)
 
-	// Request message format: [1 (type), 1+ (payload)]
+	// Signal messages
 	case MsgSignalBinary:
 		payloadEncoding = EncodingBinary
 		err = msg.parseSignal(message)
@@ -741,7 +865,7 @@ func (msg *Message) Parse(message []byte) (err error) {
 		payloadEncoding = EncodingUtf16
 		err = msg.parseSignalUtf16(message)
 
-	// Request message format: [1 (type), 32 (id), | 1+ (payload)]
+	// Request messages
 	case MsgRequestBinary:
 		payloadEncoding = EncodingBinary
 		err = msg.parseRequest(message)
@@ -752,7 +876,7 @@ func (msg *Message) Parse(message []byte) (err error) {
 		payloadEncoding = EncodingUtf16
 		err = msg.parseRequestUtf16(message)
 
-	// Reply message format:
+	// Reply messages
 	case MsgReplyBinary:
 		payloadEncoding = EncodingBinary
 		err = msg.parseReply(message)
@@ -763,9 +887,21 @@ func (msg *Message) Parse(message []byte) (err error) {
 		payloadEncoding = EncodingUtf16
 		err = msg.parseReplyUtf16(message)
 
-	// Session restoration request message format: [1 (type), 32 (id), | 1+ (payload)]
+	// Session restoration request message
 	case MsgRestoreSession:
 		err = msg.parseRestoreSession(message)
+
+	// Special reply messages
+	case MsgReplyShutdown:
+		err = msg.parseSpecialReplyMessage(message)
+	case MsgInternalError:
+		err = msg.parseSpecialReplyMessage(message)
+	case MsgSessionNotFound:
+		err = msg.parseSpecialReplyMessage(message)
+	case MsgMaxSessConnsReached:
+		err = msg.parseSpecialReplyMessage(message)
+	case MsgSessionsDisabled:
+		err = msg.parseSpecialReplyMessage(message)
 
 	// Ignore messages of invalid message type
 	default:
