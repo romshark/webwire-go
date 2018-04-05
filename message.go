@@ -750,8 +750,9 @@ func (msg *Message) parseErrorReply(message []byte) error {
 
 	// Verify total message size to prevent segmentation faults caused by inconsistent flags,
 	// this could happen if the specified error code length
-	// doesn't correspond to the actual length of the provided error code
-	if len(message) < MsgMinLenErrorReply+errCodeLen {
+	// doesn't correspond to the actual length of the provided error code.
+	// Subtract 1 character already taken into account by MsgMinLenErrorReply
+	if len(message) < MsgMinLenErrorReply+errCodeLen-1 {
 		return fmt.Errorf(
 			"Invalid error reply message, too short for specified code length (%d)",
 			errCodeLen,
