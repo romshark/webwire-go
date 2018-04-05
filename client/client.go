@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-const supportedProtocolVersion = "1.2"
+const supportedProtocolVersion = "1.3"
 
 // Status represents the status of a client instance
 type Status = int32

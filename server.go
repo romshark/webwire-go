@@ -9,7 +9,7 @@ import (
 	"sync"
 )
 
-const protocolVersion = "1.2"
+const protocolVersion = "1.3"
 
 // Server represents a headless WebWire server instance,
 // where headless means there's no HTTP server that's hosting it
