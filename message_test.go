@@ -917,6 +917,17 @@ func TestMsgParseSessClosedSig(t *testing.T) {
 	compareMessages(t, expected, actual)
 }
 
+// TestMsgParseUnknownMessageType tests parsing of messages with unknown message type
+func TestMsgParseUnknownMessageType(t *testing.T) {
+	msgOfUnknownType := make([]byte, 1)
+	msgOfUnknownType[0] = byte(255)
+
+	var actual Message
+	if err := actual.Parse(msgOfUnknownType); err == nil {
+		t.Fatalf("Expected error when parsing a message of unknown type")
+	}
+}
+
 // TestMsgNewNamelessReqMsg tests the NewNamelessRequestMessage method
 func TestMsgNewNamelessReqMsg(t *testing.T) {
 	id := genRndMsgID()
