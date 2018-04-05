@@ -1,7 +1,9 @@
 package webwire
 
 import (
+	"bytes"
 	"encoding/json"
+	"fmt"
 	"math/rand"
 	"reflect"
 	"testing"
@@ -64,16 +66,21 @@ func genRndMsgID() (randID [8]byte) {
 	return randID
 }
 
-func genRndName() string {
+func genRndName(min, max int) string {
+	if max > 255 || min < 0 || min > max {
+		panic(fmt.Errorf("Invalid genRndName parameters: %d | %d", min, max))
+	}
 	rand.Seed(time.Now().UnixNano())
 	const letterBytes = " !\"#$%&'()*+,-./0123456789:;<=>?@" +
 		"ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
 		"[\\]^_`" +
 		"abcdefghijklmnopqrstuvwxyz" +
 		"{|}~"
-	const min = 1
-	const max = 255
-	nameBytes := make([]byte, min+rand.Intn(max-min))
+	randomLength := min + rand.Intn(max-min)
+	if randomLength < 1 {
+		return ""
+	}
+	nameBytes := make([]byte, randomLength)
 	for i := range nameBytes {
 		nameBytes[i] = letterBytes[rand.Intn(len(letterBytes))]
 	}
@@ -201,7 +208,7 @@ func TestMsgParseInvalidRequestTooShort(t *testing.T) {
 // TestMsgParseRequestBinary tests parsing of a named binary encoded request
 func TestMsgParseRequestBinary(t *testing.T) {
 	id := genRndMsgID()
-	name := genRndName()
+	name := genRndName(1, 255)
 	payload := Payload{
 		Encoding: EncodingBinary,
 		Data:     []byte("random payload data"),
@@ -240,7 +247,7 @@ func TestMsgParseRequestBinary(t *testing.T) {
 // TestMsgParseRequestUtf8 tests parsing of a named UTF8 encoded request
 func TestMsgParseRequestUtf8(t *testing.T) {
 	id := genRndMsgID()
-	name := genRndName()
+	name := genRndName(1, 255)
 	payload := Payload{
 		Encoding: EncodingUtf8,
 		Data:     []byte("random utf8 payload"),
@@ -296,7 +303,7 @@ func TestMsgParseInvalidRequestUtf16TooShort(t *testing.T) {
 // TestMsgParseRequestUtf16 tests parsing of a named UTF16 encoded request
 func TestMsgParseRequestUtf16(t *testing.T) {
 	id := genRndMsgID()
-	name := genRndName()
+	name := genRndName(1, 255)
 	payload := Payload{
 		Encoding: EncodingUtf16,
 		Data:     []byte{'r', 0, 'a', 0, 'n', 0, 'd', 0, 'o', 0, 'm', 0},
@@ -340,7 +347,7 @@ func TestMsgParseRequestUtf16(t *testing.T) {
 // with a corrupted input stream (length not divisible by 2)
 func TestMsgParseRequestUtf16CorruptInput(t *testing.T) {
 	id := genRndMsgID()
-	name := genRndName()
+	name := genRndName(1, 255)
 	payload := Payload{
 		Encoding: EncodingUtf16,
 		Data:     []byte("invalid"),
@@ -366,6 +373,68 @@ func TestMsgParseRequestUtf16CorruptInput(t *testing.T) {
 	var actual Message
 	if err := actual.Parse(encoded); err == nil {
 		t.Fatal("Expected Parse to return an error due to corrupt input stream")
+	}
+}
+
+// TestMsgParseRequestCorruptNameLenFlag tests parsing of a named Binary/UTF8 encoded request
+// with a corrupted input stream (name length flag doesn't correspond to actual name length)
+func TestMsgParseRequestCorruptNameLenFlag(t *testing.T) {
+	id := genRndMsgID()
+	payload := Payload{
+		Encoding: EncodingBinary,
+		Data:     []byte("invalid"),
+	}
+
+	// Compose encoded message
+	encoded := &bytes.Buffer{}
+	encoded.Grow(10 + len(payload.Data))
+
+	// Add type flag
+	encoded.WriteByte(MsgRequestBinary)
+	// Add identifier
+	encoded.Write(id[:])
+
+	// Add corrupt name length flag (too big) and skip the name field
+	encoded.WriteByte(255)
+
+	// Add payload
+	encoded.Write(payload.Data)
+
+	// Parse
+	var actual Message
+	if err := actual.Parse(encoded.Bytes()); err == nil {
+		t.Fatal("Expected Parse to return an error due to corrupt name length flag")
+	}
+}
+
+// TestMsgParseRequestUtf16CorruptNameLenFlag tests parsing of a named UTF16 encoded request
+// with a corrupted input stream (name length flag doesn't correspond to actual name length)
+func TestMsgParseRequestUtf16CorruptNameLenFlag(t *testing.T) {
+	id := genRndMsgID()
+	payload := Payload{
+		Encoding: EncodingUtf16,
+		Data:     []byte("invalid"),
+	}
+
+	// Compose encoded message
+	encoded := &bytes.Buffer{}
+	encoded.Grow(10 + len(payload.Data))
+
+	// Add type flag
+	encoded.WriteByte(MsgRequestUtf16)
+	// Add identifier
+	encoded.Write(id[:])
+
+	// Add corrupt name length flag (too big) and skip actual name field
+	encoded.WriteByte(255)
+
+	// Add payload
+	encoded.Write(payload.Data)
+
+	// Parse
+	var actual Message
+	if err := actual.Parse(encoded.Bytes()); err == nil {
+		t.Fatal("Expected Parse to return an error due to corrupt name length flag")
 	}
 }
 
@@ -552,7 +621,7 @@ func TestMsgParseInvalidSignalTooShort(t *testing.T) {
 
 // TestMsgParseSignalBinary tests parsing of a named binary encoded signal
 func TestMsgParseSignalBinary(t *testing.T) {
-	name := genRndName()
+	name := genRndName(1, 255)
 	payload := Payload{
 		Encoding: EncodingBinary,
 		Data:     []byte("random payload data"),
@@ -588,7 +657,7 @@ func TestMsgParseSignalBinary(t *testing.T) {
 
 // TestMsgParseSignalUtf8 tests parsing of a named UTF8 encoded signal
 func TestMsgParseSignalUtf8(t *testing.T) {
-	name := genRndName()
+	name := genRndName(1, 255)
 	payload := Payload{
 		Encoding: EncodingUtf8,
 		Data:     []byte("random payload data"),
@@ -641,7 +710,7 @@ func TestMsgParseInvalidSignalUtf16TooShort(t *testing.T) {
 
 // TestMsgParseSignalUtf16 tests parsing of a named UTF16 encoded signal
 func TestMsgParseSignalUtf16(t *testing.T) {
-	name := genRndName()
+	name := genRndName(1, 255)
 	payload := Payload{
 		Encoding: EncodingUtf16,
 		Data:     []byte{'r', 0, 'a', 0, 'n', 0, 'd', 0, 'o', 0, 'm', 0},
@@ -682,7 +751,7 @@ func TestMsgParseSignalUtf16(t *testing.T) {
 // TestMsgParseSignalUtf16CorruptInput tests parsing of a named UTF16 encoded signal
 // with a corrupt unaligned input stream (length not divisible by 2)
 func TestMsgParseSignalUtf16CorruptInput(t *testing.T) {
-	name := genRndName()
+	name := genRndName(1, 255)
 	payload := Payload{
 		Encoding: EncodingUtf16,
 		Data:     []byte("invalid"),
@@ -706,6 +775,62 @@ func TestMsgParseSignalUtf16CorruptInput(t *testing.T) {
 	var actual Message
 	if err := actual.Parse(encoded); err == nil {
 		t.Fatal("Expected Parse to return an error due to corrupt input stream")
+	}
+}
+
+// TestMsgParseSignalCorruptNameLenFlag tests parsing of a named Binary/UTF8 encoded signal
+// with a corrupted input stream (name length flag doesn't correspond to actual name length)
+func TestMsgParseSignalCorruptNameLenFlag(t *testing.T) {
+	payload := Payload{
+		Encoding: EncodingBinary,
+		Data:     []byte("invalid"),
+	}
+
+	// Compose encoded message
+	encoded := &bytes.Buffer{}
+	encoded.Grow(2 + len(payload.Data))
+
+	// Add type flag
+	encoded.WriteByte(MsgSignalBinary)
+
+	// Add corrupt name length flag (too big) and skip the name field
+	encoded.WriteByte(255)
+
+	// Add payload
+	encoded.Write(payload.Data)
+
+	// Parse
+	var actual Message
+	if err := actual.Parse(encoded.Bytes()); err == nil {
+		t.Fatal("Expected Parse to return an error due to corrupt name length flag")
+	}
+}
+
+// TestMsgParseSignalUtf16CorruptNameLenFlag tests parsing of a named UTF16 encoded signal
+// with a corrupted input stream (name length flag doesn't correspond to actual name length)
+func TestMsgParseSignalUtf16CorruptNameLenFlag(t *testing.T) {
+	payload := Payload{
+		Encoding: EncodingBinary,
+		Data:     []byte("invalid"),
+	}
+
+	// Compose encoded message
+	encoded := &bytes.Buffer{}
+	encoded.Grow(2 + len(payload.Data))
+
+	// Add type flag
+	encoded.WriteByte(MsgSignalUtf16)
+
+	// Add corrupt name length flag (too big) and skip the name field
+	encoded.WriteByte(255)
+
+	// Add payload
+	encoded.Write(payload.Data)
+
+	// Parse
+	var actual Message
+	if err := actual.Parse(encoded.Bytes()); err == nil {
+		t.Fatal("Expected Parse to return an error due to corrupt name length flag")
 	}
 }
 
@@ -850,7 +975,7 @@ func TestMsgNewReqMsgNameTooLong(t *testing.T) {
 // TestMsgNewReqMsgBinary tests the NewRequestMessage method using default binary payload encoding
 func TestMsgNewReqMsgBinary(t *testing.T) {
 	id := genRndMsgID()
-	name := genRndName()
+	name := genRndName(1, 255)
 	payload := Payload{
 		Encoding: EncodingBinary,
 		Data:     []byte("random payload data"),
@@ -878,7 +1003,7 @@ func TestMsgNewReqMsgBinary(t *testing.T) {
 // TestMsgNewReqMsgUtf8 tests the NewRequestMessage method using UTF8 payload encoding
 func TestMsgNewReqMsgUtf8(t *testing.T) {
 	id := genRndMsgID()
-	name := genRndName()
+	name := genRndName(1, 255)
 	payload := Payload{
 		Encoding: EncodingUtf8,
 		Data:     []byte("random payload data"),
@@ -906,7 +1031,7 @@ func TestMsgNewReqMsgUtf8(t *testing.T) {
 // TestMsgNewReqMsgUtf16 tests the NewRequestMessage method using UTF8 payload encoding
 func TestMsgNewReqMsgUtf16(t *testing.T) {
 	id := genRndMsgID()
-	name := genRndName()
+	name := genRndName(1, 255)
 	payload := Payload{
 		Encoding: EncodingUtf16,
 		Data:     []byte{'r', 0, 'a', 0, 'n', 0, 'd', 0, 'o', 0, 'm', 0},
@@ -946,7 +1071,7 @@ func TestMsgNewReqMsgUtf16CorruptPayload(t *testing.T) {
 		}
 	}()
 
-	NewRequestMessage(genRndMsgID(), genRndName(), Payload{
+	NewRequestMessage(genRndMsgID(), genRndName(1, 255), Payload{
 		Encoding: EncodingUtf16,
 		// Payload is corrupt, only 7 bytes long, not power 2
 		Data: []byte("invalid"),
@@ -1066,7 +1191,7 @@ func TestMsgNewSigMsgNameTooLong(t *testing.T) {
 
 // TestMsgNewSigMsgBinary tests the NewSignalMessage method using the default binary encoding
 func TestMsgNewSigMsgBinary(t *testing.T) {
-	name := genRndName()
+	name := genRndName(1, 255)
 	payload := Payload{
 		Encoding: EncodingBinary,
 		Data:     []byte("random payload data"),
@@ -1091,7 +1216,7 @@ func TestMsgNewSigMsgBinary(t *testing.T) {
 
 // TestMsgNewSigMsgUtf8 tests the NewSignalMessage method using UTF8 encoding
 func TestMsgNewSigMsgUtf8(t *testing.T) {
-	name := genRndName()
+	name := genRndName(1, 255)
 	payload := Payload{
 		Encoding: EncodingUtf8,
 		Data:     []byte("random payload data"),
@@ -1116,7 +1241,7 @@ func TestMsgNewSigMsgUtf8(t *testing.T) {
 
 // TestMsgNewSigMsgUtf16 tests the NewSignalMessage method using UTF16 encoding
 func TestMsgNewSigMsgUtf16(t *testing.T) {
-	name := genRndName()
+	name := genRndName(1, 255)
 	payload := Payload{
 		Encoding: EncodingUtf16,
 		Data:     []byte{'r', 0, 'a', 0, 'n', 0, 'd', 0, 'o', 0, 'm', 0},
@@ -1154,7 +1279,7 @@ func TestMsgNewSigMsgUtf16CorruptPayload(t *testing.T) {
 		}
 	}()
 
-	NewSignalMessage(genRndName(), Payload{
+	NewSignalMessage(genRndName(1, 255), Payload{
 		Encoding: EncodingUtf16,
 		// Payload is corrupt, only 7 bytes long, not power 2
 		Data: []byte("invalid"),
