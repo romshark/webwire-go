@@ -972,6 +972,40 @@ func TestMsgNewReqMsgNameTooLong(t *testing.T) {
 	NewRequestMessage(genRndMsgID(), string(nameBuf), Payload{})
 }
 
+// TestMsgNewReqMsgInvalidCharsetBelowAscii32 tests the NewRequestMessage method
+// with an invalid character input below the ASCII 7 bit 32nd character
+func TestMsgNewReqMsgInvalidCharsetBelowAscii32(t *testing.T) {
+	defer func() {
+		err := recover()
+		if err == nil {
+			t.Fatalf("Expected panic after passing an invalid name character set")
+		}
+	}()
+
+	// Generate invalid name using a character below the ASCII 7 bit 32nd character
+	invalidNameBytes := make([]byte, 1)
+	invalidNameBytes[0] = byte(31)
+
+	NewRequestMessage(genRndMsgID(), string(invalidNameBytes), Payload{})
+}
+
+// TestMsgNewReqMsgInvalidCharsetAboveAscii126 tests the NewRequestMessage method
+// with an invalid character input above the ASCII 7 bit 126th character
+func TestMsgNewReqMsgInvalidCharsetAboveAscii126(t *testing.T) {
+	defer func() {
+		err := recover()
+		if err == nil {
+			t.Fatalf("Expected panic after passing an invalid name character set")
+		}
+	}()
+
+	// Generate invalid name using a character above the ASCII 7 bit 126th character
+	invalidNameBytes := make([]byte, 1)
+	invalidNameBytes[0] = byte(127)
+
+	NewRequestMessage(genRndMsgID(), string(invalidNameBytes), Payload{})
+}
+
 // TestMsgNewReqMsgBinary tests the NewRequestMessage method using default binary payload encoding
 func TestMsgNewReqMsgBinary(t *testing.T) {
 	id := genRndMsgID()
@@ -1187,6 +1221,40 @@ func TestMsgNewSigMsgNameTooLong(t *testing.T) {
 	}
 
 	NewSignalMessage(string(nameBuf), Payload{})
+}
+
+// TestMsgNewSigMsgInvalidCharsetBelowAscii32 tests the NewSignalMessage method
+// with an invalid character input below the ASCII 7 bit 32nd character
+func TestMsgNewSigMsgInvalidCharsetBelowAscii32(t *testing.T) {
+	defer func() {
+		err := recover()
+		if err == nil {
+			t.Fatalf("Expected panic after passing an invalid name character set")
+		}
+	}()
+
+	// Generate invalid name using a character below the ASCII 7 bit 32nd character
+	invalidNameBytes := make([]byte, 1)
+	invalidNameBytes[0] = byte(31)
+
+	NewSignalMessage(string(invalidNameBytes), Payload{})
+}
+
+// TestMsgNewSigMsgInvalidCharsetAboveAscii126 tests the NewSignalMessage method
+// with an invalid character input above ASCII 7 bit 126th character
+func TestMsgNewSigMsgInvalidCharsetAboveAscii126(t *testing.T) {
+	defer func() {
+		err := recover()
+		if err == nil {
+			t.Fatalf("Expected panic after passing an invalid name character set")
+		}
+	}()
+
+	// Generate invalid name using a character above the ASCII 7 bit 126th character
+	invalidNameBytes := make([]byte, 1)
+	invalidNameBytes[0] = byte(127)
+
+	NewSignalMessage(string(invalidNameBytes), Payload{})
 }
 
 // TestMsgNewSigMsgBinary tests the NewSignalMessage method using the default binary encoding
