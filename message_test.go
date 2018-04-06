@@ -84,23 +84,9 @@ func genRndName(min, max int) string {
 	return string(nameBytes)
 }
 
-// TestMsgParseInvalidSessCloseReqTooShort tests parsing of an invalid session destruction request
-// message which is too short to be considered valid
-func TestMsgParseInvalidSessCloseReqTooShort(t *testing.T) {
-	lenTooShort := MsgMinLenCloseSession - 1
-	invalidMessage := make([]byte, lenTooShort)
-
-	invalidMessage[0] = MsgCloseSession
-
-	var actual Message
-	if err := actual.Parse(invalidMessage); err == nil {
-		t.Fatalf(
-			"Expected error while parsing invalid session destruction request message "+
-				"(too short: %d)",
-			lenTooShort,
-		)
-	}
-}
+/****************************************************************\
+	Parser
+\****************************************************************/
 
 // TestMsgParseCloseSessReq tests parsing of a session destruction request
 func TestMsgParseCloseSessReq(t *testing.T) {
@@ -131,24 +117,6 @@ func TestMsgParseCloseSessReq(t *testing.T) {
 
 	// Compare
 	compareMessages(t, expected, actual)
-}
-
-// TestMsgParseInvalidRestrSessReqTooShort tests parsing of an invalid session restoration request
-// message which is too short to be considered valid
-func TestMsgParseInvalidRestrSessReqTooShort(t *testing.T) {
-	lenTooShort := MsgMinLenRestoreSession - 1
-	invalidMessage := make([]byte, lenTooShort)
-
-	invalidMessage[0] = MsgRestoreSession
-
-	var actual Message
-	if err := actual.Parse(invalidMessage); err == nil {
-		t.Fatalf(
-			"Expected error while parsing invalid session restoration request message "+
-				"(too short: %d)",
-			lenTooShort,
-		)
-	}
 }
 
 // TestMsgParseRestrSessReq tests parsing of a session restoration request
@@ -183,23 +151,6 @@ func TestMsgParseRestrSessReq(t *testing.T) {
 
 	// Compare
 	compareMessages(t, expected, actual)
-}
-
-// TestMsgParseInvalidRequestTooShort tests parsing of an invalid binary/UTF8 request message
-// which is too short to be considered valid
-func TestMsgParseInvalidRequestTooShort(t *testing.T) {
-	lenTooShort := MsgMinLenRequest - 1
-	invalidMessage := make([]byte, lenTooShort)
-
-	invalidMessage[0] = MsgRequestBinary
-
-	var actual Message
-	if err := actual.Parse(invalidMessage); err == nil {
-		t.Fatalf(
-			"Expected error while parsing invalid request message (too short: %d)",
-			lenTooShort,
-		)
-	}
 }
 
 // TestMsgParseRequestBinary tests parsing of a named binary encoded request
@@ -280,23 +231,6 @@ func TestMsgParseRequestUtf8(t *testing.T) {
 	compareMessages(t, expected, actual)
 }
 
-// TestMsgParseInvalidRequestUtf16TooShort tests parsing of an invalid utf16 request message
-// which is too short to be considered valid
-func TestMsgParseInvalidRequestUtf16TooShort(t *testing.T) {
-	lenTooShort := MsgMinLenRequestUtf16 - 1
-	invalidMessage := make([]byte, lenTooShort)
-
-	invalidMessage[0] = MsgRequestUtf16
-
-	var actual Message
-	if err := actual.Parse(invalidMessage); err == nil {
-		t.Fatalf(
-			"Expected error while parsing invalid UTF16 encoded request message (too short: %d)",
-			lenTooShort,
-		)
-	}
-}
-
 // TestMsgParseRequestUtf16 tests parsing of a named UTF16 encoded request
 func TestMsgParseRequestUtf16(t *testing.T) {
 	id := genRndMsgID()
@@ -338,118 +272,6 @@ func TestMsgParseRequestUtf16(t *testing.T) {
 
 	// Compare
 	compareMessages(t, expected, actual)
-}
-
-// TestMsgParseRequestUtf16CorruptInput tests parsing of a named UTF16 encoded request
-// with a corrupted input stream (length not divisible by 2)
-func TestMsgParseRequestUtf16CorruptInput(t *testing.T) {
-	id := genRndMsgID()
-	name := genRndName(1, 255)
-	payload := Payload{
-		Encoding: EncodingUtf16,
-		Data:     []byte("invalid"),
-	}
-
-	// Compose encoded message
-	// Add type flag
-	encoded := []byte{MsgRequestUtf16}
-	// Add identifier
-	encoded = append(encoded, id[:]...)
-	// Add name length flag
-	encoded = append(encoded, byte(len(name)))
-	// Add name
-	encoded = append(encoded, []byte(name)...)
-	// Add header padding if necessary
-	if len(name)%2 != 0 {
-		encoded = append(encoded, byte(0))
-	}
-	// Add payload
-	encoded = append(encoded, payload.Data...)
-
-	// Parse
-	var actual Message
-	if err := actual.Parse(encoded); err == nil {
-		t.Fatal("Expected Parse to return an error due to corrupt input stream")
-	}
-}
-
-// TestMsgParseRequestCorruptNameLenFlag tests parsing of a named Binary/UTF8 encoded request
-// with a corrupted input stream (name length flag doesn't correspond to actual name length)
-func TestMsgParseRequestCorruptNameLenFlag(t *testing.T) {
-	id := genRndMsgID()
-	payload := Payload{
-		Encoding: EncodingBinary,
-		Data:     []byte("invalid"),
-	}
-
-	// Compose encoded message
-	encoded := &bytes.Buffer{}
-	encoded.Grow(10 + len(payload.Data))
-
-	// Add type flag
-	encoded.WriteByte(MsgRequestBinary)
-	// Add identifier
-	encoded.Write(id[:])
-
-	// Add corrupt name length flag (too big) and skip the name field
-	encoded.WriteByte(255)
-
-	// Add payload
-	encoded.Write(payload.Data)
-
-	// Parse
-	var actual Message
-	if err := actual.Parse(encoded.Bytes()); err == nil {
-		t.Fatal("Expected Parse to return an error due to corrupt name length flag")
-	}
-}
-
-// TestMsgParseRequestUtf16CorruptNameLenFlag tests parsing of a named UTF16 encoded request
-// with a corrupted input stream (name length flag doesn't correspond to actual name length)
-func TestMsgParseRequestUtf16CorruptNameLenFlag(t *testing.T) {
-	id := genRndMsgID()
-	payload := Payload{
-		Encoding: EncodingUtf16,
-		Data:     []byte("invalid"),
-	}
-
-	// Compose encoded message
-	encoded := &bytes.Buffer{}
-	encoded.Grow(10 + len(payload.Data))
-
-	// Add type flag
-	encoded.WriteByte(MsgRequestUtf16)
-	// Add identifier
-	encoded.Write(id[:])
-
-	// Add corrupt name length flag (too big) and skip actual name field
-	encoded.WriteByte(255)
-
-	// Add payload
-	encoded.Write(payload.Data)
-
-	// Parse
-	var actual Message
-	if err := actual.Parse(encoded.Bytes()); err == nil {
-		t.Fatal("Expected Parse to return an error due to corrupt name length flag")
-	}
-}
-
-// TestMsgParseInvalidReplyTooShort tests parsing of an invalid binary/UTF8 reply message
-// which is too short to be considered valid
-func TestMsgParseInvalidReplyTooShort(t *testing.T) {
-	lenTooShort := MsgMinLenReply - 1
-	invalidMessage := make([]byte, lenTooShort)
-
-	invalidMessage[0] = MsgReplyBinary
-
-	var actual Message
-	if err := actual.Parse(invalidMessage); err == nil {
-		t.Fatalf(
-			"Expected error while parsing invalid reply message (too short: %d)",
-			lenTooShort,
-		)
-	}
 }
 
 // TestMsgParseReplyBinary tests parsing of binary encoded reply message
@@ -520,23 +342,6 @@ func TestMsgParseReplyUtf8(t *testing.T) {
 	compareMessages(t, expected, actual)
 }
 
-// TestMsgParseInvalidReplyUtf16TooShort tests parsing of an invalid UTF16 reply message
-// which is too short to be considered valid
-func TestMsgParseInvalidReplyUtf16TooShort(t *testing.T) {
-	lenTooShort := MsgMinLenReplyUtf16 - 1
-	invalidMessage := make([]byte, lenTooShort)
-
-	invalidMessage[0] = MsgRequestUtf16
-
-	var actual Message
-	if err := actual.Parse(invalidMessage); err == nil {
-		t.Fatalf(
-			"Expected error while parsing invalid UTF16 reply message (too short: %d)",
-			lenTooShort,
-		)
-	}
-}
-
 // TestMsgParseReplyUtf16 tests parsing of UTF16 encoded reply message
 func TestMsgParseReplyUtf16(t *testing.T) {
 	id := genRndMsgID()
@@ -571,49 +376,6 @@ func TestMsgParseReplyUtf16(t *testing.T) {
 
 	// Compare
 	compareMessages(t, expected, actual)
-}
-
-// TestMsgParseReplyUtf16CorruptInput tests parsing of UTF16 encoded reply message
-// with a corrupted input stream (length not divisible by 2)
-func TestMsgParseReplyUtf16CorruptInput(t *testing.T) {
-	id := genRndMsgID()
-	payload := Payload{
-		Encoding: EncodingUtf16,
-		Data:     []byte("invalid"),
-	}
-
-	// Compose encoded message
-	// Add type flag
-	encoded := []byte{MsgReplyUtf16}
-	// Add identifier
-	encoded = append(encoded, id[:]...)
-	// Add header padding byte due to UTF16 encoding
-	encoded = append(encoded, byte(0))
-	// Add payload
-	encoded = append(encoded, payload.Data...)
-
-	// Parse
-	var actual Message
-	if err := actual.Parse(encoded); err == nil {
-		t.Fatal("Expected Parse to return an error due to corrupt input stream")
-	}
-}
-
-// TestMsgParseInvalidSignalTooShort tests parsing of an invalid binary/UTF8 signal message
-// which is too short to be considered valid
-func TestMsgParseInvalidSignalTooShort(t *testing.T) {
-	lenTooShort := MsgMinLenSignal - 1
-	invalidMessage := make([]byte, lenTooShort)
-
-	invalidMessage[0] = MsgSignalBinary
-
-	var actual Message
-	if err := actual.Parse(invalidMessage); err == nil {
-		t.Fatalf(
-			"Expected error while parsing invalid signal message (too short: %d)",
-			lenTooShort,
-		)
-	}
 }
 
 // TestMsgParseSignalBinary tests parsing of a named binary encoded signal
@@ -688,23 +450,6 @@ func TestMsgParseSignalUtf8(t *testing.T) {
 	compareMessages(t, expected, actual)
 }
 
-// TestMsgParseInvalidSignalUtf16TooShort tests parsing of an invalid UTF16 signal message
-// which is too short to be considered valid
-func TestMsgParseInvalidSignalUtf16TooShort(t *testing.T) {
-	lenTooShort := MsgMinLenSignalUtf16 - 1
-	invalidMessage := make([]byte, lenTooShort)
-
-	invalidMessage[0] = MsgSignalUtf16
-
-	var actual Message
-	if err := actual.Parse(invalidMessage); err == nil {
-		t.Fatalf(
-			"Expected error while parsing invalid UTF16 signal message (too short: %d)",
-			lenTooShort,
-		)
-	}
-}
-
 // TestMsgParseSignalUtf16 tests parsing of a named UTF16 encoded signal
 func TestMsgParseSignalUtf16(t *testing.T) {
 	name := genRndName(1, 255)
@@ -743,110 +488,6 @@ func TestMsgParseSignalUtf16(t *testing.T) {
 
 	// Compare
 	compareMessages(t, expected, actual)
-}
-
-// TestMsgParseSignalUtf16CorruptInput tests parsing of a named UTF16 encoded signal
-// with a corrupt unaligned input stream (length not divisible by 2)
-func TestMsgParseSignalUtf16CorruptInput(t *testing.T) {
-	name := genRndName(1, 255)
-	payload := Payload{
-		Encoding: EncodingUtf16,
-		Data:     []byte("invalid"),
-	}
-
-	// Compose encoded message
-	// Add type flag
-	encoded := []byte{MsgSignalUtf16}
-	// Add name length flag
-	encoded = append(encoded, byte(len(name)))
-	// Add name
-	encoded = append(encoded, []byte(name)...)
-	// Add header padding if necessary
-	if len(name)%2 != 0 {
-		encoded = append(encoded, byte(0))
-	}
-	// Add payload
-	encoded = append(encoded, payload.Data...)
-
-	// Parse
-	var actual Message
-	if err := actual.Parse(encoded); err == nil {
-		t.Fatal("Expected Parse to return an error due to corrupt input stream")
-	}
-}
-
-// TestMsgParseSignalCorruptNameLenFlag tests parsing of a named Binary/UTF8 encoded signal
-// with a corrupted input stream (name length flag doesn't correspond to actual name length)
-func TestMsgParseSignalCorruptNameLenFlag(t *testing.T) {
-	payload := Payload{
-		Encoding: EncodingBinary,
-		Data:     []byte("invalid"),
-	}
-
-	// Compose encoded message
-	encoded := &bytes.Buffer{}
-	encoded.Grow(2 + len(payload.Data))
-
-	// Add type flag
-	encoded.WriteByte(MsgSignalBinary)
-
-	// Add corrupt name length flag (too big) and skip the name field
-	encoded.WriteByte(255)
-
-	// Add payload
-	encoded.Write(payload.Data)
-
-	// Parse
-	var actual Message
-	if err := actual.Parse(encoded.Bytes()); err == nil {
-		t.Fatal("Expected Parse to return an error due to corrupt name length flag")
-	}
-}
-
-// TestMsgParseSignalUtf16CorruptNameLenFlag tests parsing of a named UTF16 encoded signal
-// with a corrupted input stream (name length flag doesn't correspond to actual name length)
-func TestMsgParseSignalUtf16CorruptNameLenFlag(t *testing.T) {
-	payload := Payload{
-		Encoding: EncodingBinary,
-		Data:     []byte("invalid"),
-	}
-
-	// Compose encoded message
-	encoded := &bytes.Buffer{}
-	encoded.Grow(2 + len(payload.Data))
-
-	// Add type flag
-	encoded.WriteByte(MsgSignalUtf16)
-
-	// Add corrupt name length flag (too big) and skip the name field
-	encoded.WriteByte(255)
-
-	// Add payload
-	encoded.Write(payload.Data)
-
-	// Parse
-	var actual Message
-	if err := actual.Parse(encoded.Bytes()); err == nil {
-		t.Fatal("Expected Parse to return an error due to corrupt name length flag")
-	}
-}
-
-// TestMsgParseInvalidSessCreatedSigTooShort tests parsing of an invalid session creation
-// notification message which is too short to be considered valid
-func TestMsgParseInvalidSessCreatedSigTooShort(t *testing.T) {
-	lenTooShort := MsgMinLenSessionCreated - 1
-	invalidMessage := make([]byte, lenTooShort)
-
-	invalidMessage[0] = MsgSessionCreated
-
-	var actual Message
-	if err := actual.Parse(invalidMessage); err == nil {
-		t.Fatalf(
-			"Expected error while parsing invalid session creation notification message "+
-				"(too short: %d)",
-			lenTooShort,
-		)
-	}
 }
 
 // TestMsgParseSessCreatedSig tests parsing of session created signal
@@ -914,7 +555,8 @@ func TestMsgParseSessClosedSig(t *testing.T) {
 	compareMessages(t, expected, actual)
 }
 
-// TestMsgParseUnknownMessageType tests parsing of messages with unknown message type
+// TestMsgParseUnknownMessageType tests parsing of messages
+// with unknown message type
 func TestMsgParseUnknownMessageType(t *testing.T) {
 	msgOfUnknownType := make([]byte, 1)
 	msgOfUnknownType[0] = byte(255)
@@ -925,7 +567,11 @@ func TestMsgParseUnknownMessageType(t *testing.T) {
 	}
 }
 
-// TestMsgNewNamelessReqMsg tests the NewNamelessRequestMessage method
+/****************************************************************\
+	Constructors
+\****************************************************************/
+
+// TestMsgNewNamelessReqMsg tests NewNamelessRequestMessage
 func TestMsgNewNamelessReqMsg(t *testing.T) {
 	id := genRndMsgID()
 	sessionKey := generateSessionKey()
@@ -938,14 +584,18 @@ func TestMsgNewNamelessReqMsg(t *testing.T) {
 	// Add session key to payload
 	expected = append(expected, []byte(sessionKey)...)
 
-	actual := NewNamelessRequestMessage(MsgRestoreSession, id, []byte(sessionKey))
+	actual := NewNamelessRequestMessage(
+		MsgRestoreSession,
+		id,
+		[]byte(sessionKey),
+	)
 
 	if !reflect.DeepEqual(expected, actual) {
 		t.Fatalf("Binary results differ:\n%v\n%v", expected, actual)
 	}
 }
 
-// TestMsgNewEmptyReqMsg tests the NewEmptyRequestMessage method
+// TestMsgNewEmptyReqMsg tests NewEmptyRequestMessage
 func TestMsgNewEmptyReqMsg(t *testing.T) {
 	id := genRndMsgID()
 
@@ -962,59 +612,8 @@ func TestMsgNewEmptyReqMsg(t *testing.T) {
 	}
 }
 
-// TestMsgNewReqMsgNameTooLong tests the NewRequestMessage method with a too long name
-func TestMsgNewReqMsgNameTooLong(t *testing.T) {
-	defer func() {
-		err := recover()
-		if err == nil {
-			t.Fatalf("Expected panic after passing a too long request name")
-		}
-	}()
-
-	tooLongNamelength := 256
-	nameBuf := make([]byte, tooLongNamelength)
-	for i := 0; i < tooLongNamelength; i++ {
-		nameBuf[i] = 'a'
-	}
-
-	NewRequestMessage(genRndMsgID(), string(nameBuf), Payload{})
-}
-
-// TestMsgNewReqMsgInvalidCharsetBelowAscii32 tests the NewRequestMessage method
-// with an invalid character input below the ASCII 7 bit 32nd character
-func TestMsgNewReqMsgInvalidCharsetBelowAscii32(t *testing.T) {
-	defer func() {
-		err := recover()
-		if err == nil {
-			t.Fatalf("Expected panic after passing an invalid name character set")
-		}
-	}()
-
-	// Generate invalid name using a character below the ASCII 7 bit 32nd character
-	invalidNameBytes := make([]byte, 1)
-	invalidNameBytes[0] = byte(31)
-
-	NewRequestMessage(genRndMsgID(), string(invalidNameBytes), Payload{})
-}
-
-// TestMsgNewReqMsgInvalidCharsetAboveAscii126 tests the NewRequestMessage method
-// with an invalid character input above the ASCII 7 bit 126th character
-func TestMsgNewReqMsgInvalidCharsetAboveAscii126(t *testing.T) {
-	defer func() {
-		err := recover()
-		if err == nil {
-			t.Fatalf("Expected panic after passing an invalid name character set")
-		}
-	}()
-
-	// Generate invalid name using a character above the ASCII 7 bit 126th character
-	invalidNameBytes := make([]byte, 1)
-	invalidNameBytes[0] = byte(127)
-
-	NewRequestMessage(genRndMsgID(), string(invalidNameBytes), Payload{})
-}
-
-// TestMsgNewReqMsgBinary tests the NewRequestMessage method using default binary payload encoding
+// TestMsgNewReqMsgBinary tests NewRequestMessage
+// using default binary payload encoding
 func TestMsgNewReqMsgBinary(t *testing.T) {
 	id := genRndMsgID()
 	name := genRndName(1, 255)
@@ -1032,7 +631,8 @@ func TestMsgNewReqMsgBinary(t *testing.T) {
 	expected = append(expected, byte(len(name)))
 	// Add name
 	expected = append(expected, []byte(name)...)
-	// Add payload (skip header padding byte, not necessary in case of binary encoding)
+	// Add payload
+	// (skip header padding byte, not necessary in case of binary encoding)
 	expected = append(expected, payload.Data...)
 
 	actual := NewRequestMessage(id, name, payload)
@@ -1042,7 +642,7 @@ func TestMsgNewReqMsgBinary(t *testing.T) {
 	}
 }
 
-// TestMsgNewReqMsgUtf8 tests the NewRequestMessage method using UTF8 payload encoding
+// TestMsgNewReqMsgUtf8 tests NewRequestMessage using UTF8 payload encoding
 func TestMsgNewReqMsgUtf8(t *testing.T) {
 	id := genRndMsgID()
 	name := genRndName(1, 255)
@@ -1060,7 +660,8 @@ func TestMsgNewReqMsgUtf8(t *testing.T) {
 	expected = append(expected, byte(len(name)))
 	// Add name
 	expected = append(expected, []byte(name)...)
-	// Add payload (skip header padding byte, not necessary in case of UTF8 encoding)
+	// Add payload
+	// (skip header padding byte, not necessary in case of UTF8 encoding)
 	expected = append(expected, payload.Data...)
 
 	actual := NewRequestMessage(id, name, payload)
@@ -1070,7 +671,7 @@ func TestMsgNewReqMsgUtf8(t *testing.T) {
 	}
 }
 
-// TestMsgNewReqMsgUtf16 tests the NewRequestMessage method using UTF8 payload encoding
+// TestMsgNewReqMsgUtf16 tests NewRequestMessage using UTF8 payload encoding
 func TestMsgNewReqMsgUtf16(t *testing.T) {
 	id := genRndMsgID()
 	name := genRndName(1, 255)
@@ -1102,25 +703,8 @@ func TestMsgNewReqMsgUtf16(t *testing.T) {
 	}
 }
 
-// TestMsgNewReqMsgUtf16CorruptPayload tests the NewRequestMessage method using UTF16 payload encoding
-// passing corrupt data (length not divisible by 2 thus not UTF16 encoded)
-func TestMsgNewReqMsgUtf16CorruptPayload(t *testing.T) {
-	defer func() {
-		if err := recover(); err == nil {
-			t.Fatalf("Expected NewRequestMessage to panic due to corrupt UTF16 payload")
-		} else {
-			return
-		}
-	}()
-
-	NewRequestMessage(genRndMsgID(), genRndName(1, 255), Payload{
-		Encoding: EncodingUtf16,
-		// Payload is corrupt, only 7 bytes long, not power 2
-		Data: []byte("invalid"),
-	})
-}
-
-// TestMsgNewReplyMsgBinary tests the NewReplyMessage method using default binary payload encoding
+// TestMsgNewReplyMsgBinary tests NewReplyMessage
+// using default binary payload encoding
 func TestMsgNewReplyMsgBinary(t *testing.T) {
 	id := genRndMsgID()
 	payload := Payload{
@@ -1144,7 +728,7 @@ func TestMsgNewReplyMsgBinary(t *testing.T) {
 	}
 }
 
-// TestMsgNewReplyMsgUtf8 tests the NewReplyMessage method using UTF8 payload encoding
+// TestMsgNewReplyMsgUtf8 tests NewReplyMessage using UTF8 payload encoding
 func TestMsgNewReplyMsgUtf8(t *testing.T) {
 	id := genRndMsgID()
 	payload := Payload{
@@ -1168,7 +752,7 @@ func TestMsgNewReplyMsgUtf8(t *testing.T) {
 	}
 }
 
-// TestMsgNewReplyMsgUtf16 tests the NewReplyMessage method using UTF16 payload encoding
+// TestMsgNewReplyMsgUtf16 tests NewReplyMessage using UTF16 payload encoding
 func TestMsgNewReplyMsgUtf16(t *testing.T) {
 	id := genRndMsgID()
 	payload := Payload{
@@ -1194,78 +778,8 @@ func TestMsgNewReplyMsgUtf16(t *testing.T) {
 	}
 }
 
-// TestMsgNewReplyMsgUtf16CorruptPayload tests the NewReplyMessage method
-// using UTF16 payload encoding
-// passing corrupt data (length not divisible by 2 thus not UTF16 encoded)
-func TestMsgNewReplyMsgUtf16CorruptPayload(t *testing.T) {
-	defer func() {
-		if err := recover(); err == nil {
-			t.Fatalf("Expected NewReplyMessage to panic due to corrupt UTF16 payload")
-		} else {
-			return
-		}
-	}()
-
-	NewReplyMessage(genRndMsgID(), Payload{
-		Encoding: EncodingUtf16,
-		// Payload is corrupt, only 7 bytes long, not power 2
-		Data: []byte("invalid"),
-	})
-}
-
-// TestMsgNewSigMsgNameTooLong tests the NewSignalMessage method with a too long name
-func TestMsgNewSigMsgNameTooLong(t *testing.T) {
-	defer func() {
-		err := recover()
-		if err == nil {
-			t.Fatalf("Expected panic after passing a too long signal name")
-		}
-	}()
-
-	tooLongNamelength := 256
-	nameBuf := make([]byte, tooLongNamelength)
-	for i := 0; i < tooLongNamelength; i++ {
-		nameBuf[i] = 'a'
-	}
-
-	NewSignalMessage(string(nameBuf), Payload{})
-}
-
-// TestMsgNewSigMsgInvalidCharsetBelowAscii32 tests the NewSignalMessage method
-// with an invalid character input below the ASCII 7 bit 32nd character
-func TestMsgNewSigMsgInvalidCharsetBelowAscii32(t *testing.T) {
-	defer func() {
-		err := recover()
-		if err == nil {
-			t.Fatalf("Expected panic after passing an invalid name character set")
-		}
-	}()
-
-	// Generate invalid name using a character below the ASCII 7 bit 32nd character
-	invalidNameBytes := make([]byte, 1)
-	invalidNameBytes[0] = byte(31)
-
-	NewSignalMessage(string(invalidNameBytes), Payload{})
-}
-
-// TestMsgNewSigMsgInvalidCharsetAboveAscii126 tests the NewSignalMessage method
-// with an invalid character input above ASCII 7 bit 126th character
-func TestMsgNewSigMsgInvalidCharsetAboveAscii126(t *testing.T) {
-	defer func() {
-		err := recover()
-		if err == nil {
-			t.Fatalf("Expected panic after passing an invalid name character set")
-		}
-	}()
-
-	// Generate invalid name using a character above the ASCII 7 bit 126th character
-	invalidNameBytes := make([]byte, 1)
-	invalidNameBytes[0] = byte(127)
-
-	NewSignalMessage(string(invalidNameBytes), Payload{})
-}
-
-// TestMsgNewSigMsgBinary tests the NewSignalMessage method using the default binary encoding
+// TestMsgNewSigMsgBinary tests NewSignalMessage
+// using the default binary encoding
 func TestMsgNewSigMsgBinary(t *testing.T) {
 	name := genRndName(1, 255)
 	payload := Payload{
@@ -1290,7 +804,7 @@ func TestMsgNewSigMsgBinary(t *testing.T) {
 	}
 }
 
-// TestMsgNewSigMsgUtf8 tests the NewSignalMessage method using UTF8 encoding
+// TestMsgNewSigMsgUtf8 tests NewSignalMessage using UTF8 encoding
 func TestMsgNewSigMsgUtf8(t *testing.T) {
 	name := genRndName(1, 255)
 	payload := Payload{
@@ -1315,7 +829,7 @@ func TestMsgNewSigMsgUtf8(t *testing.T) {
 	}
 }
 
-// TestMsgNewSigMsgUtf16 tests the NewSignalMessage method using UTF16 encoding
+// TestMsgNewSigMsgUtf16 tests NewSignalMessage using UTF16 encoding
 func TestMsgNewSigMsgUtf16(t *testing.T) {
 	name := genRndName(1, 255)
 	payload := Payload{
@@ -1344,12 +858,454 @@ func TestMsgNewSigMsgUtf16(t *testing.T) {
 	}
 }
 
-// TestMsgNewSigMsgUtf16CorruptPayload tests the NewSignalMessage method using UTF16 payload encoding
-// passing corrupt data (length not divisible by 2 thus not UTF16 encoded)
+/****************************************************************\
+	Parser - invalid messages (too short)
+\****************************************************************/
+
+// TestMsgParseInvalidReplyTooShort tests parsing of an invalid
+// binary/UTF8 reply message which is too short to be considered valid
+func TestMsgParseInvalidReplyTooShort(t *testing.T) {
+	lenTooShort := MsgMinLenReply - 1
+	invalidMessage := make([]byte, lenTooShort)
+
+	invalidMessage[0] = MsgReplyBinary
+
+	var actual Message
+	if err := actual.Parse(invalidMessage); err == nil {
+		t.Fatalf(
+			"Expected error while parsing invalid reply message "+
+				"(too short: %d)",
+			lenTooShort,
+		)
+	}
+}
+
+// TestMsgParseInvalidReplyUtf16TooShort tests parsing of an invalid
+// UTF16 reply message which is too short to be considered valid
+func TestMsgParseInvalidReplyUtf16TooShort(t *testing.T) {
+	lenTooShort := MsgMinLenReplyUtf16 - 1
+	invalidMessage := make([]byte, lenTooShort)
+
+	invalidMessage[0] = MsgRequestUtf16
+
+	var actual Message
+	if err := actual.Parse(invalidMessage); err == nil {
+		t.Fatalf(
+			"Expected error while parsing invalid UTF16 reply message "+
+				"(too short: %d)",
+			lenTooShort,
+		)
+	}
+}
+
+// TestMsgParseInvalidRequestTooShort tests parsing of an invalid
+// binary/UTF8 request message which is too short to be considered valid
+func TestMsgParseInvalidRequestTooShort(t *testing.T) {
+	lenTooShort := MsgMinLenRequest - 1
+	invalidMessage := make([]byte, lenTooShort)
+
+	invalidMessage[0] = MsgRequestBinary
+
+	var actual Message
+	if err := actual.Parse(invalidMessage); err == nil {
+		t.Fatalf(
+			"Expected error while parsing invalid request message "+
+				"(too short: %d)",
+			lenTooShort,
+		)
+	}
+}
+
+// TestMsgParseInvalidRequestUtf16TooShort tests parsing of an invalid
+// UTF16 request message which is too short to be considered valid
+func TestMsgParseInvalidRequestUtf16TooShort(t *testing.T) {
+	lenTooShort := MsgMinLenRequestUtf16 - 1
+	invalidMessage := make([]byte, lenTooShort)
+
+	invalidMessage[0] = MsgRequestUtf16
+
+	var actual Message
+	if err := actual.Parse(invalidMessage); err == nil {
+		t.Fatalf(
+			"Expected error while parsing invalid UTF16 "+
+				"encoded request message (too short: %d)",
+			lenTooShort,
+		)
+	}
+}
+
+// TestMsgParseInvalidRestrSessReqTooShort tests parsing of an invalid
+// session restoration request message which is too short
+// to be considered valid
+func TestMsgParseInvalidRestrSessReqTooShort(t *testing.T) {
+	lenTooShort := MsgMinLenRestoreSession - 1
+	invalidMessage := make([]byte, lenTooShort)
+
+	invalidMessage[0] = MsgRestoreSession
+
+	var actual Message
+	if err := actual.Parse(invalidMessage); err == nil {
+		t.Fatalf(
+			"Expected error while parsing invalid session restoration "+
+				"request message (too short: %d)",
+			lenTooShort,
+		)
+	}
+}
+
+// TestMsgParseInvalidSessCloseReqTooShort tests parsing of an invalid
+// session destruction request message which is too short
+// to be considered valid
+func TestMsgParseInvalidSessCloseReqTooShort(t *testing.T) {
+	lenTooShort := MsgMinLenCloseSession - 1
+	invalidMessage := make([]byte, lenTooShort)
+
+	invalidMessage[0] = MsgCloseSession
+
+	var actual Message
+	if err := actual.Parse(invalidMessage); err == nil {
+		t.Fatalf(
+			"Expected error while parsing invalid session destruction "+
+				"request message (too short: %d)",
+			lenTooShort,
+		)
+	}
+}
+
+// TestMsgParseInvalidSessCreatedSigTooShort tests parsing of an invalid
+// session creation notification message which is too short
+// to be considered valid
+func TestMsgParseInvalidSessCreatedSigTooShort(t *testing.T) {
+	lenTooShort := MsgMinLenSessionCreated - 1
+	invalidMessage := make([]byte, lenTooShort)
+
+	invalidMessage[0] = MsgSessionCreated
+
+	var actual Message
+	if err := actual.Parse(invalidMessage); err == nil {
+		t.Fatalf(
+			"Expected error while parsing invalid session creation "+
+				"notification message (too short: %d)",
+			lenTooShort,
+		)
+	}
+}
+
+// TestMsgParseInvalidSignalTooShort tests parsing of an invalid
+// binary/UTF8 signal message which is too short to be considered valid
+func TestMsgParseInvalidSignalTooShort(t *testing.T) {
+	lenTooShort := MsgMinLenSignal - 1
+	invalidMessage := make([]byte, lenTooShort)
+
+	invalidMessage[0] = MsgSignalBinary
+
+	var actual Message
+	if err := actual.Parse(invalidMessage); err == nil {
+		t.Fatalf(
+			"Expected error while parsing invalid signal message "+
+				"(too short: %d)",
+			lenTooShort,
+		)
+	}
+}
+
+// TestMsgParseInvalidSignalUtf16TooShort tests parsing of an invalid
+// UTF16 signal message which is too short to be considered valid
+func TestMsgParseInvalidSignalUtf16TooShort(t *testing.T) {
+	lenTooShort := MsgMinLenSignalUtf16 - 1
+	invalidMessage := make([]byte, lenTooShort)
+
+	invalidMessage[0] = MsgSignalUtf16
+
+	var actual Message
+	if err := actual.Parse(invalidMessage); err == nil {
+		t.Fatalf(
+			"Expected error while parsing invalid UTF16 signal message "+
+				"(too short: %d)",
+			lenTooShort,
+		)
+	}
+}
+
+/****************************************************************\
+	Parser - invalid messages (corrupt name length flags)
+\****************************************************************/
+
+// TestMsgParseRequestCorruptNameLenFlag tests parsing of a named
+// Binary/UTF8 encoded request with a corrupted input stream
+// (name length flag doesn't correspond to actual name length)
+func TestMsgParseRequestCorruptNameLenFlag(t *testing.T) {
+	id := genRndMsgID()
+	payload := Payload{
+		Encoding: EncodingBinary,
+		Data:     []byte("invalid"),
+	}
+
+	// Compose encoded message
+	encoded := &bytes.Buffer{}
+	encoded.Grow(10 + len(payload.Data))
+
+	// Add type flag
+	encoded.WriteByte(MsgRequestBinary)
+	// Add identifier
+	encoded.Write(id[:])
+
+	// Add corrupt name length flag (too big) and skip the name field
+	encoded.WriteByte(255)
+
+	// Add payload
+	encoded.Write(payload.Data)
+
+	// Parse
+	var actual Message
+	if err := actual.Parse(encoded.Bytes()); err == nil {
+		t.Fatal(
+			"Expected Parse to return an error due to corrupt name length flag",
+		)
+	}
+}
+
+// TestMsgParseRequestUtf16CorruptNameLenFlag tests parsing of a named
+// UTF16 encoded request with a corrupted input stream
+// (name length flag doesn't correspond to actual name length)
+func TestMsgParseRequestUtf16CorruptNameLenFlag(t *testing.T) {
+	id := genRndMsgID()
+	payload := Payload{
+		Encoding: EncodingUtf16,
+		Data:     []byte("invalid"),
+	}
+
+	// Compose encoded message
+	encoded := &bytes.Buffer{}
+	encoded.Grow(10 + len(payload.Data))
+
+	// Add type flag
+	encoded.WriteByte(MsgRequestUtf16)
+	// Add identifier
+	encoded.Write(id[:])
+
+	// Add corrupt name length flag (too big) and skip actual name field
+	encoded.WriteByte(255)
+
+	// Add payload
+	encoded.Write(payload.Data)
+
+	// Parse
+	var actual Message
+	if err := actual.Parse(encoded.Bytes()); err == nil {
+		t.Fatal(
+			"Expected Parse to return an error due to corrupt name length flag",
+		)
+	}
+}
+
+// TestMsgParseSignalCorruptNameLenFlag tests parsing of a named
+// Binary/UTF8 encoded signal with a corrupted input stream
+// (name length flag doesn't correspond to actual name length)
+func TestMsgParseSignalCorruptNameLenFlag(t *testing.T) {
+	payload := Payload{
+		Encoding: EncodingBinary,
+		Data:     []byte("invalid"),
+	}
+
+	// Compose encoded message
+	encoded := &bytes.Buffer{}
+	encoded.Grow(2 + len(payload.Data))
+
+	// Add type flag
+	encoded.WriteByte(MsgSignalBinary)
+
+	// Add corrupt name length flag (too big) and skip the name field
+	encoded.WriteByte(255)
+
+	// Add payload
+	encoded.Write(payload.Data)
+
+	// Parse
+	var actual Message
+	if err := actual.Parse(encoded.Bytes()); err == nil {
+		t.Fatal(
+			"Expected Parse to return an error due to corrupt name length flag",
+		)
+	}
+}
+
+// TestMsgParseSignalUtf16CorruptNameLenFlag tests parsing of a named
+// UTF16 encoded signal with a corrupted input stream
+// (name length flag doesn't correspond to actual name length)
+func TestMsgParseSignalUtf16CorruptNameLenFlag(t *testing.T) {
+	payload := Payload{
+		Encoding: EncodingBinary,
+		Data:     []byte("invalid"),
+	}
+
+	// Compose encoded message
+	encoded := &bytes.Buffer{}
+	encoded.Grow(2 + len(payload.Data))
+
+	// Add type flag
+	encoded.WriteByte(MsgSignalUtf16)
+
+	// Add corrupt name length flag (too big) and skip the name field
+	encoded.WriteByte(255)
+
+	// Add payload
+	encoded.Write(payload.Data)
+
+	// Parse
+	var actual Message
+	if err := actual.Parse(encoded.Bytes()); err == nil {
+		t.Fatal(
+			"Expected Parse to return an error due to corrupt name length flag",
+		)
+	}
+}
+
+/****************************************************************\
+	Parser - invalid input (corrupt payload)
+\****************************************************************/
+
+// TestMsgParseReplyUtf16CorruptInput tests parsing of
+// UTF16 encoded reply message with a corrupted input stream
+// (length not divisible by 2)
+func TestMsgParseReplyUtf16CorruptInput(t *testing.T) {
+	id := genRndMsgID()
+	payload := Payload{
+		Encoding: EncodingUtf16,
+		Data:     []byte("invalid"),
+	}
+
+	// Compose encoded message
+	// Add type flag
+	encoded := []byte{MsgReplyUtf16}
+	// Add identifier
+	encoded = append(encoded, id[:]...)
+	// Add header padding byte due to UTF16 encoding
+	encoded = append(encoded, byte(0))
+	// Add payload
+	encoded = append(encoded, payload.Data...)
+
+	// Parse
+	var actual Message
+	if err := actual.Parse(encoded); err == nil {
+		t.Fatal("Expected Parse to return an error due to corrupt input stream")
+	}
+}
+
+// TestMsgParseRequestUtf16CorruptInput tests parsing of a named
+// UTF16 encoded request with a corrupted input stream
+// (length not divisible by 2)
+func TestMsgParseRequestUtf16CorruptInput(t *testing.T) {
+	id := genRndMsgID()
+	name := genRndName(1, 255)
+	payload := Payload{
+		Encoding: EncodingUtf16,
+		Data:     []byte("invalid"),
+	}
+
+	// Compose encoded message
+	// Add type flag
+	encoded := []byte{MsgRequestUtf16}
+	// Add identifier
+	encoded = append(encoded, id[:]...)
+	// Add name length flag
+	encoded = append(encoded, byte(len(name)))
+	// Add name
+	encoded = append(encoded, []byte(name)...)
+	// Add header padding if necessary
+	if len(name)%2 != 0 {
+		encoded = append(encoded, byte(0))
+	}
+	// Add payload
+	encoded = append(encoded, payload.Data...)
+
+	// Parse
+	var actual Message
+	if err := actual.Parse(encoded); err == nil {
+		t.Fatal("Expected Parse to return an error due to corrupt input stream")
+	}
+}
+
+// TestMsgParseSignalUtf16CorruptInput tests parsing of a named
+// UTF16 encoded signal with a corrupt unaligned input stream
+// (length not divisible by 2)
+func TestMsgParseSignalUtf16CorruptInput(t *testing.T) {
+	name := genRndName(1, 255)
+	payload := Payload{
+		Encoding: EncodingUtf16,
+		Data:     []byte("invalid"),
+	}
+
+	// Compose encoded message
+	// Add type flag
+	encoded := []byte{MsgSignalUtf16}
+	// Add name length flag
+	encoded = append(encoded, byte(len(name)))
+	// Add name
+	encoded = append(encoded, []byte(name)...)
+	// Add header padding if necessary
+	if len(name)%2 != 0 {
+		encoded = append(encoded, byte(0))
+	}
+	// Add payload
+	encoded = append(encoded, payload.Data...)
+
+	// Parse
+	var actual Message
+	if err := actual.Parse(encoded); err == nil {
+		t.Fatal("Expected Parse to return an error due to corrupt input stream")
+	}
+}
+
+/****************************************************************\
+	Constructors - invalid input (corrupt name length flags)
+\****************************************************************/
+
+// TestMsgNewReplyMsgUtf16CorruptPayload tests NewReplyMessage
+// using UTF16 payload encoding passing corrupt data
+// (length not divisible by 2 thus not UTF16 encoded)
+func TestMsgNewReplyMsgUtf16CorruptPayload(t *testing.T) {
+	defer func() {
+		if err := recover(); err == nil {
+			t.Fatalf("Expected panic due to corrupt UTF16 payload")
+		} else {
+			return
+		}
+	}()
+
+	NewReplyMessage(genRndMsgID(), Payload{
+		Encoding: EncodingUtf16,
+		// Payload is corrupt, only 7 bytes long, not power 2
+		Data: []byte("invalid"),
+	})
+}
+
+// TestMsgNewReqMsgUtf16CorruptPayload tests NewRequestMessage
+// using UTF16 payload encoding passing corrupt data
+// (length not divisible by 2 thus not UTF16 encoded)
+func TestMsgNewReqMsgUtf16CorruptPayload(t *testing.T) {
+	defer func() {
+		if err := recover(); err == nil {
+			t.Fatalf("Expected panic due to corrupt UTF16 payload")
+		} else {
+			return
+		}
+	}()
+
+	NewRequestMessage(genRndMsgID(), genRndName(1, 255), Payload{
+		Encoding: EncodingUtf16,
+		// Payload is corrupt, only 7 bytes long, not power 2
+		Data: []byte("invalid"),
+	})
+}
+
+// TestMsgNewSigMsgUtf16CorruptPayload tests NewSignalMessage
+// using UTF16 payload encoding passing corrupt data
+// (length not divisible by 2 thus not UTF16 encoded)
 func TestMsgNewSigMsgUtf16CorruptPayload(t *testing.T) {
 	defer func() {
 		if err := recover(); err == nil {
-			t.Fatalf("Expected NewSignalMessage to panic due to corrupt UTF16 payload")
+			t.Fatalf("Expected panic due to corrupt UTF16 payload")
 		} else {
 			return
 		}
@@ -1360,4 +1316,124 @@ func TestMsgNewSigMsgUtf16CorruptPayload(t *testing.T) {
 		// Payload is corrupt, only 7 bytes long, not power 2
 		Data: []byte("invalid"),
 	})
+}
+
+/****************************************************************\
+	Constructors - unexpected parameters (panics)
+\****************************************************************/
+
+// TestMsgNewReqMsgNameTooLong tests NewRequestMessage with a too long name
+func TestMsgNewReqMsgNameTooLong(t *testing.T) {
+	defer func() {
+		err := recover()
+		if err == nil {
+			t.Fatalf("Expected panic after passing a too long request name")
+		}
+	}()
+
+	tooLongNamelength := 256
+	nameBuf := make([]byte, tooLongNamelength)
+	for i := 0; i < tooLongNamelength; i++ {
+		nameBuf[i] = 'a'
+	}
+
+	NewRequestMessage(genRndMsgID(), string(nameBuf), Payload{})
+}
+
+// TestMsgNewReqMsgInvalidCharsetBelowAscii32 tests NewRequestMessage
+// with an invalid character input below the ASCII 7 bit 32nd character
+func TestMsgNewReqMsgInvalidCharsetBelowAscii32(t *testing.T) {
+	defer func() {
+		err := recover()
+		if err == nil {
+			t.Fatalf(
+				"Expected panic after passing an invalid name character set",
+			)
+		}
+	}()
+
+	// Generate invalid name using a character
+	// below the ASCII 7 bit 32nd character
+	invalidNameBytes := make([]byte, 1)
+	invalidNameBytes[0] = byte(31)
+
+	NewRequestMessage(genRndMsgID(), string(invalidNameBytes), Payload{})
+}
+
+// TestMsgNewReqMsgInvalidCharsetAboveAscii126 tests NewRequestMessage
+// with an invalid character input above the ASCII 7 bit 126th character
+func TestMsgNewReqMsgInvalidCharsetAboveAscii126(t *testing.T) {
+	defer func() {
+		err := recover()
+		if err == nil {
+			t.Fatalf(
+				"Expected panic after passing an invalid name character set",
+			)
+		}
+	}()
+
+	// Generate invalid name using a character
+	// above the ASCII 7 bit 126th character
+	invalidNameBytes := make([]byte, 1)
+	invalidNameBytes[0] = byte(127)
+
+	NewRequestMessage(genRndMsgID(), string(invalidNameBytes), Payload{})
+}
+
+// TestMsgNewSigMsgNameTooLong tests NewSignalMessage with a too long name
+func TestMsgNewSigMsgNameTooLong(t *testing.T) {
+	defer func() {
+		err := recover()
+		if err == nil {
+			t.Fatalf("Expected panic after passing a too long signal name")
+		}
+	}()
+
+	tooLongNamelength := 256
+	nameBuf := make([]byte, tooLongNamelength)
+	for i := 0; i < tooLongNamelength; i++ {
+		nameBuf[i] = 'a'
+	}
+
+	NewSignalMessage(string(nameBuf), Payload{})
+}
+
+// TestMsgNewSigMsgInvalidCharsetBelowAscii32 tests NewSignalMessage
+// with an invalid character input below the ASCII 7 bit 32nd character
+func TestMsgNewSigMsgInvalidCharsetBelowAscii32(t *testing.T) {
+	defer func() {
+		err := recover()
+		if err == nil {
+			t.Fatalf(
+				"Expected panic after passing an invalid name character set",
+			)
+		}
+	}()
+
+	// Generate invalid name using a character
+	// below the ASCII 7 bit 32nd character
+	invalidNameBytes := make([]byte, 1)
+	invalidNameBytes[0] = byte(31)
+
+	NewSignalMessage(string(invalidNameBytes), Payload{})
+}
+
+// TestMsgNewSigMsgInvalidCharsetAboveAscii126 tests NewSignalMessage
+// with an invalid character input above ASCII 7 bit 126th character
+func TestMsgNewSigMsgInvalidCharsetAboveAscii126(t *testing.T) {
+	defer func() {
+		err := recover()
+		if err == nil {
+			t.Fatalf(
+				"Expected panic after passing an invalid name character set",
+			)
+		}
+	}()
+
+	// Generate invalid name using a character
+	// above the ASCII 7 bit 126th character
+	invalidNameBytes := make([]byte, 1)
+	invalidNameBytes[0] = byte(127)
+
+	NewSignalMessage(string(invalidNameBytes), Payload{})
 }
