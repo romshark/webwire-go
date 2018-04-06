@@ -11,7 +11,7 @@ import (
 
 // TestClientOnSessionCreated tests the OnSessionCreated hook of the client
 func TestClientOnSessionCreated(t *testing.T) {
-	hookCalled := NewPending(1, 1*time.Second, true)
+	hookCalled := newPending(1, 1*time.Second, true)
 	var createdSession *webwire.Session
 	var sessionFromHook *webwire.Session
 

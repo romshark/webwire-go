@@ -12,9 +12,9 @@ import (
 // TestClientAgentIsConnected tests the IsConnected method of the client agent
 func TestClientAgentIsConnected(t *testing.T) {
 	var clientAgent *wwr.Client
-	clientAgentDefined := NewPending(1, 1*time.Second, true)
-	clientDisconnected := NewPending(1, 1*time.Second, true)
-	testerGoroutineFinished := NewPending(1, 1*time.Second, true)
+	clientAgentDefined := newPending(1, 1*time.Second, true)
+	clientDisconnected := newPending(1, 1*time.Second, true)
+	testerGoroutineFinished := newPending(1, 1*time.Second, true)
 
 	// Initialize webwire server
 	server := setupServer(

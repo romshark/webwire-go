@@ -12,8 +12,8 @@ import (
 // TestServerInitiatedSessionDestruction verifies
 // server-initiated session destruction
 func TestServerInitiatedSessionDestruction(t *testing.T) {
-	sessionCreationCallbackCalled := NewPending(1, 1*time.Second, true)
-	sessionDestructionCallbackCalled := NewPending(1, 1*time.Second, true)
+	sessionCreationCallbackCalled := newPending(1, 1*time.Second, true)
+	sessionDestructionCallbackCalled := newPending(1, 1*time.Second, true)
 	var createdSession *webwire.Session
 	expectedCredentials := webwire.Payload{
 		Encoding: webwire.EncodingUtf8,

@@ -14,7 +14,7 @@ func TestServerSignal(t *testing.T) {
 		Data: []byte("webwire_test_SERVER_SIGNAL_payload"),
 	}
 	var addr string
-	serverSignalArrived := NewPending(1, 1*time.Second, true)
+	serverSignalArrived := newPending(1, 1*time.Second, true)
 	initClient := make(chan bool, 1)
 	sendSignal := make(chan bool, 1)
 

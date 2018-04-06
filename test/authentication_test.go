@@ -40,8 +40,8 @@ func TestAuthentication(t *testing.T) {
 		}
 	}
 
-	onSessionCreatedHookExecuted := NewPending(1, 1*time.Second, true)
-	clientSignalReceived := NewPending(1, 1*time.Second, true)
+	onSessionCreatedHookExecuted := newPending(1, 1*time.Second, true)
+	clientSignalReceived := newPending(1, 1*time.Second, true)
 	var createdSession *wwr.Session
 	sessionInfo := make(wwr.SessionInfo)
 	sessionInfo["uid"] = "clientidentifiergoeshere"

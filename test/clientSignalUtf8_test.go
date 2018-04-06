@@ -15,7 +15,7 @@ func TestClientSignal(t *testing.T) {
 		Encoding: webwire.EncodingUtf8,
 		Data:     []byte("webwire_test_SIGNAL_payload"),
 	}
-	signalArrived := NewPending(1, 1*time.Second, true)
+	signalArrived := newPending(1, 1*time.Second, true)
 
 	// Initialize webwire server given only the signal handler
 	server := setupServer(

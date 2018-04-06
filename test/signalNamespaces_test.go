@@ -11,9 +11,9 @@ import (
 
 // TestSignalNamespaces tests correct handling of namespaced signals
 func TestSignalNamespaces(t *testing.T) {
-	unnamedSignalArrived := NewPending(1, 1*time.Second, true)
-	shortestNameSignalArrived := NewPending(1, 1*time.Second, true)
-	longestNameSignalArrived := NewPending(1, 1*time.Second, true)
+	unnamedSignalArrived := newPending(1, 1*time.Second, true)
+	shortestNameSignalArrived := newPending(1, 1*time.Second, true)
+	longestNameSignalArrived := newPending(1, 1*time.Second, true)
 	currentStep := 1
 
 	shortestPossibleName := "s"

@@ -6,8 +6,8 @@ import (
 	"time"
 )
 
-// Pending represents a timed asynchronous task.
-type Pending struct {
+// pending represents a timed asynchronous task.
+type pending struct {
 	target  uint32
 	current uint32
 	timeout time.Duration
@@ -18,15 +18,15 @@ type Pending struct {
 	lock    sync.Mutex
 }
 
-// NewPending returns a new pending asynchronous task.
+// newPending returns a new pending asynchronous task.
 // Target defines the total required progress.
 // Timeout defines the deadline timer duration.
 // If start is true the timer is started immediately
-func NewPending(target uint32, timeout time.Duration, start bool) *Pending {
+func newPending(target uint32, timeout time.Duration, start bool) *pending {
 	if target < 1 {
-		panic(fmt.Errorf("Pending.target cannot be zero"))
+		panic(fmt.Errorf("pending.target cannot be zero"))
 	}
-	pen := &Pending{
+	pen := &pending{
 		target,
 		0,
 		timeout,
@@ -43,7 +43,7 @@ func NewPending(target uint32, timeout time.Duration, start bool) *Pending {
 }
 
 // Start starts the timer. Does nothing if the timer is already running
-func (pen *Pending) Start() {
+func (pen *pending) Start() {
 	pen.lock.Lock()
 	defer pen.lock.Unlock()
 
@@ -79,13 +79,13 @@ func (pen *Pending) Start() {
 }
 
 // Done progresses the task by 1
-func (pen *Pending) Done() {
+func (pen *pending) Done() {
 	pen.done <- true
 }
 
 // Wait blocks until the task is either accomplished or timed out.
 // Returns an error if the task timed out
-func (pen *Pending) Wait() error {
+func (pen *pending) Wait() error {
 	pen.lock.Lock()
 	if pen.done == nil {
 		return nil

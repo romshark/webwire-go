@@ -36,7 +36,7 @@ func TestClientSignalUtf16(t *testing.T) {
 			}
 		}
 	}
-	signalArrived := NewPending(1, 1*time.Second, true)
+	signalArrived := newPending(1, 1*time.Second, true)
 
 	// Initialize webwire server given only the signal handler
 	server := setupServer(

@@ -56,7 +56,7 @@ func setupServer(
 
 	// Use default session manager if no specific one is defined
 	if opts.SessionManager == nil {
-		opts.SessionManager = NewInMemSessManager()
+		opts.SessionManager = newInMemSessManager()
 	}
 
 	server, err := wwr.NewHeadedServer(

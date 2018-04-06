@@ -11,7 +11,7 @@ import (
 // TestClientDisconnectedHook verifies the server is calling the
 // onClientDisconnected hook properly
 func TestClientDisconnectedHook(t *testing.T) {
-	disconnectedHookCalled := NewPending(1, 1*time.Second, true)
+	disconnectedHookCalled := newPending(1, 1*time.Second, true)
 	var connectedClient *webwire.Client
 
 	// Initialize webwire server given only the request

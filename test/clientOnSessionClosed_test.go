@@ -11,8 +11,8 @@ import (
 
 // TestClientOnSessionClosed tests the OnSessionClosed hook of the client
 func TestClientOnSessionClosed(t *testing.T) {
-	authenticated := NewPending(1, 1*time.Second, true)
-	hookCalled := NewPending(1, 1*time.Second, true)
+	authenticated := newPending(1, 1*time.Second, true)
+	hookCalled := newPending(1, 1*time.Second, true)
 
 	// Initialize webwire server
 	server := setupServer(

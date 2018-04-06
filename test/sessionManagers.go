@@ -6,16 +6,16 @@ import (
 	wwr "github.com/qbeon/webwire-go"
 )
 
-// InMemSessManager is a default in-memory session manager for testing purposes
-type InMemSessManager struct {
+// inMemSessManager is a default in-memory session manager for testing purposes
+type inMemSessManager struct {
 	sessions map[string]*wwr.Client
 	lock     sync.RWMutex
 }
 
-// NewInMemSessManager constructs a new default session manager instance
+// newInMemSessManager constructs a new default session manager instance
 // for testing purposes.
-func NewInMemSessManager() *InMemSessManager {
-	return &InMemSessManager{
+func newInMemSessManager() *inMemSessManager {
+	return &inMemSessManager{
 		sessions: make(map[string]*wwr.Client),
 		lock:     sync.RWMutex{},
 	}
@@ -23,7 +23,7 @@ func NewInMemSessManager() *InMemSessManager {
 
 // OnSessionCreated implements the session manager interface.
 // It writes the created session into a file using the session key as file name
-func (mng *InMemSessManager) OnSessionCreated(client *wwr.Client) error {
+func (mng *inMemSessManager) OnSessionCreated(client *wwr.Client) error {
 	mng.lock.Lock()
 	mng.sessions[client.SessionKey()] = client
 	mng.lock.Unlock()
@@ -32,7 +32,7 @@ func (mng *InMemSessManager) OnSessionCreated(client *wwr.Client) error {
 
 // OnSessionLookup implements the session manager interface.
 // It searches the session file directory for the session file and loads it
-func (mng *InMemSessManager) OnSessionLookup(key string) (*wwr.Session, error) {
+func (mng *inMemSessManager) OnSessionLookup(key string) (*wwr.Session, error) {
 	mng.lock.RLock()
 	defer mng.lock.RUnlock()
 	if clt, exists := mng.sessions[key]; exists {
@@ -43,16 +43,16 @@ func (mng *InMemSessManager) OnSessionLookup(key string) (*wwr.Session, error) {
 
 // OnSessionClosed implements the session manager interface.
 // It closes the session by deleting the according session file
-func (mng *InMemSessManager) OnSessionClosed(client *wwr.Client) error {
+func (mng *inMemSessManager) OnSessionClosed(client *wwr.Client) error {
 	mng.lock.Lock()
 	delete(mng.sessions, client.SessionKey())
 	mng.lock.Unlock()
 	return nil
 }
 
-// CallbackPoweredSessionManager represents a callback-powered session manager
+// callbackPoweredSessionManager represents a callback-powered session manager
 // for testing purposes
-type CallbackPoweredSessionManager struct {
+type callbackPoweredSessionManager struct {
 	SessionCreated func(client *wwr.Client) error
 	SessionLookup  func(key string) (*wwr.Session, error)
 	SessionClosed  func(client *wwr.Client) error
@@ -60,7 +60,7 @@ type CallbackPoweredSessionManager struct {
 
 // OnSessionCreated implements the session manager interface
 // calling the configured callback
-func (mng *CallbackPoweredSessionManager) OnSessionCreated(
+func (mng *callbackPoweredSessionManager) OnSessionCreated(
 	client *wwr.Client,
 ) error {
 	if mng.SessionCreated == nil {
@@ -71,7 +71,7 @@ func (mng *CallbackPoweredSessionManager) OnSessionCreated(
 
 // OnSessionLookup implements the session manager interface
 // calling the configured callback
-func (mng *CallbackPoweredSessionManager) OnSessionLookup(
+func (mng *callbackPoweredSessionManager) OnSessionLookup(
 	key string,
 ) (*wwr.Session, error) {
 	if mng.SessionLookup == nil {
@@ -82,7 +82,7 @@ func (mng *CallbackPoweredSessionManager) OnSessionLookup(
 
 // OnSessionClosed implements the session manager interface
 // calling the configured callback
-func (mng *CallbackPoweredSessionManager) OnSessionClosed(
+func (mng *callbackPoweredSessionManager) OnSessionClosed(
 	client *wwr.Client,
 ) error {
 	if mng.SessionClosed == nil {

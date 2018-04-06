@@ -13,7 +13,7 @@ import (
 // is properly synchronized and doesn't cause any data race
 func TestClientConcurrentRequest(t *testing.T) {
 	var concurrentAccessors uint32 = 16
-	finished := NewPending(concurrentAccessors*2, 2*time.Second, true)
+	finished := newPending(concurrentAccessors*2, 2*time.Second, true)
 
 	// Initialize webwire server
 	server := setupServer(

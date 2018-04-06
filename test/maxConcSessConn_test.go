@@ -40,7 +40,7 @@ func TestMaxConcSessConn(t *testing.T) {
 		wwr.ServerOptions{
 			SessionsEnabled:       true,
 			MaxSessionConnections: concurrentConns,
-			SessionManager: &CallbackPoweredSessionManager{
+			SessionManager: &callbackPoweredSessionManager{
 				// Saves the session
 				SessionCreated: func(client *wwr.Client) error {
 					sess := client.Session()
