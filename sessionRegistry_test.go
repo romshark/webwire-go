@@ -326,7 +326,7 @@ func TestSessRegConcurrentAccess(t *testing.T) {
 	awaitDeregistration.Wait()
 
 	if falseReturnCounter > 1 {
-		t.Fatal(
+		t.Fatalf(
 			"deregister returned false %d times, expected 1",
 			falseReturnCounter,
 		)
