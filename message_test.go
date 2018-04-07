@@ -1473,3 +1473,95 @@ func TestMsgNewSpecialRequestReplyMessageInvalidType(t *testing.T) {
 		}(tp)
 	}
 }
+
+// TestMsgNewErrorReplyMessageNoCode tests NewErrorReplyMessage
+// with no error code which is invalid.
+func TestMsgNewErrorReplyMessageNoCode(t *testing.T) {
+	defer func() {
+		err := recover()
+		if err == nil {
+			t.Fatalf(
+				"Expected panic when creating an error reply message " +
+					"with no error code ",
+			)
+		}
+	}()
+
+	NewErrorReplyMessage(genRndMsgID(), "", "sample error message")
+}
+
+// TestMsgNewErrorReplyMessageCodeTooLong tests NewErrorReplyMessage
+// with an error code that's surpassing the 255 character limit.
+func TestMsgNewErrorReplyMessageCodeTooLong(t *testing.T) {
+	defer func() {
+		err := recover()
+		if err == nil {
+			t.Fatalf(
+				"Expected panic when creating an error reply message " +
+					"with no error code ",
+			)
+		}
+	}()
+
+	tooLongCode := make([]byte, 256)
+	for i := 0; i < 256; i++ {
+		tooLongCode[i] = 'a'
+	}
+
+	NewErrorReplyMessage(
+		genRndMsgID(),
+		string(tooLongCode),
+		"sample error message",
+	)
+}
+
+// TestMsgNewErrorReplyMessageCodeCharsetBelowAscii32 tests NewErrorReplyMessage
+// with an invalid character input below the ASCII 7 bit 32nd character
+func TestMsgNewErrorReplyMessageCodeCharsetBelowAscii32(t *testing.T) {
+	defer func() {
+		err := recover()
+		if err == nil {
+			t.Fatalf(
+				"Expected panic after passing an invalid error code " +
+					" containing a character below the 32th ASCII 7bit char",
+			)
+		}
+	}()
+
+	// Generate invalid error code using a character
+	// below the ASCII 7 bit 32nd character
+	invalidCodeBytes := make([]byte, 1)
+	invalidCodeBytes[0] = byte(31)
+
+	NewErrorReplyMessage(
+		genRndMsgID(),
+		string(invalidCodeBytes),
+		"sample error message",
+	)
+}
+
+// TestMsgNewErrorReplyMessageCodeCharsetAboveAscii126 tests
+// NewErrorReplyMessage with an invalid character input
+// above the ASCII 7 bit 126th character
+func TestMsgNewErrorReplyMessageCodeCharsetAboveAscii126(t *testing.T) {
+	defer func() {
+		err := recover()
+		if err == nil {
+			t.Fatalf(
+				"Expected panic after passing an invalid error code " +
+					" containing a character above the 126th ASCII 7bit char",
+			)
+		}
+	}()
+
+	// Generate invalid error code using a character
+	// above the ASCII 7 bit 126th character
+	invalidCodeBytes := make([]byte, 1)
+	invalidCodeBytes[0] = byte(127)
+
+	NewErrorReplyMessage(
+		genRndMsgID(),
+		string(invalidCodeBytes),
+		"sample error message",
+	)
+}
