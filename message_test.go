@@ -1437,3 +1437,39 @@ func TestMsgNewSigMsgInvalidCharsetAboveAscii126(t *testing.T) {
 
 	NewSignalMessage(string(invalidNameBytes), Payload{})
 }
+
+// TestMsgNewSpecialRequestReplyMessageInvalidType tests
+// NewSpecialRequestReplyMessage with non-special reply message types
+func TestMsgNewSpecialRequestReplyMessageInvalidType(t *testing.T) {
+	allTypes := []byte{
+		MsgErrorReply,
+		MsgSessionCreated,
+		MsgSessionClosed,
+		MsgCloseSession,
+		MsgRestoreSession,
+		MsgSignalBinary,
+		MsgSignalUtf8,
+		MsgSignalUtf16,
+		MsgRequestBinary,
+		MsgRequestUtf8,
+		MsgRequestUtf16,
+		MsgReplyBinary,
+		MsgReplyUtf8,
+		MsgReplyUtf16,
+	}
+
+	for _, tp := range allTypes {
+		func(msgType byte) {
+			defer func() {
+				err := recover()
+				if err == nil {
+					t.Fatalf(
+						"Expected panic after passing " +
+							"a non-special request reply message type",
+					)
+				}
+			}()
+			NewSpecialRequestReplyMessage(MsgErrorReply, genRndMsgID())
+		}(tp)
+	}
+}
