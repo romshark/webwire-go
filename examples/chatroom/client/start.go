@@ -31,7 +31,10 @@ func promptCreds() (username, password string) {
 	return username, password
 }
 
-func mainLoop() {
+// Start runs the main loop blocking the calling goroutine
+func (clt *ChatroomClient) Start() {
+	defer clt.connection.Close()
+
 	reader := bufio.NewReader(os.Stdin)
 MAINLOOP:
 	for {
@@ -47,23 +50,24 @@ MAINLOOP:
 			fmt.Println("Closing connection...")
 			break MAINLOOP
 		case ":login":
-			*username, *password = promptCreds()
-			authenticate()
+			username, password := promptCreds()
+			clt.Authenticate(username, password)
 		case ":logout":
 			// Check if even authenticated
-			if client.Session().Key == "" {
+			if clt.connection.Session().Key == "" {
 				fmt.Println("Not authenticated, no need to logout")
 				break
 			}
 			// Try to close the session
-			if err := client.CloseSession(); err != nil {
+			if err := clt.connection.CloseSession(); err != nil {
 				log.Printf("WARNING: Session destruction failed: %s", err)
 			}
 			fmt.Println("Logged out, you're anonymous now")
 		default:
-			// Send the message and await server reply for the message to be considered posted
+			// Send the message and await server reply
+			// for the message to be considered posted
 			go func() {
-				if _, err := client.Request("msg", webwire.Payload{
+				if _, err := clt.connection.Request("msg", webwire.Payload{
 					Data: []byte(input),
 				}); err != nil {
 					log.Printf("WARNING: Couldn't send message: %s", err)

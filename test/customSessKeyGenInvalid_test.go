@@ -51,16 +51,17 @@ func TestCustomSessKeyGenInvalid(t *testing.T) {
 	)
 
 	// Initialize client
-	client := wwrclt.NewClient(
+	client := newCallbackPoweredClient(
 		server.Addr().String(),
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
+		nil, nil, nil, nil,
 	)
-	defer client.Close()
+	defer client.connection.Close()
 
 	// Send authentication request and await reply
-	if _, err := client.Request(
+	if _, err := client.connection.Request(
 		"login",
 		wwr.Payload{Data: []byte("testdata")},
 	); err != nil {

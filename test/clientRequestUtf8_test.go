@@ -43,19 +43,20 @@ func TestClientRequest(t *testing.T) {
 	)
 
 	// Initialize client
-	client := webwireClient.NewClient(
+	client := newCallbackPoweredClient(
 		server.Addr().String(),
 		webwireClient.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
+		nil, nil, nil, nil,
 	)
 
-	if err := client.Connect(); err != nil {
+	if err := client.connection.Connect(); err != nil {
 		t.Fatalf("Couldn't connect: %s", err)
 	}
 
 	// Send request and await reply
-	reply, err := client.Request("", expectedRequestPayload)
+	reply, err := client.connection.Request("", expectedRequestPayload)
 	if err != nil {
 		t.Fatalf("Request failed: %s", err)
 	}

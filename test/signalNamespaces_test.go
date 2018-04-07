@@ -68,14 +68,15 @@ func TestSignalNamespaces(t *testing.T) {
 	)
 
 	// Initialize client
-	client := webwireClient.NewClient(
+	client := newCallbackPoweredClient(
 		server.Addr().String(),
 		webwireClient.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
+		nil, nil, nil, nil,
 	)
 
-	if err := client.Connect(); err != nil {
+	if err := client.connection.Connect(); err != nil {
 		t.Fatalf("Couldn't connect: %s", err)
 	}
 
@@ -83,7 +84,7 @@ func TestSignalNamespaces(t *testing.T) {
 		Step 1 - Unnamed signal name
 	\*****************************************************************/
 	// Send unnamed signal
-	err := client.Signal("", webwire.Payload{Data: []byte("dummy")})
+	err := client.connection.Signal("", webwire.Payload{Data: []byte("dummy")})
 	if err != nil {
 		t.Fatalf("Request failed: %s", err)
 	}
@@ -96,7 +97,7 @@ func TestSignalNamespaces(t *testing.T) {
 	\*****************************************************************/
 	currentStep = 2
 	// Send request with the shortest possible name
-	err = client.Signal(
+	err = client.connection.Signal(
 		shortestPossibleName,
 		webwire.Payload{Data: []byte("dummy")},
 	)
@@ -112,7 +113,7 @@ func TestSignalNamespaces(t *testing.T) {
 	\*****************************************************************/
 	currentStep = 3
 	// Send request with the longest possible name
-	err = client.Signal(
+	err = client.connection.Signal(
 		longestPossibleName,
 		webwire.Payload{Data: []byte("dummy")},
 	)

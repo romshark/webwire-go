@@ -32,21 +32,22 @@ func TestClientConcurrentRequest(t *testing.T) {
 	)
 
 	// Initialize client
-	client := webwireClient.NewClient(
+	client := newCallbackPoweredClient(
 		server.Addr().String(),
 		webwireClient.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
+		nil, nil, nil, nil,
 	)
-	defer client.Close()
+	defer client.connection.Close()
 
-	if err := client.Connect(); err != nil {
+	if err := client.connection.Connect(); err != nil {
 		t.Fatalf("Couldn't connect: %s", err)
 	}
 
 	sendRequest := func() {
 		defer finished.Done()
-		if _, err := client.Request(
+		if _, err := client.connection.Request(
 			"sample",
 			webwire.Payload{Data: []byte("samplepayload")},
 		); err != nil {

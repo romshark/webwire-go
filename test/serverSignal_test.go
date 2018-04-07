@@ -49,30 +49,29 @@ func TestServerSignal(t *testing.T) {
 	<-initClient
 
 	// Initialize client
-	client := webwireClient.NewClient(
+	client := newCallbackPoweredClient(
 		addr,
 		webwireClient.Options{
-			Hooks: webwireClient.Hooks{
-				OnServerSignal: func(signalPayload webwire.Payload) {
-					// Verify server signal payload
-					comparePayload(
-						t,
-						"server signal",
-						expectedSignalPayload,
-						signalPayload,
-					)
-
-					// Synchronize, unlock main goroutine to pass the test case
-					serverSignalArrived.Done()
-				},
-			},
 			DefaultRequestTimeout: 2 * time.Second,
 		},
+		nil, nil, nil,
+		func(signalPayload webwire.Payload) {
+			// Verify server signal payload
+			comparePayload(
+				t,
+				"server signal",
+				expectedSignalPayload,
+				signalPayload,
+			)
+
+			// Synchronize, unlock main goroutine to pass the test case
+			serverSignalArrived.Done()
+		},
 	)
-	defer client.Close()
+	defer client.connection.Close()
 
 	// Connect client
-	if err := client.Connect(); err != nil {
+	if err := client.connection.Connect(); err != nil {
 		t.Fatalf("Couldn't connect client: %s", err)
 	}
 

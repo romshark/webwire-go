@@ -56,25 +56,40 @@ func TestGracefulShutdown(t *testing.T) {
 	// to avoid serializing them because every client
 	// is handled in a separate goroutine
 	cltOpts := wwrclt.Options{
-		Hooks: wwrclt.Hooks{},
 		DefaultRequestTimeout: 5 * time.Second,
 	}
-	clientSig := wwrclt.NewClient(serverAddr, cltOpts)
-	clientReq := wwrclt.NewClient(serverAddr, cltOpts)
-	clientLateReq := wwrclt.NewClient(serverAddr, cltOpts)
+	clientSig := newCallbackPoweredClient(
+		serverAddr,
+		cltOpts,
+		nil, nil, nil, nil,
+	)
+	clientReq := newCallbackPoweredClient(
+		serverAddr,
+		cltOpts,
+		nil, nil, nil, nil,
+	)
+	clientLateReq := newCallbackPoweredClient(
+		serverAddr,
+		cltOpts,
+		nil, nil, nil, nil,
+	)
 
 	// Disable autoconnect for the late client to enable immediate errors
-	clientLateConn := wwrclt.NewClient(serverAddr, wwrclt.Options{
-		Autoconnect: wwrclt.OptDisabled,
-	})
+	clientLateConn := newCallbackPoweredClient(
+		serverAddr,
+		wwrclt.Options{
+			Autoconnect: wwrclt.OptDisabled,
+		},
+		nil, nil, nil, nil,
+	)
 
-	if err := clientSig.Connect(); err != nil {
+	if err := clientSig.connection.Connect(); err != nil {
 		t.Fatalf("Couldn't connect signal client: %s", err)
 	}
-	if err := clientReq.Connect(); err != nil {
+	if err := clientReq.connection.Connect(); err != nil {
 		t.Fatalf("Couldn't connect request client: %s", err)
 	}
-	if err := clientLateReq.Connect(); err != nil {
+	if err := clientLateReq.connection.Connect(); err != nil {
 		t.Fatalf("Couldn't connect late-request client: %s", err)
 	}
 
@@ -82,7 +97,7 @@ func TestGracefulShutdown(t *testing.T) {
 	// to avoid blocking the main test goroutine when awaiting the request reply
 	go func() {
 		// (SIGNAL)
-		if err := clientSig.Signal(
+		if err := clientSig.connection.Signal(
 			"",
 			wwr.Payload{Data: []byte("test")},
 		); err != nil {
@@ -90,7 +105,7 @@ func TestGracefulShutdown(t *testing.T) {
 		}
 
 		// (REQUEST)
-		if rep, err := clientReq.Request(
+		if rep, err := clientReq.connection.Request(
 			"",
 			wwr.Payload{Data: []byte("test")},
 		); err != nil {
@@ -123,14 +138,14 @@ func TestGracefulShutdown(t *testing.T) {
 		time.Sleep(timeDelta * 20 * time.Millisecond)
 
 		// Verify connection establishment during shutdown (LATE CONN)
-		if err := clientLateConn.Connect(); err == nil {
+		if err := clientLateConn.connection.Connect(); err == nil {
 			t.Errorf("Expected late connection to be rejected, " +
 				"though it still was accepted",
 			)
 		}
 
 		// Verify request rejection during shutdown (LATE REQ)
-		_, lateReqErr := clientLateReq.Request(
+		_, lateReqErr := clientLateReq.connection.Request(
 			"",
 			wwr.Payload{Data: []byte("test")},
 		)

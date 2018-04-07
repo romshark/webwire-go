@@ -23,14 +23,15 @@ func TestClientRestoreSessionDisconnected(t *testing.T) {
 	)
 
 	// Initialize client and skip manual connection establishment
-	client := wwrclt.NewClient(
+	client := newCallbackPoweredClient(
 		server.Addr().String(),
 		wwrclt.Options{
 			DefaultRequestTimeout: 100 * time.Millisecond,
 		},
+		nil, nil, nil, nil,
 	)
 
-	err := client.RestoreSession([]byte("inexistentkey"))
+	err := client.connection.RestoreSession([]byte("inexistentkey"))
 	if _, isSessNotFoundErr := err.(wwr.SessNotFoundErr); !isSessNotFoundErr {
 		t.Fatalf(
 			"Expected disconnected error, got: %s | %s",

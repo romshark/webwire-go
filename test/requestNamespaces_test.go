@@ -55,14 +55,15 @@ func TestRequestNamespaces(t *testing.T) {
 	)
 
 	// Initialize client
-	client := webwireClient.NewClient(
+	client := newCallbackPoweredClient(
 		server.Addr().String(),
 		webwireClient.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
+		nil, nil, nil, nil,
 	)
 
-	if err := client.Connect(); err != nil {
+	if err := client.connection.Connect(); err != nil {
 		t.Fatalf("Couldn't connect: %s", err)
 	}
 
@@ -70,7 +71,9 @@ func TestRequestNamespaces(t *testing.T) {
 		Step 1 - Unnamed request name
 	\*****************************************************************/
 	// Send unnamed request
-	_, err := client.Request("", webwire.Payload{Data: []byte("dummy")})
+	_, err := client.connection.Request("", webwire.Payload{
+		Data: []byte("dummy"),
+	})
 	if err != nil {
 		t.Fatalf("Request failed: %s", err)
 	}
@@ -80,7 +83,7 @@ func TestRequestNamespaces(t *testing.T) {
 	\*****************************************************************/
 	currentStep = 2
 	// Send request with the shortest possible name
-	_, err = client.Request(
+	_, err = client.connection.Request(
 		shortestPossibleName,
 		webwire.Payload{Data: []byte("dummy")},
 	)
@@ -93,7 +96,7 @@ func TestRequestNamespaces(t *testing.T) {
 	\*****************************************************************/
 	currentStep = 3
 	// Send request with the longest possible name
-	_, err = client.Request(
+	_, err = client.connection.Request(
 		longestPossibleName,
 		webwire.Payload{Data: []byte("dummy")},
 	)

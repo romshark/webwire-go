@@ -4,10 +4,32 @@ import (
 	"flag"
 	"time"
 
-	webwireClient "github.com/qbeon/webwire-go/client"
+	wwrclt "github.com/qbeon/webwire-go/client"
 )
 
-var client *webwireClient.Client
+// ChatroomClient implements the wwrclt.Implementation interface
+type ChatroomClient struct {
+	connection *wwrclt.Client
+}
+
+// NewChatroomClient constructs and returns a new chatroom client instance
+func NewChatroomClient(serverAddr string) *ChatroomClient {
+	newChatroomClient := &ChatroomClient{}
+
+	// Initialize connection
+	newChatroomClient.connection = wwrclt.NewClient(
+		serverAddr,
+		newChatroomClient,
+		wwrclt.Options{
+			// Address of the webwire server
+			// Default timeout for timed requests
+			DefaultRequestTimeout: 10 * time.Second,
+			ReconnectionInterval:  2 * time.Second,
+		},
+	)
+
+	return newChatroomClient
+}
 
 var serverAddr = flag.String("addr", ":9090", "server address")
 var password = flag.String("pass", "", "password")
@@ -17,27 +39,14 @@ func main() {
 	// Parse command line arguments
 	flag.Parse()
 
-	// Initialize client
-	client = webwireClient.NewClient(
-		*serverAddr,
-		webwireClient.Options{
-			// Address of the webwire server
-			Hooks: webwireClient.Hooks{
-				OnServerSignal:   onSignal,
-				OnSessionCreated: onSessionCreated,
-			},
-			// Default timeout for timed requests
-			DefaultRequestTimeout: 10 * time.Second,
-			ReconnectionInterval:  2 * time.Second,
-		},
-	)
-	defer client.Close()
+	// Create a new chatroom client instance including its connection
+	chatroomClient := NewChatroomClient(*serverAddr)
 
-	// Authenticate
+	// Authenticate if credentials are already provided from the CLI
 	if *username != "" && *password != "" {
-		authenticate()
+		chatroomClient.Authenticate(*username, *password)
 	}
 
-	// Main input loop
-	mainLoop()
+	// Start the main loop
+	chatroomClient.Start()
 }

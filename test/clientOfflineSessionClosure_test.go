@@ -82,14 +82,15 @@ func TestClientOfflineSessionClosure(t *testing.T) {
 	)
 
 	// Initialize client
-	client := webwireClient.NewClient(
+	client := newCallbackPoweredClient(
 		server.Addr().String(),
 		webwireClient.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
+		nil, nil, nil, nil,
 	)
 
-	if err := client.Connect(); err != nil {
+	if err := client.connection.Connect(); err != nil {
 		t.Fatalf("Couldn't connect: %s", err)
 	}
 
@@ -98,24 +99,24 @@ func TestClientOfflineSessionClosure(t *testing.T) {
 	\*****************************************************************/
 
 	// Create a new session
-	if _, err := client.Request(
+	if _, err := client.connection.Request(
 		"login",
 		webwire.Payload{Data: []byte("auth")},
 	); err != nil {
 		t.Fatalf("Auth request failed: %s", err)
 	}
 
-	tmp := client.Session()
+	tmp := client.connection.Session()
 	createdSession = &tmp
 
 	// Disconnect client without closing the session
-	client.Close()
+	client.connection.Close()
 
 	// Ensure the session isn't lost
-	if client.Status() == webwireClient.StatConnected {
+	if client.connection.Status() == webwireClient.StatConnected {
 		t.Fatal("Client is expected to be disconnected")
 	}
-	if client.Session().Key == "" {
+	if client.connection.Session().Key == "" {
 		t.Fatal("Session lost after disconnection")
 	}
 
@@ -124,22 +125,22 @@ func TestClientOfflineSessionClosure(t *testing.T) {
 	\*****************************************************************/
 	currentStep = 2
 
-	if err := client.CloseSession(); err != nil {
+	if err := client.connection.CloseSession(); err != nil {
 		t.Fatalf("Offline session closure failed: %s", err)
 	}
 
 	// Ensure the session is removed locally
-	if client.Session().Key != "" {
+	if client.connection.Session().Key != "" {
 		t.Fatal("Session not removed")
 	}
 
 	// Reconnect
-	if err := client.Connect(); err != nil {
+	if err := client.connection.Connect(); err != nil {
 		t.Fatalf("Couldn't reconnect: %s", err)
 	}
 
 	// Ensure the client is anonymous
-	if _, err := client.Request(
+	if _, err := client.connection.Request(
 		"verify-restored",
 		webwire.Payload{Data: []byte("isrestored?")},
 	); err != nil {

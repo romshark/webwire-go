@@ -80,14 +80,15 @@ func TestClientSessionRestoration(t *testing.T) {
 	)
 
 	// Initialize client
-	initialClient := webwireClient.NewClient(
+	initialClient := newCallbackPoweredClient(
 		server.Addr().String(),
 		webwireClient.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
+		nil, nil, nil, nil,
 	)
 
-	if err := initialClient.Connect(); err != nil {
+	if err := initialClient.connection.Connect(); err != nil {
 		t.Fatalf("Couldn't connect initial client: %s", err)
 	}
 
@@ -96,18 +97,18 @@ func TestClientSessionRestoration(t *testing.T) {
 	\*****************************************************************/
 
 	// Create a new session
-	if _, err := initialClient.Request(
+	if _, err := initialClient.connection.Request(
 		"login",
 		webwire.Payload{Data: []byte("auth")},
 	); err != nil {
 		t.Fatalf("Auth request failed: %s", err)
 	}
 
-	tmp := initialClient.Session()
+	tmp := initialClient.connection.Session()
 	createdSession = &tmp
 
 	// Disconnect client without closing the session
-	initialClient.Close()
+	initialClient.connection.Close()
 
 	/*****************************************************************\
 		Step 2 - Create new client, restore session from key
@@ -115,19 +116,20 @@ func TestClientSessionRestoration(t *testing.T) {
 	currentStep = 2
 
 	// Initialize client
-	secondClient := webwireClient.NewClient(
+	secondClient := newCallbackPoweredClient(
 		server.Addr().String(),
 		webwireClient.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
+		nil, nil, nil, nil,
 	)
 
-	if err := secondClient.Connect(); err != nil {
+	if err := secondClient.connection.Connect(); err != nil {
 		t.Fatalf("Couldn't connect second client: %s", err)
 	}
 
 	// Ensure there's no active session on the second client
-	sessionBefore := secondClient.Session()
+	sessionBefore := secondClient.connection.Session()
 	if sessionBefore.Key != "" {
 		t.Fatalf(
 			"Expected the second client to have no session, got: %v",
@@ -137,14 +139,14 @@ func TestClientSessionRestoration(t *testing.T) {
 
 	// Try to manually restore the session
 	// using the initial clients session key
-	if err := secondClient.RestoreSession(
+	if err := secondClient.connection.RestoreSession(
 		[]byte(createdSession.Key),
 	); err != nil {
 		t.Fatalf("Manual session restoration failed: %s", err)
 	}
 
 	// Verify session
-	sessionAfter := secondClient.Session()
+	sessionAfter := secondClient.connection.Session()
 	if sessionAfter.Key == "" {
 		t.Fatalf(
 			"Expected the second client to have an active session, got: %v",

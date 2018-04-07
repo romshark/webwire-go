@@ -39,11 +39,11 @@ const (
 // Client represents an instance of one of the servers clients
 type Client struct {
 	serverAddr        string
+	impl              Implementation
 	status            Status
 	defaultReqTimeout time.Duration
 	reconnInterval    time.Duration
 	autoconnect       int32
-	hooks             Hooks
 
 	sessionLock sync.RWMutex
 	session     *webwire.Session
@@ -75,7 +75,17 @@ type Client struct {
 }
 
 // NewClient creates a new client instance.
-func NewClient(serverAddress string, opts Options) *Client {
+func NewClient(
+	serverAddress string,
+	implementation Implementation,
+	opts Options,
+) *Client {
+	if implementation == nil {
+		panic(fmt.Errorf(
+			"A webwire client requires a client implementation, got nil",
+		))
+	}
+
 	// Prepare configuration
 	opts.SetDefaults()
 
@@ -87,11 +97,11 @@ func NewClient(serverAddress string, opts Options) *Client {
 	// Initialize new client
 	newClt := &Client{
 		serverAddress,
+		implementation,
 		StatDisconnected,
 		opts.DefaultRequestTimeout,
 		opts.ReconnectionInterval,
 		autoconnect,
-		opts.Hooks,
 
 		sync.RWMutex{},
 		nil,

@@ -37,20 +37,21 @@ func TestClientDisconnectedHook(t *testing.T) {
 	)
 
 	// Initialize client
-	client := webwireClient.NewClient(
+	client := newCallbackPoweredClient(
 		server.Addr().String(),
 		webwireClient.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
+		nil, nil, nil, nil,
 	)
 
 	// Connect to the server
-	if err := client.Connect(); err != nil {
+	if err := client.connection.Connect(); err != nil {
 		t.Fatalf("Couldn't connect the client to the server: %s", err)
 	}
 
 	// Disconnect the client
-	client.Close()
+	client.connection.Close()
 
 	// Await the onClientDisconnected hook to be called on the server
 	if err := disconnectedHookCalled.Wait(); err != nil {

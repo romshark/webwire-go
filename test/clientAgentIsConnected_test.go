@@ -61,14 +61,15 @@ func TestClientAgentIsConnected(t *testing.T) {
 	)
 
 	// Initialize client
-	client := wwrclt.NewClient(
+	client := newCallbackPoweredClient(
 		server.Addr().String(),
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
+		nil, nil, nil, nil,
 	)
 
-	if err := client.Connect(); err != nil {
+	if err := client.connection.Connect(); err != nil {
 		t.Fatalf("Couldn't connect: %s", err)
 	}
 
@@ -83,7 +84,7 @@ func TestClientAgentIsConnected(t *testing.T) {
 
 	// Close the client connection and continue in the tester goroutine
 	// spawned in the OnClientConnected handler of the server
-	client.Close()
+	client.connection.Close()
 
 	// Wait for the tester goroutine to finish
 	if err := testerGoroutineFinished.Wait(); err != nil {

@@ -6,10 +6,68 @@ import (
 	"log"
 	"time"
 
-	"github.com/qbeon/webwire-go"
+	wwr "github.com/qbeon/webwire-go"
 
-	webwireClient "github.com/qbeon/webwire-go/client"
+	wwrclt "github.com/qbeon/webwire-go/client"
 )
+
+// EchoClient implements the wwrclt.Implementation interface
+type EchoClient struct {
+	connection *wwrclt.Client
+}
+
+// NewEchoClient constructs and returns a new echo client instance
+func NewEchoClient(serverAddr string) *EchoClient {
+	newEchoClient := &EchoClient{}
+
+	// Initialize connection
+	newEchoClient.connection = wwrclt.NewClient(
+		serverAddr,
+		newEchoClient,
+		wwrclt.Options{
+			// Default timeout for timed requests
+			DefaultRequestTimeout: 10 * time.Second,
+			ReconnectionInterval:  2 * time.Second,
+		},
+	)
+
+	return newEchoClient
+}
+
+// OnDisconnected implements the wwrclt.Implementation interface
+func (clt *EchoClient) OnDisconnected() {}
+
+// OnSessionClosed implements the wwrclt.Implementation interface
+func (clt *EchoClient) OnSessionClosed() {}
+
+// OnSessionCreated implements the wwrclt.Implementation interface
+func (clt *EchoClient) OnSessionCreated(_ *wwr.Session) {}
+
+// OnSignal implements the wwrclt.Implementation interface
+func (clt *EchoClient) OnSignal(_ wwr.Payload) {}
+
+// Request sends a message to the server and returns the reply.
+// panics if the request fails for whatever reason
+func (clt *EchoClient) Request(message string) wwr.Payload {
+	// Define a payload to be sent to the server, use default binary encoding
+	payload := wwr.Payload{
+		Data: []byte(message),
+	}
+
+	log.Printf(
+		"Sent request:   '%s' (%d)",
+		string(payload.Data),
+		len(payload.Data),
+	)
+
+	// Send request and await reply
+	reply, err := clt.connection.Request("", payload)
+	if err != nil {
+		panic(fmt.Errorf("Request failed: %s", err))
+	}
+
+	return reply
+}
 
 var serverAddr = flag.String("addr", ":8081", "server address")
 
@@ -17,35 +75,15 @@ func main() {
 	// Parse command line arguments
 	flag.Parse()
 
-	// Define a payload to be sent to the server, use default binary encoding
-	payload := webwire.Payload{
-		Data: []byte("hey server!"),
-	}
-
-	// Initialize client
-	client := webwireClient.NewClient(
-		*serverAddr,
-		webwireClient.Options{
-			// No hooks required in this example
-			Hooks: webwireClient.Hooks{},
-			// Default timeout for timed requests
-			DefaultRequestTimeout: 5 * time.Second,
-		},
-	)
-
-	log.Printf("Connect to %s", *serverAddr)
-
-	if err := client.Connect(); err != nil {
-		panic(fmt.Errorf("Couldn't connect to the server: %s", err))
-	}
-
-	log.Printf("Send request: '%s' (%d)", string(payload.Data), len(payload.Data))
+	// Initialize a new echo client instance
+	echoClient := NewEchoClient(*serverAddr)
 
 	// Send request and await reply
-	reply, err := client.Request("", payload)
-	if err != nil {
-		panic(fmt.Errorf("Request failed: %s", err))
-	}
+	reply := echoClient.Request("hey, server!")
 
-	log.Printf("Received reply: '%s' (%d)", string(reply.Data), len(reply.Data))
+	log.Printf(
+		"Received reply: '%s' (%d)",
+		string(reply.Data),
+		len(reply.Data),
+	)
 }

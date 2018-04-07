@@ -13,16 +13,20 @@ import (
 // when the server is unreachable and autoconnect is enabled
 func TestClientReqDisconnTimeout(t *testing.T) {
 	// Initialize client
-	client := wwrclt.NewClient(
+	client := newCallbackPoweredClient(
 		"127.0.0.1:65000",
 		wwrclt.Options{
 			ReconnectionInterval:  5 * time.Millisecond,
 			DefaultRequestTimeout: 50 * time.Millisecond,
 		},
+		nil, nil, nil, nil,
 	)
 
 	// Send request and await reply
-	_, err := client.Request("", wwr.Payload{Data: []byte("testdata")})
+	_, err := client.connection.Request(
+		"",
+		wwr.Payload{Data: []byte("testdata")},
+	)
 	if _, isReqTimeoutErr := err.(wwr.ReqTimeoutErr); !isReqTimeoutErr {
 		t.Fatalf(
 			"Expected request timeout error, got: %s | %s",

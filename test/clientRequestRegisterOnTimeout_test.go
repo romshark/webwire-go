@@ -12,7 +12,7 @@ import (
 // TestClientRequestRegisterOnTimeout verifies the request register
 // of the client is correctly updated when the request times out
 func TestClientRequestRegisterOnTimeout(t *testing.T) {
-	var client *webwireClient.Client
+	var connection *webwireClient.Client
 
 	// Initialize webwire server given only the request
 	server := setupServer(
@@ -24,7 +24,7 @@ func TestClientRequestRegisterOnTimeout(t *testing.T) {
 				_ *webwire.Message,
 			) (webwire.Payload, error) {
 				// Verify pending requests
-				pendingReqs := client.PendingRequests()
+				pendingReqs := connection.PendingRequests()
 				if pendingReqs != 1 {
 					t.Errorf("Unexpected pending requests: %d", pendingReqs)
 					return webwire.Payload{}, nil
@@ -39,26 +39,28 @@ func TestClientRequestRegisterOnTimeout(t *testing.T) {
 	)
 
 	// Initialize client
-	client = webwireClient.NewClient(
+	client := newCallbackPoweredClient(
 		server.Addr().String(),
 		webwireClient.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
+		nil, nil, nil, nil,
 	)
+	connection = client.connection
 
 	// Connect the client to the server
-	if err := client.Connect(); err != nil {
+	if err := client.connection.Connect(); err != nil {
 		t.Fatalf("Couldn't connect to the server: %s", err)
 	}
 
 	// Verify pending requests
-	pendingReqsBeforeReq := client.PendingRequests()
+	pendingReqsBeforeReq := client.connection.PendingRequests()
 	if pendingReqsBeforeReq != 0 {
 		t.Fatalf("Unexpected pending requests: %d", pendingReqsBeforeReq)
 	}
 
 	// Send request and await reply
-	_, reqErr := client.TimedRequest(
+	_, reqErr := client.connection.TimedRequest(
 		"",
 		webwire.Payload{Data: []byte("t")},
 		200*time.Millisecond,
@@ -68,7 +70,7 @@ func TestClientRequestRegisterOnTimeout(t *testing.T) {
 	}
 
 	// Verify pending requests
-	pendingReqsAfterReq := client.PendingRequests()
+	pendingReqsAfterReq := client.connection.PendingRequests()
 	if pendingReqsAfterReq != 0 {
 		t.Fatalf("Unexpected pending requests: %d", pendingReqsAfterReq)
 	}

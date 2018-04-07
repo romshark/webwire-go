@@ -104,60 +104,59 @@ func TestAuthentication(t *testing.T) {
 	)
 
 	// Initialize client
-	client := wwrclt.NewClient(
+	client := newCallbackPoweredClient(
 		server.Addr().String(),
 		wwrclt.Options{
-			Hooks: wwrclt.Hooks{
-				OnSessionCreated: func(session *wwr.Session) {
-					// The session info object won't be of initial structure type
-					// because of intermediate JSON encoding
-					// it'll be a map of arbitrary values with string keys
-					info := session.Info
-
-					// Check uid
-					field := "session.info.uid"
-					expectedUserIdent := "clientidentifiergoeshere"
-					actualUID, ok := info["uid"].(string)
-					if !ok {
-						t.Errorf("expected %s not string", field)
-						return
-					}
-					if actualUID != expectedUserIdent {
-						t.Errorf("%s differs: %s | %s", field, actualUID, expectedUserIdent)
-						return
-					}
-
-					// Check some-number
-					field = "session.info.some-number"
-					expectedNumber := float64(12345)
-					actualNumber, ok := info["some-number"].(float64)
-					if !ok {
-						t.Errorf("expected %s not float64", field)
-						return
-					}
-					if actualNumber != expectedNumber {
-						t.Errorf("%s differs: %f | %f", field, actualNumber, expectedNumber)
-						return
-					}
-					onSessionCreatedHookExecuted.Done()
-				},
-			},
 			DefaultRequestTimeout: 2 * time.Second,
 		},
-	)
-	defer client.Close()
+		func(session *wwr.Session) {
+			// The session info object won't be of initial structure type
+			// because of intermediate JSON encoding
+			// it'll be a map of arbitrary values with string keys
+			info := session.Info
 
-	if err := client.Connect(); err != nil {
+			// Check uid
+			field := "session.info.uid"
+			expectedUserIdent := "clientidentifiergoeshere"
+			actualUID, ok := info["uid"].(string)
+			if !ok {
+				t.Errorf("expected %s not string", field)
+				return
+			}
+			if actualUID != expectedUserIdent {
+				t.Errorf("%s differs: %s | %s", field, actualUID, expectedUserIdent)
+				return
+			}
+
+			// Check some-number
+			field = "session.info.some-number"
+			expectedNumber := float64(12345)
+			actualNumber, ok := info["some-number"].(float64)
+			if !ok {
+				t.Errorf("expected %s not float64", field)
+				return
+			}
+			if actualNumber != expectedNumber {
+				t.Errorf("%s differs: %f | %f", field, actualNumber, expectedNumber)
+				return
+			}
+			onSessionCreatedHookExecuted.Done()
+		},
+		nil, nil, nil,
+	)
+	defer client.connection.Close()
+
+	if err := client.connection.Connect(); err != nil {
 		t.Fatalf("Couldn't connect: %s", err)
 	}
 
 	// Send authentication request and await reply
-	authReqReply, err := client.Request("login", expectedCredentials)
+	authReqReply, err := client.connection.Request("login", expectedCredentials)
 	if err != nil {
 		t.Fatalf("Request failed: %s", err)
 	}
 
-	tmp := client.Session()
+	tmp := client.connection.Session()
 	createdSession = &tmp
 
 	// Verify reply
@@ -172,7 +171,7 @@ func TestAuthentication(t *testing.T) {
 
 	// Send a test-request to verify the session on the server
 	// and await response
-	testReqReply, err := client.Request("test", expectedCredentials)
+	testReqReply, err := client.connection.Request("test", expectedCredentials)
 	if err != nil {
 		t.Fatalf("Request failed: %s", err)
 	}
@@ -181,7 +180,10 @@ func TestAuthentication(t *testing.T) {
 	comparePayload(t, "test reply", expectedConfirmation, testReqReply)
 
 	// Send a test-signal to verify the session on the server
-	if err := client.Signal("test", expectedCredentials); err != nil {
+	if err := client.connection.Signal(
+		"test",
+		expectedCredentials,
+	); err != nil {
 		t.Fatalf("Request failed: %s", err)
 	}
 

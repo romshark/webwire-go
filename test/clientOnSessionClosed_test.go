@@ -50,24 +50,24 @@ func TestClientOnSessionClosed(t *testing.T) {
 	)
 
 	// Initialize client
-	client := webwireClient.NewClient(
+	client := newCallbackPoweredClient(
 		server.Addr().String(),
 		webwireClient.Options{
-			Hooks: webwireClient.Hooks{
-				OnSessionClosed: func() {
-					hookCalled.Done()
-				},
-			},
 			DefaultRequestTimeout: 2 * time.Second,
 		},
+		nil,
+		func() {
+			hookCalled.Done()
+		},
+		nil, nil,
 	)
 
-	if err := client.Connect(); err != nil {
+	if err := client.connection.Connect(); err != nil {
 		t.Fatalf("Couldn't connect: %s", err)
 	}
 
 	// Send authentication request and await reply
-	if _, err := client.Request(
+	if _, err := client.connection.Request(
 		"login",
 		webwire.Payload{Data: []byte("credentials")},
 	); err != nil {

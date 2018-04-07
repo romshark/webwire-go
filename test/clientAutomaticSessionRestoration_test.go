@@ -80,12 +80,13 @@ func TestClientAutomaticSessionRestoration(t *testing.T) {
 	)
 
 	// Initialize client
-	client := webwireClient.NewClient(
+	client := newCallbackPoweredClient(
 		server.Addr().String(),
 		webwireClient.Options{},
+		nil, nil, nil, nil,
 	)
 
-	if err := client.Connect(); err != nil {
+	if err := client.connection.Connect(); err != nil {
 		t.Fatalf("Couldn't connect: %s", err)
 	}
 
@@ -94,24 +95,24 @@ func TestClientAutomaticSessionRestoration(t *testing.T) {
 	\*****************************************************************/
 
 	// Create a new session
-	if _, err := client.Request(
+	if _, err := client.connection.Request(
 		"login",
 		webwire.Payload{Data: []byte("auth")},
 	); err != nil {
 		t.Fatalf("Auth request failed: %s", err)
 	}
 
-	tmp := client.Session()
+	tmp := client.connection.Session()
 	createdSession = &tmp
 
 	// Disconnect client without closing the session
-	client.Close()
+	client.connection.Close()
 
 	// Ensure the session isn't lost
-	if client.Status() == webwireClient.StatConnected {
+	if client.connection.Status() == webwireClient.StatConnected {
 		t.Fatal("Client is expected to be disconnected")
 	}
-	if client.Session().Key == "" {
+	if client.connection.Session().Key == "" {
 		t.Fatal("Session lost after disconnection")
 	}
 
@@ -121,13 +122,13 @@ func TestClientAutomaticSessionRestoration(t *testing.T) {
 	currentStep = 2
 
 	// Reconnect (this should automatically try to restore the session)
-	if err := client.Connect(); err != nil {
+	if err := client.connection.Connect(); err != nil {
 		t.Fatalf("Couldn't reconnect: %s", err)
 	}
 
 	// Verify whether the previous session was restored automatically
 	// and the server authenticates the user
-	if _, err := client.Request(
+	if _, err := client.connection.Request(
 		"verify",
 		webwire.Payload{Data: []byte("isrestored?")},
 	); err != nil {

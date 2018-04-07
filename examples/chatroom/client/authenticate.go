@@ -10,17 +10,20 @@ import (
 	"github.com/qbeon/webwire-go/examples/chatroom/shared"
 )
 
-// authenticate tries to login using the password and name from the CLI
-func authenticate() {
+// Authenticate tries to login using the password and name from the CLI
+func (clt *ChatroomClient) Authenticate(login, password string) {
 	encodedCreds, err := json.Marshal(shared.AuthenticationCredentials{
-		Name:     *username,
-		Password: *password,
+		Name:     login,
+		Password: password,
 	})
 	if err != nil {
 		panic(fmt.Errorf("Couldn't marshal credentials: %s", err))
 	}
 
-	_, reqErr := client.Request("auth", webwire.Payload{Data: encodedCreds})
+	_, reqErr := clt.connection.Request(
+		"auth",
+		webwire.Payload{Data: encodedCreds},
+	)
 	switch err := reqErr.(type) {
 	case nil:
 		break

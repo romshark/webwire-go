@@ -18,17 +18,18 @@ func TestClientConcurrentConnect(t *testing.T) {
 	server := setupServer(t, &serverImpl{}, webwire.ServerOptions{})
 
 	// Initialize client
-	client := webwireClient.NewClient(
+	client := newCallbackPoweredClient(
 		server.Addr().String(),
 		webwireClient.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
+		nil, nil, nil, nil,
 	)
-	defer client.Close()
+	defer client.connection.Close()
 
 	connect := func() {
 		defer finished.Done()
-		if err := client.Connect(); err != nil {
+		if err := client.connection.Connect(); err != nil {
 			t.Errorf("Connect failed: %s", err)
 		}
 	}

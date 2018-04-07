@@ -14,30 +14,31 @@ func TestClientIsConnected(t *testing.T) {
 	server := setupServer(t, &serverImpl{}, webwire.ServerOptions{})
 
 	// Initialize client
-	client := webwireClient.NewClient(
+	client := newCallbackPoweredClient(
 		server.Addr().String(),
 		webwireClient.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
+		nil, nil, nil, nil,
 	)
 
-	if client.Status() == webwireClient.StatConnected {
+	if client.connection.Status() == webwireClient.StatConnected {
 		t.Fatal("Expected client to be disconnected before the connection establishment")
 	}
 
 	// Connect to the server
-	if err := client.Connect(); err != nil {
+	if err := client.connection.Connect(); err != nil {
 		t.Fatalf("Couldn't connect the client to the server: %s", err)
 	}
 
-	if client.Status() != webwireClient.StatConnected {
+	if client.connection.Status() != webwireClient.StatConnected {
 		t.Fatal("Expected client to be connected after the connection establishment")
 	}
 
 	// Disconnect the client
-	client.Close()
+	client.connection.Close()
 
-	if client.Status() == webwireClient.StatConnected {
+	if client.connection.Status() == webwireClient.StatConnected {
 		t.Fatal("Expected client to be disconnected after closure")
 	}
 }

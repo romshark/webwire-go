@@ -57,20 +57,21 @@ func TestClientSessionInfo(t *testing.T) {
 	)
 
 	// Initialize client
-	client := webwireClient.NewClient(
+	client := newCallbackPoweredClient(
 		server.Addr().String(),
 		webwireClient.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
+		nil, nil, nil, nil,
 	)
-	defer client.Close()
+	defer client.connection.Close()
 
-	if err := client.Connect(); err != nil {
+	if err := client.connection.Connect(); err != nil {
 		t.Fatalf("Couldn't connect: %s", err)
 	}
 
 	// Send authentication request and await reply
-	if _, err := client.Request(
+	if _, err := client.connection.Request(
 		"login",
 		webwire.Payload{Data: []byte("credentials")},
 	); err != nil {
@@ -78,7 +79,7 @@ func TestClientSessionInfo(t *testing.T) {
 	}
 
 	// Verify getting inexistent field
-	inexistent := client.SessionInfo("inexistent")
+	inexistent := client.connection.SessionInfo("inexistent")
 	if inexistent != nil {
 		t.Fatalf(
 			"Expected nil for inexistent session info field, got: %v",
@@ -87,11 +88,11 @@ func TestClientSessionInfo(t *testing.T) {
 	}
 
 	// Verify field: bool
-	samplebool, ok := client.SessionInfo("bool").(bool)
+	samplebool, ok := client.connection.SessionInfo("bool").(bool)
 	if !ok {
 		t.Fatalf(
 			"Expected field 'bool' to be boolean, got: %v",
-			reflect.TypeOf(client.SessionInfo("bool")),
+			reflect.TypeOf(client.connection.SessionInfo("bool")),
 		)
 	}
 	if samplebool != expectedBool {
@@ -99,11 +100,11 @@ func TestClientSessionInfo(t *testing.T) {
 	}
 
 	// Verify field: string
-	samplestring, ok := client.SessionInfo("string").(string)
+	samplestring, ok := client.connection.SessionInfo("string").(string)
 	if !ok {
 		t.Fatalf(
 			"Expected field 'string' to be string, got: %v",
-			reflect.TypeOf(client.SessionInfo("string")),
+			reflect.TypeOf(client.connection.SessionInfo("string")),
 		)
 	}
 	if samplestring != expectedString {
@@ -111,11 +112,11 @@ func TestClientSessionInfo(t *testing.T) {
 	}
 
 	// Verify field: int
-	sampleint, ok := client.SessionInfo("int").(float64)
+	sampleint, ok := client.connection.SessionInfo("int").(float64)
 	if !ok {
 		t.Fatalf(
 			"Expected field 'int' to be float64, got: %v",
-			reflect.TypeOf(client.SessionInfo("int")),
+			reflect.TypeOf(client.connection.SessionInfo("int")),
 		)
 	}
 	if uint32(sampleint) != expectedInt {
@@ -127,11 +128,11 @@ func TestClientSessionInfo(t *testing.T) {
 	}
 
 	// Verify field: number
-	samplenumber, ok := client.SessionInfo("number").(float64)
+	samplenumber, ok := client.connection.SessionInfo("number").(float64)
 	if !ok {
 		t.Fatalf(
 			"Expected field 'number' to be float64, got: %v",
-			reflect.TypeOf(client.SessionInfo("number")),
+			reflect.TypeOf(client.connection.SessionInfo("number")),
 		)
 	}
 	if samplenumber != expectedNumber {
@@ -143,11 +144,11 @@ func TestClientSessionInfo(t *testing.T) {
 	}
 
 	// Verify field: array
-	samplearray, ok := client.SessionInfo("array").([]interface{})
+	samplearray, ok := client.connection.SessionInfo("array").([]interface{})
 	if !ok {
 		t.Fatalf(
 			"Expected field 'array' to be array of empty interfaces, got: %v",
-			reflect.TypeOf(client.SessionInfo("array")),
+			reflect.TypeOf(client.connection.SessionInfo("array")),
 		)
 	}
 	for index, value := range samplearray {
@@ -163,11 +164,11 @@ func TestClientSessionInfo(t *testing.T) {
 	}
 
 	// Verify field: struct
-	samplestruct, ok := client.SessionInfo("struct").(webwire.SessionInfo)
+	samplestruct, ok := client.connection.SessionInfo("struct").(webwire.SessionInfo)
 	if !ok {
 		t.Fatalf(
 			"Expected field 'struct' to be map of empty interfaces, got: %v",
-			reflect.TypeOf(client.SessionInfo("struct")),
+			reflect.TypeOf(client.connection.SessionInfo("struct")),
 		)
 	}
 	samplestructString, ok := samplestruct["struct_string"].(string)

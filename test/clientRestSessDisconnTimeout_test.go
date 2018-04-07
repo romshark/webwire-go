@@ -13,16 +13,17 @@ import (
 // when the server is unreachable
 func TestClientRestSessDisconnTimeout(t *testing.T) {
 	// Initialize client
-	client := wwrclt.NewClient(
+	client := newCallbackPoweredClient(
 		"127.0.0.1:65000",
 		wwrclt.Options{
 			ReconnectionInterval:  5 * time.Millisecond,
 			DefaultRequestTimeout: 50 * time.Millisecond,
 		},
+		nil, nil, nil, nil,
 	)
 
 	// Send request and await reply
-	err := client.RestoreSession([]byte("inexistentkey"))
+	err := client.connection.RestoreSession([]byte("inexistentkey"))
 	if _, isReqTimeoutErr := err.(wwr.ReqTimeoutErr); !isReqTimeoutErr {
 		t.Fatalf(
 			"Expected request timeout error, got: %s | %s",

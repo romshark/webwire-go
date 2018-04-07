@@ -47,21 +47,21 @@ func TestActiveSessionRegistry(t *testing.T) {
 	)
 
 	// Initialize client
-	client := webwireClient.NewClient(
+	client := newCallbackPoweredClient(
 		server.Addr().String(),
 		webwireClient.Options{
-			Hooks: webwireClient.Hooks{},
 			DefaultRequestTimeout: time.Second * 2,
 		},
+		nil, nil, nil, nil,
 	)
-	defer client.Close()
+	defer client.connection.Close()
 
-	if err := client.Connect(); err != nil {
+	if err := client.connection.Connect(); err != nil {
 		t.Fatalf("Couldn't connect: %s", err)
 	}
 
 	// Send authentication request
-	if _, err := client.Request(
+	if _, err := client.connection.Request(
 		"login",
 		webwire.Payload{
 			Encoding: webwire.EncodingUtf8,
@@ -80,7 +80,7 @@ func TestActiveSessionRegistry(t *testing.T) {
 	}
 
 	// Send logout request
-	if _, err := client.Request(
+	if _, err := client.connection.Request(
 		"logout",
 		webwire.Payload{
 			Encoding: webwire.EncodingUtf8,

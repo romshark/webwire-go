@@ -49,29 +49,31 @@ func TestDisabledSessions(t *testing.T) {
 	)
 
 	// Initialize client
-	client := wwrclt.NewClient(
+	client := newCallbackPoweredClient(
 		server.Addr().String(),
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
-			Hooks: wwrclt.Hooks{
-				OnSessionCreated: func(*wwr.Session) {
-					t.Errorf("OnSessionCreated was not expected to be called")
-				},
-			},
 		},
+		func(*wwr.Session) {
+			t.Errorf("OnSessionCreated was not expected to be called")
+		},
+		nil, nil, nil,
 	)
-	defer client.Close()
+	defer client.connection.Close()
 
-	if err := client.Connect(); err != nil {
+	if err := client.connection.Connect(); err != nil {
 		t.Fatalf("Couldn't connect: %s", err)
 	}
 
 	// Send authentication request and await reply
-	_, err := client.Request("login", wwr.Payload{Data: []byte("testdata")})
+	_, err := client.connection.Request(
+		"login",
+		wwr.Payload{Data: []byte("testdata")},
+	)
 	if err != nil {
 		t.Fatalf("Request failed: %s", err)
 	}
 
-	sessRestErr := client.RestoreSession([]byte("testkey"))
+	sessRestErr := client.connection.RestoreSession([]byte("testkey"))
 	verifyError(sessRestErr)
 }

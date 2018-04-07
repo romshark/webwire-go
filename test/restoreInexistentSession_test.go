@@ -23,20 +23,21 @@ func TestRestoreInexistentSession(t *testing.T) {
 	// Initialize client
 
 	// Ensure that the last superfluous client is rejected
-	client := wwrClient.NewClient(
+	client := newCallbackPoweredClient(
 		server.Addr().String(),
 		wwrClient.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
+		nil, nil, nil, nil,
 	)
 
-	if err := client.Connect(); err != nil {
+	if err := client.connection.Connect(); err != nil {
 		t.Fatalf("Couldn't connect client: %s", err)
 	}
 
 	// Try to restore the session and expect it to fail
 	// due to the session being inexistent
-	sessRestErr := client.RestoreSession([]byte("lalala"))
+	sessRestErr := client.connection.RestoreSession([]byte("lalala"))
 	_, isSessNotFoundErr := sessRestErr.(wwr.SessNotFoundErr)
 	if !isSessNotFoundErr {
 		t.Fatalf(

@@ -18,7 +18,7 @@ func (clt *Client) handleSessionCreated(msgPayload webwire.Payload) {
 	clt.sessionLock.Lock()
 	clt.session = &session
 	clt.sessionLock.Unlock()
-	clt.hooks.OnSessionCreated(&session)
+	clt.impl.OnSessionCreated(&session)
 }
 
 func (clt *Client) handleSessionClosed() {
@@ -27,7 +27,7 @@ func (clt *Client) handleSessionClosed() {
 	clt.session = nil
 	clt.sessionLock.Unlock()
 
-	clt.hooks.OnSessionClosed()
+	clt.impl.OnSessionClosed()
 }
 
 func (clt *Client) handleFailure(
@@ -103,12 +103,14 @@ func (clt *Client) handleMessage(message []byte) error {
 		)
 	case webwire.MsgInternalError:
 		clt.handleInternalError(msg.Identifier())
+
 	case webwire.MsgSignalBinary:
-		clt.hooks.OnServerSignal(msg.Payload)
+		fallthrough
 	case webwire.MsgSignalUtf8:
-		clt.hooks.OnServerSignal(msg.Payload)
+		fallthrough
 	case webwire.MsgSignalUtf16:
-		clt.hooks.OnServerSignal(msg.Payload)
+		clt.impl.OnSignal(msg.Payload)
+
 	case webwire.MsgSessionCreated:
 		clt.handleSessionCreated(msg.Payload)
 	case webwire.MsgSessionClosed:

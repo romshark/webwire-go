@@ -37,33 +37,32 @@ func TestClientOnSessionCreated(t *testing.T) {
 	)
 
 	// Initialize client
-	client := webwireClient.NewClient(
+	client := newCallbackPoweredClient(
 		server.Addr().String(),
 		webwireClient.Options{
-			Hooks: webwireClient.Hooks{
-				OnSessionCreated: func(newSession *webwire.Session) {
-					sessionFromHook = newSession
-					hookCalled.Done()
-				},
-			},
 			DefaultRequestTimeout: 2 * time.Second,
 		},
+		func(newSession *webwire.Session) {
+			sessionFromHook = newSession
+			hookCalled.Done()
+		},
+		nil, nil, nil,
 	)
-	defer client.Close()
+	defer client.connection.Close()
 
-	if err := client.Connect(); err != nil {
+	if err := client.connection.Connect(); err != nil {
 		t.Fatalf("Couldn't connect: %s", err)
 	}
 
 	// Send authentication request and await reply
-	if _, err := client.Request(
+	if _, err := client.connection.Request(
 		"login",
 		webwire.Payload{Data: []byte("credentials")},
 	); err != nil {
 		t.Fatalf("Request failed: %s", err)
 	}
 
-	tmp := client.Session()
+	tmp := client.connection.Session()
 	createdSession = &tmp
 
 	// Verify client session

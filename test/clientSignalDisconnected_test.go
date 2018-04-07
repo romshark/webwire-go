@@ -19,15 +19,16 @@ func TestClientSignalDisconnected(t *testing.T) {
 	)
 
 	// Initialize client and skip manual connection establishment
-	client := wwrclt.NewClient(
+	client := newCallbackPoweredClient(
 		server.Addr().String(),
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
+		nil, nil, nil, nil,
 	)
 
 	// Send request and await reply
-	if err := client.Signal(
+	if err := client.connection.Signal(
 		"",
 		wwr.Payload{Data: []byte("testdata")},
 	); err != nil {

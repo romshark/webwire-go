@@ -34,19 +34,20 @@ func TestClientRequestError(t *testing.T) {
 	)
 
 	// Initialize client
-	client := webwireClient.NewClient(
+	client := newCallbackPoweredClient(
 		server.Addr().String(),
 		webwireClient.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
+		nil, nil, nil, nil,
 	)
 
-	if err := client.Connect(); err != nil {
+	if err := client.connection.Connect(); err != nil {
 		t.Fatalf("Couldn't connect: %s", err)
 	}
 
 	// Send request and await reply
-	reply, err := client.Request("", webwire.Payload{
+	reply, err := client.connection.Request("", webwire.Payload{
 		Encoding: webwire.EncodingUtf8,
 		Data:     []byte("webwire_test_REQUEST_payload"),
 	})

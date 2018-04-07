@@ -22,37 +22,41 @@ const (
 
 // Options represents the options used during the creation a new client instance
 type Options struct {
-	// Hooks define the callback hook functions provided by the user to define behavior
-	// on certain events
-	Hooks Hooks
-
-	// DefaultRequestTimeout defines the default request timeout duration used in client.Request
+	// DefaultRequestTimeout defines the default request timeout duration
+	// used by client.Request and client.RestoreSession
 	DefaultRequestTimeout time.Duration
 
-	// ReconnectionInterval defines the interval at which autoconnect should poll for a connection.
+	// Autoconnect defines whether the autoconnect feature is to be enabled.
+	//
+	// If autoconnect is enabled then client.Request, client.TimedRequest and
+	// client.RestoreSession won't immediately return a disconnected error
+	// if there's no active connection to the server,
+	// instead they will automatically try to reestablish the connection
+	// before the timeout is triggered and a timeout error is returned.
+	//
+	// Autoconnect is enabled by default
+	Autoconnect OptionToggle
+
+	// ReconnectionInterval defines the interval at which autoconnect
+	// should retry connection establishment.
 	// If undefined then the default value of 2 seconds is applied
 	ReconnectionInterval time.Duration
 
-	// If autoconnect is enabled, client.Request, client.TimedRequest and client.RestoreSession
-	// won't immediately return a disconnected error if there's no active connection to the server,
-	// instead they will automatically try to reestablish the connection
-	// before the timeout is triggered and a timeout error is returned.
-	// Autoconnect is enabled by default
-	Autoconnect OptionToggle
-	WarnLog     io.Writer
-	ErrorLog    io.Writer
+	// WarnLog defines the warn logging output target
+	WarnLog io.Writer
+
+	// ErrorLog defines the error logging output target
+	ErrorLog io.Writer
 }
 
 // SetDefaults sets default values for undefined required options
 func (opts *Options) SetDefaults() {
-	opts.Hooks.SetDefaults()
+	if opts.DefaultRequestTimeout < 1 {
+		opts.DefaultRequestTimeout = 60 * time.Second
+	}
 
 	if opts.Autoconnect == OptUnset {
 		opts.Autoconnect = OptEnabled
-	}
-
-	if opts.DefaultRequestTimeout < 1 {
-		opts.DefaultRequestTimeout = 60 * time.Second
 	}
 
 	if opts.ReconnectionInterval < 1 {

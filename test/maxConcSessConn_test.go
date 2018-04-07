@@ -59,24 +59,27 @@ func TestMaxConcSessConn(t *testing.T) {
 	)
 
 	// Initialize client
-	clients := make([]*wwrClient.Client, concurrentConns)
+	clients := make([]*callbackPoweredClient, concurrentConns)
 	for i := uint(0); i < concurrentConns; i++ {
-		client := wwrClient.NewClient(
+		client := newCallbackPoweredClient(
 			server.Addr().String(),
 			wwrClient.Options{
 				DefaultRequestTimeout: 2 * time.Second,
 			},
+			nil, nil, nil, nil,
 		)
 		clients[i] = client
 
-		if err := client.Connect(); err != nil {
+		if err := client.connection.Connect(); err != nil {
 			t.Fatalf("Couldn't connect client: %s", err)
 		}
 
 		// Restore the session for all clients except the first one
 		if i > 0 {
 			sessionKeyLock.RLock()
-			if err := client.RestoreSession([]byte(sessionKey)); err != nil {
+			if err := client.connection.RestoreSession(
+				[]byte(sessionKey),
+			); err != nil {
 				t.Fatalf(
 					"Unexpected error during manual session restoration: %s",
 					err,
@@ -87,20 +90,24 @@ func TestMaxConcSessConn(t *testing.T) {
 	}
 
 	// Ensure that the last superfluous client is rejected
-	superfluousClient := wwrClient.NewClient(
+	superfluousClient := newCallbackPoweredClient(
 		server.Addr().String(),
 		wwrClient.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
+		nil, nil, nil, nil,
 	)
 
-	if err := superfluousClient.Connect(); err != nil {
+	if err := superfluousClient.connection.Connect(); err != nil {
 		t.Fatalf("Couldn't connect superfluous client: %s", err)
 	}
 
-	// Try to restore the session and expect this operation to fail due to reached limit
+	// Try to restore the session and expect this operation to fail
+	// due to reached limit
 	sessionKeyLock.RLock()
-	sessRestErr := superfluousClient.RestoreSession([]byte(sessionKey))
+	sessRestErr := superfluousClient.connection.RestoreSession(
+		[]byte(sessionKey),
+	)
 	_, isMaxReachedErr := sessRestErr.(wwr.MaxSessConnsReachedErr)
 	if !isMaxReachedErr {
 		t.Fatalf(

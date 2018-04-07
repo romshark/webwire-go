@@ -45,7 +45,7 @@ func (clt *Client) connect() error {
 				}
 
 				// Call hook
-				clt.hooks.OnDisconnected()
+				clt.impl.OnDisconnected()
 
 				// Try to reconnect if autoconn wasn't disabled.
 				// reconnect in another goroutine to let this one die

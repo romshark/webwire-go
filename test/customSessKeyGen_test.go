@@ -49,20 +49,28 @@ func TestCustomSessKeyGen(t *testing.T) {
 	)
 
 	// Initialize client
-	client := wwrclt.NewClient(
+	client := newCallbackPoweredClient(
 		server.Addr().String(),
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
+		nil, nil, nil, nil,
 	)
-	defer client.Close()
+	defer client.connection.Close()
 
 	// Send authentication request and await reply
-	if _, err := client.Request("login", wwr.Payload{Data: []byte("testdata")}); err != nil {
+	if _, err := client.connection.Request(
+		"login",
+		wwr.Payload{Data: []byte("testdata")},
+	); err != nil {
 		t.Fatalf("Request failed: %s", err)
 	}
 
-	if client.Session().Key != expectedSessionKey {
-		t.Errorf("Unexpected session key: %s | %s", expectedSessionKey, client.Session().Key)
+	if client.connection.Session().Key != expectedSessionKey {
+		t.Errorf(
+			"Unexpected session key: %s | %s",
+			expectedSessionKey,
+			client.connection.Session().Key,
+		)
 	}
 }
