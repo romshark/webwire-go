@@ -80,6 +80,7 @@ func (asr *sessionRegistry) deregister(clt *Client) bool {
 			connections: entry.connections - 1,
 			client:      entry.client,
 		}
+		return true
 	}
 	return false
 }
