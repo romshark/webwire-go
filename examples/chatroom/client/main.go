@@ -4,6 +4,8 @@ import (
 	"flag"
 	"time"
 
+	"github.com/qbeon/webwire-go/examples/chatroom/shared"
+
 	wwrclt "github.com/qbeon/webwire-go/client"
 )
 
@@ -21,10 +23,13 @@ func NewChatroomClient(serverAddr string) *ChatroomClient {
 		serverAddr,
 		newChatroomClient,
 		wwrclt.Options{
-			// Address of the webwire server
-			// Default timeout for timed requests
 			DefaultRequestTimeout: 10 * time.Second,
-			ReconnectionInterval:  2 * time.Second,
+			// Default timeout for timed requests
+			ReconnectionInterval: 2 * time.Second,
+
+			// Session info parser function must override the default one
+			// for the session info object to be typed as shared.SessionInfo
+			SessionInfoParser: shared.SessionInfoParser,
 		},
 	)
 

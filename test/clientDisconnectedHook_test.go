@@ -42,7 +42,7 @@ func TestClientDisconnectedHook(t *testing.T) {
 		webwireClient.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
-		nil, nil, nil, nil,
+		callbackPoweredClientHooks{},
 	)
 
 	// Connect to the server

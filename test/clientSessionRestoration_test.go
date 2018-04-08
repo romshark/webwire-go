@@ -85,7 +85,7 @@ func TestClientSessionRestoration(t *testing.T) {
 		webwireClient.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
-		nil, nil, nil, nil,
+		callbackPoweredClientHooks{},
 	)
 
 	if err := initialClient.connection.Connect(); err != nil {
@@ -104,8 +104,7 @@ func TestClientSessionRestoration(t *testing.T) {
 		t.Fatalf("Auth request failed: %s", err)
 	}
 
-	tmp := initialClient.connection.Session()
-	createdSession = &tmp
+	createdSession = initialClient.connection.Session()
 
 	// Disconnect client without closing the session
 	initialClient.connection.Close()
@@ -121,7 +120,7 @@ func TestClientSessionRestoration(t *testing.T) {
 		webwireClient.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
-		nil, nil, nil, nil,
+		callbackPoweredClientHooks{},
 	)
 
 	if err := secondClient.connection.Connect(); err != nil {
@@ -130,7 +129,7 @@ func TestClientSessionRestoration(t *testing.T) {
 
 	// Ensure there's no active session on the second client
 	sessionBefore := secondClient.connection.Session()
-	if sessionBefore.Key != "" {
+	if sessionBefore != nil {
 		t.Fatalf(
 			"Expected the second client to have no session, got: %v",
 			sessionBefore,
@@ -153,5 +152,5 @@ func TestClientSessionRestoration(t *testing.T) {
 			sessionAfter,
 		)
 	}
-	compareSessions(t, createdSession, &sessionAfter)
+	compareSessions(t, createdSession, sessionAfter)
 }

@@ -87,7 +87,7 @@ func TestClientOfflineSessionClosure(t *testing.T) {
 		webwireClient.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
-		nil, nil, nil, nil,
+		callbackPoweredClientHooks{},
 	)
 
 	if err := client.connection.Connect(); err != nil {
@@ -106,8 +106,7 @@ func TestClientOfflineSessionClosure(t *testing.T) {
 		t.Fatalf("Auth request failed: %s", err)
 	}
 
-	tmp := client.connection.Session()
-	createdSession = &tmp
+	createdSession = client.connection.Session()
 
 	// Disconnect client without closing the session
 	client.connection.Close()
@@ -130,7 +129,7 @@ func TestClientOfflineSessionClosure(t *testing.T) {
 	}
 
 	// Ensure the session is removed locally
-	if client.connection.Session().Key != "" {
+	if client.connection.Session() != nil {
 		t.Fatal("Session not removed")
 	}
 

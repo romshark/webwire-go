@@ -110,22 +110,23 @@ func TestServerInitiatedSessionDestruction(t *testing.T) {
 		webwireClient.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
-		func(_ *webwire.Session) {
-			// Mark the client-side session creation callback executed
-			sessionCreationCallbackCalled.Done()
+		callbackPoweredClientHooks{
+			OnSessionCreated: func(_ *webwire.Session) {
+				// Mark the client-side session creation callback executed
+				sessionCreationCallbackCalled.Done()
+			},
+			OnSessionClosed: func() {
+				// Ensure this callback is called during the
+				if currentStep != 3 {
+					t.Errorf(
+						"Client-side session destruction callback "+
+							"called at wrong step (%d)",
+						currentStep,
+					)
+				}
+				sessionDestructionCallbackCalled.Done()
+			},
 		},
-		func() {
-			// Ensure this callback is called during the
-			if currentStep != 3 {
-				t.Errorf(
-					"Client-side session destruction callback "+
-						"called at wrong step (%d)",
-					currentStep,
-				)
-			}
-			sessionDestructionCallbackCalled.Done()
-		},
-		nil, nil,
 	)
 
 	/*****************************************************************\
@@ -141,8 +142,7 @@ func TestServerInitiatedSessionDestruction(t *testing.T) {
 		t.Fatalf("Authentication request failed: %s", err)
 	}
 
-	tmp := client.connection.Session()
-	createdSession = &tmp
+	createdSession = client.connection.Session()
 
 	// Verify reply
 	comparePayload(
@@ -203,7 +203,7 @@ func TestServerInitiatedSessionDestruction(t *testing.T) {
 
 	// Ensure the session is destroyed locally as well
 	currentSessionAfterDestruction := client.connection.Session()
-	if currentSessionAfterDestruction.Key != "" {
+	if currentSessionAfterDestruction != nil {
 		t.Fatalf(
 			"Expected session to be destroyed on the client as well, got: %v",
 			currentSessionAfterDestruction,

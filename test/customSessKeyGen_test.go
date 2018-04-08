@@ -54,7 +54,7 @@ func TestCustomSessKeyGen(t *testing.T) {
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
-		nil, nil, nil, nil,
+		callbackPoweredClientHooks{},
 	)
 	defer client.connection.Close()
 

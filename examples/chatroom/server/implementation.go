@@ -107,8 +107,8 @@ func (srv *ChatRoomServer) handleAuth(
 	}
 
 	// Finally create a new session
-	if err := client.CreateSession(wwr.SessionInfo{
-		"username": credentials.Name,
+	if err := client.CreateSession(&shared.SessionInfo{
+		Username: credentials.Name,
 	}); err != nil {
 		return wwr.Payload{}, fmt.Errorf("Couldn't create session: %s", err)
 	}

@@ -61,17 +61,17 @@ func TestGracefulShutdown(t *testing.T) {
 	clientSig := newCallbackPoweredClient(
 		serverAddr,
 		cltOpts,
-		nil, nil, nil, nil,
+		callbackPoweredClientHooks{},
 	)
 	clientReq := newCallbackPoweredClient(
 		serverAddr,
 		cltOpts,
-		nil, nil, nil, nil,
+		callbackPoweredClientHooks{},
 	)
 	clientLateReq := newCallbackPoweredClient(
 		serverAddr,
 		cltOpts,
-		nil, nil, nil, nil,
+		callbackPoweredClientHooks{},
 	)
 
 	// Disable autoconnect for the late client to enable immediate errors
@@ -80,7 +80,7 @@ func TestGracefulShutdown(t *testing.T) {
 		wwrclt.Options{
 			Autoconnect: wwrclt.OptDisabled,
 		},
-		nil, nil, nil, nil,
+		callbackPoweredClientHooks{},
 	)
 
 	if err := clientSig.connection.Connect(); err != nil {

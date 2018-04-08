@@ -126,7 +126,24 @@ func (clt *Client) CreateSession(attachment SessionInfo) error {
 }
 
 func (clt *Client) notifySessionCreated(newSession *Session) error {
-	encoded, err := json.Marshal(&newSession)
+	// Serialize session info
+	var sessionInfo map[string]interface{}
+	if newSession.Info != nil {
+		sessionInfo = make(map[string]interface{})
+		for _, field := range newSession.Info.Fields() {
+			sessionInfo[field] = newSession.Info.Value(field)
+		}
+	}
+
+	encoded, err := json.Marshal(struct {
+		Key      string                 `json:"k"`
+		Creation time.Time              `json:"c"`
+		Info     map[string]interface{} `json:"i"`
+	}{
+		newSession.Key,
+		newSession.Creation,
+		sessionInfo,
+	})
 	if err != nil {
 		return fmt.Errorf("Couldn't marshal session object: %s", err)
 	}
@@ -191,19 +208,22 @@ func (clt *Client) HasSession() bool {
 	return clt.session != nil
 }
 
-// Session returns either a shallow copy of the session if there's a session currently assigned
-// to the server this user agent refers to, or nil if there's none
+// Session returns an exact copy of the session object or nil if there's no
+// session currently assigned to this client
 func (clt *Client) Session() *Session {
 	clt.sessionLock.RLock()
 	defer clt.sessionLock.RUnlock()
 	if clt.session == nil {
 		return nil
 	}
-	return &Session{
+	clone := &Session{
 		Key:      clt.session.Key,
 		Creation: clt.session.Creation,
-		Info:     clt.session.Info,
 	}
+	if clt.session.Info != nil {
+		clone.Info = clt.session.Info.Copy()
+	}
+	return clone
 }
 
 // SessionKey returns the key of the currently assigned session of the client this client agent
@@ -229,18 +249,13 @@ func (clt *Client) SessionCreation() time.Time {
 	return clt.session.Creation
 }
 
-// SessionInfo returns the value of a session info field identified by the given key
-// in the form of an empty interface that could be casted to either a string, bool, float64 number
-// a map[string]interface{} object or an []interface{} array according to JSON data types.
-// Returns nil if either there's no session or if the given field doesn't exist
-func (clt *Client) SessionInfo(key string) interface{} {
+// SessionInfo returns a copy of the session info field value
+// in the form of an empty interface to be casted to either concrete type
+func (clt *Client) SessionInfo(name string) interface{} {
 	clt.sessionLock.RLock()
 	defer clt.sessionLock.RUnlock()
 	if clt.session == nil || clt.session.Info == nil {
 		return nil
 	}
-	if value, exists := clt.session.Info[key]; exists {
-		return value
-	}
-	return nil
+	return clt.session.Info.Value(name)
 }

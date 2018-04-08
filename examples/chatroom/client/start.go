@@ -39,6 +39,7 @@ func (clt *ChatroomClient) Start() {
 MAINLOOP:
 	for {
 		input, _ := reader.ReadString('\n')
+
 		// Remove new-line character
 		input = input[:len(input)-1]
 

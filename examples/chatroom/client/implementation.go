@@ -12,7 +12,7 @@ import (
 // OnSessionCreated implements the webwireClient.Implementation interface
 // it's invoked when a new session is assigned to the client
 func (clt *ChatroomClient) OnSessionCreated(newSession *webwire.Session) {
-	username := newSession.Info["username"].(string)
+	username := newSession.Info.Value("username").(string)
 	log.Printf("Authenticated as %s", username)
 }
 

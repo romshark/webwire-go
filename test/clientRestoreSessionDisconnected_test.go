@@ -28,7 +28,7 @@ func TestClientRestoreSessionDisconnected(t *testing.T) {
 		wwrclt.Options{
 			DefaultRequestTimeout: 100 * time.Millisecond,
 		},
-		nil, nil, nil, nil,
+		callbackPoweredClientHooks{},
 	)
 
 	err := client.connection.RestoreSession([]byte("inexistentkey"))

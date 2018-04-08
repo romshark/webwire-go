@@ -6,9 +6,44 @@ import (
 	"testing"
 	"time"
 
+	"github.com/qbeon/webwire-go"
+
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
 )
+
+type testAuthenticationSessInfo struct {
+	UserIdent  string
+	SomeNumber int
+}
+
+// Copy implements the webwire.SessionInfo interface.
+// It deep-copies the object and returns it's exact clone
+func (sinf *testAuthenticationSessInfo) Copy() wwr.SessionInfo {
+	return &testAuthenticationSessInfo{
+		UserIdent:  sinf.UserIdent,
+		SomeNumber: sinf.SomeNumber,
+	}
+}
+
+// Fields implements the webwire.SessionInfo interface.
+// It returns a constant list of the names of all fields of the object
+func (sinf *testAuthenticationSessInfo) Fields() []string {
+	return []string{"uid", "some-number"}
+}
+
+// Copy implements the webwire.SessionInfo interface.
+// It deep-copies the field identified by the provided name
+// and returns it's exact clone
+func (sinf *testAuthenticationSessInfo) Value(fieldName string) interface{} {
+	switch fieldName {
+	case "uid":
+		return sinf.UserIdent
+	case "some-number":
+		return sinf.SomeNumber
+	}
+	return nil
+}
 
 // TestAuthentication tests session creation and client authentication
 // during request- and signal handling
@@ -18,24 +53,42 @@ func TestAuthentication(t *testing.T) {
 		// Check uid
 		field := "session.info.UserID"
 		expectedUserIdent := "clientidentifiergoeshere"
-		actualUserIdent, correctType := actual.Info["uid"].(string)
+		actualUserIdent, correctType := actual.Info.Value("uid").(string)
 		if !correctType {
-			t.Errorf("%s incorrect type: %s", field, reflect.TypeOf(actual.Info["uid"]))
+			t.Errorf(
+				"%s incorrect type: %s",
+				field,
+				reflect.TypeOf(actual.Info.Value("uid")),
+			)
 		}
 		if actualUserIdent != expectedUserIdent {
-			t.Errorf("%s differs: %s | %s", field, actualUserIdent, expectedUserIdent)
+			t.Errorf(
+				"%s differs: %s | %s",
+				field,
+				actualUserIdent,
+				expectedUserIdent,
+			)
 			return
 		}
 
 		// Check some-number
 		field = "session.info.some-number"
 		expectedNumber := int(12345)
-		actualNumber, correctType := actual.Info["some-number"].(int)
+		actualNumber, correctType := actual.Info.Value("some-number").(int)
 		if !correctType {
-			t.Errorf("%s incorrect type: %s", field, reflect.TypeOf(actual.Info["some-number"]))
+			t.Errorf(
+				"%s incorrect type: %s",
+				field,
+				reflect.TypeOf(actual.Info.Value("some-number")),
+			)
 		}
 		if actualNumber != expectedNumber {
-			t.Errorf("%s differs: %d | %d", field, actualNumber, expectedNumber)
+			t.Errorf(
+				"%s differs: %d | %d",
+				field,
+				actualNumber,
+				expectedNumber,
+			)
 			return
 		}
 	}
@@ -43,9 +96,10 @@ func TestAuthentication(t *testing.T) {
 	onSessionCreatedHookExecuted := newPending(1, 1*time.Second, true)
 	clientSignalReceived := newPending(1, 1*time.Second, true)
 	var createdSession *wwr.Session
-	sessionInfo := make(wwr.SessionInfo)
-	sessionInfo["uid"] = "clientidentifiergoeshere"
-	sessionInfo["some-number"] = 12345
+	sessionInfo := &testAuthenticationSessInfo{
+		UserIdent:  "clientidentifiergoeshere",
+		SomeNumber: 12345,
+	}
 	expectedCredentials := wwr.Payload{
 		Encoding: wwr.EncodingUtf8,
 		Data:     []byte("secret_credentials"),
@@ -108,41 +162,60 @@ func TestAuthentication(t *testing.T) {
 		server.Addr().String(),
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
+			SessionInfoParser: func(
+				data map[string]interface{},
+			) webwire.SessionInfo {
+				return &testAuthenticationSessInfo{
+					UserIdent:  data["uid"].(string),
+					SomeNumber: int(data["some-number"].(float64)),
+				}
+			},
 		},
-		func(session *wwr.Session) {
-			// The session info object won't be of initial structure type
-			// because of intermediate JSON encoding
-			// it'll be a map of arbitrary values with string keys
-			info := session.Info
+		callbackPoweredClientHooks{
+			OnSessionCreated: func(session *wwr.Session) {
+				// The session info object won't be of initial structure type
+				// because of intermediate JSON encoding
+				// it'll be a map of arbitrary values with string keys
+				info := session.Info
 
-			// Check uid
-			field := "session.info.uid"
-			expectedUserIdent := "clientidentifiergoeshere"
-			actualUID, ok := info["uid"].(string)
-			if !ok {
-				t.Errorf("expected %s not string", field)
-				return
-			}
-			if actualUID != expectedUserIdent {
-				t.Errorf("%s differs: %s | %s", field, actualUID, expectedUserIdent)
-				return
-			}
+				// Check uid
+				field := "session.info.uid"
+				expectedUserIdent := "clientidentifiergoeshere"
+				actualUID, ok := info.Value("uid").(string)
+				if !ok {
+					t.Errorf("expected %s not string", field)
+					return
+				}
+				if actualUID != expectedUserIdent {
+					t.Errorf(
+						"%s differs: %s | %s",
+						field,
+						actualUID,
+						expectedUserIdent,
+					)
+					return
+				}
 
-			// Check some-number
-			field = "session.info.some-number"
-			expectedNumber := float64(12345)
-			actualNumber, ok := info["some-number"].(float64)
-			if !ok {
-				t.Errorf("expected %s not float64", field)
-				return
-			}
-			if actualNumber != expectedNumber {
-				t.Errorf("%s differs: %f | %f", field, actualNumber, expectedNumber)
-				return
-			}
-			onSessionCreatedHookExecuted.Done()
+				// Check some-number
+				field = "session.info.some-number"
+				expectedNumber := int(12345)
+				actualNumber, ok := info.Value("some-number").(int)
+				if !ok {
+					t.Errorf("expected %s isn't of type int", field)
+					return
+				}
+				if actualNumber != expectedNumber {
+					t.Errorf(
+						"%s differs: %d | %d",
+						field,
+						actualNumber,
+						expectedNumber,
+					)
+					return
+				}
+				onSessionCreatedHookExecuted.Done()
+			},
 		},
-		nil, nil, nil,
 	)
 	defer client.connection.Close()
 
@@ -156,8 +229,7 @@ func TestAuthentication(t *testing.T) {
 		t.Fatalf("Request failed: %s", err)
 	}
 
-	tmp := client.connection.Session()
-	createdSession = &tmp
+	createdSession = client.connection.Session()
 
 	// Verify reply
 	comparePayload(

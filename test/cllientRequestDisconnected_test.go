@@ -33,7 +33,7 @@ func TestClientRequestDisconnected(t *testing.T) {
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
-		nil, nil, nil, nil,
+		callbackPoweredClientHooks{},
 	)
 
 	// Send request and await reply

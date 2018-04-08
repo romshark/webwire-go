@@ -57,7 +57,7 @@ func TestClientRequestUtf16(t *testing.T) {
 		webwireClient.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
-		nil, nil, nil, nil,
+		callbackPoweredClientHooks{},
 	)
 
 	if err := client.connection.Connect(); err != nil {

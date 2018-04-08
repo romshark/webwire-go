@@ -23,7 +23,7 @@ func TestClientConcurrentConnect(t *testing.T) {
 		webwireClient.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
-		nil, nil, nil, nil,
+		callbackPoweredClientHooks{},
 	)
 	defer client.connection.Close()
 

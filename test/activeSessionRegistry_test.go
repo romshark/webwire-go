@@ -52,7 +52,7 @@ func TestActiveSessionRegistry(t *testing.T) {
 		webwireClient.Options{
 			DefaultRequestTimeout: time.Second * 2,
 		},
-		nil, nil, nil, nil,
+		callbackPoweredClientHooks{},
 	)
 	defer client.connection.Close()
 

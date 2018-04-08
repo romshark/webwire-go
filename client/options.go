@@ -4,6 +4,8 @@ import (
 	"io"
 	"os"
 	"time"
+
+	webwire "github.com/qbeon/webwire-go"
 )
 
 // OptionToggle represents the value of a togglable option
@@ -22,6 +24,9 @@ const (
 
 // Options represents the options used during the creation a new client instance
 type Options struct {
+	// SessionInfoParser defines the optional session info parser function
+	SessionInfoParser func(map[string]interface{}) webwire.SessionInfo
+
 	// DefaultRequestTimeout defines the default request timeout duration
 	// used by client.Request and client.RestoreSession
 	DefaultRequestTimeout time.Duration
@@ -51,6 +56,10 @@ type Options struct {
 
 // SetDefaults sets default values for undefined required options
 func (opts *Options) SetDefaults() {
+	if opts.SessionInfoParser == nil {
+		opts.SessionInfoParser = GenericSessionInfoParser
+	}
+
 	if opts.DefaultRequestTimeout < 1 {
 		opts.DefaultRequestTimeout = 60 * time.Second
 	}

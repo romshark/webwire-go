@@ -66,7 +66,7 @@ func TestClientAgentIsConnected(t *testing.T) {
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
-		nil, nil, nil, nil,
+		callbackPoweredClientHooks{},
 	)
 
 	if err := client.connection.Connect(); err != nil {

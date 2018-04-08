@@ -10,16 +10,105 @@ import (
 	webwireClient "github.com/qbeon/webwire-go/client"
 )
 
+type testClientSessionInfoStruct struct {
+	SampleString string `json:"struct_string"`
+}
+
+type testClientSessionInfoSessionInfo struct {
+	Bool   bool
+	String string
+	Int    int
+	Number float64
+	Array  []string
+	Struct testClientSessionInfoStruct
+}
+
+// Copy implements the webwire.SessionInfo interface.
+// It deep-copies the object and returns it's exact clone
+func (sinf *testClientSessionInfoSessionInfo) Copy() webwire.SessionInfo {
+	arrayClone := make([]string, len(sinf.Array))
+	copy(arrayClone, sinf.Array)
+
+	return &testClientSessionInfoSessionInfo{
+		Bool:   sinf.Bool,
+		String: sinf.String,
+		Int:    sinf.Int,
+		Number: sinf.Number,
+		Array:  arrayClone,
+		Struct: sinf.Struct,
+	}
+}
+
+// Fields implements the webwire.SessionInfo interface.
+// It returns a constant list of the names of all fields of the object
+func (sinf *testClientSessionInfoSessionInfo) Fields() []string {
+	return []string{
+		"bool",
+		"string",
+		"int",
+		"number",
+		"array",
+		"struct",
+	}
+}
+
+// Copy implements the webwire.SessionInfo interface.
+// It deep-copies the field identified by the provided name
+// and returns it's exact clone
+func (sinf *testClientSessionInfoSessionInfo) Value(
+	fieldName string,
+) interface{} {
+	switch fieldName {
+	case "bool":
+		return sinf.Bool
+	case "string":
+		return sinf.String
+	case "int":
+		return sinf.Int
+	case "number":
+		return sinf.Number
+	case "array":
+		return sinf.Array
+	case "struct":
+		return sinf.Struct
+	}
+	return nil
+}
+
+func testClientSessionInfoSessionInfoParser(
+	data map[string]interface{},
+) webwire.SessionInfo {
+	// Parse array field
+	encodedArray := data["array"].([]interface{})
+	typedArray := make([]string, len(encodedArray))
+	for index := range encodedArray {
+		typedArray[index] = encodedArray[index].(string)
+	}
+
+	// Parse struct field
+	encodedStruct := data["struct"].(map[string]interface{})
+	typedStruct := testClientSessionInfoStruct{
+		SampleString: encodedStruct["struct_string"].(string),
+	}
+
+	return &testClientSessionInfoSessionInfo{
+		Bool:   data["bool"].(bool),
+		String: data["string"].(string),
+		Int:    int(data["int"].(float64)),
+		Number: data["number"].(float64),
+		Array:  typedArray,
+		Struct: typedStruct,
+	}
+}
+
 // TestClientSessionInfo tests the client.SessionInfo getter method
 func TestClientSessionInfo(t *testing.T) {
 	expectedBool := true
 	expectedString := "somesamplestring1234"
-	expectedInt := uint32(404)
+	expectedInt := int(404)
 	expectedNumber := float64(7.62)
 	expectedArray := []string{"first", "second"}
-	expectedStruct := struct {
-		SampleString string `json:"struct_string"`
-	}{
+	expectedStruct := testClientSessionInfoStruct{
 		SampleString: "sample struct string value",
 	}
 
@@ -33,19 +122,18 @@ func TestClientSessionInfo(t *testing.T) {
 				_ *webwire.Message,
 			) (webwire.Payload, error) {
 				// Try to create a new session
-				sessInfo := make(webwire.SessionInfo)
-				sessInfo["bool"] = expectedBool
-				sessInfo["string"] = expectedString
-				sessInfo["int"] = expectedInt
-				sessInfo["number"] = expectedNumber
-				sessInfo["array"] = expectedArray
-				sessInfo["struct"] = struct {
-					SampleString string `json:"struct_string"`
-				}{
-					SampleString: expectedStruct.SampleString,
-				}
-
-				if err := clt.CreateSession(sessInfo); err != nil {
+				if err := clt.CreateSession(&testClientSessionInfoSessionInfo{
+					Bool:   expectedBool,
+					String: expectedString,
+					Int:    expectedInt,
+					Number: expectedNumber,
+					Array:  expectedArray,
+					Struct: struct {
+						SampleString string `json:"struct_string"`
+					}{
+						SampleString: expectedStruct.SampleString,
+					},
+				}); err != nil {
 					return webwire.Payload{}, err
 				}
 				return webwire.Payload{}, nil
@@ -61,8 +149,9 @@ func TestClientSessionInfo(t *testing.T) {
 		server.Addr().String(),
 		webwireClient.Options{
 			DefaultRequestTimeout: 2 * time.Second,
+			SessionInfoParser:     testClientSessionInfoSessionInfoParser,
 		},
-		nil, nil, nil, nil,
+		callbackPoweredClientHooks{},
 	)
 	defer client.connection.Close()
 
@@ -112,16 +201,16 @@ func TestClientSessionInfo(t *testing.T) {
 	}
 
 	// Verify field: int
-	sampleint, ok := client.connection.SessionInfo("int").(float64)
+	sampleint, ok := client.connection.SessionInfo("int").(int)
 	if !ok {
 		t.Fatalf(
-			"Expected field 'int' to be float64, got: %v",
+			"Expected field 'int' to be int, got: %v",
 			reflect.TypeOf(client.connection.SessionInfo("int")),
 		)
 	}
-	if uint32(sampleint) != expectedInt {
+	if sampleint != expectedInt {
 		t.Fatalf(
-			"Expected uint32 (from float64) %d for field %s",
+			"Expected int %d for field %s",
 			expectedInt,
 			"int",
 		)
@@ -144,7 +233,7 @@ func TestClientSessionInfo(t *testing.T) {
 	}
 
 	// Verify field: array
-	samplearray, ok := client.connection.SessionInfo("array").([]interface{})
+	samplearray, ok := client.connection.SessionInfo("array").([]string)
 	if !ok {
 		t.Fatalf(
 			"Expected field 'array' to be array of empty interfaces, got: %v",
@@ -152,8 +241,7 @@ func TestClientSessionInfo(t *testing.T) {
 		)
 	}
 	for index, value := range samplearray {
-		valStr, ok := value.(string)
-		if !ok || expectedArray[index] != valStr {
+		if expectedArray[index] != value {
 			t.Fatalf(
 				"Expected array item at index %d to be string('%s'), got: %v",
 				index,
@@ -164,19 +252,20 @@ func TestClientSessionInfo(t *testing.T) {
 	}
 
 	// Verify field: struct
-	samplestruct, ok := client.connection.SessionInfo("struct").(webwire.SessionInfo)
+	samplestruct, ok := client.connection.SessionInfo(
+		"struct",
+	).(testClientSessionInfoStruct)
 	if !ok {
 		t.Fatalf(
 			"Expected field 'struct' to be map of empty interfaces, got: %v",
 			reflect.TypeOf(client.connection.SessionInfo("struct")),
 		)
 	}
-	samplestructString, ok := samplestruct["struct_string"].(string)
-	if !ok || samplestructString != expectedStruct.SampleString {
+	if samplestruct.SampleString != expectedStruct.SampleString {
 		t.Fatalf(
 			"Expected struct field 'struct_string' to be string('%s'), got: %v",
 			expectedStruct.SampleString,
-			samplestruct["struct_string"],
+			samplestruct.SampleString,
 		)
 	}
 }

@@ -40,6 +40,7 @@ const (
 type Client struct {
 	serverAddr        string
 	impl              Implementation
+	sessionInfoParser SessionInfoParser
 	status            Status
 	defaultReqTimeout time.Duration
 	reconnInterval    time.Duration
@@ -98,6 +99,7 @@ func NewClient(
 	newClt := &Client{
 		serverAddress,
 		implementation,
+		opts.SessionInfoParser,
 		StatDisconnected,
 		opts.DefaultRequestTimeout,
 		opts.ReconnectionInterval,
@@ -222,30 +224,33 @@ func (clt *Client) Signal(name string, payload webwire.Payload) error {
 	return clt.conn.Write(msgBytes)
 }
 
-// Session returns information about the current session
-func (clt *Client) Session() webwire.Session {
+// Session returns an exact copy of the session object or nil if there's no
+// session currently assigned to this client
+func (clt *Client) Session() *webwire.Session {
 	clt.sessionLock.RLock()
 	defer clt.sessionLock.RUnlock()
 	if clt.session == nil {
-		return webwire.Session{}
+		return nil
 	}
-	return *clt.session
+	clone := &webwire.Session{
+		Key:      clt.session.Key,
+		Creation: clt.session.Creation,
+	}
+	if clt.session.Info != nil {
+		clone.Info = clt.session.Info.Copy()
+	}
+	return clone
 }
 
-// SessionInfo returns the value of a session info field identified by the given key
-// in the form of an empty interface that could be casted to either a string, bool, float64 number
-// a map[string]interface{} object or an []interface{} array according to JSON data types.
-// Returns nil if either there's no session or if the given field doesn't exist.
-func (clt *Client) SessionInfo(key string) interface{} {
+// SessionInfo returns a copy of the session info field value
+// in the form of an empty interface to be casted to either concrete type
+func (clt *Client) SessionInfo(fieldName string) interface{} {
 	clt.sessionLock.RLock()
 	defer clt.sessionLock.RUnlock()
 	if clt.session == nil || clt.session.Info == nil {
 		return nil
 	}
-	if value, exists := clt.session.Info[key]; exists {
-		return value
-	}
-	return nil
+	return clt.session.Info.Value(fieldName)
 }
 
 // PendingRequests returns the number of currently pending requests

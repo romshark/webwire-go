@@ -55,11 +55,11 @@ func TestClientOnSessionClosed(t *testing.T) {
 		webwireClient.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
-		nil,
-		func() {
-			hookCalled.Done()
+		callbackPoweredClientHooks{
+			OnSessionClosed: func() {
+				hookCalled.Done()
+			},
 		},
-		nil, nil,
 	)
 
 	if err := client.connection.Connect(); err != nil {

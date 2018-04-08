@@ -42,11 +42,12 @@ func TestClientOnSessionCreated(t *testing.T) {
 		webwireClient.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
-		func(newSession *webwire.Session) {
-			sessionFromHook = newSession
-			hookCalled.Done()
+		callbackPoweredClientHooks{
+			OnSessionCreated: func(newSession *webwire.Session) {
+				sessionFromHook = newSession
+				hookCalled.Done()
+			},
 		},
-		nil, nil, nil,
 	)
 	defer client.connection.Close()
 
@@ -62,8 +63,7 @@ func TestClientOnSessionCreated(t *testing.T) {
 		t.Fatalf("Request failed: %s", err)
 	}
 
-	tmp := client.connection.Session()
-	createdSession = &tmp
+	createdSession = client.connection.Session()
 
 	// Verify client session
 	if err := hookCalled.Wait(); err != nil {

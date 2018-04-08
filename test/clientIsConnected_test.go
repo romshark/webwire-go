@@ -19,7 +19,7 @@ func TestClientIsConnected(t *testing.T) {
 		webwireClient.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
-		nil, nil, nil, nil,
+		callbackPoweredClientHooks{},
 	)
 
 	if client.connection.Status() == webwireClient.StatConnected {

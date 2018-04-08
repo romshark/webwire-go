@@ -54,18 +54,19 @@ func TestServerSignal(t *testing.T) {
 		webwireClient.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
-		nil, nil, nil,
-		func(signalPayload webwire.Payload) {
-			// Verify server signal payload
-			comparePayload(
-				t,
-				"server signal",
-				expectedSignalPayload,
-				signalPayload,
-			)
+		callbackPoweredClientHooks{
+			OnSignal: func(signalPayload webwire.Payload) {
+				// Verify server signal payload
+				comparePayload(
+					t,
+					"server signal",
+					expectedSignalPayload,
+					signalPayload,
+				)
 
-			// Synchronize, unlock main goroutine to pass the test case
-			serverSignalArrived.Done()
+				// Synchronize, unlock main goroutine to pass the test case
+				serverSignalArrived.Done()
+			},
 		},
 	)
 	defer client.connection.Close()

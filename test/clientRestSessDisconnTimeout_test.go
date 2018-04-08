@@ -19,7 +19,7 @@ func TestClientRestSessDisconnTimeout(t *testing.T) {
 			ReconnectionInterval:  5 * time.Millisecond,
 			DefaultRequestTimeout: 50 * time.Millisecond,
 		},
-		nil, nil, nil, nil,
+		callbackPoweredClientHooks{},
 	)
 
 	// Send request and await reply

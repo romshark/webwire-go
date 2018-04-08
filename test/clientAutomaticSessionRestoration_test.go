@@ -83,7 +83,7 @@ func TestClientAutomaticSessionRestoration(t *testing.T) {
 	client := newCallbackPoweredClient(
 		server.Addr().String(),
 		webwireClient.Options{},
-		nil, nil, nil, nil,
+		callbackPoweredClientHooks{},
 	)
 
 	if err := client.connection.Connect(); err != nil {
@@ -102,8 +102,7 @@ func TestClientAutomaticSessionRestoration(t *testing.T) {
 		t.Fatalf("Auth request failed: %s", err)
 	}
 
-	tmp := client.connection.Session()
-	createdSession = &tmp
+	createdSession = client.connection.Session()
 
 	// Disconnect client without closing the session
 	client.connection.Close()

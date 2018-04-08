@@ -103,3 +103,28 @@ type SessionKeyGenerator interface {
 	// knows exactly what he/she does as it would compromise security if implemented improperly
 	Generate() string
 }
+
+// SessionInfo represents a session info object implementation interface.
+// It defines a set of important methods that must be implemented carefully
+// in order to avoid race conditions
+type SessionInfo interface {
+	// Fields must return the exact names of all fields
+	// of the session info object. This getter method must be idempotent,
+	// which means that it must always return the same list of names
+	Fields() []string
+
+	// Value must return an exact deep copy of the value of a session info
+	// object field identified by the given field name.
+	//
+	// Note that returning a shallow copy (such as shallow copies of
+	// maps or slices for example) could lead to potentially dangerous
+	// race conditions and undefined behavior
+	Value(fieldName string) interface{}
+
+	// Copy must return an exact deep copy of the entire session info object.
+	//
+	// Note that returning a shallow copy (such as shallow copies of
+	// maps or slices for example) could lead to potentially dangerous
+	// race conditions and undefined behavior
+	Copy() SessionInfo
+}

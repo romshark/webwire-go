@@ -28,7 +28,7 @@ func TestRestoreInexistentSession(t *testing.T) {
 		wwrClient.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
-		nil, nil, nil, nil,
+		callbackPoweredClientHooks{},
 	)
 
 	if err := client.connection.Connect(); err != nil {

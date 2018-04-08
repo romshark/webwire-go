@@ -66,7 +66,7 @@ func TestMaxConcSessConn(t *testing.T) {
 			wwrClient.Options{
 				DefaultRequestTimeout: 2 * time.Second,
 			},
-			nil, nil, nil, nil,
+			callbackPoweredClientHooks{},
 		)
 		clients[i] = client
 
@@ -95,7 +95,7 @@ func TestMaxConcSessConn(t *testing.T) {
 		wwrClient.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
-		nil, nil, nil, nil,
+		callbackPoweredClientHooks{},
 	)
 
 	if err := superfluousClient.connection.Connect(); err != nil {

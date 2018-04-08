@@ -54,10 +54,11 @@ func TestDisabledSessions(t *testing.T) {
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
-		func(*wwr.Session) {
-			t.Errorf("OnSessionCreated was not expected to be called")
+		callbackPoweredClientHooks{
+			OnSessionCreated: func(*wwr.Session) {
+				t.Errorf("OnSessionCreated was not expected to be called")
+			},
 		},
-		nil, nil, nil,
 	)
 	defer client.connection.Close()
 

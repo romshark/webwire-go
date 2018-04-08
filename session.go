@@ -7,9 +7,6 @@ import (
 	"time"
 )
 
-// SessionInfo represents a map of session info fields of arbitrary types
-type SessionInfo = map[string]interface{}
-
 // generateRandomBytes returns securely generated random bytes.
 // It will return an error if the system's secure random
 // number generator fails to function correctly, in which
@@ -42,9 +39,9 @@ func generateSessionKey() string {
 // If the key is empty the session is invalid.
 // Info can contain arbitrary attached data
 type Session struct {
-	Key      string      `json:"key"`
-	Creation time.Time   `json:"crt"`
-	Info     SessionInfo `json:"inf"`
+	Key      string
+	Creation time.Time
+	Info     SessionInfo
 }
 
 // NewSession generates a new session object
