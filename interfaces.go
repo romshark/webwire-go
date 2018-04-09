@@ -3,6 +3,7 @@ package webwire
 import (
 	"context"
 	"net/http"
+	"time"
 )
 
 // ServerImplementation defines the interface of a webwire server implementation
@@ -61,25 +62,33 @@ type ServerImplementation interface {
 type SessionManager interface {
 	// OnSessionCreated is invoked after the synchronization of the new session
 	// to the remote client.
-	// The actual created session can be retrieved from the provided client agent.
+	// The actual created session is retrieved from the provided client agent.
 	// If OnSessionCreated returns an error then this error is logged
 	// but the session will not be destroyed and will remain active!
-	// The only consequence of OnSessionCreation failing is that the server won't be able
-	// to restore the session after the client is disconnected.
+	// The only consequence of OnSessionCreation failing is that the server
+	// won't be able to restore the session after the client is disconnected.
 	//
-	// This hook will be invoked by the goroutine calling the client.CreateSession
-	// client agent method
+	// This hook will be invoked by the goroutine calling the
+	// client.CreateSession client agent method
 	OnSessionCreated(client *Client) error
 
-	// OnSessionLookup is invoked when the server is looking for a specific session given its key.
-	// It must return the exact copy of the session object associated with the given key
-	// for sessions to be properly restorable. If no session is found it must return nil
-	// instead of the session and must not return any error.
-	// If an error is returned then the it'll be logged and the session restoration will fail.
+	// OnSessionLookup is invoked when the server is looking for a specific
+	// session given its key.
+	// If the session was found it must return true, the time of its creation
+	// and the exact copy of the session info object. Otherwise false must be
+	// returned and all other return fields can be left empty.
 	//
-	// This hook will be invoked by the goroutine serving the associated client and will block any
-	// other interactions with this client while executing
-	OnSessionLookup(key string) (*Session, error)
+	// If an error is returned then it'll be logged and the session restoration
+	// will fail. An error should not be returned when the session wasn't found.
+	//
+	// This hook will be invoked by the goroutine serving the associated client
+	// and will block any other interactions with this client while executing
+	OnSessionLookup(key string) (
+		exists bool,
+		creation time.Time,
+		info map[string]interface{},
+		err error,
+	)
 
 	// OnSessionClosed is invoked when the active session of the given client
 	// is closed (thus destroyed) either by the server or the client through a
@@ -89,8 +98,9 @@ type SessionManager interface {
 	// If an error is returned then the it is logged.
 	//
 	// This hook is invoked by either a goroutine calling the client.CloseSession()
-	// client agent method, or the goroutine serving the associated client, in the case of which
-	// it will block any other interactions with this client while executing
+	// client agent method, or the goroutine serving the associated client,
+	// in the case of which it will block any other interactions with
+	// this client while executing
 	OnSessionClosed(client *Client) error
 }
 
@@ -128,3 +138,10 @@ type SessionInfo interface {
 	// race conditions and undefined behavior
 	Copy() SessionInfo
 }
+
+// SessionInfoParser represents the type of a session info parser function.
+// The session info parser is invoked during the parsing of a newly assigned
+// session on the client, as well as during the parsing of a saved serialized
+// session. It must return a webwire.SessionInfo compliant object constructed
+// from the data given
+type SessionInfoParser func(map[string]interface{}) SessionInfo

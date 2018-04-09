@@ -10,6 +10,7 @@ type ServerOptions struct {
 	SessionsEnabled       bool
 	SessionManager        SessionManager
 	SessionKeyGenerator   SessionKeyGenerator
+	SessionInfoParser     SessionInfoParser
 	MaxSessionConnections uint
 	WarnLog               io.Writer
 	ErrorLog              io.Writer
@@ -24,6 +25,10 @@ func (srvOpt *ServerOptions) SetDefaults() {
 
 	if srvOpt.SessionsEnabled && srvOpt.SessionKeyGenerator == nil {
 		srvOpt.SessionKeyGenerator = NewDefaultSessionKeyGenerator()
+	}
+
+	if srvOpt.SessionInfoParser == nil {
+		srvOpt.SessionInfoParser = GenericSessionInfoParser
 	}
 
 	if srvOpt.WarnLog == nil {

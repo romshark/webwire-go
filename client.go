@@ -135,11 +135,7 @@ func (clt *Client) notifySessionCreated(newSession *Session) error {
 		}
 	}
 
-	encoded, err := json.Marshal(struct {
-		Key      string                 `json:"k"`
-		Creation time.Time              `json:"c"`
-		Info     map[string]interface{} `json:"i"`
-	}{
+	encoded, err := json.Marshal(JSONEncodedSession{
 		newSession.Key,
 		newSession.Creation,
 		sessionInfo,

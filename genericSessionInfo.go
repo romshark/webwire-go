@@ -1,9 +1,7 @@
-package client
+package webwire
 
 import (
 	"reflect"
-
-	webwire "github.com/qbeon/webwire-go"
 )
 
 func deepCopy(src interface{}) interface{} {
@@ -81,7 +79,7 @@ type GenericSessionInfo struct {
 
 // Copy implements the webwire.SessionInfo interface.
 // It deep-copies the object and returns it's exact clone
-func (sinf *GenericSessionInfo) Copy() webwire.SessionInfo {
+func (sinf *GenericSessionInfo) Copy() SessionInfo {
 	return &GenericSessionInfo{
 		data: deepCopy(sinf.data).(map[string]interface{}),
 	}
@@ -117,6 +115,6 @@ func (sinf *GenericSessionInfo) Value(fieldName string) interface{} {
 // GenericSessionInfoParser represents a default implementation of a
 // session info object parser. It parses the info object into a generic
 // session info type implementing the webwire.SessionInfo interface
-func GenericSessionInfoParser(data map[string]interface{}) webwire.SessionInfo {
+func GenericSessionInfoParser(data map[string]interface{}) SessionInfo {
 	return &GenericSessionInfo{data}
 }

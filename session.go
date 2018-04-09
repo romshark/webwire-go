@@ -35,6 +35,15 @@ func generateSessionKey() string {
 	return base64.URLEncoding.EncodeToString(bytes)
 }
 
+// JSONEncodedSession represents a JSON encoded session object.
+// This structure is used during session restoration for unmarshalling
+// TODO: move to internal shared package
+type JSONEncodedSession struct {
+	Key      string                 `json:"k"`
+	Creation time.Time              `json:"c"`
+	Info     map[string]interface{} `json:"i,omitempty"`
+}
+
 // Session represents a session object.
 // If the key is empty the session is invalid.
 // Info can contain arbitrary attached data

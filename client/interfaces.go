@@ -19,7 +19,3 @@ type Implementation interface {
 	// either by the server or the client itself
 	OnSessionClosed()
 }
-
-// SessionInfoParser is invoked during the parsing of a newly assigned
-// session, it must return a webwire.SessionInfo compliant object
-type SessionInfoParser func(data map[string]interface{}) webwire.SessionInfo

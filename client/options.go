@@ -25,7 +25,7 @@ const (
 // Options represents the options used during the creation a new client instance
 type Options struct {
 	// SessionInfoParser defines the optional session info parser function
-	SessionInfoParser func(map[string]interface{}) webwire.SessionInfo
+	SessionInfoParser webwire.SessionInfoParser
 
 	// DefaultRequestTimeout defines the default request timeout duration
 	// used by client.Request and client.RestoreSession
@@ -57,7 +57,7 @@ type Options struct {
 // SetDefaults sets default values for undefined required options
 func (opts *Options) SetDefaults() {
 	if opts.SessionInfoParser == nil {
-		opts.SessionInfoParser = GenericSessionInfoParser
+		opts.SessionInfoParser = webwire.GenericSessionInfoParser
 	}
 
 	if opts.DefaultRequestTimeout < 1 {

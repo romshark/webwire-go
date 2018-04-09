@@ -51,7 +51,12 @@ func TestClientSessionRestoration(t *testing.T) {
 					return nil
 				},
 				// Finds session by key
-				SessionLookup: func(key string) (*webwire.Session, error) {
+				SessionLookup: func(key string) (
+					bool,
+					time.Time,
+					map[string]interface{},
+					error,
+				) {
 					// Expect the key of the created session to be looked up
 					if key != createdSession.Key {
 						err := fmt.Errorf(
@@ -60,11 +65,15 @@ func TestClientSessionRestoration(t *testing.T) {
 							key,
 						)
 						t.Fatalf("Session lookup mismatch: %s", err)
-						return nil, err
+						return false, time.Time{}, nil, err
 					}
 
 					if session, exists := sessionStorage[key]; exists {
-						return session, nil
+						// Session found
+						return true,
+							session.Creation,
+							webwire.SessionInfoToVarMap(session.Info),
+							nil
 					}
 
 					// Expect the session to be found
@@ -73,7 +82,9 @@ func TestClientSessionRestoration(t *testing.T) {
 						createdSession.Key,
 						sessionStorage,
 					)
-					return nil, nil
+
+					//Session not found
+					return false, time.Time{}, nil, nil
 				},
 			},
 		},

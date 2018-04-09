@@ -2,6 +2,9 @@ package test
 
 import (
 	"sync"
+	"time"
+
+	"github.com/qbeon/webwire-go"
 
 	wwr "github.com/qbeon/webwire-go"
 )
@@ -32,13 +35,26 @@ func (mng *inMemSessManager) OnSessionCreated(client *wwr.Client) error {
 
 // OnSessionLookup implements the session manager interface.
 // It searches the session file directory for the session file and loads it
-func (mng *inMemSessManager) OnSessionLookup(key string) (*wwr.Session, error) {
+func (mng *inMemSessManager) OnSessionLookup(key string) (
+	bool,
+	time.Time,
+	map[string]interface{},
+	error,
+) {
 	mng.lock.RLock()
 	defer mng.lock.RUnlock()
 	if clt, exists := mng.sessions[key]; exists {
-		return clt.Session(), nil
+		session := clt.Session()
+
+		// Session found
+		return true,
+			session.Creation,
+			webwire.SessionInfoToVarMap(session.Info),
+			nil
 	}
-	return nil, nil
+
+	// Session not found
+	return false, time.Time{}, nil, nil
 }
 
 // OnSessionClosed implements the session manager interface.
@@ -54,8 +70,13 @@ func (mng *inMemSessManager) OnSessionClosed(client *wwr.Client) error {
 // for testing purposes
 type callbackPoweredSessionManager struct {
 	SessionCreated func(client *wwr.Client) error
-	SessionLookup  func(key string) (*wwr.Session, error)
-	SessionClosed  func(client *wwr.Client) error
+	SessionLookup  func(key string) (
+		bool,
+		time.Time,
+		map[string]interface{},
+		error,
+	)
+	SessionClosed func(client *wwr.Client) error
 }
 
 // OnSessionCreated implements the session manager interface
@@ -73,9 +94,9 @@ func (mng *callbackPoweredSessionManager) OnSessionCreated(
 // calling the configured callback
 func (mng *callbackPoweredSessionManager) OnSessionLookup(
 	key string,
-) (*wwr.Session, error) {
+) (bool, time.Time, map[string]interface{}, error) {
 	if mng.SessionLookup == nil {
-		return nil, nil
+		return false, time.Time{}, nil, nil
 	}
 	return mng.SessionLookup(key)
 }

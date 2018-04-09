@@ -2,18 +2,12 @@ package client
 
 import (
 	"encoding/json"
-	"time"
 
 	webwire "github.com/qbeon/webwire-go"
 )
 
 func (clt *Client) handleSessionCreated(msgPayload webwire.Payload) {
-	var encoded struct {
-		Key      string                 `json:"k"`
-		Creation time.Time              `json:"c"`
-		Info     map[string]interface{} `json:"i"`
-	}
-
+	var encoded webwire.JSONEncodedSession
 	if err := json.Unmarshal(msgPayload.Data, &encoded); err != nil {
 		clt.errorLog.Printf("Failed unmarshalling session object: %s", err)
 		return

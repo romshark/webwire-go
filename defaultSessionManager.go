@@ -11,8 +11,8 @@ import (
 
 // SessionFile represents the serialization structure of a default session file
 type SessionFile struct {
-	Creation time.Time   `json:"c"`
-	Info     SessionInfo `json:"i"`
+	Creation time.Time              `json:"c"`
+	Info     map[string]interface{} `json:"i"`
 }
 
 // Parse parses the session file from a file
@@ -94,32 +94,39 @@ func (mng *DefaultSessionManager) OnSessionCreated(client *Client) error {
 	sess := client.Session()
 	sessFile := SessionFile{
 		Creation: sess.Creation,
-		Info:     sess.Info,
+		Info:     SessionInfoToVarMap(sess.Info),
 	}
 	return sessFile.WriteFile(mng.filePath(client.SessionKey()))
 }
 
 // OnSessionLookup implements the session manager interface.
 // It searches the session file directory for the session file and loads it
-func (mng *DefaultSessionManager) OnSessionLookup(key string) (*Session, error) {
+func (mng *DefaultSessionManager) OnSessionLookup(key string) (
+	bool,
+	time.Time,
+	map[string]interface{},
+	error,
+) {
 	path := mng.filePath(key)
 	_, err := os.Stat(path)
 	if os.IsNotExist(err) {
-		return nil, nil
+		return false, time.Time{}, nil, nil
 	} else if err != nil {
-		return nil, fmt.Errorf("Unexpected error during file lookup: %s", err)
+		return false, time.Time{}, nil, fmt.Errorf(
+			"Unexpected error during file lookup: %s",
+			err,
+		)
 	}
 
 	var file SessionFile
 	if err := file.Parse(path); err != nil {
-		return nil, fmt.Errorf("Couldn't parse session file: %s", err)
+		return false, time.Time{}, nil, fmt.Errorf(
+			"Couldn't parse session file: %s",
+			err,
+		)
 	}
 
-	return &Session{
-		Key:      key,
-		Creation: file.Creation,
-		Info:     file.Info,
-	}, nil
+	return true, file.Creation, file.Info, nil
 }
 
 // OnSessionClosed implements the session manager interface.

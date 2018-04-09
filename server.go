@@ -14,9 +14,10 @@ const protocolVersion = "1.3"
 // Server represents a headless WebWire server instance,
 // where headless means there's no HTTP server that's hosting it
 type Server struct {
-	impl           ServerImplementation
-	sessionManager SessionManager
-	sessionKeyGen  SessionKeyGenerator
+	impl              ServerImplementation
+	sessionManager    SessionManager
+	sessionKeyGen     SessionKeyGenerator
+	sessionInfoParser SessionInfoParser
 
 	// State
 	shutdown        bool
@@ -43,9 +44,10 @@ func NewServer(implementation ServerImplementation, opts ServerOptions) *Server 
 	opts.SetDefaults()
 
 	srv := Server{
-		impl:           implementation,
-		sessionManager: opts.SessionManager,
-		sessionKeyGen:  opts.SessionKeyGenerator,
+		impl:              implementation,
+		sessionManager:    opts.SessionManager,
+		sessionKeyGen:     opts.SessionKeyGenerator,
+		sessionInfoParser: opts.SessionInfoParser,
 
 		// State
 		shutdown:        false,
@@ -90,28 +92,50 @@ func (srv *Server) handleSessionRestore(clt *Client, msg *Message) error {
 		return nil
 	}
 
-	session, err := srv.sessionManager.OnSessionLookup(key)
+	//session, err := srv.sessionManager.OnSessionLookup(key)
+	exists, creation, info, err := srv.sessionManager.OnSessionLookup(key)
 	if err != nil {
-		// TODO: return internal server error and log it
 		srv.failMsg(clt, msg, nil)
 		return fmt.Errorf("CRITICAL: Session search handler failed: %s", err)
 	}
-	if session == nil {
+	if !exists {
 		srv.failMsg(clt, msg, SessNotFoundErr{})
 		return nil
 	}
 
+	encodedSessionObj := JSONEncodedSession{
+		Key:      key,
+		Creation: creation,
+		Info:     info,
+	}
+
 	// JSON encode the session
-	encodedSession, err := json.Marshal(session)
+	encodedSession, err := json.Marshal(&encodedSessionObj)
 	if err != nil {
 		// TODO: return internal server error and log it
 		srv.failMsg(clt, msg, nil)
-		return fmt.Errorf("Couldn't encode session object (%v): %s", session, err)
+		return fmt.Errorf(
+			"Couldn't encode session object (%v): %s",
+			encodedSessionObj,
+			err,
+		)
 	}
 
-	clt.setSession(session)
+	// parse attached session info
+	var parsedSessInfo SessionInfo
+	if info != nil && srv.sessionInfoParser != nil {
+		parsedSessInfo = srv.sessionInfoParser(info)
+	}
+
+	clt.setSession(&Session{
+		Key:      key,
+		Creation: creation,
+		Info:     parsedSessInfo,
+	})
 	if okay := srv.sessionRegistry.register(clt); !okay {
-		panic(fmt.Errorf("The number of concurrent session connections was unexpectedly exceeded"))
+		panic(fmt.Errorf("The number of concurrent session connections was " +
+			"unexpectedly exceeded",
+		))
 	}
 
 	srv.fulfillMsg(clt, msg, Payload{

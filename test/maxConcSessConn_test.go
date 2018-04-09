@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/qbeon/webwire-go"
+
 	wwr "github.com/qbeon/webwire-go"
 	wwrClient "github.com/qbeon/webwire-go/client"
 )
@@ -48,11 +50,20 @@ func TestMaxConcSessConn(t *testing.T) {
 					return nil
 				},
 				// Finds session by key
-				SessionLookup: func(key string) (*wwr.Session, error) {
+				SessionLookup: func(key string) (
+					bool,
+					time.Time,
+					map[string]interface{},
+					error,
+				) {
 					if session, exists := sessionStorage[key]; exists {
-						return session, nil
+						return true,
+							session.Creation,
+							webwire.SessionInfoToVarMap(session.Info),
+							nil
 					}
-					return nil, nil
+					// Session not found
+					return false, time.Time{}, nil, nil
 				},
 			},
 		},

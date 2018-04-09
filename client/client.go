@@ -40,7 +40,7 @@ const (
 type Client struct {
 	serverAddr        string
 	impl              Implementation
-	sessionInfoParser SessionInfoParser
+	sessionInfoParser webwire.SessionInfoParser
 	status            Status
 	defaultReqTimeout time.Duration
 	reconnInterval    time.Duration
@@ -279,6 +279,7 @@ func (clt *Client) RestoreSession(sessionKey []byte) error {
 	if err != nil {
 		return err
 	}
+
 	clt.sessionLock.Lock()
 	clt.session = restoredSession
 	clt.sessionLock.Unlock()
