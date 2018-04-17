@@ -10,11 +10,14 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-// connUpgrader implements the webwire.ConnUpgrader interface using the gorilla/websocket library
+// connUpgrader implements the webwire.ConnUpgrader interface using
+// the gorilla/websocket library
 type connUpgrader struct {
 	gorillaWsUpgrader websocket.Upgrader
 }
 
+// newConnUpgrader constructs a new default HTTP connection upgrader
+// based on gorilla/websocket
 func newConnUpgrader() *connUpgrader {
 	return &connUpgrader{
 		gorillaWsUpgrader: websocket.Upgrader{
@@ -25,6 +28,7 @@ func newConnUpgrader() *connUpgrader {
 	}
 }
 
+// Upgrade implements the webwire.ConnUpgrader interface
 func (upgrader *connUpgrader) Upgrade(
 	resp http.ResponseWriter,
 	req *http.Request,
@@ -33,14 +37,16 @@ func (upgrader *connUpgrader) Upgrade(
 	if err != nil {
 		return nil, err
 	}
-	return newSocket(conn), nil
+	return newConnectedSocket(conn), nil
 }
 
-// sockReadErr implements the webwire.SockReadErr interface using the gorilla/websocket library
+// sockReadErr implements the webwire.SockReadErr interface using
+// the gorilla/websocket library
 type sockReadErr struct {
 	cause error
 }
 
+// Error implements the Go error interface
 func (err sockReadErr) Error() string {
 	return fmt.Sprintf("Reading socket failed: %s", err.cause)
 }
@@ -54,15 +60,16 @@ func (err sockReadErr) IsAbnormalCloseErr() bool {
 	)
 }
 
-// socket implements the webwire.Socket interface using the gorilla/websocket library
+// socket implements the webwire.Socket interface using
+// the gorilla/websocket library
 type socket struct {
 	connected bool
 	lock      sync.RWMutex
 	conn      *websocket.Conn
 }
 
-// newSocket creates a new gorilla/websocket based socket instance
-func newSocket(conn *websocket.Conn) *socket {
+// newConnectedSocket creates a new gorilla/websocket based socket instance
+func newConnectedSocket(conn *websocket.Conn) *socket {
 	connected := false
 	if conn != nil {
 		connected = true
@@ -74,6 +81,16 @@ func newSocket(conn *websocket.Conn) *socket {
 	}
 }
 
+// NewSocket creates a new disconnected gorilla/websocket based socket instance
+func NewSocket() *socket {
+	connected := false
+	return &socket{
+		connected: connected,
+		lock:      sync.RWMutex{},
+	}
+}
+
+// Dial implements the webwire.Socket interface
 func (sock *socket) Dial(serverAddr string) (err error) {
 	connURL := url.URL{Scheme: "ws", Host: serverAddr, Path: "/"}
 	sock.lock.Lock()

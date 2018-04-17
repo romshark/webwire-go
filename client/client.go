@@ -113,7 +113,7 @@ func NewClient(
 		false,
 		sync.RWMutex{},
 		sync.Mutex{},
-		newSocket(nil),
+		webwire.NewSocket(),
 		make(chan bool, 1),
 
 		reqman.NewRequestManager(),
