@@ -5,6 +5,18 @@ import (
 	"time"
 )
 
+// TestPendingInvalidTarget tests passing invalid zero target to
+// pending constructor
+func TestPendingInvalidTarget(t *testing.T) {
+	defer func() {
+		if err := recover(); err == nil {
+			t.Fatal("Expected a panic after passing invalid parameters")
+		}
+	}()
+
+	newPending(0, 1*time.Second, true)
+}
+
 // TestPendingWaitAfterDone tests the pending primitive
 // to pass through wait when already done
 func TestPendingWaitAfterDone(t *testing.T) {
@@ -13,6 +25,19 @@ func TestPendingWaitAfterDone(t *testing.T) {
 
 	if err := checkpoint.Wait(); err != nil {
 		t.Fatalf("Expected done pending to have no error, got: %s", err)
+	}
+}
+
+// TestPendingWaitAfterTimeout tests the pending primitive
+// to pass through wait when already done
+func TestPendingWaitAfterTimeout(t *testing.T) {
+	checkpoint := newPending(1, 10*time.Millisecond, true)
+
+	// Wait for the timeout
+	time.Sleep(100 * time.Millisecond)
+
+	if err := checkpoint.Wait(); err == nil {
+		t.Fatal("Expected pending to have timed out before")
 	}
 }
 

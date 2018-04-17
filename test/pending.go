@@ -14,7 +14,7 @@ type pending struct {
 	done    chan bool
 	barrier chan bool
 	timer   *time.Timer
-	result  bool
+	err     error
 	lock    sync.Mutex
 }
 
@@ -33,7 +33,7 @@ func newPending(target uint32, timeout time.Duration, start bool) *pending {
 		make(chan bool, 1),
 		make(chan bool, 1),
 		nil,
-		false,
+		nil,
 		sync.Mutex{},
 	}
 	if start {
@@ -57,6 +57,9 @@ func (pen *pending) Start() {
 		for {
 			select {
 			case <-pen.timer.C:
+				pen.lock.Lock()
+				pen.err = fmt.Errorf("Pending task timed out")
+				pen.lock.Unlock()
 				break LOOP
 			case <-pen.done:
 				pen.lock.Lock()
@@ -66,7 +69,6 @@ func (pen *pending) Start() {
 					continue
 				}
 				// Success
-				pen.result = true
 				pen.lock.Unlock()
 				break LOOP
 			}
@@ -88,15 +90,12 @@ func (pen *pending) Done() {
 func (pen *pending) Wait() error {
 	pen.lock.Lock()
 	if pen.done == nil {
-		return nil
+		return pen.err
 	}
 	pen.lock.Unlock()
 
 	<-pen.barrier
 	pen.lock.Lock()
 	defer pen.lock.Unlock()
-	if pen.result {
-		return nil
-	}
-	return fmt.Errorf("Pending task timed out")
+	return pen.err
 }
