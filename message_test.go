@@ -703,6 +703,36 @@ func TestMsgNewReqMsgUtf16(t *testing.T) {
 	}
 }
 
+// TestMsgNewReqMsgUtf16OddNameLen tests NewRequestMessage using
+// UTF16 payload encoding and a name of odd length
+func TestMsgNewReqMsgUtf16OddNameLen(t *testing.T) {
+	id := genRndMsgID()
+	payload := Payload{
+		Encoding: EncodingUtf16,
+		Data:     []byte{'r', 0, 'a', 0, 'n', 0, 'd', 0, 'o', 0, 'm', 0},
+	}
+
+	// Compose encoded message
+	// Add type flag
+	expected := []byte{MsgRequestUtf16}
+	// Add identifier
+	expected = append(expected, id[:]...)
+	// Add name length flag
+	expected = append(expected, byte(3))
+	// Add name of odd length
+	expected = append(expected, []byte("odd")...)
+	// Add header padding
+	expected = append(expected, byte(0))
+	// Add payload
+	expected = append(expected, payload.Data...)
+
+	actual := NewRequestMessage(id, "odd", payload)
+
+	if !reflect.DeepEqual(expected, actual) {
+		t.Fatalf("Binary results differ:\n%v\n%v", expected, actual)
+	}
+}
+
 // TestMsgNewReplyMsgBinary tests NewReplyMessage
 // using default binary payload encoding
 func TestMsgNewReplyMsgBinary(t *testing.T) {
@@ -852,6 +882,33 @@ func TestMsgNewSigMsgUtf16(t *testing.T) {
 	expected = append(expected, payload.Data...)
 
 	actual := NewSignalMessage(name, payload)
+
+	if !reflect.DeepEqual(expected, actual) {
+		t.Fatalf("Binary results differ:\n%v\n%v", expected, actual)
+	}
+}
+
+// TestMsgNewSigMsgUtf16OddNameLen tests NewSignalMessage using UTF16 encoding
+// and a name of odd length to ensure a header padding byte is used
+func TestMsgNewSigMsgUtf16OddNameLen(t *testing.T) {
+	payload := Payload{
+		Encoding: EncodingUtf16,
+		Data:     []byte{'r', 0, 'a', 0, 'n', 0, 'd', 0, 'o', 0, 'm', 0},
+	}
+
+	// Compose encoded message
+	// Add type flag
+	expected := []byte{MsgSignalUtf16}
+	// Add name length flag
+	expected = append(expected, byte(3))
+	// Add name of odd length
+	expected = append(expected, []byte("odd")...)
+	// Add header padding
+	expected = append(expected, byte(0))
+	// Add payload
+	expected = append(expected, payload.Data...)
+
+	actual := NewSignalMessage("odd", payload)
 
 	if !reflect.DeepEqual(expected, actual) {
 		t.Fatalf("Binary results differ:\n%v\n%v", expected, actual)
