@@ -69,7 +69,7 @@ type socket struct {
 }
 
 // newConnectedSocket creates a new gorilla/websocket based socket instance
-func newConnectedSocket(conn *websocket.Conn) *socket {
+func newConnectedSocket(conn *websocket.Conn) Socket {
 	connected := false
 	if conn != nil {
 		connected = true
@@ -82,7 +82,7 @@ func newConnectedSocket(conn *websocket.Conn) *socket {
 }
 
 // NewSocket creates a new disconnected gorilla/websocket based socket instance
-func NewSocket() *socket {
+func NewSocket() Socket {
 	connected := false
 	return &socket{
 		connected: connected,
