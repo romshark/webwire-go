@@ -886,7 +886,7 @@ func TestMsgParseInvalidReplyUtf16TooShort(t *testing.T) {
 	lenTooShort := MsgMinLenReplyUtf16 - 1
 	invalidMessage := make([]byte, lenTooShort)
 
-	invalidMessage[0] = MsgRequestUtf16
+	invalidMessage[0] = MsgReplyUtf16
 
 	var actual Message
 	if err := actual.Parse(invalidMessage); err == nil {
