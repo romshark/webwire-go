@@ -919,6 +919,17 @@ func TestMsgNewSigMsgUtf16OddNameLen(t *testing.T) {
 	Parser - invalid messages (too short)
 \****************************************************************/
 
+// TestMsgParseInvalidMessageTooShort tests parsing of an invalid
+// empty message
+func TestMsgParseInvalidMessageTooShort(t *testing.T) {
+	invalidMessage := make([]byte, 0)
+
+	var actual Message
+	if err := actual.Parse(invalidMessage); err == nil {
+		t.Fatalf("Expected error while parsing invalid message (empty)")
+	}
+}
+
 // TestMsgParseInvalidReplyTooShort tests parsing of an invalid
 // binary/UTF8 reply message which is too short to be considered valid
 func TestMsgParseInvalidReplyTooShort(t *testing.T) {
@@ -1080,6 +1091,63 @@ func TestMsgParseInvalidSignalUtf16TooShort(t *testing.T) {
 			"Expected error while parsing invalid UTF16 signal message "+
 				"(too short: %d)",
 			lenTooShort,
+		)
+	}
+}
+
+// TestMsgParseInvalidErrorReplyTooShort tests parsing of an invalid
+// error reply message which is too short to be considered valid
+func TestMsgParseInvalidErrorReplyTooShort(t *testing.T) {
+	lenTooShort := MsgMinLenErrorReply - 1
+	invalidMessage := make([]byte, lenTooShort)
+
+	invalidMessage[0] = MsgErrorReply
+
+	var actual Message
+	if err := actual.Parse(invalidMessage); err == nil {
+		t.Fatalf(
+			"Expected error while parsing invalid error reply message "+
+				"(too short: %d)",
+			lenTooShort,
+		)
+	}
+}
+
+// TestMsgParseInvalidSpecialReplyTooShort tests parsing of an invalid
+// special reply message which is too short to be considered valid
+func TestMsgParseInvalidSpecialReplyTooShort(t *testing.T) {
+	invalidMessage := make([]byte, 8)
+
+	// Internal error is a special reply message type
+	invalidMessage[0] = MsgInternalError
+
+	var actual Message
+	if err := actual.Parse(invalidMessage); err == nil {
+		t.Fatalf(
+			"Expected error while parsing invalid special reply message " +
+				"(too short: 8)",
+		)
+	}
+}
+
+/****************************************************************\
+	Parser - invalid messages (too long)
+\****************************************************************/
+
+// TestMsgParseInvalidSessionClosedTooLong tests parsing of an invalid
+// session closed notification message which is too long to be considered valid
+func TestMsgParseInvalidSessionClosedTooLong(t *testing.T) {
+	lenTooLong := MsgMinLenSessionClosed + 1
+	invalidMessage := make([]byte, lenTooLong)
+
+	invalidMessage[0] = MsgSessionClosed
+
+	var actual Message
+	if err := actual.Parse(invalidMessage); err == nil {
+		t.Fatalf(
+			"Expected error while parsing invalid session closed message "+
+				"(too long: %d)",
+			lenTooLong,
 		)
 	}
 }
