@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"os"
 	"reflect"
 	"testing"
 
@@ -49,10 +48,6 @@ func setupServer(
 			return wwr.Payload{}, nil
 		}
 	}
-
-	// Use default global loggers
-	opts.WarnLog = os.Stdout
-	opts.ErrorLog = os.Stderr
 
 	// Use default session manager if no specific one is defined
 	if opts.SessionManager == nil {
