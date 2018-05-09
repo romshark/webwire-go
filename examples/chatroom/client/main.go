@@ -2,6 +2,8 @@ package main
 
 import (
 	"flag"
+	"log"
+	"os"
 	"time"
 
 	"github.com/qbeon/webwire-go/examples/chatroom/shared"
@@ -30,6 +32,18 @@ func NewChatroomClient(serverAddr string) *ChatroomClient {
 			// Session info parser function must override the default one
 			// for the session info object to be typed as shared.SessionInfo
 			SessionInfoParser: shared.SessionInfoParser,
+
+			// Custom loggers
+			WarnLog: log.New(
+				os.Stdout,
+				"WARN: ",
+				log.Ldate|log.Ltime|log.Lshortfile,
+			),
+			ErrorLog: log.New(
+				os.Stderr,
+				"ERR: ",
+				log.Ldate|log.Ltime|log.Lshortfile,
+			),
 		},
 	)
 

@@ -24,8 +24,16 @@ func main() {
 			ServerAddress: *serverAddr,
 			ServerOptions: wwr.ServerOptions{
 				SessionsEnabled: true,
-				WarnLog:         os.Stdout,
-				ErrorLog:        os.Stderr,
+				WarnLog: log.New(
+					os.Stdout,
+					"WARN: ",
+					log.Ldate|log.Ltime|log.Lshortfile,
+				),
+				ErrorLog: log.New(
+					os.Stderr,
+					"ERR: ",
+					log.Ldate|log.Ltime|log.Lshortfile,
+				),
 			},
 		},
 	)

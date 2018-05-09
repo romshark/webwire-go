@@ -1,7 +1,7 @@
 package webwire
 
 import (
-	"io"
+	"log"
 	"os"
 )
 
@@ -12,8 +12,8 @@ type ServerOptions struct {
 	SessionKeyGenerator   SessionKeyGenerator
 	SessionInfoParser     SessionInfoParser
 	MaxSessionConnections uint
-	WarnLog               io.Writer
-	ErrorLog              io.Writer
+	WarnLog               *log.Logger
+	ErrorLog              *log.Logger
 }
 
 // SetDefaults sets the defaults for undefined required values
@@ -31,12 +31,20 @@ func (srvOpt *ServerOptions) SetDefaults() {
 		srvOpt.SessionInfoParser = GenericSessionInfoParser
 	}
 
+	// Create default loggers to std-out/err when no loggers are specified
 	if srvOpt.WarnLog == nil {
-		srvOpt.WarnLog = os.Stdout
+		srvOpt.WarnLog = log.New(
+			os.Stdout,
+			"WEBWIRE_WARN: ",
+			log.Ldate|log.Ltime|log.Lshortfile,
+		)
 	}
-
 	if srvOpt.ErrorLog == nil {
-		srvOpt.ErrorLog = os.Stderr
+		srvOpt.ErrorLog = log.New(
+			os.Stderr,
+			"WEBWIRE_ERR: ",
+			log.Ldate|log.Ltime|log.Lshortfile,
+		)
 	}
 }
 

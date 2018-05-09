@@ -61,16 +61,8 @@ func NewServer(implementation ServerImplementation, opts ServerOptions) *Server 
 
 		// Internals
 		connUpgrader: newConnUpgrader(),
-		warnLog: log.New(
-			opts.WarnLog,
-			"WARNING: ",
-			log.Ldate|log.Ltime|log.Lshortfile,
-		),
-		errorLog: log.New(
-			opts.ErrorLog,
-			"ERROR: ",
-			log.Ldate|log.Ltime|log.Lshortfile,
-		),
+		warnLog:      opts.WarnLog,
+		errorLog:     opts.ErrorLog,
 	}
 
 	return &srv

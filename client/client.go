@@ -118,16 +118,8 @@ func NewClient(
 
 		reqman.NewRequestManager(),
 
-		log.New(
-			opts.WarnLog,
-			"WARNING: ",
-			log.Ldate|log.Ltime|log.Lshortfile,
-		),
-		log.New(
-			opts.ErrorLog,
-			"ERROR: ",
-			log.Ldate|log.Ltime|log.Lshortfile,
-		),
+		opts.WarnLog,
+		opts.ErrorLog,
 	}
 
 	if autoconnect == AutoconnectEnabled {

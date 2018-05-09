@@ -70,10 +70,7 @@ func main() {
 		&EchoServer{},
 		wwr.HeadedServerOptions{
 			ServerAddress: *serverAddr,
-			ServerOptions: wwr.ServerOptions{
-				WarnLog:  os.Stdout,
-				ErrorLog: os.Stderr,
-			},
+			ServerOptions: wwr.ServerOptions{},
 		},
 	)
 	if err != nil {

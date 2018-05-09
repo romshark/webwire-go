@@ -1,7 +1,7 @@
 package client
 
 import (
-	"io"
+	"log"
 	"os"
 	"time"
 
@@ -48,10 +48,10 @@ type Options struct {
 	ReconnectionInterval time.Duration
 
 	// WarnLog defines the warn logging output target
-	WarnLog io.Writer
+	WarnLog *log.Logger
 
 	// ErrorLog defines the error logging output target
-	ErrorLog io.Writer
+	ErrorLog *log.Logger
 }
 
 // SetDefaults sets default values for undefined required options
@@ -72,11 +72,19 @@ func (opts *Options) SetDefaults() {
 		opts.ReconnectionInterval = 2 * time.Second
 	}
 
+	// Create default loggers to std-out/err when no loggers are specified
 	if opts.WarnLog == nil {
-		opts.WarnLog = os.Stdout
+		opts.WarnLog = log.New(
+			os.Stdout,
+			"WEBWIRE_CLT_WARN: ",
+			log.Ldate|log.Ltime|log.Lshortfile,
+		)
 	}
-
 	if opts.ErrorLog == nil {
-		opts.ErrorLog = os.Stderr
+		opts.ErrorLog = log.New(
+			os.Stderr,
+			"WEBWIRE_CLT_ERR: ",
+			log.Ldate|log.Ltime|log.Lshortfile,
+		)
 	}
 }
