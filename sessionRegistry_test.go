@@ -16,7 +16,7 @@ func TestSessRegRegisteration(t *testing.T) {
 	clt.session = &sess
 
 	if err := reg.register(clt); err != nil {
-		t.Fatal("Unexpected error: %s", err)
+		t.Fatalf("Unexpected error: %s", err)
 	}
 
 	// Expect 1 active session
@@ -45,10 +45,10 @@ func TestSessRegActiveSessionsNum(t *testing.T) {
 	cltB1.session = &sessB
 
 	if err := reg.register(cltA1); err != nil {
-		t.Fatal("Unexpected error: %s", err)
+		t.Fatalf("Unexpected error: %s", err)
 	}
 	if err := reg.register(cltB1); err != nil {
-		t.Fatal("Unexpected error: %s", err)
+		t.Fatalf("Unexpected error: %s", err)
 	}
 
 	// Expect 2 active sessions
@@ -76,7 +76,7 @@ func TestSessRegsessionConnectionsNum(t *testing.T) {
 	cltA1.session = &sessA1
 
 	if err := reg.register(cltA1); err != nil {
-		t.Fatal("Unexpected error: %s", err)
+		t.Fatalf("Unexpected error: %s", err)
 	}
 
 	// Register second connection on same session
@@ -85,7 +85,7 @@ func TestSessRegsessionConnectionsNum(t *testing.T) {
 	cltA2.session = &sessA2
 
 	if err := reg.register(cltA2); err != nil {
-		t.Fatal("Unexpected error: %s", err)
+		t.Fatalf("Unexpected error: %s", err)
 	}
 
 	// Expect 1 active session
@@ -111,7 +111,7 @@ func TestSessRegSessionMaxConns(t *testing.T) {
 	cltA1.session = &sessA1
 
 	if err := reg.register(cltA1); err != nil {
-		t.Fatal("Unexpected error: %s", err)
+		t.Fatalf("Unexpected error: %s", err)
 	}
 
 	// Register first connection on session A
@@ -140,10 +140,10 @@ func TestSessRegDeregistration(t *testing.T) {
 	cltB1.session = &sessB
 
 	if err := reg.register(cltA1); err != nil {
-		t.Fatal("Unexpected error: %s", err)
+		t.Fatalf("Unexpected error: %s", err)
 	}
 	if err := reg.register(cltB1); err != nil {
-		t.Fatal("Unexpected error: %s", err)
+		t.Fatalf("Unexpected error: %s", err)
 	}
 
 	// Expect 2 active sessions
@@ -211,10 +211,10 @@ func TestSessRegDeregistrationMultiple(t *testing.T) {
 	cltA2.session = &sessA2
 
 	if err := reg.register(cltA1); err != nil {
-		t.Fatal("Unexpected error: %s", err)
+		t.Fatalf("Unexpected error: %s", err)
 	}
 	if err := reg.register(cltA2); err != nil {
-		t.Fatal("Unexpected error: %s", err)
+		t.Fatalf("Unexpected error: %s", err)
 	}
 
 	// Expect 1 active session
@@ -284,7 +284,7 @@ func TestSessRegConcurrentAccess(t *testing.T) {
 		index := i
 		go func() {
 			if err := reg.register(registeredConns[index]); err != nil {
-				t.Error("Unexpected error: %s", err)
+				t.Errorf("Unexpected error: %s", err)
 			}
 			awaitRegistration.Done()
 		}()
@@ -361,7 +361,7 @@ func TestSessRegSessionConnections(t *testing.T) {
 	cltA1.session = &sessA1
 
 	if err := reg.register(cltA1); err != nil {
-		t.Fatal("Unexpected error: %s", err)
+		t.Fatalf("Unexpected error: %s", err)
 	}
 
 	// Register second connection on same session
@@ -370,7 +370,7 @@ func TestSessRegSessionConnections(t *testing.T) {
 	cltA2.session = &sessA2
 
 	if err := reg.register(cltA2); err != nil {
-		t.Fatal("Unexpected error: %s", err)
+		t.Fatalf("Unexpected error: %s", err)
 	}
 
 	// Expect 1 active session
