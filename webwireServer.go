@@ -31,7 +31,7 @@ type Server interface {
 	SessionConnectionsNum(sessionKey string) int
 
 	// SessionConnections implements the SessionRegistry interface
-	SessionConnections(sessionKey string) []ClientInfo
+	SessionConnections(sessionKey string) []*Client
 
 	// CloseSession closes the session identified by the given key
 	// and returns the number of closed connections.

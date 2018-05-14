@@ -279,8 +279,9 @@ func (clt *Client) RestoreSession(sessionKey []byte) error {
 	return nil
 }
 
-// CloseSession closes the currently active session
-// and synchronizes the closure to the server if connected.
+// CloseSession disables the currently active session
+// and acknowledges the server if connected.
+// The session will be destroyed if this is it's last connection remaining.
 // If the client is not connected then the synchronization is skipped.
 // Does nothing if there's no active session
 func (clt *Client) CloseSession() error {

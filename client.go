@@ -167,13 +167,10 @@ func (clt *Client) notifySessionClosed() error {
 	return nil
 }
 
-// CloseSession disables the currently active session for this client.
-// It automatically synchronizes the session destruction to the client.
-// The synchronization happens asynchronously using a signal
-// and doesn't block the calling goroutine.
-// Does nothing if there's no active session.
-// If this client agent was the last of its session left then the session
-// is removed from the registry of active sessions.
+// CloseSession disables the currently active session for this client agent
+// and acknowledges the client.
+// The session will be destroyed if this is it's last connection remaining.
+// Does nothing if there's no active session
 func (clt *Client) CloseSession() error {
 	if !clt.srv.sessionsEnabled {
 		return SessionsDisabledErr{}

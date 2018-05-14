@@ -100,15 +100,13 @@ func (srv *server) SessionConnectionsNum(sessionKey string) int {
 }
 
 // SessionConnections implements the Server interface
-func (srv *server) SessionConnections(sessionKey string) []ClientInfo {
+func (srv *server) SessionConnections(sessionKey string) []*Client {
 	agents := srv.sessionRegistry.sessionConnections(sessionKey)
 	if agents == nil {
 		return nil
 	}
-	list := make([]ClientInfo, len(agents))
-	for index, clt := range agents {
-		list[index] = clt.info
-	}
+	list := make([]*Client, len(agents))
+	copy(list, agents)
 	return list
 }
 
