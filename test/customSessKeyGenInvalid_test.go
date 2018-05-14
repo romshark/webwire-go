@@ -23,7 +23,7 @@ func TestCustomSessKeyGenInvalid(t *testing.T) {
 			) (wwr.Payload, error) {
 				defer func() {
 					if err := recover(); err == nil {
-						t.Errorf("Expected server to panic" +
+						t.Errorf("Expected server to panic " +
 							"on invalid session key",
 						)
 					}
@@ -40,7 +40,6 @@ func TestCustomSessKeyGenInvalid(t *testing.T) {
 			},
 		},
 		wwr.ServerOptions{
-			SessionsEnabled: true,
 			SessionKeyGenerator: &sessionKeyGen{
 				generate: func() string {
 					// Return invalid session key

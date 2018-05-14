@@ -15,23 +15,23 @@ func TestSessRegRegisteration(t *testing.T) {
 	sess := NewSession(nil, func() string { return "testkey_A" })
 	clt.session = &sess
 
-	if !reg.register(clt) {
-		t.Fatal("Expected register to return true")
+	if err := reg.register(clt); err != nil {
+		t.Fatal("Unexpected error: %s", err)
 	}
 
 	// Expect 1 active session
-	if reg.ActiveSessions() != 1 {
-		t.Fatal("Expected ActiveSessions to return 1")
+	if reg.activeSessionsNum() != 1 {
+		t.Fatal("Expected ActiveSessionsNum to return 1")
 	}
 
 	// Expect 1 active connection on session A
-	if reg.SessionConnections("testkey_A") != 1 {
-		t.Fatal("Expected ActiveSessions to return 1")
+	if reg.sessionConnectionsNum("testkey_A") != 1 {
+		t.Fatal("Expected ActiveSessionsNum to return 1")
 	}
 }
 
-// TestSessRegActiveSessions tests the ActiveSessions method
-func TestSessRegActiveSessions(t *testing.T) {
+// TestSessRegActiveSessionsNum tests the ActiveSessionsNum method
+func TestSessRegActiveSessionsNum(t *testing.T) {
 	expectedSessionsNum := 2
 	reg := newSessionRegistry(0)
 
@@ -44,29 +44,29 @@ func TestSessRegActiveSessions(t *testing.T) {
 	sessB := NewSession(nil, func() string { return "testkey_B" })
 	cltB1.session = &sessB
 
-	if !reg.register(cltA1) {
-		t.Fatal("Expected register to return true")
+	if err := reg.register(cltA1); err != nil {
+		t.Fatal("Unexpected error: %s", err)
 	}
-	if !reg.register(cltB1) {
-		t.Fatal("Expected register to return true")
+	if err := reg.register(cltB1); err != nil {
+		t.Fatal("Unexpected error: %s", err)
 	}
 
 	// Expect 2 active sessions
-	if reg.ActiveSessions() != expectedSessionsNum {
-		t.Fatalf("Expected ActiveSessions to return %d", expectedSessionsNum)
+	if reg.activeSessionsNum() != expectedSessionsNum {
+		t.Fatalf("Expected ActiveSessionsNum to return %d", expectedSessionsNum)
 	}
 
 	// Expect 1 active connection on each session
-	if reg.SessionConnections("testkey_A") != 1 {
-		t.Fatal("Expected ActiveSessions to return 1")
+	if reg.sessionConnectionsNum("testkey_A") != 1 {
+		t.Fatal("Expected ActiveSessionsNum to return 1")
 	}
-	if reg.SessionConnections("testkey_B") != 1 {
-		t.Fatal("Expected ActiveSessions to return 1")
+	if reg.sessionConnectionsNum("testkey_B") != 1 {
+		t.Fatal("Expected ActiveSessionsNum to return 1")
 	}
 }
 
-// TestSessRegSessionConnections tests the SessionConnections method
-func TestSessRegSessionConnections(t *testing.T) {
+// TestSessRegsessionConnectionsNum tests the sessionConnectionsNum method
+func TestSessRegsessionConnectionsNum(t *testing.T) {
 	expectedSessionsNum := 1
 	reg := newSessionRegistry(0)
 
@@ -75,8 +75,8 @@ func TestSessRegSessionConnections(t *testing.T) {
 	sessA1 := NewSession(nil, func() string { return "testkey_A" })
 	cltA1.session = &sessA1
 
-	if !reg.register(cltA1) {
-		t.Fatal("Expected register to return true")
+	if err := reg.register(cltA1); err != nil {
+		t.Fatal("Unexpected error: %s", err)
 	}
 
 	// Register second connection on same session
@@ -84,18 +84,18 @@ func TestSessRegSessionConnections(t *testing.T) {
 	sessA2 := NewSession(nil, func() string { return "testkey_A" })
 	cltA2.session = &sessA2
 
-	if !reg.register(cltA2) {
-		t.Fatal("Expected register to return true")
+	if err := reg.register(cltA2); err != nil {
+		t.Fatal("Unexpected error: %s", err)
 	}
 
 	// Expect 1 active session
-	if reg.ActiveSessions() != expectedSessionsNum {
-		t.Fatalf("Expected ActiveSessions to return %d", expectedSessionsNum)
+	if reg.activeSessionsNum() != expectedSessionsNum {
+		t.Fatalf("Expected ActiveSessionsNum to return %d", expectedSessionsNum)
 	}
 
 	// Expect 2 active connections on session A
-	if reg.SessionConnections("testkey_A") != 2 {
-		t.Fatal("Expected ActiveSessions to return 2")
+	if reg.sessionConnectionsNum("testkey_A") != 2 {
+		t.Fatal("Expected ActiveSessionsNum to return 2")
 	}
 }
 
@@ -110,8 +110,8 @@ func TestSessRegSessionMaxConns(t *testing.T) {
 	sessA1 := NewSession(nil, func() string { return "testkey_A" })
 	cltA1.session = &sessA1
 
-	if !reg.register(cltA1) {
-		t.Fatal("Expected register to return true")
+	if err := reg.register(cltA1); err != nil {
+		t.Fatal("Unexpected error: %s", err)
 	}
 
 	// Register first connection on session A
@@ -119,9 +119,9 @@ func TestSessRegSessionMaxConns(t *testing.T) {
 	sessA2 := NewSession(nil, func() string { return "testkey_A" })
 	cltA2.session = &sessA2
 
-	if reg.register(cltA1) {
-		t.Fatal(
-			"Expected register to return false due to the limit being reached",
+	if reg.register(cltA1) == nil {
+		t.Fatal("Expected register to return an error " +
+			"due to the limit of concurrent connection being reached",
 		)
 	}
 }
@@ -139,60 +139,60 @@ func TestSessRegDeregistration(t *testing.T) {
 	sessB := NewSession(nil, func() string { return "testkey_B" })
 	cltB1.session = &sessB
 
-	if !reg.register(cltA1) {
-		t.Fatal("Expected register to return true")
+	if err := reg.register(cltA1); err != nil {
+		t.Fatal("Unexpected error: %s", err)
 	}
-	if !reg.register(cltB1) {
-		t.Fatal("Expected register to return true")
+	if err := reg.register(cltB1); err != nil {
+		t.Fatal("Unexpected error: %s", err)
 	}
 
 	// Expect 2 active sessions
-	if reg.ActiveSessions() != 2 {
-		t.Fatal("Expected ActiveSessions to return 2")
+	if reg.activeSessionsNum() != 2 {
+		t.Fatal("Expected ActiveSessionsNum to return 2")
 	}
 
 	// Expect 1 active connection on each session
-	if reg.SessionConnections("testkey_A") != 1 {
-		t.Fatal("Expected ActiveSessions to return 1")
+	if reg.sessionConnectionsNum("testkey_A") != 1 {
+		t.Fatal("Expected ActiveSessionsNum to return 1")
 	}
-	if reg.SessionConnections("testkey_B") != 1 {
-		t.Fatal("Expected ActiveSessions to return 1")
+	if reg.sessionConnectionsNum("testkey_B") != 1 {
+		t.Fatal("Expected ActiveSessionsNum to return 1")
 	}
 
-	// Deregister first connection, expect false because session was removed
-	if reg.deregister(cltA1) {
-		t.Fatal("Expected deregister to return false")
+	// Deregister first connection, expect 0 because session was removed
+	if reg.deregister(cltA1) != 0 {
+		t.Fatal("Expected deregister to return 0")
 	}
 
 	// Expect 1 active session after deregistration of the first connection
-	if reg.ActiveSessions() != 1 {
-		t.Fatal("Expected ActiveSessions to return 1")
+	if reg.activeSessionsNum() != 1 {
+		t.Fatal("Expected ActiveSessionsNum to return 1")
 	}
 
 	// Expect 0 active connections on deregistered session
-	if reg.SessionConnections("testkey_A") != 0 {
-		t.Fatal("Expected ActiveSessions to return 0")
+	if reg.sessionConnectionsNum("testkey_A") != -1 {
+		t.Fatal("Expected ActiveSessionsNum to return -1")
 	}
-	if reg.SessionConnections("testkey_B") != 1 {
-		t.Fatal("Expected ActiveSessions to return 1")
+	if reg.sessionConnectionsNum("testkey_B") != 1 {
+		t.Fatal("Expected ActiveSessionsNum to return 1")
 	}
 
-	// Deregister second connection, expect false because session was removed
-	if reg.deregister(cltB1) {
-		t.Fatal("Expected deregister to return false")
+	// Deregister second connection, expect 0 because session was removed
+	if reg.deregister(cltB1) != 0 {
+		t.Fatal("Expected deregister to return 0")
 	}
 
 	// Expect no active sessions after deregistration of the second connection
-	if reg.ActiveSessions() != 0 {
-		t.Fatal("Expected ActiveSessions to return 0")
+	if reg.activeSessionsNum() != 0 {
+		t.Fatal("Expected ActiveSessionsNum to return 0")
 	}
 
 	// Expect no active connections on both sessions
-	if reg.SessionConnections("testkey_A") != 0 {
-		t.Fatal("Expected ActiveSessions to return 0")
+	if reg.sessionConnectionsNum("testkey_A") != -1 {
+		t.Fatal("Expected ActiveSessionsNum to return -1")
 	}
-	if reg.SessionConnections("testkey_B") != 0 {
-		t.Fatal("Expected ActiveSessions to return 0")
+	if reg.sessionConnectionsNum("testkey_B") != -1 {
+		t.Fatal("Expected ActiveSessionsNum to return -1")
 	}
 }
 
@@ -210,52 +210,52 @@ func TestSessRegDeregistrationMultiple(t *testing.T) {
 	sessA2 := NewSession(nil, func() string { return "testkey_A" })
 	cltA2.session = &sessA2
 
-	if !reg.register(cltA1) {
-		t.Fatal("Expected register to return true")
+	if err := reg.register(cltA1); err != nil {
+		t.Fatal("Unexpected error: %s", err)
 	}
-	if !reg.register(cltA2) {
-		t.Fatal("Expected register to return true")
+	if err := reg.register(cltA2); err != nil {
+		t.Fatal("Unexpected error: %s", err)
 	}
 
 	// Expect 1 active session
-	if reg.ActiveSessions() != 1 {
-		t.Fatal("Expected ActiveSessions to return 1")
+	if reg.activeSessionsNum() != 1 {
+		t.Fatal("Expected ActiveSessionsNum to return 1")
 	}
 
 	// Expect 2 active connections on session A
-	if reg.SessionConnections("testkey_A") != 2 {
-		t.Fatal("Expected ActiveSessions to return 2")
+	if reg.sessionConnectionsNum("testkey_A") != 2 {
+		t.Fatal("Expected ActiveSessionsNum to return 2")
 	}
 
-	// Deregister first connection
-	if !reg.deregister(cltA1) {
-		t.Fatal("Expected deregister to return true")
+	// Deregister first connection, expect 1
+	if reg.deregister(cltA1) != 1 {
+		t.Fatal("Expected deregister to return 1")
 	}
 
 	// Still expect 1 active session
 	// after deregistration of the first connection
-	if reg.ActiveSessions() != 1 {
-		t.Fatal("Expected ActiveSessions to return 1")
+	if reg.activeSessionsNum() != 1 {
+		t.Fatal("Expected ActiveSessionsNum to return 1")
 	}
 
 	// Expect 1 remaining active connection on deregistered session
-	if reg.SessionConnections("testkey_A") != 1 {
-		t.Fatal("Expected ActiveSessions to return 0")
+	if reg.sessionConnectionsNum("testkey_A") != 1 {
+		t.Fatal("Expected ActiveSessionsNum to return 0")
 	}
 
-	// Deregister second connection, expect false because session was removed
-	if reg.deregister(cltA2) {
-		t.Fatal("Expected deregister to return false")
+	// Deregister second connection, expect 0 because session was removed
+	if reg.deregister(cltA2) != 0 {
+		t.Fatal("Expected deregister to return 0")
 	}
 
 	// Expect no active sessions after deregistration of the second connection
-	if reg.ActiveSessions() != 0 {
-		t.Fatal("Expected ActiveSessions to return 0")
+	if reg.activeSessionsNum() != 0 {
+		t.Fatal("Expected ActiveSessionsNum to return 0")
 	}
 
 	// Expect no active connections session A
-	if reg.SessionConnections("testkey_A") != 0 {
-		t.Fatal("Expected ActiveSessions to return 0")
+	if reg.sessionConnectionsNum("testkey_A") != -1 {
+		t.Fatal("Expected ActiveSessionsNum to return -1")
 	}
 }
 
@@ -283,8 +283,8 @@ func TestSessRegConcurrentAccess(t *testing.T) {
 	for i := uint(0); i < connsToRegister; i++ {
 		index := i
 		go func() {
-			if !reg.register(registeredConns[index]) {
-				t.Error("Expected register to return true")
+			if err := reg.register(registeredConns[index]); err != nil {
+				t.Error("Unexpected error: %s", err)
 			}
 			awaitRegistration.Done()
 		}()
@@ -294,29 +294,32 @@ func TestSessRegConcurrentAccess(t *testing.T) {
 	awaitRegistration.Wait()
 
 	// Expect 1 active session
-	if reg.ActiveSessions() != 1 {
-		t.Fatal("Expected ActiveSessions to return 1")
+	if reg.activeSessionsNum() != 1 {
+		t.Fatal("Expected ActiveSessionsNum to return 1")
 	}
 
 	// Expect N active connections on session A
-	actualSessCons := reg.SessionConnections("testkey_A")
-	if actualSessCons != connsToRegister {
+	actualSessCons := reg.sessionConnectionsNum("testkey_A")
+	if actualSessCons < 0 {
+		t.Fatalf("Missing session testkey_A")
+	}
+	if uint(actualSessCons) != connsToRegister {
 		t.Fatalf(
-			"Expected ActiveSessions to return %d, got: %d",
+			"Expected ActiveSessionsNum to return %d, got: %d",
 			connsToRegister,
 			actualSessCons,
 		)
 	}
 
 	// Concurrently deregister multiple connections from different goroutines
-	falseReturnCounter := uint32(0)
+	negativeReturnCounter := uint32(0)
 	for i := uint(0); i < connsToRegister; i++ {
 		index := i
 		go func() {
 			// Deregister one of the connections
 			result := reg.deregister(registeredConns[index])
-			if !result {
-				atomic.AddUint32(&falseReturnCounter, 1)
+			if result == -1 {
+				atomic.AddUint32(&negativeReturnCounter, 1)
 			}
 			awaitDeregistration.Done()
 		}()
@@ -325,24 +328,65 @@ func TestSessRegConcurrentAccess(t *testing.T) {
 	// Wait for all goroutines to finish before evaluating the results
 	awaitDeregistration.Wait()
 
-	if falseReturnCounter > 1 {
+	if negativeReturnCounter > 1 {
 		t.Fatalf(
 			"deregister returned false %d times, expected 1",
-			falseReturnCounter,
+			negativeReturnCounter,
 		)
 	}
 
 	// Expect 1 active session
-	if reg.ActiveSessions() != 0 {
-		t.Fatal("Expected ActiveSessions to return 0")
+	if reg.activeSessionsNum() != 0 {
+		t.Fatal("Expected ActiveSessionsNum to return 0")
 	}
 
 	// Expect no active connections on session A
-	actualSessConsAfter := reg.SessionConnections("testkey_A")
-	if actualSessConsAfter != 0 {
+	actualSessConsAfter := reg.sessionConnectionsNum("testkey_A")
+	if actualSessConsAfter != -1 {
 		t.Fatalf(
-			"Expected ActiveSessions to return 0, got: %d",
+			"Expected ActiveSessionsNum to return 0, got: %d",
 			actualSessConsAfter,
 		)
+	}
+}
+
+// TestSessRegSessionConnections tests the sessionConnections method
+func TestSessRegSessionConnections(t *testing.T) {
+	expectedSessionsNum := 1
+	reg := newSessionRegistry(0)
+
+	// Register first connection on session A
+	cltA1 := newClientAgent(nil, "A1", nil)
+	sessA1 := NewSession(nil, func() string { return "testkey_A" })
+	cltA1.session = &sessA1
+
+	if err := reg.register(cltA1); err != nil {
+		t.Fatal("Unexpected error: %s", err)
+	}
+
+	// Register second connection on same session
+	cltA2 := newClientAgent(nil, "A2", nil)
+	sessA2 := NewSession(nil, func() string { return "testkey_A" })
+	cltA2.session = &sessA2
+
+	if err := reg.register(cltA2); err != nil {
+		t.Fatal("Unexpected error: %s", err)
+	}
+
+	// Expect 1 active session
+	if reg.activeSessionsNum() != expectedSessionsNum {
+		t.Fatalf("Expected ActiveSessionsNum to return %d", expectedSessionsNum)
+	}
+
+	// Expect 2 active connections on session A
+	list := reg.sessionConnections("testkey_A")
+	if len(list) != 2 {
+		t.Fatal("Expected 2 active connections on session testkey_A")
+	}
+	if list[0] != cltA1 {
+		t.Fatal("Expected cltA1 to be in the list of active connections")
+	}
+	if list[1] != cltA2 {
+		t.Fatal("Expected cltA2 to be in the list of active connections")
 	}
 }

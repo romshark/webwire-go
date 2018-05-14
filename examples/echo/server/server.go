@@ -53,7 +53,7 @@ func (srv *EchoServer) OnRequest(
 	client *wwr.Client,
 	message *wwr.Message,
 ) (response wwr.Payload, err error) {
-	log.Printf("Replied to client: %s", client.RemoteAddr())
+	log.Printf("Replied to client: %s", client.Info().RemoteAddr)
 
 	// Reply to the request using the same data and encoding
 	return message.Payload, nil
@@ -65,12 +65,11 @@ func main() {
 	// Parse command line arguments
 	flag.Parse()
 
-	// Setup headed webwire server
-	server, err := wwr.NewHeadedServer(
+	// Setup a new webwire server instance
+	server, err := wwr.NewServer(
 		&EchoServer{},
-		wwr.HeadedServerOptions{
-			ServerAddress: *serverAddr,
-			ServerOptions: wwr.ServerOptions{},
+		wwr.ServerOptions{
+			Address: *serverAddr,
 		},
 	)
 	if err != nil {

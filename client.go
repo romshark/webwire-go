@@ -8,27 +8,39 @@ import (
 	"time"
 )
 
+// Client represents basic information about a client agent
+type ClientInfo struct {
+	ConnectionTime time.Time
+	UserAgent      string
+	RemoteAddr     net.Addr
+}
+
 // Client represents a client connected to the server
 type Client struct {
-	srv  *Server
-	conn Socket
-
-	connectionTime time.Time
-	userAgent      string
-
+	srv         *server
+	conn        Socket
 	sessionLock sync.RWMutex
 	session     *Session
+	info        ClientInfo
 }
 
 // newClientAgent creates and returns a new client agent instance
-func newClientAgent(socket Socket, userAgent string, srv *Server) *Client {
+func newClientAgent(socket Socket, userAgent string, srv *server) *Client {
+	var remoteAddr net.Addr
+	if socket != nil {
+		remoteAddr = socket.RemoteAddr()
+	}
+
 	return &Client{
 		srv,
 		socket,
-		time.Now(),
-		userAgent,
 		sync.RWMutex{},
 		nil,
+		ClientInfo{
+			time.Now(),
+			userAgent,
+			remoteAddr,
+		},
 	}
 }
 
@@ -47,20 +59,11 @@ func (clt *Client) unlink() {
 	clt.sessionLock.Unlock()
 }
 
-// UserAgent returns the user agent string associated with this client
-func (clt *Client) UserAgent() string {
-	return clt.userAgent
-}
-
-// ConnectionTime returns the time when the connection was established
-func (clt *Client) ConnectionTime() time.Time {
-	return clt.connectionTime
-}
-
-// RemoteAddr returns the address of the client.
-// Returns empty string if the client is not connected
-func (clt *Client) RemoteAddr() net.Addr {
-	return clt.conn.RemoteAddr()
+// ClientInfo returns information about the client agent
+// including the client agent string, the remote address
+// and the time of creation
+func (clt *Client) Info() ClientInfo {
+	return clt.info
 }
 
 // IsConnected returns true if the client is currently connected to the server,
@@ -165,11 +168,13 @@ func (clt *Client) notifySessionClosed() error {
 	return nil
 }
 
-// CloseSession destroys the currently active session for this client.
+// CloseSession disables the currently active session for this client.
 // It automatically synchronizes the session destruction to the client.
 // The synchronization happens asynchronously using a signal
 // and doesn't block the calling goroutine.
-// Does nothing if there's no active session
+// Does nothing if there's no active session.
+// If this client agent was the last of its session left then the session
+// is removed from the registry of active sessions.
 func (clt *Client) CloseSession() error {
 	if !clt.srv.sessionsEnabled {
 		return SessionsDisabledErr{}
@@ -180,13 +185,8 @@ func (clt *Client) CloseSession() error {
 		clt.sessionLock.Unlock()
 		return nil
 	}
-	clt.srv.sessionRegistry.deregister(clt)
+	clt.srv.deregisterAgent(clt)
 	clt.sessionLock.Unlock()
-
-	// Call session closure hook
-	if err := clt.srv.sessionManager.OnSessionClosed(clt); err != nil {
-		clt.srv.errorLog.Printf("OnSessionClosed hook failed: %s", err)
-	}
 
 	// Finally reset the session
 	clt.sessionLock.Lock()
@@ -254,4 +254,16 @@ func (clt *Client) SessionInfo(name string) interface{} {
 		return nil
 	}
 	return clt.session.Info.Value(name)
+}
+
+// Close closes the connection of the client agent and removes it from the
+// session registry if necessary
+func (clt *Client) Close() error {
+	// Close connection
+	if err := clt.conn.Close(); err != nil {
+		return fmt.Errorf("Couldn't close client agent socket: %s", err)
+	}
+	// Deregister agent
+	clt.srv.deregisterAgent(clt)
+	return nil
 }

@@ -17,9 +17,7 @@ func TestClientRestoreSessionDisconnected(t *testing.T) {
 	server := setupServer(
 		t,
 		&serverImpl{},
-		wwr.ServerOptions{
-			SessionsEnabled: true,
-		},
+		wwr.ServerOptions{},
 	)
 
 	// Initialize client and skip manual connection establishment

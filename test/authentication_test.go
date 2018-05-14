@@ -152,9 +152,7 @@ func TestAuthentication(t *testing.T) {
 				}, nil
 			},
 		},
-		wwr.ServerOptions{
-			SessionsEnabled: true,
-		},
+		wwr.ServerOptions{},
 	)
 
 	// Initialize client

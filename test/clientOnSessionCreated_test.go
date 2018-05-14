@@ -31,9 +31,7 @@ func TestClientOnSessionCreated(t *testing.T) {
 				return webwire.Payload{}, nil
 			},
 		},
-		webwire.ServerOptions{
-			SessionsEnabled: true,
-		},
+		webwire.ServerOptions{},
 	)
 
 	// Initialize client

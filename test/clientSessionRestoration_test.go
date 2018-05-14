@@ -42,7 +42,6 @@ func TestClientSessionRestoration(t *testing.T) {
 			},
 		},
 		webwire.ServerOptions{
-			SessionsEnabled: true,
 			SessionManager: &callbackPoweredSessionManager{
 				// Saves the session
 				SessionCreated: func(client *webwire.Client) error {

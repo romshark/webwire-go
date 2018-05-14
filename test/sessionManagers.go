@@ -59,9 +59,9 @@ func (mng *inMemSessManager) OnSessionLookup(key string) (
 
 // OnSessionClosed implements the session manager interface.
 // It closes the session by deleting the according session file
-func (mng *inMemSessManager) OnSessionClosed(client *wwr.Client) error {
+func (mng *inMemSessManager) OnSessionClosed(sessionKey string) error {
 	mng.lock.Lock()
-	delete(mng.sessions, client.SessionKey())
+	delete(mng.sessions, sessionKey)
 	mng.lock.Unlock()
 	return nil
 }
@@ -76,7 +76,7 @@ type callbackPoweredSessionManager struct {
 		map[string]interface{},
 		error,
 	)
-	SessionClosed func(client *wwr.Client) error
+	SessionClosed func(sessionKey string) error
 }
 
 // OnSessionCreated implements the session manager interface
@@ -104,10 +104,10 @@ func (mng *callbackPoweredSessionManager) OnSessionLookup(
 // OnSessionClosed implements the session manager interface
 // calling the configured callback
 func (mng *callbackPoweredSessionManager) OnSessionClosed(
-	client *wwr.Client,
+	sessionKey string,
 ) error {
 	if mng.SessionClosed == nil {
 		return nil
 	}
-	return mng.SessionClosed(client)
+	return mng.SessionClosed(sessionKey)
 }

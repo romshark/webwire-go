@@ -131,9 +131,12 @@ func (mng *DefaultSessionManager) OnSessionLookup(key string) (
 
 // OnSessionClosed implements the session manager interface.
 // It closes the session by deleting the according session file
-func (mng *DefaultSessionManager) OnSessionClosed(client *Client) error {
-	if err := os.Remove(mng.filePath(client.SessionKey())); err != nil {
-		return fmt.Errorf("Unexpected error during session destruction: %s", err)
+func (mng *DefaultSessionManager) OnSessionClosed(sessionKey string) error {
+	if err := os.Remove(mng.filePath(sessionKey)); err != nil {
+		return fmt.Errorf(
+			"Unexpected error during session destruction: %s",
+			err,
+		)
 	}
 	return nil
 }

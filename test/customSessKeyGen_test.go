@@ -39,7 +39,6 @@ func TestCustomSessKeyGen(t *testing.T) {
 			},
 		},
 		wwr.ServerOptions{
-			SessionsEnabled: true,
 			SessionKeyGenerator: &sessionKeyGen{
 				generate: func() string {
 					return expectedSessionKey

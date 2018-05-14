@@ -99,9 +99,7 @@ func TestServerInitiatedSessionDestruction(t *testing.T) {
 				}, nil
 			},
 		},
-		webwire.ServerOptions{
-			SessionsEnabled: true,
-		},
+		webwire.ServerOptions{},
 	)
 
 	// Initialize client

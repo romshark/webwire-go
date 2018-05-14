@@ -1,31 +1,15 @@
 package webwire
 
 import (
+	"fmt"
 	"sync"
 )
-
-// SessionRegistry defines the public interface of a session registry
-type SessionRegistry interface {
-	// ActiveSessions returns the number of currently active sessions
-	ActiveSessions() int
-
-	// SessionConnections returns the number of concurrent connections
-	// associated with the session identified by the given key.
-	// Returns zero if the session doesn't exist.
-	SessionConnections(sessionKey string) uint
-}
-
-// sessionRegistryEntry represents a session registry entry
-type sessionRegistryEntry struct {
-	connections uint
-	client      *Client
-}
 
 // sessionRegistry represents a thread safe registry of all currently active sessions
 type sessionRegistry struct {
 	lock     sync.RWMutex
 	maxConns uint
-	registry map[string]sessionRegistryEntry
+	registry map[string][]*Client
 }
 
 // newSessionRegistry returns a new instance of a session registry.
@@ -35,72 +19,86 @@ func newSessionRegistry(maxConns uint) *sessionRegistry {
 	return &sessionRegistry{
 		lock:     sync.RWMutex{},
 		maxConns: maxConns,
-		registry: make(map[string]sessionRegistryEntry),
+		registry: make(map[string][]*Client),
 	}
 }
 
-// register registers a new connection for the given clients session and returns true.
-// Returns false if the given clients session already has the max number of connections assigned.
-func (asr *sessionRegistry) register(clt *Client) bool {
+// register registers a new connection for the given clients session.
+// Returns an error if the given clients session already reached
+// the maximum number of concurrent connections
+func (asr *sessionRegistry) register(clt *Client) error {
 	asr.lock.Lock()
 	defer asr.lock.Unlock()
-	if entry, exists := asr.registry[clt.session.Key]; exists {
+	if agentList, exists := asr.registry[clt.session.Key]; exists {
 		// Ensure max connections isn't exceeded
-		if asr.maxConns > 0 && entry.connections+1 > asr.maxConns {
-			return false
+		if asr.maxConns > 0 && uint(len(agentList)+1) > asr.maxConns {
+			return fmt.Errorf(
+				"Max conns (%d) reached for session %s",
+				asr.maxConns,
+				clt.session.Key,
+			)
 		}
 		// Overwrite the current entry incrementing the number of connections
-		asr.registry[clt.session.Key] = sessionRegistryEntry{
-			connections: entry.connections + 1,
-			client:      entry.client,
-		}
-		return true
+		asr.registry[clt.session.Key] = append(agentList, clt)
+		return nil
 	}
-	asr.registry[clt.session.Key] = sessionRegistryEntry{
-		connections: 1,
-		client:      clt,
-	}
-	return true
+	newList := []*Client{clt}
+	asr.registry[clt.session.Key] = newList
+	return nil
 }
 
-// deregister decrements the number of connections assigned to the given clients session
-// and returns true. If there's only one connection left then the session will be removed
-// from the register and false will be returned
-func (asr *sessionRegistry) deregister(clt *Client) bool {
+// deregister removes a client agent from the list of connections of a session
+// returns the number of connections left.
+// If there's only one connection left then the entire session will be removed
+// from the register and 0 will be returned.
+// If the given client agent is not in the register -1 is returned
+func (asr *sessionRegistry) deregister(clt *Client) int {
 	asr.lock.Lock()
 	defer asr.lock.Unlock()
-	if entry, exists := asr.registry[clt.session.Key]; exists {
+	if agentList, exists := asr.registry[clt.session.Key]; exists {
 		// If a single connection is left then remove the session
-		if entry.connections < 2 {
+		if len(agentList) < 2 {
 			delete(asr.registry, clt.session.Key)
-			return false
+			return 0
 		}
-		// Overwrite the current entry decrementing the number of connections
-		asr.registry[clt.session.Key] = sessionRegistryEntry{
-			connections: entry.connections - 1,
-			client:      entry.client,
+		// Find and remove the client from the connections list
+		for index, agent := range agentList {
+			if agent == clt {
+				asr.registry[clt.session.Key] = append(
+					agentList[:index],
+					agentList[index+1:]...,
+				)
+			}
 		}
-		return true
+		return len(agentList) - 1
 	}
-	return false
+	return -1
 }
 
-// ActiveSessions returns the number of currently active sessions
-func (asr *sessionRegistry) ActiveSessions() int {
+// activeSessionsNum returns the number of currently active sessions
+func (asr *sessionRegistry) activeSessionsNum() int {
 	asr.lock.RLock()
 	len := len(asr.registry)
 	asr.lock.RUnlock()
 	return len
 }
 
-// SessionConnections returns the number of concurrent connections
-// associated with the session identified by the given key.
-// Returns zero if the session doesn't exist.
-func (asr *sessionRegistry) SessionConnections(sessionKey string) uint {
+// sessionConnectionsNum implements the sessionRegistry interface
+func (asr *sessionRegistry) sessionConnectionsNum(sessionKey string) int {
 	asr.lock.RLock()
 	defer asr.lock.RUnlock()
-	if sess, exists := asr.registry[sessionKey]; exists {
-		return sess.connections
+	if agentList, exists := asr.registry[sessionKey]; exists {
+		return len(agentList)
 	}
-	return 0
+	return -1
+}
+
+// sessionConnections implements the sessionRegistry interface
+func (asr *sessionRegistry) sessionConnections(sessionKey string) []*Client {
+	asr.lock.RLock()
+	defer asr.lock.RUnlock()
+	if agentList, exists := asr.registry[sessionKey]; exists {
+		return agentList
+	}
+	return nil
 }

@@ -44,7 +44,7 @@ func TestDisabledSessions(t *testing.T) {
 			},
 		},
 		wwr.ServerOptions{
-			SessionsEnabled: false,
+			Sessions: wwr.Disabled,
 		},
 	)
 

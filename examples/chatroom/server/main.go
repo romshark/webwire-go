@@ -17,24 +17,21 @@ func main() {
 	// Parse command line arguments
 	flag.Parse()
 
-	// Setup headed webwire server
-	server, err := wwr.NewHeadedServer(
+	// Setup a new webwire server instance
+	server, err := wwr.NewServer(
 		NewChatRoomServer(),
-		wwr.HeadedServerOptions{
-			ServerAddress: *serverAddr,
-			ServerOptions: wwr.ServerOptions{
-				SessionsEnabled: true,
-				WarnLog: log.New(
-					os.Stdout,
-					"WARN: ",
-					log.Ldate|log.Ltime|log.Lshortfile,
-				),
-				ErrorLog: log.New(
-					os.Stderr,
-					"ERR: ",
-					log.Ldate|log.Ltime|log.Lshortfile,
-				),
-			},
+		wwr.ServerOptions{
+			Address: *serverAddr,
+			WarnLog: log.New(
+				os.Stdout,
+				"WARN: ",
+				log.Ldate|log.Ltime|log.Lshortfile,
+			),
+			ErrorLog: log.New(
+				os.Stderr,
+				"ERR: ",
+				log.Ldate|log.Ltime|log.Lshortfile,
+			),
 		},
 	)
 	if err != nil {

@@ -119,12 +119,11 @@ func main() {
 	// Create a new webwire server implementation instance
 	serverImpl := NewPubSubServer()
 
-	// Setup headed webwire server
-	server, err := wwr.NewHeadedServer(
+	// Setup a new webwire server instance
+	server, err := wwr.NewServer(
 		serverImpl,
-		wwr.HeadedServerOptions{
-			ServerAddress: *serverAddr,
-			ServerOptions: wwr.ServerOptions{},
+		wwr.ServerOptions{
+			Address: *serverAddr,
 		},
 	)
 	if err != nil {

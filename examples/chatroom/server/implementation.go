@@ -53,7 +53,7 @@ func (srv *ChatRoomServer) broadcastMessage(name string, msg string) {
 		}); err != nil {
 			log.Printf(
 				"WARNING: failed sending signal to client %s : %s",
-				client.RemoteAddr(),
+				client.Info().RemoteAddr,
 				err,
 			)
 		}
@@ -81,7 +81,7 @@ func (srv *ChatRoomServer) handleAuth(
 		}
 	}
 
-	log.Printf("Client attempts authentication: %s", client.RemoteAddr())
+	log.Printf("Client attempts authentication: %s", client.Info().RemoteAddr)
 
 	// Try to parse credentials
 	var credentials shared.AuthenticationCredentials
@@ -115,7 +115,7 @@ func (srv *ChatRoomServer) handleAuth(
 
 	log.Printf(
 		"Created session for user %s (%s)",
-		client.RemoteAddr(),
+		client.Info().RemoteAddr,
 		credentials.Name,
 	)
 
@@ -138,7 +138,7 @@ func (srv *ChatRoomServer) handleMessage(
 	if err != nil {
 		log.Printf(
 			"Received invalid message from %s, couldn't convert payload to UTF8: %s",
-			client.RemoteAddr(),
+			client.Info().RemoteAddr,
 			err,
 		)
 		return wwr.Payload{}, nil
@@ -146,7 +146,7 @@ func (srv *ChatRoomServer) handleMessage(
 
 	log.Printf(
 		"Received message from %s: '%s' (%d, %s)",
-		client.RemoteAddr(),
+		client.Info().RemoteAddr,
 		msgStr,
 		len(message.Payload.Data),
 		message.Payload.Encoding.String(),
@@ -211,7 +211,12 @@ func (srv *ChatRoomServer) OnRequest(
 // OnClientConnected implements the webwire.ServerImplementation interface.
 // Registers new connected clients
 func (srv *ChatRoomServer) OnClientConnected(newClient *wwr.Client) {
-	log.Printf("New client connected: %s | %s", newClient.RemoteAddr(), newClient.UserAgent())
+	info := newClient.Info()
+	log.Printf(
+		"New client connected: %s | %s",
+		info.RemoteAddr,
+		info.UserAgent,
+	)
 	srv.lock.Lock()
 	defer srv.lock.Unlock()
 	srv.connected[newClient] = true
@@ -220,7 +225,7 @@ func (srv *ChatRoomServer) OnClientConnected(newClient *wwr.Client) {
 // OnClientDisconnected implements the webwire.ServerImplementation interface.
 // Deregisters gone clients
 func (srv *ChatRoomServer) OnClientDisconnected(client *wwr.Client) {
-	log.Printf("Client %s disconnected", client.RemoteAddr())
+	log.Printf("Client %s disconnected", client.Info().RemoteAddr)
 	srv.lock.Lock()
 	defer srv.lock.Unlock()
 	delete(srv.connected, client)

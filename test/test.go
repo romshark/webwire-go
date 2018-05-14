@@ -17,7 +17,7 @@ func setupServer(
 	t *testing.T,
 	impl *serverImpl,
 	opts wwr.ServerOptions,
-) *wwr.HeadedServer {
+) wwr.WebwireServer {
 	// Setup headed server on arbitrary port
 
 	if impl.beforeUpgrade == nil {
@@ -54,12 +54,11 @@ func setupServer(
 		opts.SessionManager = newInMemSessManager()
 	}
 
-	server, err := wwr.NewHeadedServer(
+	opts.Address = "127.0.0.1:0"
+
+	server, err := wwr.NewServer(
 		impl,
-		wwr.HeadedServerOptions{
-			ServerAddress: "127.0.0.1:0",
-			ServerOptions: opts,
-		},
+		opts,
 	)
 	if err != nil {
 		t.Fatalf("Failed setting up server instance: %s", err)

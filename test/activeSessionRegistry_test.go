@@ -41,9 +41,7 @@ func TestActiveSessionRegistry(t *testing.T) {
 				}, nil
 			},
 		},
-		webwire.ServerOptions{
-			SessionsEnabled: true,
-		},
+		webwire.ServerOptions{},
 	)
 
 	// Initialize client
@@ -71,7 +69,7 @@ func TestActiveSessionRegistry(t *testing.T) {
 		t.Fatalf("Request failed: %s", err)
 	}
 
-	activeSessionNumberBefore := server.SessionRegistry().ActiveSessions()
+	activeSessionNumberBefore := server.ActiveSessionsNum()
 	if activeSessionNumberBefore != 1 {
 		t.Fatalf(
 			"Unexpected active session number after authentication: %d",
@@ -90,7 +88,7 @@ func TestActiveSessionRegistry(t *testing.T) {
 		t.Fatalf("Request failed: %s", err)
 	}
 
-	activeSessionNumberAfter := server.SessionRegistry().ActiveSessions()
+	activeSessionNumberAfter := server.ActiveSessionsNum()
 	if activeSessionNumberAfter != 0 {
 		t.Fatalf(
 			"Unexpected active session number after logout: %d",

@@ -90,9 +90,8 @@ type SessionManager interface {
 		err error,
 	)
 
-	// OnSessionClosed is invoked when the active session of the given client
-	// is closed (thus destroyed) either by the server or the client through a
-	// session destruction request.
+	// OnSessionClosed is invoked when the session associated with the given key
+	// is closed (thus destroyed) either by the server or the client.
 	// A closed session must be permanently deleted and must not be discoverable
 	// in the OnSessionLookup hook any longer.
 	// If an error is returned then the it is logged.
@@ -101,7 +100,7 @@ type SessionManager interface {
 	// client agent method, or the goroutine serving the associated client,
 	// in the case of which it will block any other interactions with
 	// this client while executing
-	OnSessionClosed(client *Client) error
+	OnSessionClosed(sessionKey string) error
 }
 
 // SessionKeyGenerator defines the interface of a webwire servers session key generator.

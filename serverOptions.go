@@ -5,9 +5,24 @@ import (
 	"os"
 )
 
+// OptionValue represents the setting value of an option
+type OptionValue byte
+
+const (
+	// OptionUnset represents the default unset value
+	OptionUnset OptionValue = iota
+
+	// Disabled disables an option
+	Disabled
+
+	// Enabled enables an option
+	Enabled
+)
+
 // ServerOptions represents the options used during the creation of a new WebWire server instance
 type ServerOptions struct {
-	SessionsEnabled       bool
+	Address               string
+	Sessions              OptionValue
 	SessionManager        SessionManager
 	SessionKeyGenerator   SessionKeyGenerator
 	SessionInfoParser     SessionInfoParser
@@ -18,12 +33,17 @@ type ServerOptions struct {
 
 // SetDefaults sets the defaults for undefined required values
 func (srvOpt *ServerOptions) SetDefaults() {
-	if srvOpt.SessionsEnabled && srvOpt.SessionManager == nil {
+	// Enable sessions by default
+	if srvOpt.Sessions == OptionUnset {
+		srvOpt.Sessions = Enabled
+	}
+
+	if srvOpt.Sessions == Enabled && srvOpt.SessionManager == nil {
 		// Force the default session manager to use the default session directory
 		srvOpt.SessionManager = NewDefaultSessionManager("")
 	}
 
-	if srvOpt.SessionsEnabled && srvOpt.SessionKeyGenerator == nil {
+	if srvOpt.Sessions == Enabled && srvOpt.SessionKeyGenerator == nil {
 		srvOpt.SessionKeyGenerator = NewDefaultSessionKeyGenerator()
 	}
 
@@ -46,16 +66,4 @@ func (srvOpt *ServerOptions) SetDefaults() {
 			log.Ldate|log.Ltime|log.Lshortfile,
 		)
 	}
-}
-
-// HeadedServerOptions represents the options used during the creation of
-// a new headed WebWire server instance
-type HeadedServerOptions struct {
-	ServerAddress string
-	ServerOptions ServerOptions
-}
-
-// SetDefaults sets default values to undefined options
-func (opts *HeadedServerOptions) SetDefaults() {
-	opts.ServerOptions.SetDefaults()
 }
