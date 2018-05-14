@@ -48,7 +48,7 @@ func (srv *server) deregisterAgent(clt *Client) {
 	}
 }
 
-func (srv *server) shutdownHttpServer() error {
+func (srv *server) shutdownHTTPServer() error {
 	if srv.httpServer == nil {
 		return nil
 	}
@@ -58,7 +58,7 @@ func (srv *server) shutdownHttpServer() error {
 	return nil
 }
 
-// Run implements the WebwireServer interface
+// Run implements the Server interface
 func (srv *server) Run() error {
 	// Launch HTTP server
 	if err := srv.httpServer.Serve(
@@ -70,36 +70,36 @@ func (srv *server) Run() error {
 	return nil
 }
 
-// Addr implements the WebwireServer interface
+// Addr implements the Server interface
 func (srv *server) Addr() net.Addr {
 	return srv.addr
 }
 
-// Shutdown implements the WebwireServer interface
+// Shutdown implements the Server interface
 func (srv *server) Shutdown() error {
 	srv.opsLock.Lock()
 	srv.shutdown = true
 	// Don't block if there's no currently processed operations
 	if srv.currentOps < 1 {
-		return srv.shutdownHttpServer()
+		return srv.shutdownHTTPServer()
 	}
 	srv.opsLock.Unlock()
 	<-srv.shutdownRdy
 
-	return srv.shutdownHttpServer()
+	return srv.shutdownHTTPServer()
 }
 
-// ActiveSessionsNum implements the WebwireServer interface
+// ActiveSessionsNum implements the Server interface
 func (srv *server) ActiveSessionsNum() int {
 	return srv.sessionRegistry.activeSessionsNum()
 }
 
-// SessionConnectionsNum implements the WebwireServer interface
+// SessionConnectionsNum implements the Server interface
 func (srv *server) SessionConnectionsNum(sessionKey string) int {
 	return srv.sessionRegistry.sessionConnectionsNum(sessionKey)
 }
 
-// SessionConnections implements the WebwireServer interface
+// SessionConnections implements the Server interface
 func (srv *server) SessionConnections(sessionKey string) []ClientInfo {
 	agents := srv.sessionRegistry.sessionConnections(sessionKey)
 	if agents == nil {
@@ -112,7 +112,7 @@ func (srv *server) SessionConnections(sessionKey string) []ClientInfo {
 	return list
 }
 
-// CloseSession implements the WebwireServer interface
+// CloseSession implements the Server interface
 func (srv *server) CloseSession(sessionKey string) int {
 	agents := srv.sessionRegistry.sessionConnections(sessionKey)
 	if agents == nil {

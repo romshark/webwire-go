@@ -11,7 +11,7 @@ import (
 func NewServer(
 	implementation ServerImplementation,
 	opts ServerOptions,
-) (instance WebwireServer, err error) {
+) (instance Server, err error) {
 	if implementation == nil {
 		panic(fmt.Errorf("A headed webwire server requires a server implementation, got nil"))
 	}

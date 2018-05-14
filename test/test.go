@@ -17,7 +17,7 @@ func setupServer(
 	t *testing.T,
 	impl *serverImpl,
 	opts wwr.ServerOptions,
-) wwr.WebwireServer {
+) wwr.Server {
 	// Setup headed server on arbitrary port
 
 	if impl.beforeUpgrade == nil {

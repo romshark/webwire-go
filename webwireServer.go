@@ -4,8 +4,8 @@ import (
 	"net"
 )
 
-// WebwireServer defines the interface of a webwire server instance
-type WebwireServer interface {
+// Server defines the interface of a webwire server instance
+type Server interface {
 
 	// Run will luanch the webwire server blocking the calling goroutine
 	// until the server is either gracefully shut down

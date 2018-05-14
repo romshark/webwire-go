@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-// Client represents basic information about a client agent
+// ClientInfo represents basic information about a client agent
 type ClientInfo struct {
 	ConnectionTime time.Time
 	UserAgent      string
@@ -59,9 +59,8 @@ func (clt *Client) unlink() {
 	clt.sessionLock.Unlock()
 }
 
-// ClientInfo returns information about the client agent
-// including the client agent string, the remote address
-// and the time of creation
+// Info returns information about the client agent including the
+// client agent string, the remote address and the time of creation
 func (clt *Client) Info() ClientInfo {
 	return clt.info
 }
