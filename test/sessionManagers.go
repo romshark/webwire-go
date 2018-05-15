@@ -9,9 +9,15 @@ import (
 	wwr "github.com/qbeon/webwire-go"
 )
 
+type session struct {
+	Key      string
+	Creation time.Time
+	Info     wwr.SessionInfo
+}
+
 // inMemSessManager is a default in-memory session manager for testing purposes
 type inMemSessManager struct {
-	sessions map[string]*wwr.Client
+	sessions map[string]session
 	lock     sync.RWMutex
 }
 
@@ -19,7 +25,7 @@ type inMemSessManager struct {
 // for testing purposes.
 func newInMemSessManager() *inMemSessManager {
 	return &inMemSessManager{
-		sessions: make(map[string]*wwr.Client),
+		sessions: make(map[string]session),
 		lock:     sync.RWMutex{},
 	}
 }
@@ -28,7 +34,16 @@ func newInMemSessManager() *inMemSessManager {
 // It writes the created session into a file using the session key as file name
 func (mng *inMemSessManager) OnSessionCreated(client *wwr.Client) error {
 	mng.lock.Lock()
-	mng.sessions[client.SessionKey()] = client
+	sess := client.Session()
+	var sessInfo wwr.SessionInfo
+	if sess.Info != nil {
+		sessInfo = sess.Info.Copy()
+	}
+	mng.sessions[sess.Key] = session{
+		Key:      sess.Key,
+		Creation: sess.Creation,
+		Info:     sessInfo,
+	}
 	mng.lock.Unlock()
 	return nil
 }
@@ -43,9 +58,7 @@ func (mng *inMemSessManager) OnSessionLookup(key string) (
 ) {
 	mng.lock.RLock()
 	defer mng.lock.RUnlock()
-	if clt, exists := mng.sessions[key]; exists {
-		session := clt.Session()
-
+	if session, exists := mng.sessions[key]; exists {
 		// Session found
 		return true,
 			session.Creation,
