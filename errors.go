@@ -118,6 +118,9 @@ func NewDisconnectedErr(err error) DisconnectedErr {
 }
 
 func (err DisconnectedErr) Error() string {
+	if err.Cause == nil {
+		return "Disconnected"
+	}
 	return err.Cause.Error()
 }
 

@@ -207,13 +207,17 @@ func (clt *Client) Signal(name string, payload webwire.Payload) error {
 	clt.apiLock.RLock()
 	defer clt.apiLock.RUnlock()
 
-	if err := clt.connect(); err != nil {
-		return err
+	if atomic.LoadInt32(&clt.status) == StatDisconnected {
+		if atomic.LoadInt32(&clt.autoconnect) == AutoconnectDisabled {
+			return webwire.DisconnectedErr{}
+		}
+		// Try to connect
+		if err := clt.connect(); err != nil {
+			return err
+		}
 	}
 
-	msgBytes := webwire.NewSignalMessage(name, payload)
-
-	return clt.conn.Write(msgBytes)
+	return clt.conn.Write(webwire.NewSignalMessage(name, payload))
 }
 
 // Session returns an exact copy of the session object or nil if there's no

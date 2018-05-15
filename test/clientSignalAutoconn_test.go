@@ -9,8 +9,9 @@ import (
 	wwrclt "github.com/qbeon/webwire-go/client"
 )
 
-// TestClientSignalDisconnected tests sending signals on disconnected clients
-func TestClientSignalDisconnected(t *testing.T) {
+// TestClientSignalAutoconn tests sending signals on disconnected clients
+// expecting it to automatically connect
+func TestClientSignalAutoconn(t *testing.T) {
 	// Initialize webwire server given only the request
 	server := setupServer(
 		t,
