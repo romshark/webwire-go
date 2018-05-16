@@ -103,8 +103,8 @@ func (clt *Client) setSession(newSess *Session) {
 // unlink resets the client agent and marks it as disconnected
 // preparing it for garbage collection
 func (clt *Client) unlink() {
-	// Deregister agent
-	clt.srv.deregisterAgent(clt)
+	// Deregister session from active sessions registry
+	clt.srv.sessionRegistry.deregister(clt)
 
 	clt.sessionLock.Lock()
 	clt.session = nil
@@ -242,11 +242,8 @@ func (clt *Client) CloseSession() error {
 		clt.sessionLock.Unlock()
 		return nil
 	}
-	clt.srv.deregisterAgent(clt)
-	clt.sessionLock.Unlock()
-
-	// Finally reset the session
-	clt.sessionLock.Lock()
+	// Deregister session from active sessions registry
+	clt.srv.sessionRegistry.deregister(clt)
 	clt.session = nil
 	clt.sessionLock.Unlock()
 

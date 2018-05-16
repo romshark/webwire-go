@@ -16,7 +16,8 @@ func (srv *server) handleSessionClosure(clt *Client, msg *Message) error {
 		return nil
 	}
 
-	srv.deregisterAgent(clt)
+	// Deregister session from active sessions registry
+	srv.sessionRegistry.deregister(clt)
 
 	// Synchronize session destruction to the client
 	if err := clt.notifySessionClosed(); err != nil {

@@ -38,16 +38,6 @@ type server struct {
 	errorLog     *log.Logger
 }
 
-func (srv *server) deregisterAgent(clt *Client) {
-	// Call the session destruction hook only when the client agent
-	// was the last one remaining
-	if srv.sessionRegistry.deregister(clt) == 0 {
-		if err := srv.sessionManager.OnSessionClosed(clt.session.Key); err != nil {
-			srv.errorLog.Printf("OnSessionClosed hook failed: %s", err)
-		}
-	}
-}
-
 func (srv *server) shutdownHTTPServer() error {
 	if srv.httpServer == nil {
 		return nil
