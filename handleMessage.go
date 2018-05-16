@@ -2,6 +2,43 @@ package webwire
 
 // handleMessage handles incoming messages
 func (srv *server) handleMessage(clt *Client, msg *Message) error {
+	// Decide whether to process the message
+	failMsg := false
+
+	srv.opsLock.Lock()
+	// Reject incoming requests during server shutdown
+	// or the shutdown of the client agent
+	// return a special shutdown error
+	if srv.shutdown || !clt.isActive() {
+		failMsg = true
+	} else {
+		srv.currentOps++
+	}
+	srv.opsLock.Unlock()
+
+	if failMsg {
+		// Don't process the message
+		if msg.RequiresResponse() {
+			srv.failMsgShutdown(clt, msg)
+		}
+		return nil
+	}
+
+	// Process the message
+	clt.registerTask()
+
+	defer func() {
+		// Mark operation as done and shutdown the server
+		// if scheduled and no operations are left
+		srv.opsLock.Lock()
+		srv.currentOps--
+		if srv.shutdown && srv.currentOps < 1 {
+			close(srv.shutdownRdy)
+		}
+		srv.opsLock.Unlock()
+		clt.deregisterTask()
+	}()
+
 	switch msg.msgType {
 	case MsgSignalBinary:
 		fallthrough
@@ -25,7 +62,7 @@ func (srv *server) handleMessage(clt *Client, msg *Message) error {
 	return nil
 }
 
-// fulfillMsg filfills the message sending the reply
+// fulfillMsg fulfills the message sending the reply
 func (srv *server) fulfillMsg(clt *Client, msg *Message, reply Payload) {
 	// Send reply
 	if err := clt.conn.Write(

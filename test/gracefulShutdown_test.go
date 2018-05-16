@@ -78,7 +78,7 @@ func TestGracefulShutdown(t *testing.T) {
 	clientLateConn := newCallbackPoweredClient(
 		serverAddr,
 		wwrclt.Options{
-			Autoconnect: wwrclt.OptDisabled,
+			Autoconnect: wwr.Disabled,
 		},
 		callbackPoweredClientHooks{},
 	)

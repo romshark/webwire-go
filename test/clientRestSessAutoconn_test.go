@@ -20,7 +20,7 @@ func TestClientRestSessAutoconn(t *testing.T) {
 		wwr.ServerOptions{},
 	)
 
-	// Initialize client and skip manual connection establishment
+	// Initialize client
 	client := newCallbackPoweredClient(
 		server.Addr().String(),
 		wwrclt.Options{
@@ -29,6 +29,7 @@ func TestClientRestSessAutoconn(t *testing.T) {
 		callbackPoweredClientHooks{},
 	)
 
+	// Skip manual connection establishment and rely on autoconnect instead
 	err := client.connection.RestoreSession([]byte("inexistentkey"))
 	if _, isSessNotFoundErr := err.(wwr.SessNotFoundErr); !isSessNotFoundErr {
 		t.Fatalf(

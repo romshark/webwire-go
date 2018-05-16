@@ -17,14 +17,14 @@ func TestClientRestSessDisconnNoAutoconn(t *testing.T) {
 	client := newCallbackPoweredClient(
 		"127.0.0.1:65000",
 		wwrclt.Options{
-			Autoconnect:           wwrclt.OptDisabled,
+			Autoconnect:           wwr.Disabled,
 			ReconnectionInterval:  5 * time.Millisecond,
 			DefaultRequestTimeout: 50 * time.Millisecond,
 		},
 		callbackPoweredClientHooks{},
 	)
 
-	// Send request and await reply
+	// Try to restore a session and expect a DisconnectedErr error
 	err := client.connection.RestoreSession([]byte("inexistentkey"))
 	if _, isDisconnErr := err.(wwr.DisconnectedErr); !isDisconnErr {
 		t.Fatalf(

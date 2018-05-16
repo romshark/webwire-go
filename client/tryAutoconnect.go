@@ -14,7 +14,10 @@ import (
 // just await the connection or timeout respectively blocking the calling
 // goroutine
 func (clt *Client) tryAutoconnect(timeout time.Duration) error {
-	if atomic.LoadInt32(&clt.autoconnect) == AutoconnectDisabled {
+	// Don't try to auto-connect if it's either temporarily deactivated
+	// or completely disabled
+	autoconn := atomic.LoadInt32(&clt.autoconnect)
+	if autoconn == autoconnectDisabled || autoconn == autoconnectDeactivated {
 		if atomic.LoadInt32(&clt.status) == StatConnected {
 			return nil
 		}

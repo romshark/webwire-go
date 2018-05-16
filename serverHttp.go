@@ -1,6 +1,8 @@
 package webwire
 
-import "net/http"
+import (
+	"net/http"
+)
 
 // ServeHTTP will make the server listen for incoming HTTP requests
 // eventually trying to upgrade them to WebSocket connections
@@ -52,11 +54,6 @@ func (srv *server) ServeHTTP(
 		// Await message
 		message, err := conn.Read()
 		if err != nil {
-			if newClient.HasSession() {
-				// Decrement number of connections for this clients session
-				srv.sessionRegistry.deregister(newClient)
-			}
-
 			if err.IsAbnormalCloseErr() {
 				srv.warnLog.Printf("Abnormal closure error: %s", err)
 			}

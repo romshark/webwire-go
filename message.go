@@ -193,6 +193,24 @@ func (msg *Message) Identifier() [8]byte {
 	return msg.id
 }
 
+// RequiresResponse returns true if this type of message
+// requires a response to be sent in return
+func (msg *Message) RequiresResponse() bool {
+	switch msg.msgType {
+	case MsgRequestBinary:
+		return true
+	case MsgRequestUtf8:
+		return true
+	case MsgRequestUtf16:
+		return true
+	case MsgRestoreSession:
+		return true
+	case MsgCloseSession:
+		return true
+	}
+	return false
+}
+
 // NewSignalMessage composes a new named signal message and returns its binary representation
 func NewSignalMessage(name string, payload Payload) (msg []byte) {
 	if len(name) > 255 {

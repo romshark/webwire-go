@@ -19,7 +19,7 @@ func TestClientSignalAutoconn(t *testing.T) {
 		wwr.ServerOptions{},
 	)
 
-	// Initialize client and skip manual connection establishment
+	// Initialize client
 	client := newCallbackPoweredClient(
 		server.Addr().String(),
 		wwrclt.Options{
@@ -28,7 +28,7 @@ func TestClientSignalAutoconn(t *testing.T) {
 		callbackPoweredClientHooks{},
 	)
 
-	// Send request and await reply
+	// Skip manual connection establishment and rely on autoconnect instead
 	if err := client.connection.Signal(
 		"",
 		wwr.Payload{Data: []byte("testdata")},

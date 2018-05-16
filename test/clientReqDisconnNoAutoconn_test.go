@@ -17,14 +17,14 @@ func TestClientReqDisconnNoAutoconn(t *testing.T) {
 	client := newCallbackPoweredClient(
 		"127.0.0.1:65000",
 		wwrclt.Options{
-			Autoconnect:           wwrclt.OptDisabled,
+			Autoconnect:           wwr.Disabled,
 			ReconnectionInterval:  5 * time.Millisecond,
 			DefaultRequestTimeout: 50 * time.Millisecond,
 		},
 		callbackPoweredClientHooks{},
 	)
 
-	// Send request and await reply
+	// Try to send a request and expect a DisconnectedErr error
 	_, err := client.connection.Request(
 		"",
 		wwr.Payload{Data: []byte("testdata")},

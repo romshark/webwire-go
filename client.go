@@ -8,6 +8,13 @@ import (
 	"time"
 )
 
+type clientAgentStatus = int32
+
+const (
+	statActive clientAgentStatus = iota
+	statInactive
+)
+
 // ClientInfo represents basic information about a client agent
 type ClientInfo struct {
 	ConnectionTime time.Time
@@ -17,6 +24,9 @@ type ClientInfo struct {
 
 // Client represents a client connected to the server
 type Client struct {
+	statLock    sync.RWMutex
+	stat        clientAgentStatus
+	tasks       int32
 	srv         *server
 	conn        Socket
 	sessionLock sync.RWMutex
@@ -27,20 +37,59 @@ type Client struct {
 // newClientAgent creates and returns a new client agent instance
 func newClientAgent(socket Socket, userAgent string, srv *server) *Client {
 	var remoteAddr net.Addr
+	stat := statInactive
+
 	if socket != nil {
+		stat = statActive
 		remoteAddr = socket.RemoteAddr()
 	}
 
 	return &Client{
-		srv,
-		socket,
-		sync.RWMutex{},
-		nil,
-		ClientInfo{
+		statLock:    sync.RWMutex{},
+		stat:        stat,
+		tasks:       0,
+		srv:         srv,
+		conn:        socket,
+		sessionLock: sync.RWMutex{},
+		session:     nil,
+		info: ClientInfo{
 			time.Now(),
 			userAgent,
 			remoteAddr,
 		},
+	}
+}
+
+// isActive must return true if the client agent is in active state
+// ready to accept incoming messages
+func (clt *Client) isActive() bool {
+	clt.statLock.RLock()
+	defer clt.statLock.RUnlock()
+	return clt.stat == statActive
+}
+
+// registerTask increments the number of currently executed tasks
+func (clt *Client) registerTask() {
+	clt.statLock.Lock()
+	clt.tasks++
+	clt.statLock.Unlock()
+}
+
+// deregisterTask decrements the number of currently executed tasks
+// and closes this client agent if its shutdown is requested
+// and the number of tasks reached zero
+func (clt *Client) deregisterTask() {
+	unlink := false
+
+	clt.statLock.Lock()
+	clt.tasks--
+	if clt.stat == statInactive && clt.tasks < 1 {
+		unlink = true
+	}
+	clt.statLock.Unlock()
+
+	if unlink {
+		clt.unlink()
 	}
 }
 
@@ -51,12 +100,22 @@ func (clt *Client) setSession(newSess *Session) {
 	clt.sessionLock.Unlock()
 }
 
-// unlink resets the client agent and marks it as disconnected preparing it for garbage collection
+// unlink resets the client agent and marks it as disconnected
+// preparing it for garbage collection
 func (clt *Client) unlink() {
+	// Deregister agent
+	clt.srv.deregisterAgent(clt)
+
 	clt.sessionLock.Lock()
 	clt.session = nil
-	clt.conn.Close()
 	clt.sessionLock.Unlock()
+
+	clt.statLock.Lock()
+	clt.stat = statInactive
+	clt.statLock.Unlock()
+
+	// Close connection
+	clt.conn.Close()
 }
 
 // Info returns information about the client agent including the
@@ -69,7 +128,9 @@ func (clt *Client) Info() ClientInfo {
 // thus able to receive signals, otherwise returns false.
 // Disconnected client agents are no longer useful and will be garbage collected
 func (clt *Client) IsConnected() bool {
-	return clt.conn.IsConnected()
+	clt.statLock.RLock()
+	defer clt.statLock.RUnlock()
+	return clt.stat == statActive
 }
 
 // Signal sends a named signal containing the given payload to the client
@@ -252,14 +313,24 @@ func (clt *Client) SessionInfo(name string) interface{} {
 	return clt.session.Info.Value(name)
 }
 
-// Close closes the connection of the client agent and removes it from the
-// session registry if necessary
-func (clt *Client) Close() error {
-	// Close connection
-	if err := clt.conn.Close(); err != nil {
-		return fmt.Errorf("Couldn't close client agent socket: %s", err)
+// Close marks the client agent for shutdown. It defers closing the connection
+// and removing it from the session registry (if necessary)
+// until all work is finished
+func (clt *Client) Close() {
+	unlink := false
+
+	clt.statLock.Lock()
+	if clt.stat != statActive {
+		clt.statLock.Unlock()
+		return
 	}
-	// Deregister agent
-	clt.srv.deregisterAgent(clt)
-	return nil
+	clt.stat = statInactive
+	if clt.tasks < 1 {
+		unlink = true
+	}
+	clt.statLock.Unlock()
+
+	if unlink {
+		clt.unlink()
+	}
 }

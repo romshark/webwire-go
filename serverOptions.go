@@ -6,7 +6,7 @@ import (
 )
 
 // OptionValue represents the setting value of an option
-type OptionValue byte
+type OptionValue = int32
 
 const (
 	// OptionUnset represents the default unset value

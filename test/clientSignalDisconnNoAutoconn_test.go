@@ -25,11 +25,12 @@ func TestClientSignalDisconnectedErr(t *testing.T) {
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 			// Disable autoconnect to prevent automatic reconnection
-			Autoconnect: wwrclt.OptDisabled,
+			Autoconnect: wwr.Disabled,
 		},
 		callbackPoweredClientHooks{},
 	)
 
+	// Try to send a signal and expect a DisconnectedErr error
 	err := client.connection.Signal("", wwr.Payload{Data: []byte("test")})
 	if err == nil {
 		t.Fatalf("Expected DisconnectedErr, got nil")

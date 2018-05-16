@@ -8,20 +8,6 @@ import (
 	webwire "github.com/qbeon/webwire-go"
 )
 
-// OptionToggle represents the value of a togglable option
-type OptionToggle int
-
-const (
-	// OptUnset defines unset togglable options
-	OptUnset OptionToggle = iota
-
-	// OptDisabled defines disabled togglable options
-	OptDisabled
-
-	// OptEnabled defines enabled togglable options
-	OptEnabled
-)
-
 // Options represents the options used during the creation a new client instance
 type Options struct {
 	// SessionInfoParser defines the optional session info parser function
@@ -40,7 +26,7 @@ type Options struct {
 	// before the timeout is triggered and a timeout error is returned.
 	//
 	// Autoconnect is enabled by default
-	Autoconnect OptionToggle
+	Autoconnect webwire.OptionValue
 
 	// ReconnectionInterval defines the interval at which autoconnect
 	// should retry connection establishment.
@@ -64,8 +50,8 @@ func (opts *Options) SetDefaults() {
 		opts.DefaultRequestTimeout = 60 * time.Second
 	}
 
-	if opts.Autoconnect == OptUnset {
-		opts.Autoconnect = OptEnabled
+	if opts.Autoconnect == webwire.OptionUnset {
+		opts.Autoconnect = webwire.Enabled
 	}
 
 	if opts.ReconnectionInterval < 1 {

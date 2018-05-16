@@ -6,6 +6,7 @@ import (
 	"time"
 )
 
+// TODO: replace pending with github.com/qbeon/tmdwg-go's TimedWaitGroup
 // pending represents a timed asynchronous task.
 type pending struct {
 	target  uint32

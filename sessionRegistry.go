@@ -53,6 +53,10 @@ func (asr *sessionRegistry) register(clt *Client) error {
 // from the register and 0 will be returned.
 // If the given client agent is not in the register -1 is returned
 func (asr *sessionRegistry) deregister(clt *Client) int {
+	if clt.session == nil {
+		return -1
+	}
+
 	asr.lock.Lock()
 	defer asr.lock.Unlock()
 	if agentList, exists := asr.registry[clt.session.Key]; exists {
