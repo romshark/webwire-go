@@ -7,44 +7,18 @@ import (
 	"sync"
 )
 
-// NewServer creates a new WebWire server instance
+// NewServer creates a new headed WebWire server instance
+// with a built-in HTTP server hosting it
 func NewServer(
 	implementation ServerImplementation,
 	opts ServerOptions,
 ) (instance Server, err error) {
-	if implementation == nil {
-		panic(fmt.Errorf("A headed webwire server requires a server implementation, got nil"))
+	instance, err = NewHeadlessServer(implementation, opts)
+	if err != nil {
+		return nil, err
 	}
 
-	opts.SetDefaults()
-
-	sessionsEnabled := false
-	if opts.Sessions == Enabled {
-		sessionsEnabled = true
-	}
-
-	srv := &server{
-		impl:              implementation,
-		sessionManager:    opts.SessionManager,
-		sessionKeyGen:     opts.SessionKeyGenerator,
-		sessionInfoParser: opts.SessionInfoParser,
-
-		// State
-		addr:            nil,
-		shutdown:        false,
-		shutdownRdy:     make(chan bool),
-		currentOps:      0,
-		opsLock:         sync.Mutex{},
-		clients:         make([]*Client, 0),
-		clientsLock:     &sync.Mutex{},
-		sessionsEnabled: sessionsEnabled,
-		sessionRegistry: newSessionRegistry(opts.MaxSessionConnections),
-
-		// Internals
-		connUpgrader: newConnUpgrader(),
-		warnLog:      opts.WarnLog,
-		errorLog:     opts.ErrorLog,
-	}
+	srv := instance.(*server)
 
 	// Initialize HTTP server
 	srv.httpServer = &http.Server{
@@ -66,4 +40,45 @@ func NewServer(
 	srv.addr = srv.listener.Addr()
 
 	return srv, nil
+}
+
+// NewHeadlessServer creates a new headless WebWire server instance
+// which relies on an external HTTP server to host it
+func NewHeadlessServer(
+	implementation ServerImplementation,
+	opts ServerOptions,
+) (instance Server, err error) {
+	if implementation == nil {
+		panic(fmt.Errorf("A headed webwire server requires a server implementation, got nil"))
+	}
+
+	opts.SetDefaults()
+
+	sessionsEnabled := false
+	if opts.Sessions == Enabled {
+		sessionsEnabled = true
+	}
+
+	return &server{
+		impl:              implementation,
+		sessionManager:    opts.SessionManager,
+		sessionKeyGen:     opts.SessionKeyGenerator,
+		sessionInfoParser: opts.SessionInfoParser,
+
+		// State
+		addr:            nil,
+		shutdown:        false,
+		shutdownRdy:     make(chan bool),
+		currentOps:      0,
+		opsLock:         sync.Mutex{},
+		clients:         make([]*Client, 0),
+		clientsLock:     &sync.Mutex{},
+		sessionsEnabled: sessionsEnabled,
+		sessionRegistry: newSessionRegistry(opts.MaxSessionConnections),
+
+		// Internals
+		connUpgrader: newConnUpgrader(),
+		warnLog:      opts.WarnLog,
+		errorLog:     opts.ErrorLog,
+	}, nil
 }

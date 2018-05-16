@@ -9,6 +9,8 @@ import (
 
 // Server defines the interface of a webwire server instance
 type Server interface {
+	// ServeHTTP implements the HTTP handler interface
+	ServeHTTP(resp http.ResponseWriter, req *http.Request)
 
 	// Run will luanch the webwire server blocking the calling goroutine
 	// until the server is either gracefully shut down

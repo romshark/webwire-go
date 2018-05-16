@@ -81,6 +81,7 @@ func (srv *server) Shutdown() error {
 	srv.shutdown = true
 	// Don't block if there's no currently processed operations
 	if srv.currentOps < 1 {
+		srv.opsLock.Unlock()
 		return srv.shutdownHTTPServer()
 	}
 	srv.opsLock.Unlock()
