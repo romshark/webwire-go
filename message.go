@@ -28,7 +28,7 @@ const (
 	//  2. message id (8 bytes)
 	//  3. name length flag (1 byte)
 	//  4. name (from 0 to 255 bytes, optional if name length flag is 0)
-	//  5. payload (n bytes, at least 1 byte)
+	//  5. payload (n bytes, at least 1 byte or optional if name len > 0)
 	MsgMinLenRequest = int(11)
 
 	// MsgMinLenRequestUtf16 represents the minimum UTF16 encoded request message length.
@@ -39,7 +39,7 @@ const (
 	//  4. name (n bytes, optional if name length flag is 0)
 	//  5. header padding (1 byte, required if name length flag is odd)
 	//  6. payload (n bytes, at least 2 bytes)
-	MsgMinLenRequestUtf16 = int(12)
+	MsgMinLenRequestUtf16 = int(11)
 
 	// MsgMinLenReply represents the minimum binary/UTF8 encoded reply message length.
 	// binary/UTF8 reply message structure:
@@ -275,6 +275,14 @@ func NewSignalMessage(name string, payload Payload) (msg []byte) {
 
 // NewRequestMessage composes a new named request message and returns its binary representation
 func NewRequestMessage(id [8]byte, name string, payload Payload) (msg []byte) {
+	// Require either a name, or a payload or both, but don't allow none
+	if len(name) < 1 && len(payload.Data) < 1 {
+		panic(fmt.Errorf(
+			"Request message requires either a name, or a payload, or both",
+		))
+	}
+
+	// Cap name length at 255 bytes
 	if len(name) > 255 {
 		panic(fmt.Errorf("Unsupported request message name length: %d", len(name)))
 	}
@@ -612,23 +620,29 @@ func (msg *Message) parseRequest(message []byte) error {
 	nameLen := int(byte(message[9:10][0]))
 	payloadOffset := 10 + nameLen
 
-	// Verify total message size to prevent segmentation faults caused by inconsistent flags,
-	// this could happen if the specified name length doesn't correspond to the actual name length
-	if len(message) < MsgMinLenRequest+nameLen {
-		return fmt.Errorf(
-			"Invalid request message, too short for full name (%d) and the minimum payload (1)",
-			nameLen,
-		)
-	}
-
+	// Verify total message size to prevent segmentation faults caused
+	// by inconsistent flags, this could happen if the specified name length
+	// doesn't correspond to the actual name length
 	if nameLen > 0 {
+		// Subtract one to not require the payload but at least the name
+		if len(message) < MsgMinLenRequest+nameLen-1 {
+			return fmt.Errorf(
+				"Invalid request message, too short for full name (%d)",
+				nameLen,
+			)
+		}
+
 		// Take name into account
 		msg.Name = string(message[10 : 10+nameLen])
-		msg.Payload = Payload{
-			Data: message[payloadOffset:],
+
+		// Read payload if any
+		if len(message) > MsgMinLenRequest+nameLen-1 {
+			msg.Payload = Payload{
+				Data: message[payloadOffset:],
+			}
 		}
 	} else {
-		// No name present, just payload
+		// No name present, expect just the payload to be in place
 		msg.Payload = Payload{
 			Data: message[10:],
 		}
@@ -656,30 +670,41 @@ func (msg *Message) parseRequestUtf16(message []byte) error {
 	// Read name length
 	nameLen := int(byte(message[9:10][0]))
 
-	// Determine minimum required message length
-	minMsgSize := MsgMinLenRequestUtf16 + nameLen
+	// Determine minimum required message length.
+	// There's at least a 10 byte header and a 2 byte payload expected
+	minRequiredMsgSize := 12
+	if nameLen > 0 {
+		// ...unless a name is given, in which case the payload isn't required
+		minRequiredMsgSize = 10 + nameLen
+	}
 
-	// Check whether a name padding byte is to be expected
+	// A header padding byte is only expected, when there's a payload
+	// beyond the name. It's not required if there's just the header and a name
 	payloadOffset := 10 + nameLen
-	if nameLen%2 != 0 {
-		minMsgSize++
+	if len(message) > payloadOffset && nameLen%2 != 0 {
+		minRequiredMsgSize++
 		payloadOffset++
 	}
 
-	// Verify total message size to prevent segmentation faults caused by inconsistent flags,
-	// this could happen if the specified name length doesn't correspond to the actual name length
-	if len(message) < minMsgSize {
-		return fmt.Errorf(
-			"Invalid request message, too short for full name (%d) and the minimum payload (2)",
-			nameLen,
-		)
-	}
-
+	// Verify total message size to prevent segmentation faults caused
+	// by inconsistent flags, this could happen if the specified name length
+	// doesn't correspond to the actual name length
 	if nameLen > 0 {
+		if len(message) < minRequiredMsgSize {
+			return fmt.Errorf(
+				"Invalid request message, too short for full name (%d)",
+				nameLen,
+			)
+		}
+
 		// Take name into account
 		msg.Name = string(message[10 : 10+nameLen])
-		msg.Payload = Payload{
-			Data: message[payloadOffset:],
+
+		// Read payload if any
+		if len(message) > minRequiredMsgSize {
+			msg.Payload = Payload{
+				Data: message[payloadOffset:],
+			}
 		}
 	} else {
 		// No name present, just payload

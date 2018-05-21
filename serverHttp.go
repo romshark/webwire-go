@@ -67,7 +67,13 @@ func (srv *server) ServeHTTP(
 		var msgObject Message
 		if err := msgObject.Parse(message); err != nil {
 			srv.errorLog.Println("Failed parsing message:", err)
-			break
+
+			// TODO: reply with a special error message type:
+			// "MsgReplyProtocolError" instead of a regular internal error
+			//
+			// Respond with an error but don't break the connection
+			// because protocol errors are not critical errors
+			srv.failMsg(newClient, &msgObject, ReqInternalErr{})
 		}
 
 		// Handle message
