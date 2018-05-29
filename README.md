@@ -141,7 +141,7 @@ func onSignal(
 ```
 
 ### Sessions
-Individual connections can get sessions assigned to identify them. The state of the session is automagically synchronized between the client and the server. WebWire doesn't enforce any kind of authentication technique though, it just provides you a way to authenticate a connection. WebWire also doesn't enforce any kind of session storage, it's up to the user to implement any kind of volatile or persistent session storage, be it a database or a simple map.
+Individual connections can get sessions assigned to identify them. The state of the session is automagically synchronized between the client and the server. WebWire doesn't enforce any kind of authentication technique though, it just provides a way to authenticate a connection. WebWire also doesn't enforce any kind of session storage, the user could implement a custom session manager implementing the WebWire `SessionManager` interface to use any kind of volatile or persistent session storage, be it a database or a simple in-memory map.
 
 ```go
 func onRequest(
@@ -163,6 +163,8 @@ func onRequest(
   client.Session // return wwr.Payload{}, nil
 }
 ```
+
+WebWire provides a basic file-based session manager implementation out of the box used by default when no custom session manager is defined. The default session manager creates a file with a .wwrsess extension for each opened session in the configured directory (which, by default, is the directory of the executable). During the restoration of a session the file is looked up by name using the session key, read and unmarshalled recreating the session object.
 
 ### Automatic Session Restoration
 The client will automatically try to restore the previously opened session during connection establishment when getting disconnected without explicitly closing the session before.
