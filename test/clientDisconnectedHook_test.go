@@ -1,6 +1,7 @@
 package test
 
 import (
+	"sync"
 	"testing"
 	"time"
 
@@ -13,15 +14,19 @@ import (
 func TestClientDisconnectedHook(t *testing.T) {
 	disconnectedHookCalled := newPending(1, 1*time.Second, true)
 	var connectedClient *webwire.Client
+	connectedClientLock := sync.Mutex{}
 
 	// Initialize webwire server given only the request
 	server := setupServer(
 		t,
 		&serverImpl{
 			onClientConnected: func(clt *webwire.Client) {
+				connectedClientLock.Lock()
 				connectedClient = clt
+				connectedClientLock.Unlock()
 			},
 			onClientDisconnected: func(clt *webwire.Client) {
+				connectedClientLock.Lock()
 				if clt != connectedClient {
 					t.Errorf(
 						"Connected and disconnecting clients don't match: "+
@@ -30,6 +35,7 @@ func TestClientDisconnectedHook(t *testing.T) {
 						connectedClient,
 					)
 				}
+				connectedClientLock.Unlock()
 				disconnectedHookCalled.Done()
 			},
 		},
