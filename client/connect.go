@@ -2,8 +2,6 @@ package client
 
 import (
 	"sync/atomic"
-
-	webwire "github.com/qbeon/webwire-go"
 )
 
 // connect will try to establish a connection to the configured webwire server
@@ -55,7 +53,7 @@ func (clt *Client) connect() error {
 				// reconnect in another goroutine to let this one die
 				// and free up the socket
 				go func() {
-					if atomic.LoadInt32(&clt.autoconnect) == webwire.Enabled {
+					if atomic.LoadInt32(&clt.autoconnect) == autoconnectEnabled {
 						if err := clt.tryAutoconnect(0); err != nil {
 							clt.errorLog.Printf("Auto-reconnect failed after connection loss: %s", err)
 							return
