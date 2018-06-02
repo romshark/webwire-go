@@ -36,9 +36,7 @@ func (clt *ChatroomClient) OnSignal(message webwire.Payload) {
 }
 
 // OnDisconnected implements the wwrclt.Implementation interface
-func (clt *ChatroomClient) OnDisconnected() {
-	log.Print("Disconnected")
-}
+func (clt *ChatroomClient) OnDisconnected() {}
 
 // OnSessionClosed implements the wwrclt.Implementation interface
 func (clt *ChatroomClient) OnSessionClosed() {}
