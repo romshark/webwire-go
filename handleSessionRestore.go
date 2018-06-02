@@ -22,27 +22,29 @@ func (srv *server) handleSessionRestore(clt *Client, msg *Message) error {
 		return nil
 	}
 
-	//session, err := srv.sessionManager.OnSessionLookup(key)
-	exists, creation, info, err := srv.sessionManager.OnSessionLookup(key)
-	if err != nil {
-		srv.failMsg(clt, msg, nil)
-		return fmt.Errorf("CRITICAL: Session search handler failed: %s", err)
-	}
-	if !exists {
+	// Call session manager lookup hook
+	result, err := srv.sessionManager.OnSessionLookup(key)
+
+	// Inspect error if any
+	switch err := err.(type) {
+	case SessNotFoundErr:
 		srv.failMsg(clt, msg, SessNotFoundErr{})
 		return nil
-	}
-
-	encodedSessionObj := JSONEncodedSession{
-		Key:      key,
-		Creation: creation,
-		Info:     info,
+	default:
+		srv.failMsg(clt, msg, nil)
+		return fmt.Errorf("CRITICAL: Session search handler failed: %s", err)
+	case nil:
 	}
 
 	// JSON encode the session
+	encodedSessionObj := JSONEncodedSession{
+		Key:        key,
+		Creation:   result.Creation,
+		LastLookup: result.LastLookup,
+		Info:       result.Info,
+	}
 	encodedSession, err := json.Marshal(&encodedSessionObj)
 	if err != nil {
-		// TODO: return internal server error and log it
 		srv.failMsg(clt, msg, nil)
 		return fmt.Errorf(
 			"Couldn't encode session object (%v): %s",
@@ -51,16 +53,17 @@ func (srv *server) handleSessionRestore(clt *Client, msg *Message) error {
 		)
 	}
 
-	// parse attached session info
+	// Parse attached session info
 	var parsedSessInfo SessionInfo
-	if info != nil && srv.sessionInfoParser != nil {
-		parsedSessInfo = srv.sessionInfoParser(info)
+	if result.Info != nil && srv.sessionInfoParser != nil {
+		parsedSessInfo = srv.sessionInfoParser(result.Info)
 	}
 
 	clt.setSession(&Session{
-		Key:      key,
-		Creation: creation,
-		Info:     parsedSessInfo,
+		Key:        key,
+		Creation:   result.Creation,
+		LastLookup: result.LastLookup,
+		Info:       parsedSessInfo,
 	})
 	if err := srv.sessionRegistry.register(clt); err != nil {
 		panic(fmt.Errorf("The number of concurrent session connections was " +

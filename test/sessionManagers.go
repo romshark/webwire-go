@@ -4,21 +4,20 @@ import (
 	"sync"
 	"time"
 
-	"github.com/qbeon/webwire-go"
-
 	wwr "github.com/qbeon/webwire-go"
 )
 
 type session struct {
-	Key      string
-	Creation time.Time
-	Info     wwr.SessionInfo
+	Key        string
+	Creation   time.Time
+	LastLookup time.Time
+	Info       wwr.SessionInfo
 }
 
 // inMemSessManager is a default in-memory session manager for testing purposes
 type inMemSessManager struct {
 	sessions map[string]session
-	lock     sync.RWMutex
+	lock     sync.Mutex
 }
 
 // newInMemSessManager constructs a new default session manager instance
@@ -26,7 +25,7 @@ type inMemSessManager struct {
 func newInMemSessManager() *inMemSessManager {
 	return &inMemSessManager{
 		sessions: make(map[string]session),
-		lock:     sync.RWMutex{},
+		lock:     sync.Mutex{},
 	}
 }
 
@@ -51,23 +50,26 @@ func (mng *inMemSessManager) OnSessionCreated(client *wwr.Client) error {
 // OnSessionLookup implements the session manager interface.
 // It searches the session file directory for the session file and loads it
 func (mng *inMemSessManager) OnSessionLookup(key string) (
-	bool,
-	time.Time,
-	map[string]interface{},
+	wwr.SessionLookupResult,
 	error,
 ) {
-	mng.lock.RLock()
-	defer mng.lock.RUnlock()
+	mng.lock.Lock()
+	defer mng.lock.Unlock()
 	if session, exists := mng.sessions[key]; exists {
+		// Update last lookup field
+		session.LastLookup = time.Now().UTC()
+		mng.sessions[key] = session
+
 		// Session found
-		return true,
-			session.Creation,
-			webwire.SessionInfoToVarMap(session.Info),
-			nil
+		return wwr.SessionLookupResult{
+			Creation:   session.Creation,
+			LastLookup: session.LastLookup,
+			Info:       wwr.SessionInfoToVarMap(session.Info),
+		}, nil
 	}
 
 	// Session not found
-	return false, time.Time{}, nil, nil
+	return wwr.SessionLookupResult{}, wwr.SessNotFoundErr{}
 }
 
 // OnSessionClosed implements the session manager interface.
@@ -84,9 +86,7 @@ func (mng *inMemSessManager) OnSessionClosed(sessionKey string) error {
 type callbackPoweredSessionManager struct {
 	SessionCreated func(client *wwr.Client) error
 	SessionLookup  func(key string) (
-		bool,
-		time.Time,
-		map[string]interface{},
+		wwr.SessionLookupResult,
 		error,
 	)
 	SessionClosed func(sessionKey string) error
@@ -107,9 +107,9 @@ func (mng *callbackPoweredSessionManager) OnSessionCreated(
 // calling the configured callback
 func (mng *callbackPoweredSessionManager) OnSessionLookup(
 	key string,
-) (bool, time.Time, map[string]interface{}, error) {
+) (wwr.SessionLookupResult, error) {
 	if mng.SessionLookup == nil {
-		return false, time.Time{}, nil, nil
+		return wwr.SessionLookupResult{}, wwr.SessNotFoundErr{}
 	}
 	return mng.SessionLookup(key)
 }

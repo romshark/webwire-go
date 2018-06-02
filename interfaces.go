@@ -96,6 +96,13 @@ type ServerImplementation interface {
 	) (response Payload, err error)
 }
 
+// SessionLookupResult represents the result of a session lookup
+type SessionLookupResult struct {
+	Creation   time.Time
+	LastLookup time.Time
+	Info       map[string]interface{}
+}
+
 // SessionManager defines the interface of a webwire server's session manager
 type SessionManager interface {
 	// OnSessionCreated is invoked after the synchronization of the new session
@@ -112,21 +119,21 @@ type SessionManager interface {
 
 	// OnSessionLookup is invoked when the server is looking for a specific
 	// session given its key.
-	// If the session was found it must return true, the time of its creation
-	// and the exact copy of the session info object. Otherwise false must be
-	// returned and all other return fields can be left empty.
+	// If the session wasn't found it must return a webwire.SessNotFoundErr,
+	// otherwise it must first update the LastLookup field of the session
+	// to ensure it's not garbage collected and then return
+	// a webwire.SessionLookupResult object containing the time of the sessions
+	// creation and the exact copy of the session info object.
 	//
-	// If an error is returned then it'll be logged and the session restoration
-	// will fail. An error should not be returned when the session wasn't found.
+	// If an error (that's not a webwire.SessNotFoundErr) is returned then
+	// it'll be logged and the session restoration will fail.
 	//
 	// This hook will be invoked by the goroutine serving the associated client
 	// and will block any other interactions with this client while executing
-	OnSessionLookup(key string) (
-		exists bool,
-		creation time.Time,
-		info map[string]interface{},
-		err error,
-	)
+	//
+	// WARNING: if this hooks doesn't update the LastLookup field of the found
+	// session object then the session garbage collection won't work properly
+	OnSessionLookup(key string) (result SessionLookupResult, err error)
 
 	// OnSessionClosed is invoked when the session associated with the given key
 	// is closed (thus destroyed) either by the server or the client.

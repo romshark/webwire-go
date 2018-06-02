@@ -11,21 +11,25 @@ import (
 
 // SessionFile represents the serialization structure of a default session file
 type SessionFile struct {
-	Creation time.Time              `json:"c"`
-	Info     map[string]interface{} `json:"i"`
+	Creation   time.Time              `json:"c"`
+	LastLookup time.Time              `json:"l"`
+	Info       map[string]interface{} `json:"i"`
 }
 
 // Parse parses the session file from a file
 func (sessf *SessionFile) Parse(filePath string) error {
 	contents, err := ioutil.ReadFile(filePath)
 	if err != nil {
-		return fmt.Errorf("Couldn't parse session file, failed reading file: %s", err)
+		return fmt.Errorf(
+			"Couldn't parse session file, failed reading file: %s",
+			err,
+		)
 	}
 	return json.Unmarshal(contents, sessf)
 }
 
-// WriteFile writes the session file to a file on the filesystem
-func (sessf *SessionFile) WriteFile(filePath string) error {
+// Save writes the session file to a file on the filesystem
+func (sessf *SessionFile) Save(filePath string) error {
 	encoded, err := json.Marshal(sessf)
 	if err != nil {
 		return fmt.Errorf("Couldn't marshal session file: %s", err)
@@ -93,40 +97,56 @@ func (mng *DefaultSessionManager) filePath(sessionKey string) string {
 func (mng *DefaultSessionManager) OnSessionCreated(client *Client) error {
 	sess := client.Session()
 	sessFile := SessionFile{
-		Creation: sess.Creation,
-		Info:     SessionInfoToVarMap(sess.Info),
+		Creation:   sess.Creation,
+		LastLookup: sess.LastLookup,
+		Info:       SessionInfoToVarMap(sess.Info),
 	}
-	return sessFile.WriteFile(mng.filePath(client.SessionKey()))
+	return sessFile.Save(mng.filePath(client.SessionKey()))
 }
 
 // OnSessionLookup implements the session manager interface.
-// It searches the session file directory for the session file and loads it
+// It searches the session file directory for the session file and loads it.
+// It also updates the file by updating the last lookup session field.
 func (mng *DefaultSessionManager) OnSessionLookup(key string) (
-	bool,
-	time.Time,
-	map[string]interface{},
+	SessionLookupResult,
 	error,
 ) {
 	path := mng.filePath(key)
+
+	// Lookup session file
 	_, err := os.Stat(path)
 	if os.IsNotExist(err) {
-		return false, time.Time{}, nil, nil
+		return SessionLookupResult{}, SessNotFoundErr{}
 	} else if err != nil {
-		return false, time.Time{}, nil, fmt.Errorf(
+		return SessionLookupResult{}, fmt.Errorf(
 			"Unexpected error during file lookup: %s",
 			err,
 		)
 	}
 
+	// Parse session file
 	var file SessionFile
 	if err := file.Parse(path); err != nil {
-		return false, time.Time{}, nil, fmt.Errorf(
+		return SessionLookupResult{}, fmt.Errorf(
 			"Couldn't parse session file: %s",
 			err,
 		)
 	}
 
-	return true, file.Creation, file.Info, nil
+	// Update last lookup
+	newSessionFile := SessionFile{
+		Creation:   file.Creation,
+		LastLookup: time.Now().UTC(),
+		Info:       file.Info,
+	}
+	if err := newSessionFile.Save(mng.filePath(key)); err != nil {
+		return SessionLookupResult{}, fmt.Errorf(
+			"Couldn't update last lookup field, failed writing file: %s",
+			err,
+		)
+	}
+
+	return SessionLookupResult(file), nil
 }
 
 // OnSessionClosed implements the session manager interface.

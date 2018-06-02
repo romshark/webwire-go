@@ -201,6 +201,7 @@ func (clt *Client) notifySessionCreated(newSession *Session) error {
 	encoded, err := json.Marshal(JSONEncodedSession{
 		newSession.Key,
 		newSession.Creation,
+		newSession.LastLookup,
 		sessionInfo,
 	})
 	if err != nil {

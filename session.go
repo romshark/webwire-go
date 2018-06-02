@@ -39,18 +39,20 @@ func generateSessionKey() string {
 // This structure is used during session restoration for unmarshalling
 // TODO: move to internal shared package
 type JSONEncodedSession struct {
-	Key      string                 `json:"k"`
-	Creation time.Time              `json:"c"`
-	Info     map[string]interface{} `json:"i,omitempty"`
+	Key        string                 `json:"k"`
+	Creation   time.Time              `json:"c"`
+	LastLookup time.Time              `json:"l"`
+	Info       map[string]interface{} `json:"i,omitempty"`
 }
 
 // Session represents a session object.
 // If the key is empty the session is invalid.
 // Info can contain arbitrary attached data
 type Session struct {
-	Key      string
-	Creation time.Time
-	Info     SessionInfo
+	Key        string
+	Creation   time.Time
+	LastLookup time.Time
+	Info       SessionInfo
 }
 
 // NewSession generates a new session object
@@ -60,9 +62,11 @@ func NewSession(info SessionInfo, generator func() string) Session {
 	if len(key) < 1 {
 		panic(fmt.Errorf("Invalid session key returned by the session key generator (empty)"))
 	}
+	timeNow := time.Now()
 	return Session{
 		key,
-		time.Now(),
+		timeNow,
+		timeNow,
 		info,
 	}
 }

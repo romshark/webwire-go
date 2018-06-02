@@ -53,9 +53,7 @@ func TestClientOfflineSessionClosure(t *testing.T) {
 				},
 				// Finds session by key
 				SessionLookup: func(key string) (
-					bool,
-					time.Time,
-					map[string]interface{},
+					webwire.SessionLookupResult,
 					error,
 				) {
 					// Expect the key of the created session to be looked up
@@ -66,15 +64,18 @@ func TestClientOfflineSessionClosure(t *testing.T) {
 							key,
 						)
 						t.Fatalf("Session lookup mismatch: %s", err)
-						return false, time.Time{}, nil, err
+						return webwire.SessionLookupResult{}, err
 					}
 
 					if session, exists := sessionStorage[key]; exists {
 						// Session found
-						return true,
-							session.Creation,
-							webwire.SessionInfoToVarMap(session.Info),
-							nil
+						return webwire.SessionLookupResult{
+							Creation:   session.Creation,
+							LastLookup: session.LastLookup,
+							Info: webwire.SessionInfoToVarMap(
+								session.Info,
+							),
+						}, nil
 					}
 
 					// Expect the session to be found
@@ -84,7 +85,8 @@ func TestClientOfflineSessionClosure(t *testing.T) {
 						sessionStorage,
 					)
 					// Session not found
-					return false, time.Time{}, nil, nil
+					return webwire.SessionLookupResult{},
+						webwire.SessNotFoundErr{}
 				},
 			},
 		},
