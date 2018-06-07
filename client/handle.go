@@ -2,6 +2,7 @@ package client
 
 import (
 	"encoding/json"
+	"fmt"
 
 	webwire "github.com/qbeon/webwire-go"
 )
@@ -81,7 +82,10 @@ func (clt *Client) handleMessage(message []byte) error {
 	}
 
 	var msg webwire.Message
-	if err := msg.Parse(message); err != nil {
+	typeDetermined, err := msg.Parse(message)
+	if !typeDetermined {
+		return fmt.Errorf("Couldn't determine message type")
+	} else if err != nil {
 		return err
 	}
 

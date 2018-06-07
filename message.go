@@ -117,6 +117,9 @@ const (
 	// if sessions are disabled for the target server
 	MsgSessionsDisabled = byte(5)
 
+	// MsgReplyProtocolError is sent by the server in response to an invalid
+	MsgReplyProtocolError = byte(6)
+
 	// MsgSessionCreated is sent by the server
 	// to notify the client about the session creation
 	MsgSessionCreated = byte(21)
@@ -181,6 +184,24 @@ type Message struct {
 	id      [8]byte
 	Name    string
 	Payload Payload
+}
+
+// RequiresReply returns true if a message of this type requires a reply,
+// otherwise returns false.
+func (msg *Message) RequiresReply() bool {
+	switch msg.msgType {
+	case MsgCloseSession:
+		fallthrough
+	case MsgRestoreSession:
+		fallthrough
+	case MsgRequestBinary:
+		fallthrough
+	case MsgRequestUtf8:
+		fallthrough
+	case MsgRequestUtf16:
+		return true
+	}
+	return false
 }
 
 // MessageType returns the type of the message
@@ -504,6 +525,8 @@ func NewSpecialRequestReplyMessage(msgType byte, reqIdent [8]byte) []byte {
 	case MsgSessionsDisabled:
 		break
 	case MsgReplyShutdown:
+		break
+	case MsgReplyProtocolError:
 		break
 	default:
 		panic(fmt.Errorf(
@@ -872,10 +895,12 @@ func (msg *Message) parseSpecialReplyMessage(message []byte) error {
 	return nil
 }
 
-// Parse tries to parse the message from a byte slice
-func (msg *Message) Parse(message []byte) (err error) {
+// Parse tries to parse the message from a byte slice.
+// the returned parsedMsgType is set to false if the message type
+// couldn't be determined, otherwise it's set to true.
+func (msg *Message) Parse(message []byte) (parsedMsgType bool, err error) {
 	if len(message) < 1 {
-		return fmt.Errorf("Invalid message, too short")
+		return false, nil
 	}
 	var payloadEncoding PayloadEncoding
 	msgType := message[0:1][0]
@@ -946,13 +971,15 @@ func (msg *Message) Parse(message []byte) (err error) {
 		err = msg.parseSpecialReplyMessage(message)
 	case MsgSessionsDisabled:
 		err = msg.parseSpecialReplyMessage(message)
+	case MsgReplyProtocolError:
+		err = msg.parseSpecialReplyMessage(message)
 
 	// Ignore messages of invalid message type
 	default:
-		return fmt.Errorf("Invalid message type (%d)", msgType)
+		return false, nil
 	}
 
 	msg.msgType = msgType
 	msg.Payload.Encoding = payloadEncoding
-	return err
+	return true, err
 }

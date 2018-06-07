@@ -12,7 +12,7 @@ import (
 
 // TestEndpointMetadata tests server endpoint metadata
 func TestEndpointMetadata(t *testing.T) {
-	expectedVersion := "1.3"
+	expectedVersion := "1.4"
 
 	// Initialize webwire server
 	server := setupServer(t, &serverImpl{}, webwire.ServerOptions{})

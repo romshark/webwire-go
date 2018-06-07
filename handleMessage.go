@@ -74,6 +74,12 @@ func (srv *server) fulfillMsg(clt *Client, msg *Message, reply Payload) {
 
 // failMsg fails the message returning an error reply
 func (srv *server) failMsg(clt *Client, msg *Message, reqErr error) {
+	// Don't send any failure reply if the type of the message
+	// doesn't expect any response
+	if !msg.RequiresReply() {
+		return
+	}
+
 	var replyMsg []byte
 	switch err := reqErr.(type) {
 	case ReqErr:
@@ -93,6 +99,11 @@ func (srv *server) failMsg(clt *Client, msg *Message, reqErr error) {
 	case SessionsDisabledErr:
 		replyMsg = NewSpecialRequestReplyMessage(
 			MsgSessionsDisabled,
+			msg.id,
+		)
+	case ProtocolErr:
+		replyMsg = NewSpecialRequestReplyMessage(
+			MsgReplyProtocolError,
 			msg.id,
 		)
 	default:

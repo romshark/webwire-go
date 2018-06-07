@@ -10,6 +10,36 @@ import (
 	"time"
 )
 
+func tryParse(t *testing.T, encoded []byte) (Message, error) {
+	var parsedMsg Message
+	typeDetermined, err := parsedMsg.Parse(encoded)
+	if !typeDetermined {
+		t.Fatal("Couldn't determine message type")
+	}
+	return parsedMsg, err
+}
+
+func tryParseNoErr(t *testing.T, encoded []byte) Message {
+	msg, err := tryParse(t, encoded)
+	if err != nil {
+		t.Fatalf("Failed parsing: %s", err)
+	}
+	return msg
+}
+
+func tryParseTyped(t *testing.T, encoded []byte) error {
+	var parsedMsg Message
+	typeDetermined, err := parsedMsg.Parse(encoded)
+	if !typeDetermined {
+		t.Fatal("Couldn't determine message type")
+		return nil
+	}
+	if err == nil {
+		t.Fatalf("Expected error, got nil")
+	}
+	return err
+}
+
 func comparePayload(t *testing.T, expected, actual []byte) {
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf(
@@ -110,10 +140,7 @@ func TestMsgParseCloseSessReq(t *testing.T) {
 	}
 
 	// Parse
-	var actual Message
-	if err := actual.Parse(encoded); err != nil {
-		t.Fatalf("Failed parsing: %s", err)
-	}
+	actual := tryParseNoErr(t, encoded)
 
 	// Compare
 	compareMessages(t, expected, actual)
@@ -144,10 +171,7 @@ func TestMsgParseRestrSessReq(t *testing.T) {
 	}
 
 	// Parse
-	var actual Message
-	if err := actual.Parse(encoded); err != nil {
-		t.Fatalf("Failed parsing: %s", err)
-	}
+	actual := tryParseNoErr(t, encoded)
 
 	// Compare
 	compareMessages(t, expected, actual)
@@ -183,10 +207,7 @@ func TestMsgParseRequestBinary(t *testing.T) {
 	}
 
 	// Parse
-	var actual Message
-	if err := actual.Parse(encoded); err != nil {
-		t.Fatalf("Failed parsing: %s", err)
-	}
+	actual := tryParseNoErr(t, encoded)
 
 	// Compare
 	compareMessages(t, expected, actual)
@@ -222,10 +243,7 @@ func TestMsgParseRequestUtf8(t *testing.T) {
 	}
 
 	// Parse
-	var actual Message
-	if err := actual.Parse(encoded); err != nil {
-		t.Fatalf("Failed parsing: %s", err)
-	}
+	actual := tryParseNoErr(t, encoded)
 
 	// Compare
 	compareMessages(t, expected, actual)
@@ -265,10 +283,7 @@ func TestMsgParseRequestUtf16(t *testing.T) {
 	}
 
 	// Parse
-	var actual Message
-	if err := actual.Parse(encoded); err != nil {
-		t.Fatalf("Failed parsing: %s", err)
-	}
+	actual := tryParseNoErr(t, encoded)
 
 	// Compare
 	compareMessages(t, expected, actual)
@@ -299,10 +314,7 @@ func TestMsgParseReplyBinary(t *testing.T) {
 	}
 
 	// Parse
-	var actual Message
-	if err := actual.Parse(encoded); err != nil {
-		t.Fatalf("Failed parsing: %s", err)
-	}
+	actual := tryParseNoErr(t, encoded)
 
 	// Compare
 	compareMessages(t, expected, actual)
@@ -333,10 +345,7 @@ func TestMsgParseReplyUtf8(t *testing.T) {
 	}
 
 	// Parse
-	var actual Message
-	if err := actual.Parse(encoded); err != nil {
-		t.Fatalf("Failed parsing: %s", err)
-	}
+	actual := tryParseNoErr(t, encoded)
 
 	// Compare
 	compareMessages(t, expected, actual)
@@ -369,10 +378,7 @@ func TestMsgParseReplyUtf16(t *testing.T) {
 	}
 
 	// Parse
-	var actual Message
-	if err := actual.Parse(encoded); err != nil {
-		t.Fatalf("Failed parsing: %s", err)
-	}
+	actual := tryParseNoErr(t, encoded)
 
 	// Compare
 	compareMessages(t, expected, actual)
@@ -405,10 +411,7 @@ func TestMsgParseSignalBinary(t *testing.T) {
 	}
 
 	// Parse
-	var actual Message
-	if err := actual.Parse(encoded); err != nil {
-		t.Fatalf("Failed parsing: %s", err)
-	}
+	actual := tryParseNoErr(t, encoded)
 
 	// Compare
 	compareMessages(t, expected, actual)
@@ -441,10 +444,7 @@ func TestMsgParseSignalUtf8(t *testing.T) {
 	}
 
 	// Parse
-	var actual Message
-	if err := actual.Parse(encoded); err != nil {
-		t.Fatalf("Failed parsing: %s", err)
-	}
+	actual := tryParseNoErr(t, encoded)
 
 	// Compare
 	compareMessages(t, expected, actual)
@@ -481,10 +481,7 @@ func TestMsgParseSignalUtf16(t *testing.T) {
 	}
 
 	// Parse
-	var actual Message
-	if err := actual.Parse(encoded); err != nil {
-		t.Fatalf("Failed parsing: %s", err)
-	}
+	actual := tryParseNoErr(t, encoded)
 
 	// Compare
 	compareMessages(t, expected, actual)
@@ -522,10 +519,7 @@ func TestMsgParseSessCreatedSig(t *testing.T) {
 	}
 
 	// Parse
-	var actual Message
-	if err := actual.Parse(encoded); err != nil {
-		t.Fatalf("Failed parsing: %s", err)
-	}
+	actual := tryParseNoErr(t, encoded)
 
 	// Compare
 	compareMessages(t, expected, actual)
@@ -546,10 +540,7 @@ func TestMsgParseSessClosedSig(t *testing.T) {
 	}
 
 	// Parse
-	var actual Message
-	if err := actual.Parse(encoded); err != nil {
-		t.Fatalf("Failed parsing: %s", err)
-	}
+	actual := tryParseNoErr(t, encoded)
 
 	// Compare
 	compareMessages(t, expected, actual)
@@ -562,8 +553,8 @@ func TestMsgParseUnknownMessageType(t *testing.T) {
 	msgOfUnknownType[0] = byte(255)
 
 	var actual Message
-	if err := actual.Parse(msgOfUnknownType); err == nil {
-		t.Fatalf("Expected error when parsing a message of unknown type")
+	if typeDetermined, _ := actual.Parse(msgOfUnknownType); typeDetermined {
+		t.Fatalf("Expected type not to be determined")
 	}
 }
 
@@ -925,8 +916,11 @@ func TestMsgParseInvalidMessageTooShort(t *testing.T) {
 	invalidMessage := make([]byte, 0)
 
 	var actual Message
-	if err := actual.Parse(invalidMessage); err == nil {
-		t.Fatalf("Expected error while parsing invalid message (empty)")
+	if typeDetermined, _ := actual.Parse(invalidMessage); typeDetermined {
+		t.Fatalf(
+			"Expected type to not be determined " +
+				"when parsing empty message",
+		)
 	}
 }
 
@@ -938,8 +932,7 @@ func TestMsgParseInvalidReplyTooShort(t *testing.T) {
 
 	invalidMessage[0] = MsgReplyBinary
 
-	var actual Message
-	if err := actual.Parse(invalidMessage); err == nil {
+	if _, err := tryParse(t, invalidMessage); err == nil {
 		t.Fatalf(
 			"Expected error while parsing invalid reply message "+
 				"(too short: %d)",
@@ -956,8 +949,7 @@ func TestMsgParseInvalidReplyUtf16TooShort(t *testing.T) {
 
 	invalidMessage[0] = MsgReplyUtf16
 
-	var actual Message
-	if err := actual.Parse(invalidMessage); err == nil {
+	if _, err := tryParse(t, invalidMessage); err == nil {
 		t.Fatalf(
 			"Expected error while parsing invalid UTF16 reply message "+
 				"(too short: %d)",
@@ -974,8 +966,7 @@ func TestMsgParseInvalidRequestTooShort(t *testing.T) {
 
 	invalidMessage[0] = MsgRequestBinary
 
-	var actual Message
-	if err := actual.Parse(invalidMessage); err == nil {
+	if _, err := tryParse(t, invalidMessage); err == nil {
 		t.Fatalf(
 			"Expected error while parsing invalid request message "+
 				"(too short: %d)",
@@ -992,8 +983,7 @@ func TestMsgParseInvalidRequestUtf16TooShort(t *testing.T) {
 
 	invalidMessage[0] = MsgRequestUtf16
 
-	var actual Message
-	if err := actual.Parse(invalidMessage); err == nil {
+	if _, err := tryParse(t, invalidMessage); err == nil {
 		t.Fatalf(
 			"Expected error while parsing invalid UTF16 "+
 				"encoded request message (too short: %d)",
@@ -1011,8 +1001,7 @@ func TestMsgParseInvalidRestrSessReqTooShort(t *testing.T) {
 
 	invalidMessage[0] = MsgRestoreSession
 
-	var actual Message
-	if err := actual.Parse(invalidMessage); err == nil {
+	if _, err := tryParse(t, invalidMessage); err == nil {
 		t.Fatalf(
 			"Expected error while parsing invalid session restoration "+
 				"request message (too short: %d)",
@@ -1030,8 +1019,7 @@ func TestMsgParseInvalidSessCloseReqTooShort(t *testing.T) {
 
 	invalidMessage[0] = MsgCloseSession
 
-	var actual Message
-	if err := actual.Parse(invalidMessage); err == nil {
+	if _, err := tryParse(t, invalidMessage); err == nil {
 		t.Fatalf(
 			"Expected error while parsing invalid session destruction "+
 				"request message (too short: %d)",
@@ -1049,8 +1037,7 @@ func TestMsgParseInvalidSessCreatedSigTooShort(t *testing.T) {
 
 	invalidMessage[0] = MsgSessionCreated
 
-	var actual Message
-	if err := actual.Parse(invalidMessage); err == nil {
+	if _, err := tryParse(t, invalidMessage); err == nil {
 		t.Fatalf(
 			"Expected error while parsing invalid session creation "+
 				"notification message (too short: %d)",
@@ -1067,8 +1054,7 @@ func TestMsgParseInvalidSignalTooShort(t *testing.T) {
 
 	invalidMessage[0] = MsgSignalBinary
 
-	var actual Message
-	if err := actual.Parse(invalidMessage); err == nil {
+	if _, err := tryParse(t, invalidMessage); err == nil {
 		t.Fatalf(
 			"Expected error while parsing invalid signal message "+
 				"(too short: %d)",
@@ -1085,8 +1071,7 @@ func TestMsgParseInvalidSignalUtf16TooShort(t *testing.T) {
 
 	invalidMessage[0] = MsgSignalUtf16
 
-	var actual Message
-	if err := actual.Parse(invalidMessage); err == nil {
+	if _, err := tryParse(t, invalidMessage); err == nil {
 		t.Fatalf(
 			"Expected error while parsing invalid UTF16 signal message "+
 				"(too short: %d)",
@@ -1103,8 +1088,7 @@ func TestMsgParseInvalidErrorReplyTooShort(t *testing.T) {
 
 	invalidMessage[0] = MsgErrorReply
 
-	var actual Message
-	if err := actual.Parse(invalidMessage); err == nil {
+	if _, err := tryParse(t, invalidMessage); err == nil {
 		t.Fatalf(
 			"Expected error while parsing invalid error reply message "+
 				"(too short: %d)",
@@ -1121,8 +1105,7 @@ func TestMsgParseInvalidSpecialReplyTooShort(t *testing.T) {
 	// Internal error is a special reply message type
 	invalidMessage[0] = MsgInternalError
 
-	var actual Message
-	if err := actual.Parse(invalidMessage); err == nil {
+	if _, err := tryParse(t, invalidMessage); err == nil {
 		t.Fatalf(
 			"Expected error while parsing invalid special reply message " +
 				"(too short: 8)",
@@ -1142,8 +1125,7 @@ func TestMsgParseInvalidSessionClosedTooLong(t *testing.T) {
 
 	invalidMessage[0] = MsgSessionClosed
 
-	var actual Message
-	if err := actual.Parse(invalidMessage); err == nil {
+	if _, err := tryParse(t, invalidMessage); err == nil {
 		t.Fatalf(
 			"Expected error while parsing invalid session closed message "+
 				"(too long: %d)",
@@ -1182,8 +1164,7 @@ func TestMsgParseRequestCorruptNameLenFlag(t *testing.T) {
 	encoded.Write(payload.Data)
 
 	// Parse
-	var actual Message
-	if err := actual.Parse(encoded.Bytes()); err == nil {
+	if _, err := tryParse(t, encoded.Bytes()); err == nil {
 		t.Fatal(
 			"Expected Parse to return an error due to corrupt name length flag",
 		)
@@ -1216,8 +1197,7 @@ func TestMsgParseRequestUtf16CorruptNameLenFlag(t *testing.T) {
 	encoded.Write(payload.Data)
 
 	// Parse
-	var actual Message
-	if err := actual.Parse(encoded.Bytes()); err == nil {
+	if _, err := tryParse(t, encoded.Bytes()); err == nil {
 		t.Fatal(
 			"Expected Parse to return an error due to corrupt name length flag",
 		)
@@ -1247,8 +1227,7 @@ func TestMsgParseSignalCorruptNameLenFlag(t *testing.T) {
 	encoded.Write(payload.Data)
 
 	// Parse
-	var actual Message
-	if err := actual.Parse(encoded.Bytes()); err == nil {
+	if _, err := tryParse(t, encoded.Bytes()); err == nil {
 		t.Fatal(
 			"Expected Parse to return an error due to corrupt name length flag",
 		)
@@ -1278,8 +1257,7 @@ func TestMsgParseSignalUtf16CorruptNameLenFlag(t *testing.T) {
 	encoded.Write(payload.Data)
 
 	// Parse
-	var actual Message
-	if err := actual.Parse(encoded.Bytes()); err == nil {
+	if _, err := tryParse(t, encoded.Bytes()); err == nil {
 		t.Fatal(
 			"Expected Parse to return an error due to corrupt name length flag",
 		)
@@ -1311,8 +1289,7 @@ func TestMsgParseReplyUtf16CorruptInput(t *testing.T) {
 	encoded = append(encoded, payload.Data...)
 
 	// Parse
-	var actual Message
-	if err := actual.Parse(encoded); err == nil {
+	if _, err := tryParse(t, encoded); err == nil {
 		t.Fatal("Expected Parse to return an error due to corrupt input stream")
 	}
 }
@@ -1345,8 +1322,7 @@ func TestMsgParseRequestUtf16CorruptInput(t *testing.T) {
 	encoded = append(encoded, payload.Data...)
 
 	// Parse
-	var actual Message
-	if err := actual.Parse(encoded); err == nil {
+	if _, err := tryParse(t, encoded); err == nil {
 		t.Fatal("Expected Parse to return an error due to corrupt input stream")
 	}
 }
@@ -1376,8 +1352,7 @@ func TestMsgParseSignalUtf16CorruptInput(t *testing.T) {
 	encoded = append(encoded, payload.Data...)
 
 	// Parse
-	var actual Message
-	if err := actual.Parse(encoded); err == nil {
+	if _, err := tryParse(t, encoded); err == nil {
 		t.Fatal("Expected Parse to return an error due to corrupt input stream")
 	}
 }
