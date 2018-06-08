@@ -27,19 +27,6 @@ func tryParseNoErr(t *testing.T, encoded []byte) Message {
 	return msg
 }
 
-func tryParseTyped(t *testing.T, encoded []byte) error {
-	var parsedMsg Message
-	typeDetermined, err := parsedMsg.Parse(encoded)
-	if !typeDetermined {
-		t.Fatal("Couldn't determine message type")
-		return nil
-	}
-	if err == nil {
-		t.Fatalf("Expected error, got nil")
-	}
-	return err
-}
-
 func comparePayload(t *testing.T, expected, actual []byte) {
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf(
