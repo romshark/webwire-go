@@ -66,7 +66,6 @@ func NewDefaultSessionManager(sessFilesPath string) *DefaultSessionManager {
 	_, err := os.Stat(sessFilesPath)
 	if os.IsNotExist(err) {
 		// Create the directory if it doesn't exist yet
-		// TODO: fix not-found error on windows (which surprisingly creates the directory though)
 		if err := os.MkdirAll(sessFilesPath, 0640); err != nil {
 			panic(fmt.Errorf(
 				"Couldn't create default session directory ('%s'): %s",
