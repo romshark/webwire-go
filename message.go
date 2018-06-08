@@ -118,6 +118,7 @@ const (
 	MsgSessionsDisabled = byte(5)
 
 	// MsgReplyProtocolError is sent by the server in response to an invalid
+	// message violating the protocol
 	MsgReplyProtocolError = byte(6)
 
 	// MsgSessionCreated is sent by the server
