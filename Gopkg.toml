@@ -5,3 +5,7 @@
 [prune]
   go-tests = true
   unused-packages = true
+
+[[constraint]]
+  name = "github.com/qbeon/tmdwg-go"
+  version = "1.0.0"

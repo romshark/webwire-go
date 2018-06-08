@@ -5,15 +5,16 @@ import (
 	"testing"
 	"time"
 
+	tmdwg "github.com/qbeon/tmdwg-go"
 	webwire "github.com/qbeon/webwire-go"
 	webwireClient "github.com/qbeon/webwire-go/client"
 )
 
 // TestSignalNamespaces tests correct handling of namespaced signals
 func TestSignalNamespaces(t *testing.T) {
-	unnamedSignalArrived := newPending(1, 1*time.Second, true)
-	shortestNameSignalArrived := newPending(1, 1*time.Second, true)
-	longestNameSignalArrived := newPending(1, 1*time.Second, true)
+	unnamedSignalArrived := tmdwg.NewTimedWaitGroup(1, 1*time.Second)
+	shortestNameSignalArrived := tmdwg.NewTimedWaitGroup(1, 1*time.Second)
+	longestNameSignalArrived := tmdwg.NewTimedWaitGroup(1, 1*time.Second)
 	currentStep := 1
 
 	shortestPossibleName := "s"
@@ -56,11 +57,11 @@ func TestSignalNamespaces(t *testing.T) {
 
 				switch currentStep {
 				case 1:
-					unnamedSignalArrived.Done()
+					unnamedSignalArrived.Progress(1)
 				case 2:
-					shortestNameSignalArrived.Done()
+					shortestNameSignalArrived.Progress(1)
 				case 3:
-					longestNameSignalArrived.Done()
+					longestNameSignalArrived.Progress(1)
 				}
 			},
 		},

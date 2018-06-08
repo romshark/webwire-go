@@ -5,14 +5,15 @@ import (
 	"testing"
 	"time"
 
+	tmdwg "github.com/qbeon/tmdwg-go"
 	webwire "github.com/qbeon/webwire-go"
 	webwireClient "github.com/qbeon/webwire-go/client"
 )
 
 // TestClientOnSessionClosed tests the OnSessionClosed hook of the client
 func TestClientOnSessionClosed(t *testing.T) {
-	authenticated := newPending(1, 1*time.Second, true)
-	hookCalled := newPending(1, 1*time.Second, true)
+	authenticated := tmdwg.NewTimedWaitGroup(1, 1*time.Second)
+	hookCalled := tmdwg.NewTimedWaitGroup(1, 1*time.Second)
 
 	// Initialize webwire server
 	server := setupServer(
@@ -55,7 +56,7 @@ func TestClientOnSessionClosed(t *testing.T) {
 		},
 		callbackPoweredClientHooks{
 			OnSessionClosed: func() {
-				hookCalled.Done()
+				hookCalled.Progress(1)
 			},
 		},
 	)
@@ -71,7 +72,7 @@ func TestClientOnSessionClosed(t *testing.T) {
 	); err != nil {
 		t.Fatalf("Request failed: %s", err)
 	}
-	authenticated.Done()
+	authenticated.Progress(1)
 
 	// Verify client session
 	if err := hookCalled.Wait(); err != nil {

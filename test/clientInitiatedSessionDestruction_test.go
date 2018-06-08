@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	tmdwg "github.com/qbeon/tmdwg-go"
 	webwire "github.com/qbeon/webwire-go"
 	webwireClient "github.com/qbeon/webwire-go/client"
 )
@@ -12,8 +13,8 @@ import (
 // TestClientInitiatedSessionDestruction tests
 // client-initiated session destruction
 func TestClientInitiatedSessionDestruction(t *testing.T) {
-	sessionCreationCallbackCalled := newPending(1, 1*time.Second, true)
-	sessionDestructionCallbackCalled := newPending(1, 1*time.Second, true)
+	sessionCreationCallbackCalled := tmdwg.NewTimedWaitGroup(1, 1*time.Second)
+	sessionDestructionCallbackCalled := tmdwg.NewTimedWaitGroup(1, 1*time.Second)
 	var createdSession *webwire.Session
 	expectedCredentials := webwire.Payload{
 		Encoding: webwire.EncodingUtf8,
@@ -84,7 +85,7 @@ func TestClientInitiatedSessionDestruction(t *testing.T) {
 		callbackPoweredClientHooks{
 			OnSessionCreated: func(_ *webwire.Session) {
 				// Mark the client-side session creation callback as executed
-				sessionCreationCallbackCalled.Done()
+				sessionCreationCallbackCalled.Progress(1)
 			},
 			OnSessionClosed: func() {
 				// Ensure this callback is called during the
@@ -95,7 +96,7 @@ func TestClientInitiatedSessionDestruction(t *testing.T) {
 						currentStep,
 					)
 				}
-				sessionDestructionCallbackCalled.Done()
+				sessionDestructionCallbackCalled.Progress(1)
 			},
 		},
 	)

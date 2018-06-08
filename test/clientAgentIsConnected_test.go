@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	tmdwg "github.com/qbeon/tmdwg-go"
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
 )
@@ -12,9 +13,9 @@ import (
 // TestClientAgentIsConnected tests the IsConnected method of the client agent
 func TestClientAgentIsConnected(t *testing.T) {
 	var clientAgent *wwr.Client
-	clientAgentDefined := newPending(1, 1*time.Second, true)
-	clientDisconnected := newPending(1, 1*time.Second, true)
-	testerGoroutineFinished := newPending(1, 1*time.Second, true)
+	clientAgentDefined := tmdwg.NewTimedWaitGroup(1, 1*time.Second)
+	clientDisconnected := tmdwg.NewTimedWaitGroup(1, 1*time.Second)
+	testerGoroutineFinished := tmdwg.NewTimedWaitGroup(1, 1*time.Second)
 
 	// Initialize webwire server
 	server := setupServer(
@@ -25,7 +26,7 @@ func TestClientAgentIsConnected(t *testing.T) {
 					t.Errorf("Expected client agent to be connected")
 				}
 				clientAgent = newClt
-				clientAgentDefined.Done()
+				clientAgentDefined.Progress(1)
 
 				go func() {
 					if err := clientDisconnected.Wait(); err != nil {
@@ -36,7 +37,7 @@ func TestClientAgentIsConnected(t *testing.T) {
 						t.Errorf("Expected client agent to be disconnected")
 					}
 
-					testerGoroutineFinished.Done()
+					testerGoroutineFinished.Progress(1)
 				}()
 			},
 			onClientDisconnected: func(clt *wwr.Client) {
@@ -54,7 +55,7 @@ func TestClientAgentIsConnected(t *testing.T) {
 					)
 				}
 
-				clientDisconnected.Done()
+				clientDisconnected.Progress(1)
 			},
 		},
 		wwr.ServerOptions{},

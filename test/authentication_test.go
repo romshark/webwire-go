@@ -6,8 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/qbeon/webwire-go"
-
+	tmdwg "github.com/qbeon/tmdwg-go"
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
 )
@@ -93,8 +92,8 @@ func TestAuthentication(t *testing.T) {
 		}
 	}
 
-	onSessionCreatedHookExecuted := newPending(1, 1*time.Second, true)
-	clientSignalReceived := newPending(1, 1*time.Second, true)
+	onSessionCreatedHookExecuted := tmdwg.NewTimedWaitGroup(1, 1*time.Second)
+	clientSignalReceived := tmdwg.NewTimedWaitGroup(1, 1*time.Second)
 	var createdSession *wwr.Session
 	sessionInfo := &testAuthenticationSessInfo{
 		UserIdent:  "clientidentifiergoeshere",
@@ -119,7 +118,7 @@ func TestAuthentication(t *testing.T) {
 				clt *wwr.Client,
 				_ *wwr.Message,
 			) {
-				defer clientSignalReceived.Done()
+				defer clientSignalReceived.Progress(1)
 				sess := clt.Session()
 				compareSessions(t, createdSession, sess)
 				compareSessionInfo(sess)
@@ -162,7 +161,7 @@ func TestAuthentication(t *testing.T) {
 			DefaultRequestTimeout: 2 * time.Second,
 			SessionInfoParser: func(
 				data map[string]interface{},
-			) webwire.SessionInfo {
+			) wwr.SessionInfo {
 				return &testAuthenticationSessInfo{
 					UserIdent:  data["uid"].(string),
 					SomeNumber: int(data["some-number"].(float64)),
@@ -211,7 +210,7 @@ func TestAuthentication(t *testing.T) {
 					)
 					return
 				}
-				onSessionCreatedHookExecuted.Done()
+				onSessionCreatedHookExecuted.Progress(1)
 			},
 		},
 	)

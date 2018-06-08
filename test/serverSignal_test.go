@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	tmdwg "github.com/qbeon/tmdwg-go"
 	webwire "github.com/qbeon/webwire-go"
 	webwireClient "github.com/qbeon/webwire-go/client"
 )
@@ -14,7 +15,7 @@ func TestServerSignal(t *testing.T) {
 		Data: []byte("webwire_test_SERVER_SIGNAL_payload"),
 	}
 	var addr string
-	serverSignalArrived := newPending(1, 1*time.Second, true)
+	serverSignalArrived := tmdwg.NewTimedWaitGroup(1, 1*time.Second)
 	initClient := make(chan bool, 1)
 	sendSignal := make(chan bool, 1)
 
@@ -65,7 +66,7 @@ func TestServerSignal(t *testing.T) {
 				)
 
 				// Synchronize, unlock main goroutine to pass the test case
-				serverSignalArrived.Done()
+				serverSignalArrived.Progress(1)
 			},
 		},
 	)

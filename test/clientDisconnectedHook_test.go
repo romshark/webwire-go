@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	tmdwg "github.com/qbeon/tmdwg-go"
 	webwire "github.com/qbeon/webwire-go"
 	webwireClient "github.com/qbeon/webwire-go/client"
 )
@@ -12,7 +13,7 @@ import (
 // TestClientDisconnectedHook verifies the server is calling the
 // onClientDisconnected hook properly
 func TestClientDisconnectedHook(t *testing.T) {
-	disconnectedHookCalled := newPending(1, 1*time.Second, true)
+	disconnectedHookCalled := tmdwg.NewTimedWaitGroup(1, 1*time.Second)
 	var connectedClient *webwire.Client
 	connectedClientLock := sync.Mutex{}
 
@@ -36,7 +37,7 @@ func TestClientDisconnectedHook(t *testing.T) {
 					)
 				}
 				connectedClientLock.Unlock()
-				disconnectedHookCalled.Done()
+				disconnectedHookCalled.Progress(1)
 			},
 		},
 		webwire.ServerOptions{},

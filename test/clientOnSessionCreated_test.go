@@ -5,13 +5,14 @@ import (
 	"testing"
 	"time"
 
+	tmdwg "github.com/qbeon/tmdwg-go"
 	webwire "github.com/qbeon/webwire-go"
 	webwireClient "github.com/qbeon/webwire-go/client"
 )
 
 // TestClientOnSessionCreated tests the OnSessionCreated hook of the client
 func TestClientOnSessionCreated(t *testing.T) {
-	hookCalled := newPending(1, 1*time.Second, true)
+	hookCalled := tmdwg.NewTimedWaitGroup(1, 1*time.Second)
 	var createdSession *webwire.Session
 	var sessionFromHook *webwire.Session
 
@@ -43,7 +44,7 @@ func TestClientOnSessionCreated(t *testing.T) {
 		callbackPoweredClientHooks{
 			OnSessionCreated: func(newSession *webwire.Session) {
 				sessionFromHook = newSession
-				hookCalled.Done()
+				hookCalled.Progress(1)
 			},
 		},
 	)

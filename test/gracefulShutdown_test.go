@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	tmdwg "github.com/qbeon/tmdwg-go"
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
 )
@@ -22,8 +23,11 @@ import (
 func TestGracefulShutdown(t *testing.T) {
 	expectedReqReply := []byte("ifinished")
 	timeDelta := time.Duration(1)
-	processesFinished := newPending(2, 1*time.Second, true)
-	serverShutDown := newPending(1, timeDelta*500*time.Millisecond+1*time.Second, true)
+	processesFinished := tmdwg.NewTimedWaitGroup(2, 1*time.Second)
+	serverShutDown := tmdwg.NewTimedWaitGroup(
+		1,
+		timeDelta*500*time.Millisecond+1*time.Second,
+	)
 
 	// Initialize webwire server
 	server := setupServer(
@@ -35,7 +39,7 @@ func TestGracefulShutdown(t *testing.T) {
 				_ *wwr.Message,
 			) {
 				time.Sleep(timeDelta * 100 * time.Millisecond)
-				processesFinished.Done()
+				processesFinished.Progress(1)
 			},
 			onRequest: func(
 				_ context.Context,
@@ -128,7 +132,7 @@ func TestGracefulShutdown(t *testing.T) {
 		time.Sleep(timeDelta * 10 * time.Millisecond)
 		// (SRV SHUTDWN)
 		server.Shutdown()
-		serverShutDown.Done()
+		serverShutDown.Progress(1)
 	}()
 
 	// Fire late requests and late connection in another parallel goroutine
@@ -163,7 +167,7 @@ func TestGracefulShutdown(t *testing.T) {
 			)
 		}
 
-		processesFinished.Done()
+		processesFinished.Progress(1)
 	}()
 
 	// Await server shutdown, timeout if necessary

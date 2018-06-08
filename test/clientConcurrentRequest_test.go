@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	tmdwg "github.com/qbeon/tmdwg-go"
 	webwire "github.com/qbeon/webwire-go"
 	webwireClient "github.com/qbeon/webwire-go/client"
 )
@@ -12,8 +13,8 @@ import (
 // TestClientConcurrentRequest verifies concurrent calling of client.Request
 // is properly synchronized and doesn't cause any data race
 func TestClientConcurrentRequest(t *testing.T) {
-	var concurrentAccessors uint32 = 16
-	finished := newPending(concurrentAccessors*2, 2*time.Second, true)
+	concurrentAccessors := 16
+	finished := tmdwg.NewTimedWaitGroup(concurrentAccessors*2, 2*time.Second)
 
 	// Initialize webwire server
 	server := setupServer(
@@ -24,7 +25,7 @@ func TestClientConcurrentRequest(t *testing.T) {
 				_ *webwire.Client,
 				_ *webwire.Message,
 			) (webwire.Payload, error) {
-				finished.Done()
+				finished.Progress(1)
 				return webwire.Payload{}, nil
 			},
 		},
@@ -46,7 +47,7 @@ func TestClientConcurrentRequest(t *testing.T) {
 	}
 
 	sendRequest := func() {
-		defer finished.Done()
+		defer finished.Progress(1)
 		if _, err := client.connection.Request(
 			"sample",
 			webwire.Payload{Data: []byte("samplepayload")},
@@ -55,7 +56,7 @@ func TestClientConcurrentRequest(t *testing.T) {
 		}
 	}
 
-	for i := uint32(0); i < concurrentAccessors; i++ {
+	for i := 0; i < concurrentAccessors; i++ {
 		go sendRequest()
 	}
 

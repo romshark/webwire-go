@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	tmdwg "github.com/qbeon/tmdwg-go"
 	webwire "github.com/qbeon/webwire-go"
 	webwireClient "github.com/qbeon/webwire-go/client"
 )
@@ -36,7 +37,7 @@ func TestClientSignalUtf16(t *testing.T) {
 			}
 		}
 	}
-	signalArrived := newPending(1, 1*time.Second, true)
+	signalArrived := tmdwg.NewTimedWaitGroup(1, 1*time.Second)
 
 	// Initialize webwire server given only the signal handler
 	server := setupServer(
@@ -50,7 +51,7 @@ func TestClientSignalUtf16(t *testing.T) {
 				verifyPayload(msg.Payload)
 
 				// Synchronize, notify signal arrival
-				signalArrived.Done()
+				signalArrived.Progress(1)
 			},
 		},
 		webwire.ServerOptions{},

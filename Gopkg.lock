@@ -7,9 +7,15 @@
   revision = "ea4d1f681babbce9545c9c5f3d5194a789c89f5b"
   version = "v1.2.0"
 
+[[projects]]
+  name = "github.com/qbeon/tmdwg-go"
+  packages = ["."]
+  revision = "5a395400ac2fef4f213d83424937195af0005a03"
+  version = "1.0.0"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "941e8dbe52e16e8a7dff4068b7ba53ae69a5748b29fbf2bcb5df3a063ac52261"
+  inputs-digest = "f2fc7a42eb9a614c73750f2cedced1bb7d56750f368a8639d4cc4e4b06e28131"
   solver-name = "gps-cdcl"
   solver-version = 1
