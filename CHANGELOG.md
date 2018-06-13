@@ -37,7 +37,7 @@ Since the first beta-release many new requested features as well as stability an
 - `log.Logger`is now used for logging instead of `io.Writer` to allow for better customization of logs. ([af872e5](https://github.com/qbeon/webwire-go/commit/af872e50925cf8d27ac987f25224f7a79f7cb616))
 - The server is now defined as a `webwire.Server` interface type including new methods such as: `Run`, `ActiveSessionsNum`, `SessionConnectionsNum` and `CloseSession`. A webwire server instance is now created using the new constructor function. ([e1e9259](https://github.com/qbeon/webwire-go/commit/e1e925933de325a1ea31aae07666548019926ca0))
 - The `SessionConnections` method will now return a list of client agents instead of just the number of concurrent connections of a session. ([8f789c0](https://github.com/qbeon/webwire-go/commit/8f789c07c2bd09fd6821bfcb62b7f429b364c045))
-- Add a new client agent method Close for closing an ongoing
+- Add a new client agent method `Close` for closing an ongoing
 connection on the server side. ([e1e9259](https://github.com/qbeon/webwire-go/commit/e1e925933de325a1ea31aae07666548019926ca0))
 - The method `ActiveSessions` was renamed to `ActiveSessionsNum`. ([e1e9259](https://github.com/qbeon/webwire-go/commit/e1e925933de325a1ea31aae07666548019926ca0))
 - Deferred client agent shutdown has been implemented. The client agent now keeps track of all currently processed tasks and closes only when it's idle. ([d3b8313](https://github.com/qbeon/webwire-go/commit/d3b83133e0fd62318f9500c4b32220c0d7792d30))
