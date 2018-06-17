@@ -39,7 +39,7 @@ The [webwire-go](https://github.com/qbeon/webwire-go) library provides both a cl
 Choose any stable release from [the available release tags](https://github.com/qbeon/webwire-go/releases) and copy the source code into your project's vendor directory: ```$YOURPROJECT/vendor/github.com/qbeon/webwire-go```. All necessary transitive [dependencies](https://github.com/qbeon/webwire-go#dependencies) are already embedded into the `webwire-go` repository.
 
 ### Dep
-If you're using [dep](https://github.com/golang/dep), just use [dep ensure](https://golang.github.io/dep/docs/daily-dep.html#adding-a-new-dependency) to add a specific version of webwire-go including all its transitive dependencies to your project: ```dep ensure -add github.com/qbeon/webwire-go@v1.0.0-beta1```. This will remove all embedded transitive dependencies and move them to your projects `vendor` directory.
+If you're using [dep](https://github.com/golang/dep), just use [dep ensure](https://golang.github.io/dep/docs/daily-dep.html#adding-a-new-dependency) to add a specific version of webwire-go including all its transitive dependencies to your project: ```dep ensure -add github.com/qbeon/webwire-go@v1.0.0-rc1```. This will remove all embedded transitive dependencies and move them to your projects `vendor` directory.
 
 ### Go Get
 You can also use [go get](https://golang.org/cmd/go/#hdr-Download_and_install_packages_and_dependencies): ```go get github.com/qbeon/webwire-go``` but beware that this will fetch the latest commit of the [master branch](https://github.com/qbeon/webwire-go/commits/master) which is currently **not yet** considered a stable release branch. It's therefore recommended to use [dep](https://github.com/qbeon/webwire-go#dep) instead.
