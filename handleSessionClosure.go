@@ -33,6 +33,4 @@ func (srv *server) handleSessionClosure(clt *Client, msg *Message) {
 
 	// Send confirmation
 	srv.fulfillMsg(clt, msg, Payload{})
-
-	return
 }

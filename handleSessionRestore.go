@@ -77,6 +77,4 @@ func (srv *server) handleSessionRestore(clt *Client, msg *Message) {
 		Encoding: EncodingUtf8,
 		Data:     encodedSession,
 	})
-
-	return
 }
