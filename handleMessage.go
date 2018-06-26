@@ -1,43 +1,31 @@
 package webwire
 
+import (
+	"context"
+)
+
 // handleMessage handles incoming messages
-func (srv *server) handleMessage(clt *Client, msg *Message) error {
-	// Decide whether to process the message
-	failMsg := false
+func (srv *server) handleMessage(clt *Client, message []byte) {
+	// Parse message
+	var msg Message
+	msgTypeParsed, parserErr := msg.Parse(message)
+	if !msgTypeParsed {
+		// Couldn't determine message type, drop message
+		return
+	} else if parserErr != nil {
+		// Couldn't parse message, protocol error
+		srv.warnLog.Println("Parser error:", parserErr)
 
-	srv.opsLock.Lock()
-	// Reject incoming requests during server shutdown
-	// or the shutdown of the client agent
-	// return a special shutdown error
-	if srv.shutdown || !clt.isActive() {
-		failMsg = true
-	} else {
-		srv.currentOps++
-	}
-	srv.opsLock.Unlock()
-
-	if failMsg {
-		// Don't process the message
-		if msg.RequiresResponse() {
-			srv.failMsgShutdown(clt, msg)
-		}
-		return nil
+		// Respond with an error but don't break the connection
+		// because protocol errors are not critical errors
+		srv.failMsg(clt, &msg, ProtocolErr{})
+		return
 	}
 
-	// Process the message
-	clt.registerTask()
-
-	defer func() {
-		// Mark operation as done and shutdown the server
-		// if scheduled and no operations are left
-		srv.opsLock.Lock()
-		srv.currentOps--
-		if srv.shutdown && srv.currentOps < 1 {
-			close(srv.shutdownRdy)
-		}
-		srv.opsLock.Unlock()
-		clt.deregisterTask()
-	}()
+	// Deregister the handler only if a handler was registered
+	if srv.registerHandler(clt, &msg) {
+		defer srv.deregisterHandler(clt)
+	}
 
 	switch msg.msgType {
 	case MsgSignalBinary:
@@ -45,21 +33,73 @@ func (srv *server) handleMessage(clt *Client, msg *Message) error {
 	case MsgSignalUtf8:
 		fallthrough
 	case MsgSignalUtf16:
-		srv.handleSignal(clt, msg)
+		srv.handleSignal(clt, &msg)
 
 	case MsgRequestBinary:
 		fallthrough
 	case MsgRequestUtf8:
 		fallthrough
 	case MsgRequestUtf16:
-		srv.handleRequest(clt, msg)
+		srv.handleRequest(clt, &msg)
 
 	case MsgRestoreSession:
-		return srv.handleSessionRestore(clt, msg)
+		srv.handleSessionRestore(clt, &msg)
 	case MsgCloseSession:
-		return srv.handleSessionClosure(clt, msg)
+		srv.handleSessionClosure(clt, &msg)
 	}
-	return nil
+}
+
+// registerHandler increments the number of currently executed handlers.
+// It blocks if the current number of max concurrent handlers was reached
+// and frees only when a handler slot is freed for this handler to be executed
+func (srv *server) registerHandler(clt *Client, msg *Message) bool {
+	failMsg := false
+
+	// Wait for free handler slots
+	// if the number of concurrent handler is limited
+	if !clt.isActive() {
+		return false
+	}
+	if srv.options.IsConcurrentHandlersLimited() {
+		srv.handlerSlots.Acquire(context.Background(), 1)
+	}
+
+	srv.opsLock.Lock()
+	if srv.shutdown || !clt.isActive() {
+		// defer failure due to shutdown of either the server
+		// or the client agent
+		failMsg = true
+	} else {
+		srv.currentOps++
+	}
+	srv.opsLock.Unlock()
+
+	if failMsg && msg.RequiresResponse() {
+		// Don't process the message, fail it
+		srv.failMsgShutdown(clt, msg)
+		return false
+	}
+
+	clt.registerTask()
+	return true
+}
+
+// deregisterHandler decrements the number of currently executed handlers
+// and shuts down the server if scheduled and no more operations are left
+func (srv *server) deregisterHandler(clt *Client) {
+	srv.opsLock.Lock()
+	srv.currentOps--
+	if srv.shutdown && srv.currentOps < 1 {
+		close(srv.shutdownRdy)
+	}
+	srv.opsLock.Unlock()
+
+	clt.deregisterTask()
+
+	// Release a handler slot
+	if srv.options.IsConcurrentHandlersLimited() {
+		srv.handlerSlots.Release(1)
+	}
 }
 
 // fulfillMsg fulfills the message sending the reply

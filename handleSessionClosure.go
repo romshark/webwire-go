@@ -1,19 +1,18 @@
 package webwire
 
 // handleSessionClosure handles session destruction requests
-import "fmt"
 
 // and returns an error if the ongoing connection cannot be proceeded
-func (srv *server) handleSessionClosure(clt *Client, msg *Message) error {
+func (srv *server) handleSessionClosure(clt *Client, msg *Message) {
 	if !srv.sessionsEnabled {
 		srv.failMsg(clt, msg, SessionsDisabledErr{})
-		return nil
+		return
 	}
 
 	if !clt.HasSession() {
 		// Send confirmation even though no session was closed
 		srv.fulfillMsg(clt, msg, Payload{})
-		return nil
+		return
 	}
 
 	// Deregister session from active sessions registry
@@ -22,10 +21,11 @@ func (srv *server) handleSessionClosure(clt *Client, msg *Message) error {
 	// Synchronize session destruction to the client
 	if err := clt.notifySessionClosed(); err != nil {
 		srv.failMsg(clt, msg, nil)
-		return fmt.Errorf("CRITICAL: Internal server error, "+
+		srv.errorLog.Printf("CRITICAL: Internal server error, "+
 			"couldn't notify client about the session destruction: %s",
 			err,
 		)
+		return
 	}
 
 	// Reset the session on the client agent
@@ -34,5 +34,5 @@ func (srv *server) handleSessionClosure(clt *Client, msg *Message) error {
 	// Send confirmation
 	srv.fulfillMsg(clt, msg, Payload{})
 
-	return nil
+	return
 }

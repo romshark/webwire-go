@@ -63,26 +63,7 @@ func (srv *server) ServeHTTP(
 			return
 		}
 
-		// Parse message
-		var msgObject Message
-		msgTypeParsed, parserErr := msgObject.Parse(message)
-		if !msgTypeParsed {
-			// Couldn't determine message type, drop message
-			continue
-		} else if parserErr != nil {
-			// Couldn't parse message, protocol error
-			srv.warnLog.Println("Parser error:", parserErr)
-
-			// Respond with an error but don't break the connection
-			// because protocol errors are not critical errors
-			srv.failMsg(newClient, &msgObject, ProtocolErr{})
-			continue
-		}
-
-		// Handle message
-		if err := srv.handleMessage(newClient, &msgObject); err != nil {
-			srv.errorLog.Printf("CRITICAL FAILURE: %s", err)
-			break
-		}
+		// Parse & handle the message
+		go srv.handleMessage(newClient, message)
 	}
 }

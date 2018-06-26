@@ -13,9 +13,21 @@
   revision = "5a395400ac2fef4f213d83424937195af0005a03"
   version = "1.0.0"
 
+[[projects]]
+  branch = "master"
+  name = "golang.org/x/net"
+  packages = ["context"]
+  revision = "afe8f62b1d6bbd81f31868121a50b06d8188e1f9"
+
+[[projects]]
+  branch = "master"
+  name = "golang.org/x/sync"
+  packages = ["semaphore"]
+  revision = "1d60e4601c6fd243af51cc01ddf169918a5407ca"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "f2fc7a42eb9a614c73750f2cedced1bb7d56750f368a8639d4cc4e4b06e28131"
+  inputs-digest = "a055e88e3b6296edb65f125620d0423ec44a8c5e616ecada7878501c6dd4a272"
   solver-name = "gps-cdcl"
   solver-version = 1

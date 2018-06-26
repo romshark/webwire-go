@@ -7,10 +7,10 @@ import (
 
 // handleSessionRestore handles session restoration (by session key) requests
 // and returns an error if the ongoing connection cannot be proceeded
-func (srv *server) handleSessionRestore(clt *Client, msg *Message) error {
+func (srv *server) handleSessionRestore(clt *Client, msg *Message) {
 	if !srv.sessionsEnabled {
 		srv.failMsg(clt, msg, SessionsDisabledErr{})
-		return nil
+		return
 	}
 
 	key := string(msg.Payload.Data)
@@ -19,7 +19,7 @@ func (srv *server) handleSessionRestore(clt *Client, msg *Message) error {
 	if sessConsNum >= 0 && srv.sessionRegistry.maxConns > 0 &&
 		uint(sessConsNum+1) > srv.sessionRegistry.maxConns {
 		srv.failMsg(clt, msg, MaxSessConnsReachedErr{})
-		return nil
+		return
 	}
 
 	// Call session manager lookup hook
@@ -29,10 +29,11 @@ func (srv *server) handleSessionRestore(clt *Client, msg *Message) error {
 	switch err := err.(type) {
 	case SessNotFoundErr:
 		srv.failMsg(clt, msg, SessNotFoundErr{})
-		return nil
+		return
 	default:
 		srv.failMsg(clt, msg, nil)
-		return fmt.Errorf("CRITICAL: Session search handler failed: %s", err)
+		srv.errorLog.Printf("CRITICAL: Session search handler failed: %s", err)
+		return
 	case nil:
 	}
 
@@ -46,11 +47,12 @@ func (srv *server) handleSessionRestore(clt *Client, msg *Message) error {
 	encodedSession, err := json.Marshal(&encodedSessionObj)
 	if err != nil {
 		srv.failMsg(clt, msg, nil)
-		return fmt.Errorf(
+		srv.errorLog.Printf(
 			"Couldn't encode session object (%v): %s",
 			encodedSessionObj,
 			err,
 		)
+		return
 	}
 
 	// Parse attached session info
@@ -76,5 +78,5 @@ func (srv *server) handleSessionRestore(clt *Client, msg *Message) error {
 		Data:     encodedSession,
 	})
 
-	return nil
+	return
 }

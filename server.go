@@ -7,6 +7,8 @@ import (
 	"net"
 	"net/http"
 	"sync"
+
+	"golang.org/x/sync/semaphore"
 )
 
 const protocolVersion = "1.4"
@@ -23,11 +25,13 @@ type server struct {
 
 	// State
 	addr            net.Addr
+	options         ServerOptions
 	shutdown        bool
 	shutdownRdy     chan bool
 	currentOps      uint32
-	opsLock         sync.Mutex
+	opsLock         *sync.Mutex
 	clientsLock     *sync.Mutex
+	handlerSlots    *semaphore.Weighted
 	clients         []*Client
 	sessionsEnabled bool
 	sessionRegistry *sessionRegistry
