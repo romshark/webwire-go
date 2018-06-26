@@ -7,25 +7,20 @@ import (
 	webwire "github.com/qbeon/webwire-go"
 )
 
-// tryAutoconnect tries connect to the server.
+// tryAutoconnect tries to connect to the server.
 // If autoconnect is enabled it will spawn a new autoconnector goroutine which
 // will periodically poll the server and check whether it's available again.
 // If the autoconnector goroutine has already been spawned then it'll
 // just await the connection or timeout respectively blocking the calling
 // goroutine
 func (clt *Client) tryAutoconnect(timeout time.Duration) error {
-	// Don't try to auto-connect if it's either temporarily deactivated
-	// or completely disabled
 	autoconn := atomic.LoadInt32(&clt.autoconnect)
-	if autoconn == autoconnectDisabled || autoconn == autoconnectDeactivated {
-		if atomic.LoadInt32(&clt.status) == StatConnected {
-			return nil
-		}
-		return webwire.DisconnectedErr{}
-	}
-
 	if atomic.LoadInt32(&clt.status) == StatConnected {
 		return nil
+	} else if autoconn != autoconnectEnabled {
+		// Don't try to auto-connect if it's either temporarily deactivated
+		// or completely disabled
+		return webwire.DisconnectedErr{}
 	}
 
 	// Start the reconnector goroutine if not already started.

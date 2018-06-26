@@ -33,10 +33,10 @@ const (
 	autoconnectDisabled = 0
 
 	// autoconnectDeactivated represents deactivated auto-reconnection
-	autoconnectDeactivated = 0
+	autoconnectDeactivated = 1
 
 	// autoconnectEnabled represents activated auto-reconnection
-	autoconnectEnabled = 1
+	autoconnectEnabled = 2
 )
 
 // Client represents an instance of one of the servers clients
@@ -93,6 +93,7 @@ func NewClient(
 	// Prepare configuration
 	opts.SetDefaults()
 
+	// Enable autoconnect by default
 	autoconnect := autoconnectStatus(autoconnectEnabled)
 	if opts.Autoconnect == webwire.Disabled {
 		autoconnect = autoconnectDisabled
@@ -149,7 +150,7 @@ func (clt *Client) Status() Status {
 // Automatically tries to restore the previous session.
 // Enables autoconnect if it was disabled
 func (clt *Client) Connect() error {
-	if atomic.LoadInt32(&clt.autoconnect) != autoconnectDisabled {
+	if atomic.LoadInt32(&clt.autoconnect) == autoconnectDeactivated {
 		atomic.StoreInt32(&clt.autoconnect, autoconnectEnabled)
 	}
 	return clt.connect()
@@ -212,14 +213,8 @@ func (clt *Client) Signal(name string, payload webwire.Payload) error {
 	clt.apiLock.RLock()
 	defer clt.apiLock.RUnlock()
 
-	if atomic.LoadInt32(&clt.status) == StatDisconnected {
-		if atomic.LoadInt32(&clt.autoconnect) == autoconnectDisabled {
-			return webwire.DisconnectedErr{}
-		}
-		// Try to connect
-		if err := clt.connect(); err != nil {
-			return err
-		}
+	if err := clt.tryAutoconnect(clt.defaultReqTimeout); err != nil {
+		return err
 	}
 
 	return clt.conn.Write(webwire.NewSignalMessage(name, payload))
