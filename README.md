@@ -26,6 +26,7 @@ The [webwire-go](https://github.com/qbeon/webwire-go) library provides both a cl
   - [Sessions](https://github.com/qbeon/webwire-go#sessions)
   - [Automatic Session Restoration](https://github.com/qbeon/webwire-go#automatic-session-restoration)
   - [Automatic Connection Maintenance](https://github.com/qbeon/webwire-go#automatic-connection-maintenance)
+  - [Concurrency](https://github.com/qbeon/webwire-go#concurrency)
   - [Thread-Safety](https://github.com/qbeon/webwire-go#thread-safety)
   - [Hooks](https://github.com/qbeon/webwire-go#hooks)
     - [Server-side Hooks](https://github.com/qbeon/webwire-go#server-side-hooks)
@@ -195,6 +196,9 @@ The only things to remember are:
 - `client.Signal` will immediately return a `DisconnectedErr` error if there's no connection at the time the signal was sent.
 
 This feature is entirely optional and can be disabled at will which will cause `client.Request`, `client.TimedRequest` and `client.RestoreSession` to immediately return a `DisconnectedErr` error when there's no connection at the time the request is made.
+
+### Concurrency
+Messages are parsed and handled concurrently in a separate goroutine by default. The total number of concurrently executed handlers can be throttled down to a specified number using the `MaxConcurrentHandlers` server option, which disables the throttling when set to `0`.
 
 ### Thread Safety
 It's safe to use both the session agents (those that are provided by the server through messages) and the client concurrently from multiple goroutines, the library automatically synchronizes concurrent operations.
