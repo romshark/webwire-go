@@ -15,18 +15,21 @@ import (
 // and reject incoming connections and requests
 // while ignoring incoming signals
 //
-// SIGNAL:       --->||||||||||----------------- (must finish)
-// REQUEST:      ---->||||||||||---------------- (must finish)
-// SRV SHUTDWN:  -------->||||||---------------- (must await req and sig)
-// LATE CONN:    ---------->|------------------- (must be rejected)
-// LATE REQ:     ----------->|------------------ (must be rejected)
+// SIGNAL:       |-->||||||||||----------------- (must finish)
+// REQUEST:      ||-->||||||||||---------------- (must finish)
+// SRV SHUTDWN:  |||----->||||||---------------- (must await req and sig)
+// LATE CONN:    |||------->|------------------- (must be rejected)
+// LATE REQ:     ||||------->|------------------ (must be rejected)
 func TestGracefulShutdown(t *testing.T) {
 	expectedReqReply := []byte("ifinished")
-	timeDelta := time.Duration(1)
-	processesFinished := tmdwg.NewTimedWaitGroup(2, 1*time.Second)
+	handlerExecutionDuration := 100 * time.Millisecond
+	maxTestDuration := handlerExecutionDuration * 2
+	firstReqAndSigSent := tmdwg.NewTimedWaitGroup(2, maxTestDuration)
+	serverShuttingDown := tmdwg.NewTimedWaitGroup(1, maxTestDuration)
+	handlersFinished := tmdwg.NewTimedWaitGroup(2, maxTestDuration)
 	serverShutDown := tmdwg.NewTimedWaitGroup(
 		1,
-		timeDelta*500*time.Millisecond+1*time.Second,
+		2*time.Second,
 	)
 
 	// Initialize webwire server
@@ -36,17 +39,24 @@ func TestGracefulShutdown(t *testing.T) {
 			onSignal: func(
 				_ context.Context,
 				_ *wwr.Client,
-				_ *wwr.Message,
+				msg *wwr.Message,
 			) {
-				time.Sleep(timeDelta * 100 * time.Millisecond)
-				processesFinished.Progress(1)
+				if msg.Name == "1" {
+					firstReqAndSigSent.Progress(1)
+				}
+				// Sleep after the first signal was marked as done
+				time.Sleep(handlerExecutionDuration)
+				handlersFinished.Progress(1)
 			},
 			onRequest: func(
 				_ context.Context,
 				_ *wwr.Client,
-				_ *wwr.Message,
+				msg *wwr.Message,
 			) (wwr.Payload, error) {
-				time.Sleep(timeDelta * 100 * time.Millisecond)
+				if msg.Name == "1" {
+					firstReqAndSigSent.Progress(1)
+				}
+				time.Sleep(handlerExecutionDuration)
 				return wwr.Payload{Data: expectedReqReply}, nil
 			},
 		},
@@ -87,22 +97,12 @@ func TestGracefulShutdown(t *testing.T) {
 		callbackPoweredClientHooks{},
 	)
 
-	if err := clientSig.connection.Connect(); err != nil {
-		t.Fatalf("Couldn't connect signal client: %s", err)
-	}
-	if err := clientReq.connection.Connect(); err != nil {
-		t.Fatalf("Couldn't connect request client: %s", err)
-	}
-	if err := clientLateReq.connection.Connect(); err != nil {
-		t.Fatalf("Couldn't connect late-request client: %s", err)
-	}
-
 	// Send signal and request in another parallel goroutine
 	// to avoid blocking the main test goroutine when awaiting the request reply
 	go func() {
 		// (SIGNAL)
 		if err := clientSig.connection.Signal(
-			"",
+			"1",
 			wwr.Payload{Data: []byte("test")},
 		); err != nil {
 			t.Errorf("Signal failed: %s", err)
@@ -110,7 +110,7 @@ func TestGracefulShutdown(t *testing.T) {
 
 		// (REQUEST)
 		if rep, err := clientReq.connection.Request(
-			"",
+			"1",
 			wwr.Payload{Data: []byte("test")},
 		); err != nil {
 			t.Errorf("Request failed: %s", err)
@@ -120,6 +120,8 @@ func TestGracefulShutdown(t *testing.T) {
 				string(expectedReqReply),
 				string(rep.Data),
 			)
+		} else {
+			handlersFinished.Progress(1)
 		}
 	}()
 
@@ -129,17 +131,32 @@ func TestGracefulShutdown(t *testing.T) {
 	go func() {
 		// Wait for the signal and request to arrive and get handled,
 		// then request the shutdown
-		time.Sleep(timeDelta * 10 * time.Millisecond)
+		if err := firstReqAndSigSent.Wait(); err != nil {
+			t.Errorf(
+				"First request and signal were not sent within %s",
+				handlerExecutionDuration,
+			)
+			return
+		}
+
 		// (SRV SHUTDWN)
+		serverShuttingDown.Progress(1)
 		server.Shutdown()
 		serverShutDown.Progress(1)
 	}()
 
-	// Fire late requests and late connection in another parallel goroutine
+	// Wait for the server to start shutting down and fire late requests
+	// and late connection in another parallel goroutine
 	// to avoid blocking the main test goroutine when performing them
 	go func() {
 		// Wait for the server to start shutting down
-		time.Sleep(timeDelta * 20 * time.Millisecond)
+		if err := serverShuttingDown.Wait(); err != nil {
+			t.Errorf(
+				"Server not shutting down after %s",
+				maxTestDuration,
+			)
+			return
+		}
 
 		// Verify connection establishment during shutdown (LATE CONN)
 		if err := clientLateConn.connection.Connect(); err == nil {
@@ -166,17 +183,18 @@ func TestGracefulShutdown(t *testing.T) {
 				"with special error type",
 			)
 		}
-
-		processesFinished.Progress(1)
 	}()
 
 	// Await server shutdown, timeout if necessary
 	if err := serverShutDown.Wait(); err != nil {
-		t.Fatalf("Expected server to shut down within n seconds")
+		t.Fatalf(
+			"Expected server to shut down within %s",
+			maxTestDuration,
+		)
 	}
 
 	// Expect both the signal and the request to have completed properly
-	if err := processesFinished.Wait(); err != nil {
+	if err := handlersFinished.Wait(); err != nil {
 		t.Fatalf("Expected signal and request to have finished processing")
 	}
 }
