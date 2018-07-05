@@ -1,10 +1,12 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Build Status](https://travis-ci.org/qbeon/webwire-go.svg?branch=master)](https://travis-ci.org/qbeon/webwire-go)
+[![GoDoc](https://godoc.org/github.com/zalando/skipper?status.svg)](https://godoc.org/github.com/qbeon/webwire-go)
+[![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.me/romshark)
+
 [![Coverage Status](https://coveralls.io/repos/github/qbeon/webwire-go/badge.svg?branch=master)](https://coveralls.io/github/qbeon/webwire-go?branch=master)
 [![Go Report Card](https://goreportcard.com/badge/github.com/qbeon/webwire-go)](https://goreportcard.com/report/github.com/qbeon/webwire-go)
 [![codebeat badge](https://codebeat.co/badges/809181da-797c-4cdd-bb23-d0324935f3b0)](https://codebeat.co/projects/github-com-qbeon-webwire-go-master)
-[![GoDoc](https://godoc.org/github.com/zalando/skipper?status.svg)](https://godoc.org/github.com/qbeon/webwire-go)
-[![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.me/romshark)
+[![Maintainability](https://api.codeclimate.com/v1/badges/243a45cacec7d850c64d/maintainability)](https://codeclimate.com/github/qbeon/webwire-go/maintainability)
 
 # WebWire for Golang
 WebWire is a high-level asynchronous duplex messaging library built on top of [WebSockets](https://developer.mozilla.org/de/docs/WebSockets) and an open source binary message protocol with builtin authentication and support for UTF8 and UTF16 encoding.
