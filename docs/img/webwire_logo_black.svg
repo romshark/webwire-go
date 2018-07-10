@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg version="1.1" viewBox="0 0 808.2 246.5" xmlns="http://www.w3.org/2000/svg" xmlns:cc="http://creativecommons.org/ns#" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+ <metadata>
+  <rdf:RDF>
+   <cc:Work rdf:about="">
+    <dc:format>image/svg+xml</dc:format>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:title/>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <g transform="translate(-794.93 410.64)">
+  <path d="m1441.1-410.63 16.56 32.488 83.996 3.6e-4c16.69 7e-5 29 13.676 29 29 0 16.63-13.606 29-28.97 29l-54.461-3.5e-4 79.524 156.01h36.396l-62.901-123.54c39.132 0 62.901-31.294 62.901-60.226 0-36.767-29.685-62.734-59.224-62.734zm-197.44 246.5 66.082-94.389 48.106 94.371 65.984-94.586 48.218 94.604h36.287l-125.38-246.46h-36.535l60.967 119.6-44.982 64.311-93.643-183.91h-36.537l60.969 119.6-44.984 64.311-93.643-183.91h-36.535zm-323.09 0 66.082-94.389 48.105 94.371 65.984-94.586 48.218 94.604h36.287l-125.38-246.46h-36.535l60.967 119.6-44.982 64.311-93.643-183.91h-36.537l60.969 119.6-44.984 64.311-93.643-183.91h-36.535z"/>
+ </g>
+</svg>
