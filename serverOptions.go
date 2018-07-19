@@ -3,6 +3,7 @@ package webwire
 import (
 	"log"
 	"os"
+	"time"
 )
 
 // OptionValue represents the setting value of an option
@@ -28,6 +29,8 @@ type ServerOptions struct {
 	SessionInfoParser     SessionInfoParser
 	MaxConcurrentHandlers uint32
 	MaxSessionConnections uint
+	HearthbeatTimeout     time.Duration
+	HearthbeatInterval    time.Duration
 	WarnLog               *log.Logger
 	ErrorLog              *log.Logger
 }
@@ -50,6 +53,18 @@ func (srvOpt *ServerOptions) SetDefaults() {
 
 	if srvOpt.SessionInfoParser == nil {
 		srvOpt.SessionInfoParser = GenericSessionInfoParser
+	}
+
+	// Use a default 60 seconds hearthbeat timeout
+	// if the specified timeout is below 2 seconds
+	if srvOpt.HearthbeatTimeout < 2*time.Second {
+		srvOpt.HearthbeatTimeout = 60 * time.Second
+	}
+
+	// Use a default 30 seconds hearthbeat interval
+	// if the specified timeout is below 1 second
+	if srvOpt.HearthbeatInterval < 1*time.Second {
+		srvOpt.HearthbeatInterval = 30 * time.Second
 	}
 
 	// Create default loggers to std-out/err when no loggers are specified

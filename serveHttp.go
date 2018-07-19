@@ -1,7 +1,9 @@
 package webwire
 
 import (
+	"fmt"
 	"net/http"
+	"time"
 )
 
 // ServeHTTP will make the server listen for incoming HTTP requests
@@ -40,6 +42,36 @@ func (srv *server) ServeHTTP(
 	}
 	defer conn.Close()
 
+	// Set ping/pong handlers
+	conn.OnPong(func(string) error {
+		if err := conn.SetReadDeadline(
+			time.Now().Add(srv.options.HearthbeatTimeout),
+		); err != nil {
+			return fmt.Errorf(
+				"Couldn't set read deadline in Pong handler: %s",
+				err,
+			)
+		}
+		return nil
+	})
+	conn.OnPing(func(string) error {
+		if err := conn.SetReadDeadline(
+			time.Now().Add(srv.options.HearthbeatTimeout),
+		); err != nil {
+			return fmt.Errorf(
+				"Couldn't set read deadline in Ping handler: %s",
+				err,
+			)
+		}
+		return nil
+	})
+	if err := conn.SetReadDeadline(
+		time.Now().Add(srv.options.HearthbeatTimeout),
+	); err != nil {
+		srv.errorLog.Printf("Couldn't set read deadline: %s", err)
+		return
+	}
+
 	// Register connected client
 	newClient := newClientAgent(conn, req.Header.Get("User-Agent"), srv)
 
@@ -49,6 +81,28 @@ func (srv *server) ServeHTTP(
 
 	// Call hook on successful connection
 	srv.impl.OnClientConnected(newClient)
+
+	// Start hearthbeat sender
+	stopHearthbeating := make(chan struct{}, 1)
+	go func() {
+		hearthbeatTicker := time.NewTicker(srv.options.HearthbeatInterval)
+	HEARTHBEAT_LOOP:
+		for {
+			if err := conn.WritePing(
+				nil,
+				time.Now().Add(srv.options.HearthbeatInterval),
+			); err != nil {
+				srv.errorLog.Printf("Couldn't write ping frame: %s", err)
+			}
+			select {
+			case <-hearthbeatTicker.C:
+				// Just continue
+			case <-stopHearthbeating:
+				hearthbeatTicker.Stop()
+				break HEARTHBEAT_LOOP
+			}
+		}
+	}()
 
 	for {
 		// Await message
@@ -60,10 +114,13 @@ func (srv *server) ServeHTTP(
 
 			newClient.unlink()
 			srv.impl.OnClientDisconnected(newClient)
-			return
+			break
 		}
 
 		// Parse & handle the message
 		go srv.handleMessage(newClient, message)
 	}
+
+	// Connection closed
+	stopHearthbeating <- struct{}{}
 }

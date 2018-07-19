@@ -15,6 +15,8 @@ func NewServer(
 	implementation ServerImplementation,
 	opts ServerOptions,
 ) (instance Server, err error) {
+	opts.SetDefaults()
+
 	instance, err = NewHeadlessServer(implementation, opts)
 	if err != nil {
 		return nil, err
@@ -70,6 +72,7 @@ func NewHeadlessServer(
 
 		// State
 		addr:        nil,
+		options:     opts,
 		shutdown:    false,
 		shutdownRdy: make(chan bool),
 		currentOps:  0,

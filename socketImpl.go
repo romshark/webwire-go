@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"sync"
+	"time"
 
 	"github.com/gorilla/websocket"
 )
@@ -151,4 +152,24 @@ func (sock *socket) Close() error {
 	defer sock.lock.Unlock()
 	sock.connected = false
 	return sock.conn.Close()
+}
+
+// SetReadDeadline implements the webwire.Socket interface
+func (sock *socket) SetReadDeadline(deadline time.Time) error {
+	return sock.conn.SetReadDeadline(deadline)
+}
+
+// OnPong implements the webwire.Socket interface
+func (sock *socket) OnPong(handler func(string) error) {
+	sock.conn.SetPongHandler(handler)
+}
+
+// OnPing implements the webwire.Socket interface
+func (sock *socket) OnPing(handler func(string) error) {
+	sock.conn.SetPingHandler(handler)
+}
+
+// WritePing implements the webwire.Socket interface
+func (sock *socket) WritePing(data []byte, deadline time.Time) error {
+	return sock.conn.WriteControl(websocket.PingMessage, data, deadline)
 }
