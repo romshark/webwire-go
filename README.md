@@ -1,16 +1,46 @@
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Build Status](https://travis-ci.org/qbeon/webwire-go.svg?branch=master)](https://travis-ci.org/qbeon/webwire-go)
-[![GoDoc](https://godoc.org/github.com/zalando/skipper?status.svg)](https://godoc.org/github.com/qbeon/webwire-go)
-[![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.me/romshark)
+<!-- HEADER -->
+<h1 align="center">
+	<br>
+	<a href="https://github.com/qbeon/webwire-go"><img src="https://cdn.rawgit.com/qbeon/webwire-go/c7c2c74e/docs/img/webwire_logo.svg" alt="WebWire" width="256"></a>
+	<br>
+	<br>
+	Webwire for <a href="https://golang.org/">Go</a>
+	<br>
+	<sub>An asynchronous duplex messaging library</sub>
+</h1>
+<p align="center">
+	<a href="https://travis-ci.org/qbeon/webwire-go">
+		<img src="https://travis-ci.org/qbeon/webwire-go.svg?branch=master" alt="Travis CI: build status">
+	</a>
+	<a href="https://coveralls.io/github/qbeon/webwire-go?branch=master">
+		<img src="https://coveralls.io/repos/github/qbeon/webwire-go/badge.svg?branch=master" alt="Coveralls: Test Coverage">
+	</a>
+	<a href="https://goreportcard.com/report/github.com/qbeon/webwire-go">
+		<img src="https://goreportcard.com/badge/github.com/qbeon/webwire-go" alt="GoReportCard">
+	</a>
+	<a href="https://codebeat.co/projects/github-com-qbeon-webwire-go-master">
+		<img src="https://codebeat.co/badges/809181da-797c-4cdd-bb23-d0324935f3b0" alt="CodeBeat: Status">
+	</a>
+	<a href="https://codeclimate.com/github/qbeon/webwire-go/maintainability">
+		<img src="https://api.codeclimate.com/v1/badges/243a45cacec7d850c64d/maintainability" alt="CodeClimate: Maintainability">
+	</a>
+	<br>
+	<a href="https://opensource.org/licenses/MIT">
+		<img src="https://img.shields.io/badge/License-MIT-green.svg" alt="Licence: MIT">
+	</a>
+	<a href="https://godoc.org/github.com/qbeon/webwire-go">
+		<img src="https://godoc.org/github.com/zalando/skipper?status.svg" alt="GoDoc">
+	</a>
+	<a href="https://www.paypal.me/romshark">
+		<img src="https://img.shields.io/badge/Donate-PayPal-green.svg" alt="Donate">
+	</a>
+</p>
+<br>
 
-[![Coverage Status](https://coveralls.io/repos/github/qbeon/webwire-go/badge.svg?branch=master)](https://coveralls.io/github/qbeon/webwire-go?branch=master)
-[![Go Report Card](https://goreportcard.com/badge/github.com/qbeon/webwire-go)](https://goreportcard.com/report/github.com/qbeon/webwire-go)
-[![codebeat badge](https://codebeat.co/badges/809181da-797c-4cdd-bb23-d0324935f3b0)](https://codebeat.co/projects/github-com-qbeon-webwire-go-master)
-[![Maintainability](https://api.codeclimate.com/v1/badges/243a45cacec7d850c64d/maintainability)](https://codeclimate.com/github/qbeon/webwire-go/maintainability)
-
-# WebWire for Golang
+<!-- CONTENT -->
 WebWire is a high-level asynchronous duplex messaging library built on top of [WebSockets](https://developer.mozilla.org/de/docs/WebSockets) and an open source binary message protocol with builtin authentication and support for UTF8 and UTF16 encoding.
 The [webwire-go](https://github.com/qbeon/webwire-go) library provides both a client and a server implementation for the Go programming language. An official [JavaScript client](https://github.com/qbeon/webwire-js) implementation is also available. WebWire provides a compact set of useful features that are not available and/or cumbersome to implement on raw WebSockets such as Request-Reply, Sessions, Thread-safety etc.
+<br>
 
 #### Table of Contents
 - [Introduction](https://github.com/qbeon/webwire-go#webwire-for-golang)
