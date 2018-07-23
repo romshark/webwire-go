@@ -4,7 +4,7 @@
 	<a href="https://github.com/qbeon/webwire-go"><img src="https://cdn.rawgit.com/qbeon/webwire-go/c7c2c74e/docs/img/webwire_logo.svg" alt="WebWire" width="256"></a>
 	<br>
 	<br>
-	Webwire for <a href="https://golang.org/">Go</a>
+	WebWire for <a href="https://golang.org/">Go</a>
 	<br>
 	<sub>An asynchronous duplex messaging library</sub>
 </h1>
@@ -43,7 +43,6 @@ The [webwire-go](https://github.com/qbeon/webwire-go) library provides both a cl
 <br>
 
 #### Table of Contents
-- [Introduction](https://github.com/qbeon/webwire-go#webwire-for-golang)
 - [Installation](https://github.com/qbeon/webwire-go#installation)
   - [Dep](https://github.com/qbeon/webwire-go#dep)
   - [Go Get](https://github.com/qbeon/webwire-go#go-get)
