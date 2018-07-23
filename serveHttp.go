@@ -45,7 +45,7 @@ func (srv *server) ServeHTTP(
 	// Set ping/pong handlers
 	conn.OnPong(func(string) error {
 		if err := conn.SetReadDeadline(
-			time.Now().Add(srv.options.HearthbeatTimeout),
+			time.Now().Add(srv.options.HeartbeatTimeout),
 		); err != nil {
 			return fmt.Errorf(
 				"Couldn't set read deadline in Pong handler: %s",
@@ -56,7 +56,7 @@ func (srv *server) ServeHTTP(
 	})
 	conn.OnPing(func(string) error {
 		if err := conn.SetReadDeadline(
-			time.Now().Add(srv.options.HearthbeatTimeout),
+			time.Now().Add(srv.options.HeartbeatTimeout),
 		); err != nil {
 			return fmt.Errorf(
 				"Couldn't set read deadline in Ping handler: %s",
@@ -66,7 +66,7 @@ func (srv *server) ServeHTTP(
 		return nil
 	})
 	if err := conn.SetReadDeadline(
-		time.Now().Add(srv.options.HearthbeatTimeout),
+		time.Now().Add(srv.options.HeartbeatTimeout),
 	); err != nil {
 		srv.errorLog.Printf("Couldn't set read deadline: %s", err)
 		return
@@ -82,27 +82,11 @@ func (srv *server) ServeHTTP(
 	// Call hook on successful connection
 	srv.impl.OnClientConnected(newClient)
 
-	// Start hearthbeat sender
-	stopHearthbeating := make(chan struct{}, 1)
-	go func() {
-		hearthbeatTicker := time.NewTicker(srv.options.HearthbeatInterval)
-	HEARTHBEAT_LOOP:
-		for {
-			if err := conn.WritePing(
-				nil,
-				time.Now().Add(srv.options.HearthbeatInterval),
-			); err != nil {
-				srv.errorLog.Printf("Couldn't write ping frame: %s", err)
-			}
-			select {
-			case <-hearthbeatTicker.C:
-				// Just continue
-			case <-stopHearthbeating:
-				hearthbeatTicker.Stop()
-				break HEARTHBEAT_LOOP
-			}
-		}
-	}()
+	// Start heartbeat sender (if enabled)
+	stopHeartbeat := make(chan struct{}, 1)
+	if srv.options.Heartbeat == Enabled {
+		go srv.heartbeat(conn, stopHeartbeat)
+	}
 
 	for {
 		// Await message
@@ -122,5 +106,7 @@ func (srv *server) ServeHTTP(
 	}
 
 	// Connection closed
-	stopHearthbeating <- struct{}{}
+	if srv.options.Heartbeat == Enabled {
+		stopHeartbeat <- struct{}{}
+	}
 }
