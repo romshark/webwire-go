@@ -13,7 +13,7 @@ import (
 // TestClientAgentIsConnected tests the IsConnected method of the client agent
 func TestClientAgentIsConnected(t *testing.T) {
 	var clientAgent *wwr.Client
-	clientAgentDefined := tmdwg.NewTimedWaitGroup(1, 1*time.Second)
+	clientAgentReady := tmdwg.NewTimedWaitGroup(1, 1*time.Second)
 	clientDisconnected := tmdwg.NewTimedWaitGroup(1, 1*time.Second)
 	testerGoroutineFinished := tmdwg.NewTimedWaitGroup(1, 1*time.Second)
 
@@ -26,9 +26,9 @@ func TestClientAgentIsConnected(t *testing.T) {
 					t.Errorf("Expected client agent to be connected")
 				}
 				clientAgent = newClt
-				clientAgentDefined.Progress(1)
 
 				go func() {
+					clientAgentReady.Progress(1)
 					if err := clientDisconnected.Wait(); err != nil {
 						t.Errorf("Client didn't disconnect")
 					}
@@ -69,6 +69,7 @@ func TestClientAgentIsConnected(t *testing.T) {
 		server.Addr().String(),
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
+			Autoconnect:           wwr.Disabled,
 		},
 		callbackPoweredClientHooks{},
 	)
@@ -78,8 +79,8 @@ func TestClientAgentIsConnected(t *testing.T) {
 	}
 
 	// Wait for the client agent to be set by the OnClientConnected handler
-	if err := clientAgentDefined.Wait(); err != nil {
-		t.Fatalf("Tester goroutine didn't finish within 1 second")
+	if err := clientAgentReady.Wait(); err != nil {
+		t.Fatalf("Client agent not ready after 1 second")
 	}
 
 	if !clientAgent.IsConnected() {
