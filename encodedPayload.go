@@ -2,12 +2,18 @@ package webwire
 
 import pld "github.com/qbeon/webwire-go/payload"
 
+// PayloadEncoding represents the type of encoding of the message payload
 type PayloadEncoding = pld.Encoding
 
 const (
+	// EncodingBinary represents unencoded binary data
 	EncodingBinary PayloadEncoding = pld.Binary
-	EncodingUtf8                   = pld.Utf8
-	EncodingUtf16                  = pld.Utf16
+
+	// EncodingUtf8 represents UTF8 encoding
+	EncodingUtf8 = pld.Utf8
+
+	// EncodingUtf16 represents UTF16 encoding
+	EncodingUtf16 = pld.Utf16
 )
 
 // EncodedPayload represents an encoded message payload

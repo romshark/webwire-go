@@ -5,26 +5,28 @@ import (
 	pld "github.com/qbeon/webwire-go/payload"
 )
 
+// MessageWrapper wraps a msg.Message pointer
+// to make it implement the Message interface
 type MessageWrapper struct {
 	actual *msg.Message
 }
 
-// MessageType returns the type of the message
+// MessageType implements the Message interface
 func (wrp *MessageWrapper) MessageType() byte {
 	return wrp.actual.Type
 }
 
-// Identifier returns the message identifier
+// Identifier implements the Message interface
 func (wrp *MessageWrapper) Identifier() [8]byte {
 	return wrp.actual.Identifier
 }
 
-// Name returns the name of the message
+// Name implements the Message interface
 func (wrp *MessageWrapper) Name() string {
 	return wrp.actual.Name
 }
 
-// Payload returns the message payload
+// Payload implements the Message interface
 func (wrp *MessageWrapper) Payload() Payload {
 	return &EncodedPayload{
 		Payload: pld.Payload{
