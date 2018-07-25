@@ -52,14 +52,14 @@ func (clt *Client) connect() error {
 				// Try to reconnect if autoconn wasn't disabled.
 				// reconnect in another goroutine to let this one die
 				// and free up the socket
-				go func() {
-					if atomic.LoadInt32(&clt.autoconnect) == autoconnectEnabled {
+				if atomic.LoadInt32(&clt.autoconnect) == autoconnectEnabled {
+					go func() {
 						if err := clt.tryAutoconnect(0); err != nil {
 							clt.errorLog.Printf("Auto-reconnect failed after connection loss: %s", err)
 							return
 						}
-					}
-				}()
+					}()
+				}
 				return
 			}
 			// Try to handle the message
