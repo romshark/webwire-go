@@ -43,17 +43,17 @@ func (req *Request) Identifier() RequestIdentifier {
 // until either the reply is fulfilled or failed or the request is timed out.
 // The timer is started when AwaitReply is called.
 func (req *Request) AwaitReply() (webwire.Payload, error) {
-	// TODO: The timer probably needs to be stoped when it's no longer needed
 	// Start timeout timer
-	timeoutTimer := time.NewTimer(req.timeout).C
+	timeoutTimer := time.NewTimer(req.timeout)
 
 	// Block until timeout or reply
 	select {
-	case <-timeoutTimer:
+	case <-timeoutTimer.C:
 		req.manager.deregister(req.identifier)
 		return &webwire.EncodedPayload{},
 			webwire.ReqTimeoutErr{Target: req.timeout}
 	case reply := <-req.reply:
+		timeoutTimer.Stop()
 		if reply.Error != nil {
 			return nil, reply.Error
 		}
