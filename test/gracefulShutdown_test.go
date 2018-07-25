@@ -71,6 +71,7 @@ func TestGracefulShutdown(t *testing.T) {
 	// is handled in a separate goroutine
 	cltOpts := wwrclt.Options{
 		DefaultRequestTimeout: 5 * time.Second,
+		Autoconnect:           wwr.Disabled,
 	}
 	clientSig := newCallbackPoweredClient(
 		serverAddr,
@@ -87,6 +88,16 @@ func TestGracefulShutdown(t *testing.T) {
 		cltOpts,
 		callbackPoweredClientHooks{},
 	)
+
+	if err := clientSig.connection.Connect(); err != nil {
+		t.Fatal("Couldn't connect signal client")
+	}
+	if err := clientReq.connection.Connect(); err != nil {
+		t.Fatal("Couldn't connect request client")
+	}
+	if err := clientLateReq.connection.Connect(); err != nil {
+		t.Fatal("Couldn't connect late request client")
+	}
 
 	// Disable autoconnect for the late client to enable immediate errors
 	clientLateConn := newCallbackPoweredClient(
