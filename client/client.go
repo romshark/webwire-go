@@ -3,13 +3,15 @@ package client
 import (
 	"sync/atomic"
 
-	webwire "github.com/qbeon/webwire-go"
-	reqman "github.com/qbeon/webwire-go/requestManager"
-
 	"fmt"
 	"log"
 	"sync"
 	"time"
+
+	webwire "github.com/qbeon/webwire-go"
+	msg "github.com/qbeon/webwire-go/message"
+	pld "github.com/qbeon/webwire-go/payload"
+	reqman "github.com/qbeon/webwire-go/requestManager"
 )
 
 const supportedProtocolVersion = "1.4"
@@ -168,17 +170,15 @@ func (clt *Client) Request(
 	defer clt.apiLock.RUnlock()
 
 	if err := clt.tryAutoconnect(clt.defaultReqTimeout); err != nil {
-		return webwire.Payload{}, err
+		return nil, err
 	}
 
-	reqType := webwire.MsgRequestBinary
-	switch payload.Encoding {
-	case webwire.EncodingUtf8:
-		reqType = webwire.MsgRequestUtf8
-	case webwire.EncodingUtf16:
-		reqType = webwire.MsgRequestUtf16
-	}
-	return clt.sendRequest(reqType, name, payload, clt.defaultReqTimeout)
+	return clt.sendRequest(
+		scanPayloadEncoding(payload),
+		name,
+		payload,
+		clt.defaultReqTimeout,
+	)
 }
 
 // TimedRequest sends a request containing the given payload to the server
@@ -195,17 +195,15 @@ func (clt *Client) TimedRequest(
 	defer clt.apiLock.RUnlock()
 
 	if err := clt.tryAutoconnect(timeout); err != nil {
-		return webwire.Payload{}, err
+		return nil, err
 	}
 
-	reqType := webwire.MsgRequestBinary
-	switch payload.Encoding {
-	case webwire.EncodingUtf8:
-		reqType = webwire.MsgRequestUtf8
-	case webwire.EncodingUtf16:
-		reqType = webwire.MsgRequestUtf16
-	}
-	return clt.sendRequest(reqType, name, payload, timeout)
+	return clt.sendRequest(
+		scanPayloadEncoding(payload),
+		name,
+		payload,
+		timeout,
+	)
 }
 
 // Signal sends a signal containing the given payload to the server
@@ -217,7 +215,28 @@ func (clt *Client) Signal(name string, payload webwire.Payload) error {
 		return err
 	}
 
-	return clt.conn.Write(webwire.NewSignalMessage(name, payload))
+	// Require either a name or a payload or both
+	if len(name) < 1 && (payload == nil || len(payload.Data()) < 1) {
+		return webwire.NewProtocolErr(
+			fmt.Errorf("Invalid request, request message requires " +
+				"either a name, a payload or both but is missing both",
+			),
+		)
+	}
+
+	// Initialize payload encoding & data
+	var encoding webwire.PayloadEncoding
+	var data []byte
+	if payload != nil {
+		encoding = payload.Encoding()
+		data = payload.Data()
+	}
+
+	return clt.conn.Write(msg.NewSignalMessage(
+		name,
+		encoding,
+		data,
+	))
 }
 
 // Session returns an exact copy of the session object or nil if there's no
@@ -302,8 +321,8 @@ func (clt *Client) CloseSession() error {
 	// Synchronize session closure to the server if connected
 	if atomic.LoadInt32(&clt.status) == StatConnected {
 		if _, err := clt.sendNamelessRequest(
-			webwire.MsgCloseSession,
-			webwire.Payload{},
+			msg.MsgCloseSession,
+			pld.Payload{},
 			clt.defaultReqTimeout,
 		); err != nil {
 			return err
@@ -331,6 +350,7 @@ func (clt *Client) Close() {
 	if atomic.LoadInt32(&clt.status) != StatConnected {
 		return
 	}
+
 	if err := clt.conn.Close(); err != nil {
 		clt.errorLog.Printf("Failed closing connection: %s", err)
 	}

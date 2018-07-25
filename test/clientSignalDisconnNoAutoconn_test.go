@@ -31,7 +31,10 @@ func TestClientSignalDisconnectedErr(t *testing.T) {
 	)
 
 	// Try to send a signal and expect a DisconnectedErr error
-	err := client.connection.Signal("", wwr.Payload{Data: []byte("test")})
+	err := client.connection.Signal("", wwr.NewPayload(
+		wwr.EncodingBinary,
+		[]byte("test"),
+	))
 	if err == nil {
 		t.Fatalf("Expected DisconnectedErr, got nil")
 	}

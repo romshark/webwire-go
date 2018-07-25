@@ -18,18 +18,19 @@ func TestSessionStatus(t *testing.T) {
 			onRequest: func(
 				_ context.Context,
 				clt *wwr.Client,
-				_ *wwr.Message,
+				_ wwr.Message,
 			) (wwr.Payload, error) {
 				// Try to create a new session
 				if err := clt.CreateSession(nil); err != nil {
-					return wwr.Payload{}, err
+					return nil, err
 				}
 
 				// Return the key of the newly created session
 				// (use default binary encoding)
-				return wwr.Payload{
-					Data: []byte(clt.SessionKey()),
-				}, nil
+				return wwr.NewPayload(
+					wwr.EncodingBinary,
+					[]byte(clt.SessionKey()),
+				), nil
 			},
 		},
 		wwr.ServerOptions{},
@@ -50,15 +51,16 @@ func TestSessionStatus(t *testing.T) {
 	)
 
 	// Authenticate and create session
-	authReqReply, err := clientA.connection.Request("login", wwr.Payload{
-		Data: []byte("bla"),
-	})
+	authReqReply, err := clientA.connection.Request("login", wwr.NewPayload(
+		wwr.EncodingBinary,
+		[]byte("bla"),
+	))
 	if err != nil {
 		t.Fatalf("Request failed: %s", err)
 	}
 
 	session := clientA.connection.Session()
-	if session.Key != string(authReqReply.Data) {
+	if session.Key != string(authReqReply.Data()) {
 		t.Fatalf("Unexpected session key")
 	}
 
@@ -87,7 +89,9 @@ func TestSessionStatus(t *testing.T) {
 		callbackPoweredClientHooks{},
 	)
 
-	if err := clientB.connection.RestoreSession(authReqReply.Data); err != nil {
+	if err := clientB.connection.RestoreSession(
+		authReqReply.Data(),
+	); err != nil {
 		t.Fatalf("Unexpected error: %s", err)
 	}
 

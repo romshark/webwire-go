@@ -23,7 +23,7 @@ func TestClientConcurrentSignal(t *testing.T) {
 			onSignal: func(
 				_ context.Context,
 				_ *webwire.Client,
-				_ *webwire.Message,
+				_ webwire.Message,
 			) {
 				finished.Progress(1)
 			},
@@ -49,7 +49,7 @@ func TestClientConcurrentSignal(t *testing.T) {
 		defer finished.Progress(1)
 		if err := client.connection.Signal(
 			"sample",
-			webwire.Payload{Data: []byte("samplepayload")},
+			webwire.NewPayload(webwire.EncodingBinary, []byte("samplepayload")),
 		); err != nil {
 			t.Errorf("Request failed: %s", err)
 		}

@@ -20,27 +20,28 @@ func TestClientAgentClose(t *testing.T) {
 			onRequest: func(
 				_ context.Context,
 				clt *wwr.Client,
-				msg *wwr.Message,
+				msg wwr.Message,
 			) (wwr.Payload, error) {
-				switch msg.Name {
+				switch msg.Name() {
 				case "closeA":
 					fallthrough
 				case "closeB":
 					clt.Close()
-					return wwr.Payload{}, nil
+					return nil, nil
 				case "login":
 					// Try to create a new session
 					if err := clt.CreateSession(nil); err != nil {
-						return wwr.Payload{}, err
+						return nil, err
 					}
 
 					// Return the key of the newly created session
 					// (use default binary encoding)
-					return wwr.Payload{
-						Data: []byte(clt.SessionKey()),
-					}, nil
+					return wwr.NewPayload(
+						wwr.EncodingBinary,
+						[]byte(clt.SessionKey()),
+					), nil
 				}
-				return wwr.Payload{}, fmt.Errorf("Invalid request %s", msg.Name)
+				return nil, fmt.Errorf("Invalid request %s", msg.Name())
 			},
 		},
 		wwr.ServerOptions{},
@@ -67,15 +68,16 @@ func TestClientAgentClose(t *testing.T) {
 	}
 
 	// Authenticate and create session
-	authReqReply, err := clientA.connection.Request("login", wwr.Payload{
-		Data: []byte("bla"),
-	})
+	authReqReply, err := clientA.connection.Request("login", wwr.NewPayload(
+		wwr.EncodingBinary,
+		[]byte("bla"),
+	))
 	if err != nil {
 		t.Fatalf("Request failed: %s", err)
 	}
 
 	session := clientA.connection.Session()
-	if session.Key != string(authReqReply.Data) {
+	if session.Key != string(authReqReply.Data()) {
 		t.Fatalf("Unexpected session key")
 	}
 
@@ -110,7 +112,9 @@ func TestClientAgentClose(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := clientB.connection.RestoreSession(authReqReply.Data); err != nil {
+	if err := clientB.connection.RestoreSession(
+		authReqReply.Data(),
+	); err != nil {
 		t.Fatalf("Unexpected error: %s", err)
 	}
 
@@ -131,9 +135,10 @@ func TestClientAgentClose(t *testing.T) {
 	}
 
 	// Close first connection
-	if _, err := clientA.connection.Request("closeA", wwr.Payload{
-		Data: []byte("a"),
-	}); err != nil {
+	if _, err := clientA.connection.Request("closeA", wwr.NewPayload(
+		wwr.EncodingBinary,
+		[]byte("a"),
+	)); err != nil {
 		t.Fatalf("Request failed: %s", err)
 	}
 
@@ -144,7 +149,7 @@ func TestClientAgentClose(t *testing.T) {
 	// Test connectivity
 	_, err = clientA.connection.Request(
 		"testA",
-		wwr.Payload{Data: []byte("testA")},
+		wwr.NewPayload(wwr.EncodingBinary, []byte("testA")),
 	)
 	if _, isDisconnErr := err.(wwr.DisconnectedErr); !isDisconnErr {
 		t.Fatalf(
@@ -171,9 +176,10 @@ func TestClientAgentClose(t *testing.T) {
 	}
 
 	// Close second connection
-	if _, err := clientB.connection.Request("closeB", wwr.Payload{
-		Data: []byte("b"),
-	}); err != nil {
+	if _, err := clientB.connection.Request("closeB", wwr.NewPayload(
+		wwr.EncodingBinary,
+		[]byte("b"),
+	)); err != nil {
 		t.Fatalf("Request failed: %s", err)
 	}
 
@@ -184,7 +190,7 @@ func TestClientAgentClose(t *testing.T) {
 	// Test connectivity
 	_, err = clientB.connection.Request(
 		"testB",
-		wwr.Payload{Data: []byte("testB")},
+		wwr.NewPayload(wwr.EncodingBinary, []byte("testB")),
 	)
 	if _, isDisconnErr := err.(wwr.DisconnectedErr); !isDisconnErr {
 		t.Fatalf(

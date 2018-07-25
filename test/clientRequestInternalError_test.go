@@ -20,10 +20,10 @@ func TestClientRequestInternalError(t *testing.T) {
 			onRequest: func(
 				_ context.Context,
 				_ *webwire.Client,
-				_ *webwire.Message,
+				_ webwire.Message,
 			) (webwire.Payload, error) {
 				// Fail the request by returning a non-ReqErr error
-				return webwire.Payload{}, fmt.Errorf(
+				return nil, fmt.Errorf(
 					"don't worry, this internal error is expected",
 				)
 			},
@@ -45,10 +45,10 @@ func TestClientRequestInternalError(t *testing.T) {
 	}
 
 	// Send request and await reply
-	reply, reqErr := client.connection.Request("", webwire.Payload{
-		Encoding: webwire.EncodingUtf8,
-		Data:     []byte("dummydata"),
-	})
+	reply, reqErr := client.connection.Request("", webwire.NewPayload(
+		webwire.EncodingUtf8,
+		[]byte("dummydata"),
+	))
 
 	// Verify returned error
 	if reqErr == nil {
@@ -59,11 +59,11 @@ func TestClientRequestInternalError(t *testing.T) {
 		t.Fatalf("Expected an internal server error, got: %v", reqErr)
 	}
 
-	if len(reply.Data) > 0 {
+	if reply != nil {
 		t.Fatalf(
 			"Reply should have been empty, but was: '%s' (%d)",
-			string(reply.Data),
-			len(reply.Data),
+			string(reply.Data()),
+			len(reply.Data()),
 		)
 	}
 }

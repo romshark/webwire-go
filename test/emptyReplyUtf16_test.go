@@ -18,12 +18,10 @@ func TestEmptyReplyUtf16(t *testing.T) {
 			onRequest: func(
 				_ context.Context,
 				_ *wwr.Client,
-				_ *wwr.Message,
+				_ wwr.Message,
 			) (wwr.Payload, error) {
 				// Return empty reply
-				return wwr.Payload{
-					Encoding: wwr.EncodingUtf16,
-				}, nil
+				return wwr.NewPayload(wwr.EncodingUtf16, nil), nil
 			},
 		},
 		wwr.ServerOptions{},
@@ -43,21 +41,24 @@ func TestEmptyReplyUtf16(t *testing.T) {
 	}
 
 	// Send request and await reply
-	reply, err := client.connection.Request("", wwr.Payload{
-		Data: []byte("test"),
-	})
+	reply, err := client.connection.Request("", wwr.NewPayload(
+		wwr.EncodingBinary,
+		[]byte("test"),
+	))
 	if err != nil {
 		t.Fatalf("Request failed: %s", err)
 	}
 
 	// Verify reply is empty
-	if reply.Encoding != wwr.EncodingUtf16 {
+	replyEncoding := reply.Encoding()
+	if replyEncoding != wwr.EncodingUtf16 {
 		t.Fatalf(
 			"Expected empty UTF16 reply, but encoding was: %s",
-			reply.Encoding.String(),
+			replyEncoding.String(),
 		)
 	}
-	if len(reply.Data) > 0 {
-		t.Fatalf("Expected empty UTF16 reply, but payload was: %v", reply.Data)
+	replyData := reply.Data()
+	if len(replyData) > 0 {
+		t.Fatalf("Expected empty UTF16 reply, but payload was: %v", replyData)
 	}
 }

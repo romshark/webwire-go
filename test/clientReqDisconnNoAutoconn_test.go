@@ -27,7 +27,7 @@ func TestClientReqDisconnNoAutoconn(t *testing.T) {
 	// Try to send a request and expect a DisconnectedErr error
 	_, err := client.connection.Request(
 		"",
-		wwr.Payload{Data: []byte("testdata")},
+		wwr.NewPayload(wwr.EncodingBinary, []byte("testdata")),
 	)
 	if _, isDisconnErr := err.(wwr.DisconnectedErr); !isDisconnErr {
 		t.Fatalf(

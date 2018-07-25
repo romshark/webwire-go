@@ -15,12 +15,12 @@ type serverImpl struct {
 	onSignal             func(
 		ctx context.Context,
 		client *wwr.Client,
-		message *wwr.Message,
+		message wwr.Message,
 	)
 	onRequest func(
 		ctx context.Context,
 		client *wwr.Client,
-		message *wwr.Message,
+		message wwr.Message,
 	) (response wwr.Payload, err error)
 }
 
@@ -49,7 +49,7 @@ func (srv *serverImpl) OnClientDisconnected(client *wwr.Client) {
 func (srv *serverImpl) OnSignal(
 	ctx context.Context,
 	clt *wwr.Client,
-	msg *wwr.Message,
+	msg wwr.Message,
 ) {
 	srv.onSignal(ctx, clt, msg)
 }
@@ -58,7 +58,7 @@ func (srv *serverImpl) OnSignal(
 func (srv *serverImpl) OnRequest(
 	ctx context.Context,
 	clt *wwr.Client,
-	msg *wwr.Message,
+	msg wwr.Message,
 ) (response wwr.Payload, err error) {
 	return srv.onRequest(ctx, clt, msg)
 }

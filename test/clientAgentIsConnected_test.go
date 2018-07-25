@@ -46,7 +46,10 @@ func TestClientAgentIsConnected(t *testing.T) {
 				}
 
 				// Try to send a signal to a disconnected client and expect an error
-				sigErr := clientAgent.Signal("", wwr.Payload{Data: []byte("testdata")})
+				sigErr := clientAgent.Signal("", wwr.NewPayload(
+					wwr.EncodingBinary,
+					[]byte("testdata"),
+				))
 				if _, isDisconnErr := sigErr.(wwr.DisconnectedErr); !isDisconnErr {
 					t.Errorf(
 						"Expected a DisconnectedErr, got: %s | %s",

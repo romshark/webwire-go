@@ -16,13 +16,14 @@ func TestServerInitiatedSessionDestruction(t *testing.T) {
 	sessionCreationCallbackCalled := tmdwg.NewTimedWaitGroup(1, 1*time.Second)
 	sessionDestructionCallbackCalled := tmdwg.NewTimedWaitGroup(1, 1*time.Second)
 	var createdSession *webwire.Session
-	expectedCredentials := webwire.Payload{
-		Encoding: webwire.EncodingUtf8,
-		Data:     []byte("secret_credentials"),
-	}
-	placeholderMessage := webwire.Payload{
-		Data: []byte("nothinginteresting"),
-	}
+	expectedCredentials := webwire.NewPayload(
+		webwire.EncodingUtf8,
+		[]byte("secret_credentials"),
+	)
+	placeholderMessage := webwire.NewPayload(
+		webwire.EncodingBinary,
+		[]byte("nothinginteresting"),
+	)
 	currentStep := 1
 
 	// Initialize webwire server
@@ -32,21 +33,22 @@ func TestServerInitiatedSessionDestruction(t *testing.T) {
 			onRequest: func(
 				_ context.Context,
 				clt *webwire.Client,
-				msg *webwire.Message,
+				msg webwire.Message,
 			) (webwire.Payload, error) {
 				// On step 2 - verify session creation and correctness
 				if currentStep == 2 {
 					sess := clt.Session()
 					compareSessions(t, createdSession, sess)
-					if string(msg.Payload.Data) != sess.Key {
+					msgPayloadData := msg.Payload().Data()
+					if string(msgPayloadData) != sess.Key {
 						t.Errorf(
 							"Clients session key doesn't match: "+
 								"client: '%s' | server: '%s'",
-							string(msg.Payload.Data),
+							string(msgPayloadData),
 							sess.Key,
 						)
 					}
-					return webwire.Payload{}, nil
+					return nil, nil
 				}
 
 				// on step 3 - close session and verify its destruction
@@ -74,7 +76,7 @@ func TestServerInitiatedSessionDestruction(t *testing.T) {
 						)
 					}
 
-					return webwire.Payload{}, nil
+					return nil, nil
 				}
 
 				// On step 4 - verify session destruction
@@ -86,18 +88,19 @@ func TestServerInitiatedSessionDestruction(t *testing.T) {
 							sess,
 						)
 					}
-					return webwire.Payload{}, nil
+					return nil, nil
 				}
 
 				// On step 1 - authenticate and create a new session
 				if err := clt.CreateSession(nil); err != nil {
-					return webwire.Payload{}, err
+					return nil, err
 				}
 
 				// Return the key of the newly created session
-				return webwire.Payload{
-					Data: []byte(clt.SessionKey()),
-				}, nil
+				return webwire.NewPayload(
+					webwire.EncodingBinary,
+					[]byte(clt.SessionKey()),
+				), nil
 			},
 		},
 		webwire.ServerOptions{},
@@ -147,9 +150,10 @@ func TestServerInitiatedSessionDestruction(t *testing.T) {
 	comparePayload(
 		t,
 		"authentication reply",
-		webwire.Payload{
-			Data: []byte(createdSession.Key),
-		},
+		webwire.NewPayload(
+			webwire.EncodingBinary,
+			[]byte(createdSession.Key),
+		),
 		authReqReply,
 	)
 
@@ -175,7 +179,10 @@ func TestServerInitiatedSessionDestruction(t *testing.T) {
 	// Send a test-request to verify the session creation on the server
 	if _, err := client.connection.Request(
 		"",
-		webwire.Payload{Data: []byte(client.connection.Session().Key)},
+		webwire.NewPayload(
+			webwire.EncodingBinary,
+			[]byte(client.connection.Session().Key),
+		),
 	); err != nil {
 		t.Fatalf("Session creation verification request failed: %s", err)
 	}

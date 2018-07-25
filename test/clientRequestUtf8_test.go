@@ -11,14 +11,14 @@ import (
 
 // TestClientRequest tests requests with UTF8 encoded payloads
 func TestClientRequest(t *testing.T) {
-	expectedRequestPayload := webwire.Payload{
-		Encoding: webwire.EncodingUtf8,
-		Data:     []byte("webwire_test_REQUEST_payload"),
-	}
-	expectedReplyPayload := webwire.Payload{
-		Encoding: webwire.EncodingUtf8,
-		Data:     []byte("webwire_test_RESPONSE_message"),
-	}
+	expectedRequestPayload := webwire.NewPayload(
+		webwire.EncodingUtf8,
+		[]byte("webwire_test_REQUEST_payload"),
+	)
+	expectedReplyPayload := webwire.NewPayload(
+		webwire.EncodingUtf8,
+		[]byte("webwire_test_RESPONSE_message"),
+	)
 
 	// Initialize webwire server given only the request
 	server := setupServer(
@@ -27,14 +27,14 @@ func TestClientRequest(t *testing.T) {
 			onRequest: func(
 				_ context.Context,
 				_ *webwire.Client,
-				msg *webwire.Message,
+				msg webwire.Message,
 			) (webwire.Payload, error) {
 				// Verify request payload
 				comparePayload(
 					t,
 					"client request",
 					expectedRequestPayload,
-					msg.Payload,
+					msg.Payload(),
 				)
 				return expectedReplyPayload, nil
 			},

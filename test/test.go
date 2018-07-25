@@ -35,7 +35,7 @@ func setupServer(
 		impl.onSignal = func(
 			_ context.Context,
 			_ *wwr.Client,
-			_ *wwr.Message,
+			_ wwr.Message,
 		) {
 		}
 	}
@@ -43,9 +43,9 @@ func setupServer(
 		impl.onRequest = func(
 			_ context.Context,
 			_ *wwr.Client,
-			_ *wwr.Message,
+			_ wwr.Message,
 		) (response wwr.Payload, err error) {
-			return wwr.Payload{}, nil
+			return nil, nil
 		}
 	}
 
@@ -54,7 +54,13 @@ func setupServer(
 		opts.SessionManager = newInMemSessManager()
 	}
 
+	// Use default address
 	opts.Address = "127.0.0.1:0"
+
+	// Use default heartbeat configuration if not set
+	if opts.Heartbeat == wwr.OptionUnset {
+		opts.Heartbeat = wwr.Disabled
+	}
 
 	server, err := wwr.NewServer(
 		impl,
@@ -76,23 +82,23 @@ func setupServer(
 }
 
 func comparePayload(t *testing.T, name string, expected, actual wwr.Payload) {
-	if actual.Encoding != expected.Encoding {
+	if actual.Encoding() != expected.Encoding() {
 		t.Errorf(
 			"Invalid %s: payload encoding differs:"+
 				"\n expected: '%v'\n actual:   '%v'",
 			name,
-			expected.Encoding,
-			actual.Encoding,
+			expected.Encoding(),
+			actual.Encoding(),
 		)
 		return
 	}
-	if !reflect.DeepEqual(actual.Data, expected.Data) {
+	if !reflect.DeepEqual(actual.Data(), expected.Data()) {
 		t.Errorf(
 			"Invalid %s: payload data differs:"+
 				"\n expected: '%s'\n actual:   '%s'",
 			name,
-			string(expected.Data),
-			string(actual.Data),
+			string(expected.Data()),
+			string(actual.Data()),
 		)
 	}
 }

@@ -18,10 +18,10 @@ func TestEmptyReply(t *testing.T) {
 			onRequest: func(
 				_ context.Context,
 				_ *wwr.Client,
-				_ *wwr.Message,
+				_ wwr.Message,
 			) (wwr.Payload, error) {
 				// Return empty reply
-				return wwr.Payload{}, nil
+				return nil, nil
 			},
 		},
 		wwr.ServerOptions{},
@@ -41,21 +41,24 @@ func TestEmptyReply(t *testing.T) {
 	}
 
 	// Send request and await reply
-	reply, err := client.connection.Request("", wwr.Payload{
-		Data: []byte("test"),
-	})
+	reply, err := client.connection.Request("", wwr.NewPayload(
+		wwr.EncodingBinary,
+		[]byte("test"),
+	))
 	if err != nil {
 		t.Fatalf("Request failed: %s", err)
 	}
 
 	// Verify reply is empty
-	if reply.Encoding != wwr.EncodingBinary {
+	replyEncoding := reply.Encoding()
+	if replyEncoding != wwr.EncodingBinary {
 		t.Fatalf(
 			"Expected empty binary reply, but encoding was: %s",
-			reply.Encoding.String(),
+			replyEncoding.String(),
 		)
 	}
-	if len(reply.Data) > 0 {
-		t.Fatalf("Expected empty binary reply, but payload was: %v", reply.Data)
+	replyData := reply.Data()
+	if len(replyData) > 0 {
+		t.Fatalf("Expected empty binary reply, but payload was: %v", replyData)
 	}
 }

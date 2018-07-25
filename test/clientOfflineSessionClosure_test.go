@@ -24,23 +24,23 @@ func TestClientOfflineSessionClosure(t *testing.T) {
 			onRequest: func(
 				_ context.Context,
 				clt *webwire.Client,
-				_ *webwire.Message,
+				_ webwire.Message,
 			) (webwire.Payload, error) {
 				if currentStep == 2 {
 					// Expect the session to be removed
 					if clt.HasSession() {
 						t.Errorf("Expected client to be anonymous")
 					}
-					return webwire.Payload{}, nil
+					return nil, nil
 				}
 
 				// Try to create a new session
 				if err := clt.CreateSession(nil); err != nil {
-					return webwire.Payload{}, err
+					return nil, err
 				}
 
 				// Return the key of the newly created session
-				return webwire.Payload{}, nil
+				return nil, nil
 			},
 		},
 		webwire.ServerOptions{
@@ -112,7 +112,7 @@ func TestClientOfflineSessionClosure(t *testing.T) {
 	// Create a new session
 	if _, err := client.connection.Request(
 		"login",
-		webwire.Payload{Data: []byte("auth")},
+		webwire.NewPayload(webwire.EncodingBinary, []byte("auth")),
 	); err != nil {
 		t.Fatalf("Auth request failed: %s", err)
 	}
@@ -152,7 +152,7 @@ func TestClientOfflineSessionClosure(t *testing.T) {
 	// Ensure the client is anonymous
 	if _, err := client.connection.Request(
 		"verify-restored",
-		webwire.Payload{Data: []byte("isrestored?")},
+		webwire.NewPayload(webwire.EncodingBinary, []byte("isrestored?")),
 	); err != nil {
 		t.Fatalf("Second request failed: %s", err)
 	}

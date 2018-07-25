@@ -62,7 +62,7 @@ func (clt *PubSubClient) OnSignal(message wwr.Payload) {
 		"Signal %d of %d received: %s",
 		clt.counter,
 		clt.target,
-		string(message.Data),
+		string(message.Data()),
 	)
 	clt.targetReached.Done()
 }

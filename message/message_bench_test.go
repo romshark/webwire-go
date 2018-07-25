@@ -1,4 +1,4 @@
-package webwire
+package message
 
 import "testing"
 

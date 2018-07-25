@@ -12,26 +12,29 @@ import (
 
 // TestClientSignalUtf16 tests client-side signals with UTF16 encoded payloads
 func TestClientSignalUtf16(t *testing.T) {
-	testPayload := webwire.Payload{
-		Encoding: webwire.EncodingUtf16,
-		Data:     []byte{00, 115, 00, 97, 00, 109, 00, 112, 00, 108, 00, 101},
-	}
+	testPayload := webwire.NewPayload(
+		webwire.EncodingUtf16,
+		[]byte{00, 115, 00, 97, 00, 109, 00, 112, 00, 108, 00, 101},
+	)
 	verifyPayload := func(payload webwire.Payload) {
-		if payload.Encoding != webwire.EncodingUtf16 {
+		payloadEncoding := payload.Encoding()
+		if payloadEncoding != webwire.EncodingUtf16 {
 			t.Errorf(
 				"Unexpected payload encoding: %s",
-				payload.Encoding.String(),
+				payloadEncoding.String(),
 			)
 		}
-		if len(testPayload.Data) != len(payload.Data) {
-			t.Errorf("Corrupt payload: %s", payload.Data)
+		testPayloadData := testPayload.Data()
+		payloadData := payload.Data()
+		if len(testPayloadData) != len(payloadData) {
+			t.Errorf("Corrupt payload: %s", payloadData)
 		}
-		for i := 0; i < len(testPayload.Data); i++ {
-			if testPayload.Data[i] != payload.Data[i] {
+		for i := 0; i < len(testPayloadData); i++ {
+			if testPayloadData[i] != payloadData[i] {
 				t.Errorf(
 					"Corrupt payload, mismatching byte at position %d: %s",
 					i,
-					payload.Data,
+					payloadData,
 				)
 				return
 			}
@@ -46,9 +49,9 @@ func TestClientSignalUtf16(t *testing.T) {
 			onSignal: func(
 				_ context.Context,
 				_ *webwire.Client,
-				msg *webwire.Message,
+				msg webwire.Message,
 			) {
-				verifyPayload(msg.Payload)
+				verifyPayload(msg.Payload())
 
 				// Synchronize, notify signal arrival
 				signalArrived.Progress(1)
@@ -71,10 +74,10 @@ func TestClientSignalUtf16(t *testing.T) {
 	}
 
 	// Send signal
-	err := client.connection.Signal("", webwire.Payload{
-		Encoding: webwire.EncodingUtf16,
-		Data:     []byte{00, 115, 00, 97, 00, 109, 00, 112, 00, 108, 00, 101},
-	})
+	err := client.connection.Signal("", webwire.NewPayload(
+		webwire.EncodingUtf16,
+		[]byte{00, 115, 00, 97, 00, 109, 00, 112, 00, 108, 00, 101},
+	))
 	if err != nil {
 		t.Fatalf("Couldn't send signal: %s", err)
 	}

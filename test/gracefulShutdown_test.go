@@ -39,9 +39,9 @@ func TestGracefulShutdown(t *testing.T) {
 			onSignal: func(
 				_ context.Context,
 				_ *wwr.Client,
-				msg *wwr.Message,
+				msg wwr.Message,
 			) {
-				if msg.Name == "1" {
+				if msg.Name() == "1" {
 					firstReqAndSigSent.Progress(1)
 				}
 				// Sleep after the first signal was marked as done
@@ -51,13 +51,13 @@ func TestGracefulShutdown(t *testing.T) {
 			onRequest: func(
 				_ context.Context,
 				_ *wwr.Client,
-				msg *wwr.Message,
+				msg wwr.Message,
 			) (wwr.Payload, error) {
-				if msg.Name == "1" {
+				if msg.Name() == "1" {
 					firstReqAndSigSent.Progress(1)
 				}
 				time.Sleep(handlerExecutionDuration)
-				return wwr.Payload{Data: expectedReqReply}, nil
+				return wwr.NewPayload(wwr.EncodingBinary, expectedReqReply), nil
 			},
 		},
 		wwr.ServerOptions{},
@@ -103,7 +103,7 @@ func TestGracefulShutdown(t *testing.T) {
 		// (SIGNAL)
 		if err := clientSig.connection.Signal(
 			"1",
-			wwr.Payload{Data: []byte("test")},
+			wwr.NewPayload(wwr.EncodingBinary, []byte("test")),
 		); err != nil {
 			t.Errorf("Signal failed: %s", err)
 		}
@@ -111,14 +111,14 @@ func TestGracefulShutdown(t *testing.T) {
 		// (REQUEST)
 		if rep, err := clientReq.connection.Request(
 			"1",
-			wwr.Payload{Data: []byte("test")},
+			wwr.NewPayload(wwr.EncodingBinary, []byte("test")),
 		); err != nil {
 			t.Errorf("Request failed: %s", err)
-		} else if string(rep.Data) != string(expectedReqReply) {
+		} else if string(rep.Data()) != string(expectedReqReply) {
 			t.Errorf(
 				"Expected and actual replies differ: %s | %s",
 				string(expectedReqReply),
-				string(rep.Data),
+				string(rep.Data()),
 			)
 		} else {
 			handlersFinished.Progress(1)
@@ -168,7 +168,7 @@ func TestGracefulShutdown(t *testing.T) {
 		// Verify request rejection during shutdown (LATE REQ)
 		_, lateReqErr := clientLateReq.connection.Request(
 			"",
-			wwr.Payload{Data: []byte("test")},
+			wwr.NewPayload(wwr.EncodingBinary, []byte("test")),
 		)
 		switch err := lateReqErr.(type) {
 		case wwr.ReqSrvShutdownErr:

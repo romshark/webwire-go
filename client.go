@@ -6,6 +6,8 @@ import (
 	"net"
 	"sync"
 	"time"
+
+	msg "github.com/qbeon/webwire-go/message"
 )
 
 type clientAgentStatus = int32
@@ -135,7 +137,11 @@ func (clt *Client) IsConnected() bool {
 
 // Signal sends a named signal containing the given payload to the client
 func (clt *Client) Signal(name string, payload Payload) error {
-	return clt.conn.Write(NewSignalMessage(name, payload))
+	return clt.conn.Write(msg.NewSignalMessage(
+		name,
+		payload.Encoding(),
+		payload.Data(),
+	))
 }
 
 // CreateSession creates a new session for this client.
@@ -209,18 +215,18 @@ func (clt *Client) notifySessionCreated(newSession *Session) error {
 	}
 
 	// Notify client about the session creation
-	msg := make([]byte, 1+len(encoded))
-	msg[0] = MsgSessionCreated
+	message := make([]byte, 1+len(encoded))
+	message[0] = msg.MsgSessionCreated
 
 	for i := 0; i < len(encoded); i++ {
-		msg[1+i] = encoded[i]
+		message[1+i] = encoded[i]
 	}
-	return clt.conn.Write(msg)
+	return clt.conn.Write(message)
 }
 
 func (clt *Client) notifySessionClosed() error {
 	// Notify client about the session destruction
-	if err := clt.conn.Write([]byte{MsgSessionClosed}); err != nil {
+	if err := clt.conn.Write([]byte{msg.MsgSessionClosed}); err != nil {
 		return fmt.Errorf(
 			"Couldn't notify client about the session destruction: %s",
 			err,

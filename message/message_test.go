@@ -1,4 +1,4 @@
-package webwire
+package message
 
 import (
 	"bytes"
@@ -6,6 +6,8 @@ import (
 	"reflect"
 	"testing"
 	"time"
+
+	pld "github.com/qbeon/webwire-go/payload"
 )
 
 /****************************************************************\
@@ -24,11 +26,11 @@ func TestMsgParseCloseSessReq(t *testing.T) {
 
 	// Initialize expected message
 	expected := Message{
-		msgType: MsgCloseSession,
-		id:      id,
-		Name:    "",
-		Payload: Payload{
-			Encoding: EncodingBinary,
+		Type:       MsgCloseSession,
+		Identifier: id,
+		Name:       "",
+		Payload: pld.Payload{
+			Encoding: pld.Binary,
 			Data:     nil,
 		},
 	}
@@ -43,7 +45,9 @@ func TestMsgParseCloseSessReq(t *testing.T) {
 // TestMsgParseRestrSessReq tests parsing of a session restoration request
 func TestMsgParseRestrSessReq(t *testing.T) {
 	id := genRndMsgIdentifier()
-	sessionKey := generateSessionKey()
+
+	//sessionKey := sess.GenerateSessionKey()
+	sessionKey := "somesamplesessionkey"
 
 	// Compose encoded message
 	// Add type flag
@@ -55,11 +59,11 @@ func TestMsgParseRestrSessReq(t *testing.T) {
 
 	// Initialize expected message with the session key in the payload
 	expected := Message{
-		msgType: MsgRestoreSession,
-		id:      id,
-		Name:    "",
-		Payload: Payload{
-			Encoding: EncodingBinary,
+		Type:       MsgRestoreSession,
+		Identifier: id,
+		Name:       "",
+		Payload: pld.Payload{
+			Encoding: pld.Binary,
 			Data:     []byte(sessionKey),
 		},
 	}
@@ -81,10 +85,10 @@ func TestMsgParseRequestBinary(t *testing.T) {
 
 	// Initialize expected message
 	expected := Message{
-		msgType: MsgRequestBinary,
-		id:      id,
-		Name:    string(name),
-		Payload: payload,
+		Type:       MsgRequestBinary,
+		Identifier: id,
+		Name:       string(name),
+		Payload:    payload,
 	}
 
 	// Parse
@@ -104,10 +108,10 @@ func TestMsgParseRequestUtf8(t *testing.T) {
 
 	// Initialize expected message
 	expected := Message{
-		msgType: MsgRequestUtf8,
-		id:      id,
-		Name:    string(name),
-		Payload: payload,
+		Type:       MsgRequestUtf8,
+		Identifier: id,
+		Name:       string(name),
+		Payload:    payload,
 	}
 
 	// Parse
@@ -126,10 +130,10 @@ func TestMsgParseRequestUtf16(t *testing.T) {
 
 	// Initialize expected message
 	expected := Message{
-		msgType: MsgRequestUtf16,
-		id:      id,
-		Name:    string(name),
-		Payload: payload,
+		Type:       MsgRequestUtf16,
+		Identifier: id,
+		Name:       string(name),
+		Payload:    payload,
 	}
 
 	// Parse
@@ -148,10 +152,10 @@ func TestMsgParseReplyBinary(t *testing.T) {
 
 	// Initialize expected message
 	expected := Message{
-		msgType: MsgReplyBinary,
-		id:      id,
-		Name:    "",
-		Payload: payload,
+		Type:       MsgReplyBinary,
+		Identifier: id,
+		Name:       "",
+		Payload:    payload,
 	}
 
 	// Parse
@@ -170,10 +174,10 @@ func TestMsgParseReplyUtf8(t *testing.T) {
 
 	// Initialize expected message
 	expected := Message{
-		msgType: MsgReplyUtf8,
-		id:      id,
-		Name:    "",
-		Payload: payload,
+		Type:       MsgReplyUtf8,
+		Identifier: id,
+		Name:       "",
+		Payload:    payload,
 	}
 
 	// Parse
@@ -191,10 +195,10 @@ func TestMsgParseReplyUtf16(t *testing.T) {
 
 	// Initialize expected message
 	expected := Message{
-		msgType: MsgReplyUtf16,
-		id:      id,
-		Name:    "",
-		Payload: payload,
+		Type:       MsgReplyUtf16,
+		Identifier: id,
+		Name:       "",
+		Payload:    payload,
 	}
 
 	// Parse
@@ -214,7 +218,7 @@ func TestMsgParseSignalBinary(t *testing.T) {
 
 	// Initialize expected message
 	expected := Message{
-		msgType: MsgSignalBinary,
+		Type:    MsgSignalBinary,
 		Name:    string(name),
 		Payload: payload,
 	}
@@ -236,7 +240,7 @@ func TestMsgParseSignalUtf8(t *testing.T) {
 
 	// Initialize expected message
 	expected := Message{
-		msgType: MsgSignalUtf8,
+		Type:    MsgSignalUtf8,
 		Name:    string(name),
 		Payload: payload,
 	}
@@ -257,10 +261,10 @@ func TestMsgParseSignalUtf16(t *testing.T) {
 
 	// Initialize expected message
 	expected := Message{
-		msgType: MsgSignalUtf16,
-		id:      [8]byte{0, 0, 0, 0, 0, 0, 0, 0},
-		Name:    string(name),
-		Payload: payload,
+		Type:       MsgSignalUtf16,
+		Identifier: [8]byte{0, 0, 0, 0, 0, 0, 0, 0},
+		Name:       string(name),
+		Payload:    payload,
 	}
 
 	// Parse
@@ -272,8 +276,13 @@ func TestMsgParseSignalUtf16(t *testing.T) {
 
 // TestMsgParseSessCreatedSig tests parsing of session created signal
 func TestMsgParseSessCreatedSig(t *testing.T) {
-	sessionKey := generateSessionKey()
-	session := Session{
+	//sessionKey := generateSessionKey()
+	sessionKey := "somesamplesessionkey"
+	session := struct {
+		Key      string
+		Creation time.Time
+		Info     interface{}
+	}{
 		Key:      sessionKey,
 		Creation: time.Now(),
 		Info:     nil,
@@ -282,8 +291,8 @@ func TestMsgParseSessCreatedSig(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Couldn't marshal session object: %s", err)
 	}
-	payload := Payload{
-		Encoding: EncodingBinary,
+	payload := pld.Payload{
+		Encoding: pld.Binary,
 		Data:     marshalledSession,
 	}
 
@@ -295,10 +304,10 @@ func TestMsgParseSessCreatedSig(t *testing.T) {
 
 	// Initialize expected message
 	expected := Message{
-		msgType: MsgSessionCreated,
-		id:      [8]byte{0, 0, 0, 0, 0, 0, 0, 0},
-		Name:    "",
-		Payload: payload,
+		Type:       MsgSessionCreated,
+		Identifier: [8]byte{0, 0, 0, 0, 0, 0, 0, 0},
+		Name:       "",
+		Payload:    payload,
 	}
 
 	// Parse
@@ -316,10 +325,10 @@ func TestMsgParseSessClosedSig(t *testing.T) {
 
 	// Initialize expected message
 	expected := Message{
-		msgType: MsgSessionClosed,
-		id:      [8]byte{0, 0, 0, 0, 0, 0, 0, 0},
-		Name:    "",
-		Payload: Payload{},
+		Type:       MsgSessionClosed,
+		Identifier: [8]byte{0, 0, 0, 0, 0, 0, 0, 0},
+		Name:       "",
+		Payload:    pld.Payload{},
 	}
 
 	// Parse
@@ -348,7 +357,8 @@ func TestMsgParseUnknownMessageType(t *testing.T) {
 // TestMsgNewNamelessReqMsg tests NewNamelessRequestMessage
 func TestMsgNewNamelessReqMsg(t *testing.T) {
 	id := genRndMsgIdentifier()
-	sessionKey := generateSessionKey()
+	// sessionKey := generateSessionKey()
+	sessionKey := "somesamplesessionkey"
 
 	// Compose encoded message
 	// Add type flag
@@ -391,8 +401,8 @@ func TestMsgNewEmptyReqMsg(t *testing.T) {
 func TestMsgNewReqMsgBinary(t *testing.T) {
 	id := genRndMsgIdentifier()
 	name := genRndName(1, 255)
-	payload := Payload{
-		Encoding: EncodingBinary,
+	payload := pld.Payload{
+		Encoding: pld.Binary,
 		Data:     []byte("random payload data"),
 	}
 
@@ -409,7 +419,12 @@ func TestMsgNewReqMsgBinary(t *testing.T) {
 	// (skip header padding byte, not necessary in case of binary encoding)
 	expected = append(expected, payload.Data...)
 
-	actual := NewRequestMessage(id, string(name), payload)
+	actual := NewRequestMessage(
+		id,
+		string(name),
+		payload.Encoding,
+		payload.Data,
+	)
 
 	if !reflect.DeepEqual(expected, actual) {
 		t.Fatalf("Binary results differ:\n%v\n%v", expected, actual)
@@ -420,8 +435,8 @@ func TestMsgNewReqMsgBinary(t *testing.T) {
 func TestMsgNewReqMsgUtf8(t *testing.T) {
 	id := genRndMsgIdentifier()
 	name := genRndName(1, 255)
-	payload := Payload{
-		Encoding: EncodingUtf8,
+	payload := pld.Payload{
+		Encoding: pld.Utf8,
 		Data:     []byte("random payload data"),
 	}
 
@@ -438,7 +453,12 @@ func TestMsgNewReqMsgUtf8(t *testing.T) {
 	// (skip header padding byte, not necessary in case of UTF8 encoding)
 	expected = append(expected, payload.Data...)
 
-	actual := NewRequestMessage(id, string(name), payload)
+	actual := NewRequestMessage(
+		id,
+		string(name),
+		payload.Encoding,
+		payload.Data,
+	)
 
 	if !reflect.DeepEqual(expected, actual) {
 		t.Fatalf("Binary results differ:\n%v\n%v", expected, actual)
@@ -449,8 +469,8 @@ func TestMsgNewReqMsgUtf8(t *testing.T) {
 func TestMsgNewReqMsgUtf16(t *testing.T) {
 	id := genRndMsgIdentifier()
 	name := genRndName(1, 255)
-	payload := Payload{
-		Encoding: EncodingUtf16,
+	payload := pld.Payload{
+		Encoding: pld.Utf16,
 		Data:     []byte{'r', 0, 'a', 0, 'n', 0, 'd', 0, 'o', 0, 'm', 0},
 	}
 
@@ -470,7 +490,12 @@ func TestMsgNewReqMsgUtf16(t *testing.T) {
 	// Add payload
 	expected = append(expected, payload.Data...)
 
-	actual := NewRequestMessage(id, string(name), payload)
+	actual := NewRequestMessage(
+		id,
+		string(name),
+		payload.Encoding,
+		payload.Data,
+	)
 
 	if !reflect.DeepEqual(expected, actual) {
 		t.Fatalf("Binary results differ:\n%v\n%v", expected, actual)
@@ -481,8 +506,8 @@ func TestMsgNewReqMsgUtf16(t *testing.T) {
 // UTF16 payload encoding and a name of odd length
 func TestMsgNewReqMsgUtf16OddNameLen(t *testing.T) {
 	id := genRndMsgIdentifier()
-	payload := Payload{
-		Encoding: EncodingUtf16,
+	payload := pld.Payload{
+		Encoding: pld.Utf16,
 		Data:     []byte{'r', 0, 'a', 0, 'n', 0, 'd', 0, 'o', 0, 'm', 0},
 	}
 
@@ -500,7 +525,7 @@ func TestMsgNewReqMsgUtf16OddNameLen(t *testing.T) {
 	// Add payload
 	expected = append(expected, payload.Data...)
 
-	actual := NewRequestMessage(id, "odd", payload)
+	actual := NewRequestMessage(id, "odd", payload.Encoding, payload.Data)
 
 	if !reflect.DeepEqual(expected, actual) {
 		t.Fatalf("Binary results differ:\n%v\n%v", expected, actual)
@@ -511,8 +536,8 @@ func TestMsgNewReqMsgUtf16OddNameLen(t *testing.T) {
 // using default binary payload encoding
 func TestMsgNewReplyMsgBinary(t *testing.T) {
 	id := genRndMsgIdentifier()
-	payload := Payload{
-		Encoding: EncodingBinary,
+	payload := pld.Payload{
+		Encoding: pld.Binary,
 		Data:     []byte("random payload data"),
 	}
 
@@ -525,7 +550,11 @@ func TestMsgNewReplyMsgBinary(t *testing.T) {
 	// Add payload
 	expected = append(expected, payload.Data...)
 
-	actual := NewReplyMessage(id, payload)
+	actual := NewReplyMessage(
+		id,
+		payload.Encoding,
+		payload.Data,
+	)
 
 	if !reflect.DeepEqual(expected, actual) {
 		t.Fatalf("Binary results differ:\n%v\n%v", expected, actual)
@@ -535,8 +564,8 @@ func TestMsgNewReplyMsgBinary(t *testing.T) {
 // TestMsgNewReplyMsgUtf8 tests NewReplyMessage using UTF8 payload encoding
 func TestMsgNewReplyMsgUtf8(t *testing.T) {
 	id := genRndMsgIdentifier()
-	payload := Payload{
-		Encoding: EncodingUtf8,
+	payload := pld.Payload{
+		Encoding: pld.Utf8,
 		Data:     []byte("random payload data"),
 	}
 
@@ -549,7 +578,11 @@ func TestMsgNewReplyMsgUtf8(t *testing.T) {
 	// Add payload
 	expected = append(expected, payload.Data...)
 
-	actual := NewReplyMessage(id, payload)
+	actual := NewReplyMessage(
+		id,
+		payload.Encoding,
+		payload.Data,
+	)
 
 	if !reflect.DeepEqual(expected, actual) {
 		t.Fatalf("Binary results differ:\n%v\n%v", expected, actual)
@@ -559,8 +592,8 @@ func TestMsgNewReplyMsgUtf8(t *testing.T) {
 // TestMsgNewReplyMsgUtf16 tests NewReplyMessage using UTF16 payload encoding
 func TestMsgNewReplyMsgUtf16(t *testing.T) {
 	id := genRndMsgIdentifier()
-	payload := Payload{
-		Encoding: EncodingUtf16,
+	payload := pld.Payload{
+		Encoding: pld.Utf16,
 		Data:     []byte{'r', 0, 'a', 0, 'n', 0, 'd', 0, 'o', 0, 'm', 0},
 	}
 
@@ -575,7 +608,11 @@ func TestMsgNewReplyMsgUtf16(t *testing.T) {
 	// Add payload
 	expected = append(expected, payload.Data...)
 
-	actual := NewReplyMessage(id, payload)
+	actual := NewReplyMessage(
+		id,
+		payload.Encoding,
+		payload.Data,
+	)
 
 	if !reflect.DeepEqual(expected, actual) {
 		t.Fatalf("Binary results differ:\n%v\n%v", expected, actual)
@@ -586,8 +623,8 @@ func TestMsgNewReplyMsgUtf16(t *testing.T) {
 // using the default binary encoding
 func TestMsgNewSigMsgBinary(t *testing.T) {
 	name := genRndName(1, 255)
-	payload := Payload{
-		Encoding: EncodingBinary,
+	payload := pld.Payload{
+		Encoding: pld.Binary,
 		Data:     []byte("random payload data"),
 	}
 
@@ -601,7 +638,11 @@ func TestMsgNewSigMsgBinary(t *testing.T) {
 	// Add payload (skip header padding byte in case of binary encoding)
 	expected = append(expected, payload.Data...)
 
-	actual := NewSignalMessage(string(name), payload)
+	actual := NewSignalMessage(
+		string(name),
+		payload.Encoding,
+		payload.Data,
+	)
 
 	if !reflect.DeepEqual(expected, actual) {
 		t.Fatalf("Binary results differ:\n%v\n%v", expected, actual)
@@ -611,8 +652,8 @@ func TestMsgNewSigMsgBinary(t *testing.T) {
 // TestMsgNewSigMsgUtf8 tests NewSignalMessage using UTF8 encoding
 func TestMsgNewSigMsgUtf8(t *testing.T) {
 	name := genRndName(1, 255)
-	payload := Payload{
-		Encoding: EncodingUtf8,
+	payload := pld.Payload{
+		Encoding: pld.Utf8,
 		Data:     []byte("random payload data"),
 	}
 
@@ -626,7 +667,11 @@ func TestMsgNewSigMsgUtf8(t *testing.T) {
 	// Add payload (skip header padding byte in case of UTF8 encoding)
 	expected = append(expected, payload.Data...)
 
-	actual := NewSignalMessage(string(name), payload)
+	actual := NewSignalMessage(
+		string(name),
+		payload.Encoding,
+		payload.Data,
+	)
 
 	if !reflect.DeepEqual(expected, actual) {
 		t.Fatalf("Binary results differ:\n%v\n%v", expected, actual)
@@ -636,8 +681,8 @@ func TestMsgNewSigMsgUtf8(t *testing.T) {
 // TestMsgNewSigMsgUtf16 tests NewSignalMessage using UTF16 encoding
 func TestMsgNewSigMsgUtf16(t *testing.T) {
 	name := genRndName(1, 255)
-	payload := Payload{
-		Encoding: EncodingUtf16,
+	payload := pld.Payload{
+		Encoding: pld.Utf16,
 		Data:     []byte{'r', 0, 'a', 0, 'n', 0, 'd', 0, 'o', 0, 'm', 0},
 	}
 
@@ -655,7 +700,11 @@ func TestMsgNewSigMsgUtf16(t *testing.T) {
 	// Add payload
 	expected = append(expected, payload.Data...)
 
-	actual := NewSignalMessage(string(name), payload)
+	actual := NewSignalMessage(
+		string(name),
+		payload.Encoding,
+		payload.Data,
+	)
 
 	if !reflect.DeepEqual(expected, actual) {
 		t.Fatalf("Binary results differ:\n%v\n%v", expected, actual)
@@ -665,8 +714,8 @@ func TestMsgNewSigMsgUtf16(t *testing.T) {
 // TestMsgNewSigMsgUtf16OddNameLen tests NewSignalMessage using UTF16 encoding
 // and a name of odd length to ensure a header padding byte is used
 func TestMsgNewSigMsgUtf16OddNameLen(t *testing.T) {
-	payload := Payload{
-		Encoding: EncodingUtf16,
+	payload := pld.Payload{
+		Encoding: pld.Utf16,
 		Data:     []byte{'r', 0, 'a', 0, 'n', 0, 'd', 0, 'o', 0, 'm', 0},
 	}
 
@@ -682,7 +731,11 @@ func TestMsgNewSigMsgUtf16OddNameLen(t *testing.T) {
 	// Add payload
 	expected = append(expected, payload.Data...)
 
-	actual := NewSignalMessage("odd", payload)
+	actual := NewSignalMessage(
+		"odd",
+		payload.Encoding,
+		payload.Data,
+	)
 
 	if !reflect.DeepEqual(expected, actual) {
 		t.Fatalf("Binary results differ:\n%v\n%v", expected, actual)
@@ -926,8 +979,8 @@ func TestMsgParseInvalidSessionClosedTooLong(t *testing.T) {
 // (name length flag doesn't correspond to actual name length)
 func TestMsgParseRequestCorruptNameLenFlag(t *testing.T) {
 	id := genRndMsgIdentifier()
-	payload := Payload{
-		Encoding: EncodingBinary,
+	payload := pld.Payload{
+		Encoding: pld.Binary,
 		Data:     []byte("invalid"),
 	}
 
@@ -959,8 +1012,8 @@ func TestMsgParseRequestCorruptNameLenFlag(t *testing.T) {
 // (name length flag doesn't correspond to actual name length)
 func TestMsgParseRequestUtf16CorruptNameLenFlag(t *testing.T) {
 	id := genRndMsgIdentifier()
-	payload := Payload{
-		Encoding: EncodingUtf16,
+	payload := pld.Payload{
+		Encoding: pld.Utf16,
 		Data:     []byte("invalid"),
 	}
 
@@ -991,8 +1044,8 @@ func TestMsgParseRequestUtf16CorruptNameLenFlag(t *testing.T) {
 // Binary/UTF8 encoded signal with a corrupted input stream
 // (name length flag doesn't correspond to actual name length)
 func TestMsgParseSignalCorruptNameLenFlag(t *testing.T) {
-	payload := Payload{
-		Encoding: EncodingBinary,
+	payload := pld.Payload{
+		Encoding: pld.Binary,
 		Data:     []byte("invalid"),
 	}
 
@@ -1021,8 +1074,8 @@ func TestMsgParseSignalCorruptNameLenFlag(t *testing.T) {
 // UTF16 encoded signal with a corrupted input stream
 // (name length flag doesn't correspond to actual name length)
 func TestMsgParseSignalUtf16CorruptNameLenFlag(t *testing.T) {
-	payload := Payload{
-		Encoding: EncodingBinary,
+	payload := pld.Payload{
+		Encoding: pld.Binary,
 		Data:     []byte("invalid"),
 	}
 
@@ -1056,8 +1109,8 @@ func TestMsgParseSignalUtf16CorruptNameLenFlag(t *testing.T) {
 // (length not divisible by 2)
 func TestMsgParseReplyUtf16CorruptInput(t *testing.T) {
 	id := genRndMsgIdentifier()
-	payload := Payload{
-		Encoding: EncodingUtf16,
+	payload := pld.Payload{
+		Encoding: pld.Utf16,
 		Data:     []byte("invalid"),
 	}
 
@@ -1083,8 +1136,8 @@ func TestMsgParseReplyUtf16CorruptInput(t *testing.T) {
 func TestMsgParseRequestUtf16CorruptInput(t *testing.T) {
 	id := genRndMsgIdentifier()
 	name := genRndName(1, 255)
-	payload := Payload{
-		Encoding: EncodingUtf16,
+	payload := pld.Payload{
+		Encoding: pld.Utf16,
 		Data:     []byte("invalid"),
 	}
 
@@ -1115,8 +1168,8 @@ func TestMsgParseRequestUtf16CorruptInput(t *testing.T) {
 // (length not divisible by 2)
 func TestMsgParseSignalUtf16CorruptInput(t *testing.T) {
 	name := genRndName(1, 255)
-	payload := Payload{
-		Encoding: EncodingUtf16,
+	payload := pld.Payload{
+		Encoding: pld.Utf16,
 		Data:     []byte("invalid"),
 	}
 
@@ -1156,11 +1209,12 @@ func TestMsgNewReplyMsgUtf16CorruptPayload(t *testing.T) {
 		}
 	}()
 
-	NewReplyMessage(genRndMsgIdentifier(), Payload{
-		Encoding: EncodingUtf16,
+	NewReplyMessage(
+		genRndMsgIdentifier(),
+		pld.Utf16,
 		// Payload is corrupt, only 7 bytes long, not power 2
-		Data: []byte("invalid"),
-	})
+		[]byte("invalid"),
+	)
 }
 
 // TestMsgNewReqMsgUtf16CorruptPayload tests NewRequestMessage
@@ -1178,11 +1232,9 @@ func TestMsgNewReqMsgUtf16CorruptPayload(t *testing.T) {
 	NewRequestMessage(
 		genRndMsgIdentifier(),
 		string(genRndName(1, 255)),
-		Payload{
-			Encoding: EncodingUtf16,
-			// Payload is corrupt, only 7 bytes long, not power 2
-			Data: []byte("invalid"),
-		},
+		pld.Utf16,
+		// Payload is corrupt, only 7 bytes long, not power 2
+		[]byte("invalid"),
 	)
 }
 
@@ -1200,11 +1252,9 @@ func TestMsgNewSigMsgUtf16CorruptPayload(t *testing.T) {
 
 	NewSignalMessage(
 		string(genRndName(1, 255)),
-		Payload{
-			Encoding: EncodingUtf16,
-			// Payload is corrupt, only 7 bytes long, not power 2
-			Data: []byte("invalid"),
-		},
+		pld.Utf16,
+		// Payload is corrupt, only 7 bytes long, not power 2
+		[]byte("invalid"),
 	)
 }
 
@@ -1227,7 +1277,12 @@ func TestMsgNewReqMsgNameTooLong(t *testing.T) {
 		nameBuf[i] = 'a'
 	}
 
-	NewRequestMessage(genRndMsgIdentifier(), string(nameBuf), Payload{})
+	NewRequestMessage(
+		genRndMsgIdentifier(),
+		string(nameBuf),
+		0,
+		nil,
+	)
 }
 
 // TestMsgNewReqMsgInvalidCharsetBelowAscii32 tests NewRequestMessage
@@ -1247,7 +1302,12 @@ func TestMsgNewReqMsgInvalidCharsetBelowAscii32(t *testing.T) {
 	invalidNameBytes := make([]byte, 1)
 	invalidNameBytes[0] = byte(31)
 
-	NewRequestMessage(genRndMsgIdentifier(), string(invalidNameBytes), Payload{})
+	NewRequestMessage(
+		genRndMsgIdentifier(),
+		string(invalidNameBytes),
+		0,
+		nil,
+	)
 }
 
 // TestMsgNewReqMsgInvalidCharsetAboveAscii126 tests NewRequestMessage
@@ -1267,7 +1327,12 @@ func TestMsgNewReqMsgInvalidCharsetAboveAscii126(t *testing.T) {
 	invalidNameBytes := make([]byte, 1)
 	invalidNameBytes[0] = byte(127)
 
-	NewRequestMessage(genRndMsgIdentifier(), string(invalidNameBytes), Payload{})
+	NewRequestMessage(
+		genRndMsgIdentifier(),
+		string(invalidNameBytes),
+		0,
+		nil,
+	)
 }
 
 // TestMsgNewSigMsgNameTooLong tests NewSignalMessage with a too long name
@@ -1285,7 +1350,7 @@ func TestMsgNewSigMsgNameTooLong(t *testing.T) {
 		nameBuf[i] = 'a'
 	}
 
-	NewSignalMessage(string(nameBuf), Payload{})
+	NewSignalMessage(string(nameBuf), 0, nil)
 }
 
 // TestMsgNewSigMsgInvalidCharsetBelowAscii32 tests NewSignalMessage
@@ -1305,7 +1370,7 @@ func TestMsgNewSigMsgInvalidCharsetBelowAscii32(t *testing.T) {
 	invalidNameBytes := make([]byte, 1)
 	invalidNameBytes[0] = byte(31)
 
-	NewSignalMessage(string(invalidNameBytes), Payload{})
+	NewSignalMessage(string(invalidNameBytes), 0, nil)
 }
 
 // TestMsgNewSigMsgInvalidCharsetAboveAscii126 tests NewSignalMessage
@@ -1325,7 +1390,7 @@ func TestMsgNewSigMsgInvalidCharsetAboveAscii126(t *testing.T) {
 	invalidNameBytes := make([]byte, 1)
 	invalidNameBytes[0] = byte(127)
 
-	NewSignalMessage(string(invalidNameBytes), Payload{})
+	NewSignalMessage(string(invalidNameBytes), 0, nil)
 }
 
 // TestMsgNewSpecialRequestReplyMessageInvalidType tests

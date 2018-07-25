@@ -21,18 +21,18 @@ func TestClientRequestRegisterOnTimeout(t *testing.T) {
 			onRequest: func(
 				_ context.Context,
 				_ *webwire.Client,
-				_ *webwire.Message,
+				_ webwire.Message,
 			) (webwire.Payload, error) {
 				// Verify pending requests
 				pendingReqs := connection.PendingRequests()
 				if pendingReqs != 1 {
 					t.Errorf("Unexpected pending requests: %d", pendingReqs)
-					return webwire.Payload{}, nil
+					return nil, nil
 				}
 
 				// Wait until the request times out
 				time.Sleep(300 * time.Millisecond)
-				return webwire.Payload{}, nil
+				return nil, nil
 			},
 		},
 		webwire.ServerOptions{},
@@ -62,7 +62,7 @@ func TestClientRequestRegisterOnTimeout(t *testing.T) {
 	// Send request and await reply
 	_, reqErr := client.connection.TimedRequest(
 		"",
-		webwire.Payload{Data: []byte("t")},
+		webwire.NewPayload(webwire.EncodingBinary, []byte("t")),
 		200*time.Millisecond,
 	)
 	if _, isTimeoutErr := reqErr.(webwire.ReqTimeoutErr); !isTimeoutErr {

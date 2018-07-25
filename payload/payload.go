@@ -1,4 +1,4 @@
-package webwire
+package payload
 
 import (
 	"bytes"
@@ -9,13 +9,13 @@ import (
 
 // Payload represents an encoded message payload
 type Payload struct {
-	Encoding PayloadEncoding
+	Encoding Encoding
 	Data     []byte
 }
 
 // Utf8 returns a UTF8 representation of the payload data
 func (pld *Payload) Utf8() (string, error) {
-	if pld.Encoding == EncodingUtf16 {
+	if pld.Encoding == Utf16 {
 		if len(pld.Data)%2 != 0 {
 			return "", fmt.Errorf("Cannot convert invalid UTF16 payload data to UTF8")
 		}

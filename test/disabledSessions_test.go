@@ -30,7 +30,7 @@ func TestDisabledSessions(t *testing.T) {
 			onRequest: func(
 				_ context.Context,
 				clt *wwr.Client,
-				_ *wwr.Message,
+				_ wwr.Message,
 			) (wwr.Payload, error) {
 				// Try to create a new session and expect an error
 				createErr := clt.CreateSession(nil)
@@ -40,7 +40,7 @@ func TestDisabledSessions(t *testing.T) {
 				closeErr := clt.CloseSession()
 				verifyError(closeErr)
 
-				return wwr.Payload{}, nil
+				return nil, nil
 			},
 		},
 		wwr.ServerOptions{
@@ -69,7 +69,7 @@ func TestDisabledSessions(t *testing.T) {
 	// Send authentication request and await reply
 	_, err := client.connection.Request(
 		"login",
-		wwr.Payload{Data: []byte("testdata")},
+		wwr.NewPayload(wwr.EncodingBinary, []byte("testdata")),
 	)
 	if err != nil {
 		t.Fatalf("Request failed: %s", err)

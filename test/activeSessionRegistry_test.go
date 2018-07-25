@@ -19,26 +19,27 @@ func TestActiveSessionRegistry(t *testing.T) {
 			onRequest: func(
 				_ context.Context,
 				clt *webwire.Client,
-				msg *webwire.Message,
+				msg webwire.Message,
 			) (webwire.Payload, error) {
 				// Close session on logout
-				if msg.Name == "logout" {
+				if msg.Name() == "logout" {
 					if err := clt.CloseSession(); err != nil {
 						t.Errorf("Couldn't close session: %s", err)
 					}
-					return webwire.Payload{}, nil
+					return nil, nil
 				}
 
 				// Try to create a new session
 				if err := clt.CreateSession(nil); err != nil {
-					return webwire.Payload{}, err
+					return nil, err
 				}
 
 				// Return the key of the newly created session
 				// (use default binary encoding)
-				return webwire.Payload{
-					Data: []byte(clt.SessionKey()),
-				}, nil
+				return webwire.NewPayload(
+					webwire.EncodingBinary,
+					[]byte(clt.SessionKey()),
+				), nil
 			},
 		},
 		webwire.ServerOptions{},
@@ -61,10 +62,7 @@ func TestActiveSessionRegistry(t *testing.T) {
 	// Send authentication request
 	if _, err := client.connection.Request(
 		"login",
-		webwire.Payload{
-			Encoding: webwire.EncodingUtf8,
-			Data:     []byte("nothing"),
-		},
+		webwire.NewPayload(webwire.EncodingUtf8, []byte("nothing")),
 	); err != nil {
 		t.Fatalf("Request failed: %s", err)
 	}
@@ -80,10 +78,7 @@ func TestActiveSessionRegistry(t *testing.T) {
 	// Send logout request
 	if _, err := client.connection.Request(
 		"logout",
-		webwire.Payload{
-			Encoding: webwire.EncodingUtf8,
-			Data:     []byte("nothing"),
-		},
+		webwire.NewPayload(webwire.EncodingUtf8, []byte("nothing")),
 	); err != nil {
 		t.Fatalf("Request failed: %s", err)
 	}

@@ -12,10 +12,10 @@ import (
 
 // TestClientSignal tests client-side signals with UTF8 encoded payloads
 func TestClientSignal(t *testing.T) {
-	expectedSignalPayload := webwire.Payload{
-		Encoding: webwire.EncodingUtf8,
-		Data:     []byte("webwire_test_SIGNAL_payload"),
-	}
+	expectedSignalPayload := webwire.NewPayload(
+		webwire.EncodingUtf8,
+		[]byte("webwire_test_SIGNAL_payload"),
+	)
 	signalArrived := tmdwg.NewTimedWaitGroup(1, 1*time.Second)
 
 	// Initialize webwire server given only the signal handler
@@ -25,7 +25,7 @@ func TestClientSignal(t *testing.T) {
 			onSignal: func(
 				_ context.Context,
 				_ *webwire.Client,
-				msg *webwire.Message,
+				msg webwire.Message,
 			) {
 
 				// Verify signal payload
@@ -33,7 +33,7 @@ func TestClientSignal(t *testing.T) {
 					t,
 					"client signal",
 					expectedSignalPayload,
-					msg.Payload,
+					msg.Payload(),
 				)
 
 				// Synchronize, notify signal arrival

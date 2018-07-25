@@ -6,6 +6,7 @@ import (
 	"time"
 
 	webwire "github.com/qbeon/webwire-go"
+	pld "github.com/qbeon/webwire-go/payload"
 )
 
 // RequestIdentifier represents the universally unique minified UUIDv4 identifier of a request.
@@ -42,6 +43,7 @@ func (req *Request) Identifier() RequestIdentifier {
 // until either the reply is fulfilled or failed or the request is timed out.
 // The timer is started when AwaitReply is called.
 func (req *Request) AwaitReply() (webwire.Payload, error) {
+	// TODO: The timer probably needs to be stoped when it's no longer needed
 	// Start timeout timer
 	timeoutTimer := time.NewTimer(req.timeout).C
 
@@ -49,11 +51,20 @@ func (req *Request) AwaitReply() (webwire.Payload, error) {
 	select {
 	case <-timeoutTimer:
 		req.manager.deregister(req.identifier)
-		return webwire.Payload{}, webwire.ReqTimeoutErr{Target: req.timeout}
+		return &webwire.EncodedPayload{},
+			webwire.ReqTimeoutErr{Target: req.timeout}
 	case reply := <-req.reply:
 		if reply.Error != nil {
-			return webwire.Payload{}, reply.Error
+			return nil, reply.Error
 		}
+
+		// Don't return nil even if the reply is empty
+		// to prevent invalid memory access attempts
+		// caused by forgetting to check for != nil
+		if reply.Reply == nil {
+			return &webwire.EncodedPayload{}, nil
+		}
+
 		return reply.Reply, nil
 	}
 }
@@ -115,7 +126,7 @@ func (manager *RequestManager) deregister(identifier RequestIdentifier) {
 // Returns true if a pending request was fulfilled and deregistered, otherwise returns false
 func (manager *RequestManager) Fulfill(
 	identifier RequestIdentifier,
-	payload webwire.Payload,
+	payload pld.Payload,
 ) bool {
 	manager.lock.RLock()
 	req, exists := manager.pending[identifier]
@@ -123,8 +134,11 @@ func (manager *RequestManager) Fulfill(
 	if !exists {
 		return false
 	}
+
 	req.reply <- reply{
-		Reply: payload,
+		Reply: &webwire.EncodedPayload{
+			Payload: payload,
+		},
 		Error: nil,
 	}
 	manager.deregister(identifier)
@@ -141,7 +155,7 @@ func (manager *RequestManager) Fail(identifier RequestIdentifier, err error) boo
 		return false
 	}
 	req.reply <- reply{
-		Reply: webwire.Payload{},
+		Reply: nil,
 		Error: err,
 	}
 	manager.deregister(identifier)

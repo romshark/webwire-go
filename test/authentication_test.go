@@ -99,14 +99,14 @@ func TestAuthentication(t *testing.T) {
 		UserIdent:  "clientidentifiergoeshere",
 		SomeNumber: 12345,
 	}
-	expectedCredentials := wwr.Payload{
-		Encoding: wwr.EncodingUtf8,
-		Data:     []byte("secret_credentials"),
-	}
-	expectedConfirmation := wwr.Payload{
-		Encoding: wwr.EncodingUtf8,
-		Data:     []byte("session_is_correct"),
-	}
+	expectedCredentials := wwr.NewPayload(
+		wwr.EncodingUtf8,
+		[]byte("secret_credentials"),
+	)
+	expectedConfirmation := wwr.NewPayload(
+		wwr.EncodingUtf8,
+		[]byte("session_is_correct"),
+	)
 	currentStep := 1
 
 	// Initialize webwire server
@@ -116,7 +116,7 @@ func TestAuthentication(t *testing.T) {
 			onSignal: func(
 				_ context.Context,
 				clt *wwr.Client,
-				_ *wwr.Message,
+				_ wwr.Message,
 			) {
 				defer clientSignalReceived.Progress(1)
 				sess := clt.Session()
@@ -126,7 +126,7 @@ func TestAuthentication(t *testing.T) {
 			onRequest: func(
 				_ context.Context,
 				clt *wwr.Client,
-				_ *wwr.Message,
+				_ wwr.Message,
 			) (wwr.Payload, error) {
 				// If already authenticated then check session
 				if currentStep > 1 {
@@ -138,7 +138,7 @@ func TestAuthentication(t *testing.T) {
 
 				// Try to create a new session
 				if err := clt.CreateSession(sessionInfo); err != nil {
-					return wwr.Payload{}, err
+					return nil, err
 				}
 
 				// Authentication step is passed
@@ -146,9 +146,10 @@ func TestAuthentication(t *testing.T) {
 
 				// Return the key of the newly created session
 				// (use default binary encoding)
-				return wwr.Payload{
-					Data: []byte(clt.SessionKey()),
-				}, nil
+				return wwr.NewPayload(
+					wwr.EncodingBinary,
+					[]byte(clt.SessionKey()),
+				), nil
 			},
 		},
 		wwr.ServerOptions{},
@@ -232,9 +233,7 @@ func TestAuthentication(t *testing.T) {
 	comparePayload(
 		t,
 		"authentication reply",
-		wwr.Payload{
-			Data: []byte(createdSession.Key),
-		},
+		wwr.NewPayload(wwr.EncodingBinary, []byte(createdSession.Key)),
 		authReqReply,
 	)
 

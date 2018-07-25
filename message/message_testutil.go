@@ -1,4 +1,4 @@
-package webwire
+package message
 
 import (
 	"fmt"
@@ -6,6 +6,8 @@ import (
 	"reflect"
 	"testing"
 	"time"
+
+	pld "github.com/qbeon/webwire-go/payload"
 )
 
 func init() {
@@ -42,20 +44,20 @@ func comparePayload(t *testing.T, expected, actual []byte) {
 // compareMessage fails the given test, if expected and actual messages
 // aren't exactly equal
 func compareMessages(t *testing.T, expected, actual Message) {
-	if actual.msgType != expected.msgType {
+	if actual.Type != expected.Type {
 		t.Errorf(
-			"message.msgType differs:"+
+			"message.Type differs:"+
 				"\n expected: '%s'\n actual:   '%s'",
-			string(expected.msgType),
-			string(actual.msgType),
+			string(expected.Type),
+			string(actual.Type),
 		)
 	}
-	if !reflect.DeepEqual(actual.id, expected.id) {
+	if !reflect.DeepEqual(actual.Identifier, expected.Identifier) {
 		t.Errorf(
-			"message.id differs:"+
+			"message.Identifier differs:"+
 				"\n expected: '%s'\n actual:   '%s'",
-			string(expected.id[:]),
-			string(actual.id[:]),
+			string(expected.Identifier[:]),
+			string(actual.Identifier[:]),
 		)
 	}
 	if actual.Name != expected.Name {
@@ -159,17 +161,17 @@ func rndRequestMsg(
 	encodedMessage []byte,
 	id [8]byte,
 	name []byte,
-	payload Payload,
+	payload pld.Payload,
 ) {
 	id = genRndMsgIdentifier()
 	name = genRndName(1, 255)
 
 	messageLength := 10 + len(name) + len(payload.Data)
-	payloadEncoding := EncodingBinary
+	payloadEncoding := pld.Binary
 	switch messageType {
 	case MsgRequestBinary:
 	case MsgRequestUtf8:
-		payloadEncoding = EncodingUtf8
+		payloadEncoding = pld.Utf8
 	case MsgRequestUtf16:
 		panic(fmt.Errorf(
 			"Consider using rndRequestMsgUtf16" +
@@ -182,7 +184,7 @@ func rndRequestMsg(
 		))
 	}
 
-	payload = Payload{
+	payload = pld.Payload{
 		Encoding: payloadEncoding,
 		Data:     genRndByteString(minPayloadLen, maxPayloadLen, 1),
 	}
@@ -218,12 +220,12 @@ func rndRequestMsgUtf16(
 	encodedMessage []byte,
 	id [8]byte,
 	name []byte,
-	payload Payload,
+	payload pld.Payload,
 ) {
 	id = genRndMsgIdentifier()
 	name = genRndName(1, 255)
-	payload = Payload{
-		Encoding: EncodingUtf16,
+	payload = pld.Payload{
+		Encoding: pld.Utf16,
 		Data:     genRndByteString(minPayloadLen, maxPayloadLen, 2),
 	}
 
@@ -271,16 +273,16 @@ func rndReplyMsg(
 ) (
 	encodedMessage []byte,
 	id [8]byte,
-	payload Payload,
+	payload pld.Payload,
 ) {
 	id = genRndMsgIdentifier()
 
 	messageLength := 9 + len(payload.Data)
-	payloadEncoding := EncodingBinary
+	payloadEncoding := pld.Binary
 	switch messageType {
 	case MsgReplyBinary:
 	case MsgReplyUtf8:
-		payloadEncoding = EncodingUtf8
+		payloadEncoding = pld.Utf8
 	case MsgReplyUtf16:
 		panic(fmt.Errorf(
 			"Consider using rndReplyMsgUtf16 for UTF16 encoded messages",
@@ -292,7 +294,7 @@ func rndReplyMsg(
 		))
 	}
 
-	payload = Payload{
+	payload = pld.Payload{
 		Encoding: payloadEncoding,
 		Data:     genRndByteString(minPayloadLen, maxPayloadLen, 1),
 	}
@@ -320,11 +322,11 @@ func rndReplyMsgUtf16(
 ) (
 	encodedMessage []byte,
 	id [8]byte,
-	payload Payload,
+	payload pld.Payload,
 ) {
 	id = genRndMsgIdentifier()
-	payload = Payload{
-		Encoding: EncodingUtf16,
+	payload = pld.Payload{
+		Encoding: pld.Utf16,
 		Data:     genRndByteString(minPayloadLen, maxPayloadLen, 2),
 	}
 
@@ -359,16 +361,16 @@ func rndSignalMsg(
 ) (
 	encodedMessage []byte,
 	name []byte,
-	payload Payload,
+	payload pld.Payload,
 ) {
 	name = genRndName(1, 255)
 
 	messageLength := 2 + len(name) + len(payload.Data)
-	payloadEncoding := EncodingBinary
+	payloadEncoding := pld.Binary
 	switch messageType {
 	case MsgSignalBinary:
 	case MsgSignalUtf8:
-		payloadEncoding = EncodingUtf8
+		payloadEncoding = pld.Utf8
 	case MsgSignalUtf16:
 		panic(fmt.Errorf(
 			"Consider using rndSignalMsgUtf16" +
@@ -381,7 +383,7 @@ func rndSignalMsg(
 		))
 	}
 
-	payload = Payload{
+	payload = pld.Payload{
 		Encoding: payloadEncoding,
 		Data:     genRndByteString(minPayloadLen, maxPayloadLen, 1),
 	}
@@ -414,11 +416,11 @@ func rndSignalMsgUtf16(
 ) (
 	encodedMessage []byte,
 	name []byte,
-	payload Payload,
+	payload pld.Payload,
 ) {
 	name = genRndName(1, 255)
-	payload = Payload{
-		Encoding: EncodingUtf16,
+	payload = pld.Payload{
+		Encoding: pld.Utf16,
 		Data:     genRndByteString(minPayloadLen, maxPayloadLen, 2),
 	}
 

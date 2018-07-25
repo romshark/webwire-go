@@ -43,7 +43,7 @@ func (srv *PubSubServer) OnOptions(resp http.ResponseWriter) {
 func (srv *PubSubServer) OnSignal(
 	_ context.Context,
 	_ *wwr.Client,
-	_ *wwr.Message,
+	_ wwr.Message,
 ) {
 }
 
@@ -52,9 +52,9 @@ func (srv *PubSubServer) OnSignal(
 func (srv *PubSubServer) OnRequest(
 	_ context.Context,
 	_ *wwr.Client,
-	_ *wwr.Message,
+	_ wwr.Message,
 ) (response wwr.Payload, err error) {
-	return wwr.Payload{}, wwr.ReqErr{
+	return nil, wwr.ReqErr{
 		Code:    "REQ_NOT_SUPPORTED",
 		Message: "Requests are not supported on this server",
 	}
@@ -101,9 +101,7 @@ func (srv *PubSubServer) Broadcast() {
 		log.Printf("Broadcasting message '%s', to %d clients", msg, len(srv.connectedClients))
 
 		for client := range srv.connectedClients {
-			client.Signal("", wwr.Payload{
-				Data: []byte(msg),
-			})
+			client.Signal("", wwr.NewPayload(wwr.EncodingBinary, []byte(msg)))
 		}
 		srv.mapLock.Unlock()
 	}

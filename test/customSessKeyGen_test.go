@@ -20,11 +20,11 @@ func TestCustomSessKeyGen(t *testing.T) {
 			onRequest: func(
 				_ context.Context,
 				clt *wwr.Client,
-				_ *wwr.Message,
+				_ wwr.Message,
 			) (wwr.Payload, error) {
 				// Try to create a new session
 				if err := clt.CreateSession(nil); err != nil {
-					return wwr.Payload{}, err
+					return nil, err
 				}
 
 				key := clt.SessionKey()
@@ -33,9 +33,10 @@ func TestCustomSessKeyGen(t *testing.T) {
 				}
 
 				// Return the key of the newly created session (use default binary encoding)
-				return wwr.Payload{
-					Data: []byte(key),
-				}, nil
+				return wwr.NewPayload(
+					wwr.EncodingBinary,
+					[]byte(key),
+				), nil
 			},
 		},
 		wwr.ServerOptions{
@@ -60,7 +61,7 @@ func TestCustomSessKeyGen(t *testing.T) {
 	// Send authentication request and await reply
 	if _, err := client.connection.Request(
 		"login",
-		wwr.Payload{Data: []byte("testdata")},
+		wwr.NewPayload(wwr.EncodingBinary, []byte("testdata")),
 	); err != nil {
 		t.Fatalf("Request failed: %s", err)
 	}

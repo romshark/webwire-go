@@ -1,10 +1,14 @@
 package webwire
 
-import "context"
+import (
+	"context"
+
+	msg "github.com/qbeon/webwire-go/message"
+)
 
 // handleSignal handles incoming signals
 // and returns an error if the ongoing connection cannot be proceeded
-func (srv *server) handleSignal(clt *Client, msg *Message) {
+func (srv *server) handleSignal(clt *Client, message *msg.Message) {
 	srv.opsLock.Lock()
 	// Ignore incoming signals during shutdown
 	if srv.shutdown {
@@ -17,7 +21,9 @@ func (srv *server) handleSignal(clt *Client, msg *Message) {
 	srv.impl.OnSignal(
 		context.Background(),
 		clt,
-		msg,
+		&MessageWrapper{
+			actual: message,
+		},
 	)
 
 	// Mark signal as done and shutdown the server if scheduled and no ops are left

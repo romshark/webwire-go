@@ -28,7 +28,7 @@ func (srv *EchoServer) OnOptions(resp http.ResponseWriter) {
 func (srv *EchoServer) OnSignal(
 	_ context.Context,
 	_ *wwr.Client,
-	_ *wwr.Message,
+	_ wwr.Message,
 ) {
 }
 
@@ -51,12 +51,12 @@ func (srv *EchoServer) BeforeUpgrade(resp http.ResponseWriter, req *http.Request
 func (srv *EchoServer) OnRequest(
 	_ context.Context,
 	client *wwr.Client,
-	message *wwr.Message,
+	message wwr.Message,
 ) (response wwr.Payload, err error) {
 	log.Printf("Replied to client: %s", client.Info().RemoteAddr)
 
 	// Reply to the request using the same data and encoding
-	return message.Payload, nil
+	return message.Payload(), nil
 }
 
 var serverAddr = flag.String("addr", ":8081", "server address")

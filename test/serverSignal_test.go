@@ -11,9 +11,10 @@ import (
 
 // TestServerSignal tests server-side signals
 func TestServerSignal(t *testing.T) {
-	expectedSignalPayload := webwire.Payload{
-		Data: []byte("webwire_test_SERVER_SIGNAL_payload"),
-	}
+	expectedSignalPayload := webwire.NewPayload(
+		webwire.EncodingBinary,
+		[]byte("webwire_test_SERVER_SIGNAL_payload"),
+	)
 	var addr string
 	serverSignalArrived := tmdwg.NewTimedWaitGroup(1, 1*time.Second)
 	initClient := make(chan bool, 1)

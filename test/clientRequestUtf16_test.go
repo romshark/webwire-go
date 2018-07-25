@@ -11,20 +11,23 @@ import (
 
 // TestClientRequestUtf16 tests requests with UTF16 encoded payloads
 func TestClientRequestUtf16(t *testing.T) {
-	testPayload := webwire.Payload{
-		Encoding: webwire.EncodingUtf16,
-		Data:     []byte{00, 115, 00, 97, 00, 109, 00, 112, 00, 108, 00, 101},
-	}
+	testPayload := webwire.NewPayload(
+		webwire.EncodingUtf16,
+		[]byte{00, 115, 00, 97, 00, 109, 00, 112, 00, 108, 00, 101},
+	)
 	verifyPayload := func(payload webwire.Payload) {
-		if payload.Encoding != webwire.EncodingUtf16 {
-			t.Errorf("Unexpected payload encoding: %s", payload.Encoding.String())
+		payloadEncoding := payload.Encoding()
+		if payloadEncoding != webwire.EncodingUtf16 {
+			t.Errorf("Unexpected payload encoding: %s", payloadEncoding.String())
 		}
-		if len(testPayload.Data) != len(payload.Data) {
-			t.Errorf("Corrupt payload: %s", payload.Data)
+		testPayloadData := testPayload.Data()
+		payloadData := payload.Data()
+		if len(testPayloadData) != len(payloadData) {
+			t.Errorf("Corrupt payload: %s", payloadData)
 		}
-		for i := 0; i < len(testPayload.Data); i++ {
-			if testPayload.Data[i] != payload.Data[i] {
-				t.Errorf("Corrupt payload, mismatching byte at position %d: %s", i, payload.Data)
+		for i := 0; i < len(testPayloadData); i++ {
+			if testPayloadData[i] != payloadData[i] {
+				t.Errorf("Corrupt payload, mismatching byte at position %d: %s", i, payloadData)
 				return
 			}
 		}
@@ -37,15 +40,15 @@ func TestClientRequestUtf16(t *testing.T) {
 			onRequest: func(
 				_ context.Context,
 				_ *webwire.Client,
-				msg *webwire.Message,
+				msg webwire.Message,
 			) (webwire.Payload, error) {
 
-				verifyPayload(msg.Payload)
+				verifyPayload(msg.Payload())
 
-				return webwire.Payload{
-					Encoding: webwire.EncodingUtf16,
-					Data:     []byte{00, 115, 00, 97, 00, 109, 00, 112, 00, 108, 00, 101},
-				}, nil
+				return webwire.NewPayload(
+					webwire.EncodingUtf16,
+					[]byte{00, 115, 00, 97, 00, 109, 00, 112, 00, 108, 00, 101},
+				), nil
 			},
 		},
 		webwire.ServerOptions{},
@@ -65,10 +68,10 @@ func TestClientRequestUtf16(t *testing.T) {
 	}
 
 	// Send request and await reply
-	reply, err := client.connection.Request("", webwire.Payload{
-		Encoding: webwire.EncodingUtf16,
-		Data:     []byte{00, 115, 00, 97, 00, 109, 00, 112, 00, 108, 00, 101},
-	})
+	reply, err := client.connection.Request("", webwire.NewPayload(
+		webwire.EncodingUtf16,
+		[]byte{00, 115, 00, 97, 00, 109, 00, 112, 00, 108, 00, 101},
+	))
 	if err != nil {
 		t.Fatalf("Request failed: %s", err)
 	}

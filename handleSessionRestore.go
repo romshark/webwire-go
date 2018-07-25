@@ -3,22 +3,24 @@ package webwire
 import (
 	"encoding/json"
 	"fmt"
+
+	msg "github.com/qbeon/webwire-go/message"
 )
 
 // handleSessionRestore handles session restoration (by session key) requests
 // and returns an error if the ongoing connection cannot be proceeded
-func (srv *server) handleSessionRestore(clt *Client, msg *Message) {
+func (srv *server) handleSessionRestore(clt *Client, message *msg.Message) {
 	if !srv.sessionsEnabled {
-		srv.failMsg(clt, msg, SessionsDisabledErr{})
+		srv.failMsg(clt, message, SessionsDisabledErr{})
 		return
 	}
 
-	key := string(msg.Payload.Data)
+	key := string(message.Payload.Data)
 
 	sessConsNum := srv.sessionRegistry.sessionConnectionsNum(key)
 	if sessConsNum >= 0 && srv.sessionRegistry.maxConns > 0 &&
 		uint(sessConsNum+1) > srv.sessionRegistry.maxConns {
-		srv.failMsg(clt, msg, MaxSessConnsReachedErr{})
+		srv.failMsg(clt, message, MaxSessConnsReachedErr{})
 		return
 	}
 
@@ -28,10 +30,10 @@ func (srv *server) handleSessionRestore(clt *Client, msg *Message) {
 	// Inspect error if any
 	switch err := err.(type) {
 	case SessNotFoundErr:
-		srv.failMsg(clt, msg, SessNotFoundErr{})
+		srv.failMsg(clt, message, SessNotFoundErr{})
 		return
 	default:
-		srv.failMsg(clt, msg, nil)
+		srv.failMsg(clt, message, nil)
 		srv.errorLog.Printf("CRITICAL: Session search handler failed: %s", err)
 		return
 	case nil:
@@ -46,7 +48,7 @@ func (srv *server) handleSessionRestore(clt *Client, msg *Message) {
 	}
 	encodedSession, err := json.Marshal(&encodedSessionObj)
 	if err != nil {
-		srv.failMsg(clt, msg, nil)
+		srv.failMsg(clt, message, nil)
 		srv.errorLog.Printf(
 			"Couldn't encode session object (%v): %s",
 			encodedSessionObj,
@@ -73,8 +75,5 @@ func (srv *server) handleSessionRestore(clt *Client, msg *Message) {
 		))
 	}
 
-	srv.fulfillMsg(clt, msg, Payload{
-		Encoding: EncodingUtf8,
-		Data:     encodedSession,
-	})
+	srv.fulfillMsg(clt, message, EncodingUtf8, encodedSession)
 }

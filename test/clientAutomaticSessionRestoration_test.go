@@ -24,21 +24,21 @@ func TestClientAutomaticSessionRestoration(t *testing.T) {
 			onRequest: func(
 				_ context.Context,
 				clt *webwire.Client,
-				msg *webwire.Message,
+				msg webwire.Message,
 			) (webwire.Payload, error) {
 				if currentStep == 2 {
 					// Expect the session to have been automatically restored
 					compareSessions(t, createdSession, clt.Session())
-					return webwire.Payload{}, nil
+					return nil, nil
 				}
 
 				// Try to create a new session
 				if err := clt.CreateSession(nil); err != nil {
-					return webwire.Payload{}, err
+					return nil, err
 				}
 
 				// Return the key of the newly created session
-				return webwire.Payload{}, nil
+				return nil, nil
 			},
 		},
 		webwire.ServerOptions{
@@ -109,7 +109,7 @@ func TestClientAutomaticSessionRestoration(t *testing.T) {
 	// Create a new session
 	if _, err := client.connection.Request(
 		"login",
-		webwire.Payload{Data: []byte("auth")},
+		webwire.NewPayload(webwire.EncodingBinary, []byte("auth")),
 	); err != nil {
 		t.Fatalf("Auth request failed: %s", err)
 	}
@@ -141,7 +141,7 @@ func TestClientAutomaticSessionRestoration(t *testing.T) {
 	// and the server authenticates the user
 	if _, err := client.connection.Request(
 		"verify",
-		webwire.Payload{Data: []byte("isrestored?")},
+		webwire.NewPayload(webwire.EncodingBinary, []byte("isrestored?")),
 	); err != nil {
 		t.Fatalf("Second request failed: %s", err)
 	}

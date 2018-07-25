@@ -50,14 +50,12 @@ func (clt *EchoClient) OnSignal(_ wwr.Payload) {}
 // panics if the request fails for whatever reason
 func (clt *EchoClient) Request(message string) wwr.Payload {
 	// Define a payload to be sent to the server, use default binary encoding
-	payload := wwr.Payload{
-		Data: []byte(message),
-	}
+	payload := wwr.NewPayload(wwr.EncodingBinary, []byte(message))
 
 	log.Printf(
 		"Sent request:   '%s' (%d)",
-		string(payload.Data),
-		len(payload.Data),
+		string(payload.Data()),
+		len(payload.Data()),
 	)
 
 	// Send request and await reply
@@ -83,7 +81,7 @@ func main() {
 
 	log.Printf(
 		"Received reply: '%s' (%d)",
-		string(reply.Data),
-		len(reply.Data),
+		string(reply.Data()),
+		len(reply.Data()),
 	)
 }

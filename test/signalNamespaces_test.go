@@ -31,27 +31,27 @@ func TestSignalNamespaces(t *testing.T) {
 			onSignal: func(
 				_ context.Context,
 				_ *webwire.Client,
-				msg *webwire.Message,
+				msg webwire.Message,
 			) {
-
-				if currentStep == 1 && msg.Name != "" {
+				msgName := msg.Name()
+				if currentStep == 1 && msgName != "" {
 					t.Errorf(
 						"Expected unnamed signal, got: '%s'",
-						msg.Name,
+						msgName,
 					)
 				}
 				if currentStep == 2 &&
-					msg.Name != shortestPossibleName {
+					msgName != shortestPossibleName {
 					t.Errorf(
 						"Expected shortest possible signal name, got: '%s'",
-						msg.Name,
+						msgName,
 					)
 				}
 				if currentStep == 3 &&
-					msg.Name != longestPossibleName {
+					msgName != longestPossibleName {
 					t.Errorf(
 						"Expected longest possible signal name, got: '%s'",
-						msg.Name,
+						msgName,
 					)
 				}
 
@@ -85,7 +85,10 @@ func TestSignalNamespaces(t *testing.T) {
 		Step 1 - Unnamed signal name
 	\*****************************************************************/
 	// Send unnamed signal
-	err := client.connection.Signal("", webwire.Payload{Data: []byte("dummy")})
+	err := client.connection.Signal("", webwire.NewPayload(
+		webwire.EncodingBinary,
+		[]byte("dummy"),
+	))
 	if err != nil {
 		t.Fatalf("Request failed: %s", err)
 	}
@@ -100,7 +103,7 @@ func TestSignalNamespaces(t *testing.T) {
 	// Send request with the shortest possible name
 	err = client.connection.Signal(
 		shortestPossibleName,
-		webwire.Payload{Data: []byte("dummy")},
+		webwire.NewPayload(webwire.EncodingBinary, []byte("dummy")),
 	)
 	if err != nil {
 		t.Fatalf("Request failed: %s", err)
@@ -116,7 +119,7 @@ func TestSignalNamespaces(t *testing.T) {
 	// Send request with the longest possible name
 	err = client.connection.Signal(
 		longestPossibleName,
-		webwire.Payload{Data: []byte("dummy")},
+		webwire.NewPayload(webwire.EncodingBinary, []byte("dummy")),
 	)
 	if err != nil {
 		t.Fatalf("Request failed: %s", err)

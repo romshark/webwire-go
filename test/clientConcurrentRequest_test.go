@@ -23,10 +23,10 @@ func TestClientConcurrentRequest(t *testing.T) {
 			onRequest: func(
 				_ context.Context,
 				_ *webwire.Client,
-				_ *webwire.Message,
+				_ webwire.Message,
 			) (webwire.Payload, error) {
 				finished.Progress(1)
-				return webwire.Payload{}, nil
+				return nil, nil
 			},
 		},
 		webwire.ServerOptions{},
@@ -50,7 +50,7 @@ func TestClientConcurrentRequest(t *testing.T) {
 		defer finished.Progress(1)
 		if _, err := client.connection.Request(
 			"sample",
-			webwire.Payload{Data: []byte("samplepayload")},
+			webwire.NewPayload(webwire.EncodingBinary, []byte("samplepayload")),
 		); err != nil {
 			t.Errorf("Request failed: %s", err)
 		}

@@ -43,29 +43,29 @@ The [webwire-go](https://github.com/qbeon/webwire-go) library provides both a cl
 <br>
 
 #### Table of Contents
-- [Installation](https://github.com/qbeon/webwire-go#installation)
-  - [Dep](https://github.com/qbeon/webwire-go#dep)
-  - [Go Get](https://github.com/qbeon/webwire-go#go-get)
-- [Contribution](https://github.com/qbeon/webwire-go#contribution)
-  - [Maintainers](https://github.com/qbeon/webwire-go#maintainers)
-- [WebWire Binary Protocol](https://github.com/qbeon/webwire-go#webwire-binary-protocol)
-- [Examples](https://github.com/qbeon/webwire-go#examples)
-- [Features](https://github.com/qbeon/webwire-go#features)
-  - [Request-Reply](https://github.com/qbeon/webwire-go#request-reply)
-  - [Client-side Signals](https://github.com/qbeon/webwire-go#client-side-signals)
-  - [Server-side Signals](https://github.com/qbeon/webwire-go#server-side-signals)
-  - [Namespaces](https://github.com/qbeon/webwire-go#namespaces)
-  - [Sessions](https://github.com/qbeon/webwire-go#sessions)
-  - [Automatic Session Restoration](https://github.com/qbeon/webwire-go#automatic-session-restoration)
-  - [Automatic Connection Maintenance](https://github.com/qbeon/webwire-go#automatic-connection-maintenance)
-  - [Concurrency](https://github.com/qbeon/webwire-go#concurrency)
-  - [Thread-Safety](https://github.com/qbeon/webwire-go#thread-safety)
-  - [Hooks](https://github.com/qbeon/webwire-go#hooks)
-    - [Server-side Hooks](https://github.com/qbeon/webwire-go#server-side-hooks)
-    - [Client-side Hooks](https://github.com/qbeon/webwire-go#client-side-hooks)
-  - [Graceful Shutdown](https://github.com/qbeon/webwire-go#graceful-shutdown)
-  - [Seamless JavaScript Support](https://github.com/qbeon/webwire-go#seamless-javascript-support)
-- [Dependencies](https://github.com/qbeon/webwire-go#dependencies)
+- [Installation](#installation)
+  - [Dep](#dep)
+  - [Go Get](#go-get)
+- [Contribution](#contribution)
+  - [Maintainers](#maintainers)
+- [WebWire Binary Protocol](#webwire-binary-protocol)
+- [Examples](#examples)
+- [Features](#features)
+  - [Request-Reply](#request-reply)
+  - [Client-side Signals](#client-side-signals)
+  - [Server-side Signals](#server-side-signals)
+  - [Namespaces](#namespaces)
+  - [Sessions](#sessions)
+  - [Automatic Session Restoration](#automatic-session-restoration)
+  - [Automatic Connection Maintenance](#automatic-connection-maintenance)
+  - [Concurrency](#concurrency)
+  - [Thread Safety](#thread-safety)
+  - [Hooks](#hooks)
+    - [Server-side Hooks](#server-side-hooks)
+    - [Client-side Hooks](#client-side-hooks)
+  - [Graceful Shutdown](#graceful-shutdown)
+  - [Seamless JavaScript Support](#seamless-javascript-support)
+- [Dependencies](#dependencies)
 
 
 ## Installation
@@ -107,7 +107,10 @@ Clients can initiate multiple simultaneous requests and receive replies asynchro
 
 ```go
 // Send a request to the server, will block the goroutine until replied
-reply, err := client.Request("", wwr.Payload{Data: []byte("sudo rm -rf /")})
+reply, err := client.Request("", wwr.NewPayload(
+  wwr.EncodingBinary,
+  []byte("sudo rm -rf /"),
+))
 if err != nil {
   // Oh oh, request failed for some reason!
 }
@@ -118,7 +121,11 @@ Timed requests will timeout and return an error if the server doesn't manage to 
 
 ```go
 // Send a request to the server, will block the goroutine for 200ms at max
-reply, err := client.TimedRequest("", wwr.Payload{Data: []byte("hurry up!")}, 200*time.Millisecond)
+reply, err := client.TimedRequest("", wwr.Payload(
+  wwr.EncodingUtf8,
+  []byte("hurry up!"),
+  200*time.Millisecond,
+))
 if err != nil {
   // Probably timed out!
 }
@@ -130,21 +137,29 @@ Individual clients can send signals to the server. Signals are one-way messages 
 
 ```go
 // Send signal to server
-err := client.Signal("eventA", wwr.Payload{Data: []byte("something")})
+err := client.Signal(
+  "eventA",
+  wwr.NewPayload(
+    wwr.EncodingUtf8,
+    []byte("something"),
+  ),
+)
 ```
 
 ### Server-side Signals
 The server also can send signals to individual connected clients.
 
 ```go
-func onRequest(
-  client *wwr.Client,
-  _ *wwr.Message,
+func OnRequest(
   _ context.Context,
+  client *Client,
+  _ Message,
 ) (wwr.Payload, error) {
   // Send a signal to the client before replying to the request
-  client.Signal("", wwr.Payload{Data: []byte("ping!")})
-  return wwr.Payload{}, nil
+  client.Signal("", wwr.NewPayload(wwr.EncodingUtf8, []byte("ping!")))
+
+  // Reply nothing
+  return nil, nil
 }
 ```
 
@@ -152,27 +167,37 @@ func onRequest(
 Different kinds of requests and signals can be differentiated using the builtin namespacing feature.
 
 ```go
-func onRequest(
-  client *wwr.Client,
-  message *wwr.Message,
+func OnRequest(
   _ context.Context,
+  _ *Client,
+  message Message,
 ) (wwr.Payload, error) {
-  switch message.Name {
+  switch message.Name() {
   case "auth":
     // Authentication request
+    return wwr.NewPayload(
+      wwr.EncodingUtf8,
+      []byte("this is an auth request"),
+    )
   case "query":
     // Query request
+    return wwr.NewPayload(
+      wwr.EncodingUtf8,
+      []byte("this is a query request"),
+    )
   }
-  return wwr.Payload{}, nil
+
+  // Otherwise return nothing
+  return nil, nil
 }
 ```
 ```go
-func onSignal(
-  client *wwr.Client,
-  message *wwr.Message,
+func OnSignal(
   _ context.Context,
+  _ *Client,
+  message Message,
 ) {
-  switch message.Name {
+  switch message.Name() {
   case "event A":
     // handle event A
   case "event B":
@@ -185,23 +210,26 @@ func onSignal(
 Individual connections can get sessions assigned to identify them. The state of the session is automagically synchronized between the client and the server. WebWire doesn't enforce any kind of authentication technique though, it just provides a way to authenticate a connection. WebWire also doesn't enforce any kind of session storage, the user could implement a custom session manager implementing the WebWire `SessionManager` interface to use any kind of volatile or persistent session storage, be it a database or a simple in-memory map.
 
 ```go
-func onRequest(
-  client *wwr.Client,
-  message *wwr.Message,
+func OnRequest(
   _ context.Context,
+  client *Client,
+  message Message,
 ) (wwr.Payload, error) {
   // Verify credentials
-  if string(message.Payload.Data) != "secret:pass" {
-    return wwr.Payload{}, wwr.Error {
+  if string(message.Payload().Data()) != "secret:pass" {
+    return nil, wwr.ReqErr {
       Code: "WRONG_CREDENTIALS",
       Message: "Incorrect username or password, try again"
     }
   }
-  // Create session, will automatically synchronize to the client
-  err := client.CreateSession(/*arbitrary data*/); err != nil {
-    return wwr.Payload{}, fmt.Errorf("Couldn't create session for some reason")
+  // Create session (will automatically synchronize to the client)
+  err := client.CreateSession(/*something that implements wwr.SessionInfo*/)
+  if err != nil {
+    return nil, fmt.Errorf("Couldn't create session for some reason")
   }
-  client.Session // return wwr.Payload{}, nil
+
+  // Complete request, reply nothing
+  return nil, nil
 }
 ```
 

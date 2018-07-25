@@ -11,14 +11,14 @@ import (
 
 // TestRequestNoNameOnlyPayload tests requests without a name but only a payload
 func TestRequestNoNameOnlyPayload(t *testing.T) {
-	expectedRequestPayload := webwire.Payload{
-		Encoding: webwire.EncodingUtf8,
-		Data:     []byte("3"),
-	}
-	expectedRequestPayloadUtf16 := webwire.Payload{
-		Encoding: webwire.EncodingUtf16,
-		Data:     []byte("12"),
-	}
+	expectedRequestPayload := webwire.NewPayload(
+		webwire.EncodingUtf8,
+		[]byte("3"),
+	)
+	expectedRequestPayloadUtf16 := webwire.NewPayload(
+		webwire.EncodingUtf16,
+		[]byte("12"),
+	)
 
 	// Initialize server
 	server := setupServer(
@@ -27,20 +27,22 @@ func TestRequestNoNameOnlyPayload(t *testing.T) {
 			onRequest: func(
 				_ context.Context,
 				_ *webwire.Client,
-				msg *webwire.Message,
+				msg webwire.Message,
 			) (webwire.Payload, error) {
 				// Expect a named request
-				if len(msg.Name) > 0 {
-					t.Errorf("Unexpected request name: %s", msg.Name)
+				msgName := msg.Name()
+				if len(msgName) > 0 {
+					t.Errorf("Unexpected request name: %s", msgName)
 				}
 
-				if msg.Payload.Encoding == webwire.EncodingUtf16 {
+				msgPayload := msg.Payload()
+				if msgPayload.Encoding() == webwire.EncodingUtf16 {
 					// Verify request payload
 					comparePayload(
 						t,
 						"client request (UTF16)",
 						expectedRequestPayloadUtf16,
-						msg.Payload,
+						msgPayload,
 					)
 				} else {
 					// Verify request payload
@@ -48,11 +50,11 @@ func TestRequestNoNameOnlyPayload(t *testing.T) {
 						t,
 						"client request",
 						expectedRequestPayload,
-						msg.Payload,
+						msgPayload,
 					)
 				}
 
-				return webwire.Payload{}, nil
+				return nil, nil
 			},
 		},
 		webwire.ServerOptions{},

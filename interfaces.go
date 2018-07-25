@@ -74,7 +74,7 @@ type ServerImplementation interface {
 	//
 	// This hook will be invoked by the goroutine serving the calling client and will block any
 	// other interactions with this client while executing
-	OnSignal(ctx context.Context, client *Client, message *Message)
+	OnSignal(ctx context.Context, client *Client, message Message)
 
 	// OnRequest is invoked when the webwire server receives a request from a client.
 	// It must return either a response payload or an error.
@@ -92,7 +92,7 @@ type ServerImplementation interface {
 	OnRequest(
 		ctx context.Context,
 		client *Client,
-		message *Message,
+		message Message,
 	) (response Payload, err error)
 }
 
@@ -189,3 +189,30 @@ type SessionInfo interface {
 // session. It must return a webwire.SessionInfo compliant object constructed
 // from the data given
 type SessionInfoParser func(map[string]interface{}) SessionInfo
+
+// Payload represents a WebWire message payload
+type Payload interface {
+	// Encoding returns the payload encoding type
+	Encoding() PayloadEncoding
+
+	// Data returns the raw payload data
+	Data() []byte
+
+	// Utf8 returns a UTF8 representation of the payload data
+	Utf8() (string, error)
+}
+
+// Message represents a WebWire protocol message
+type Message interface {
+	// MessageType returns the type of the message
+	MessageType() byte
+
+	// Identifier returns the message identifier
+	Identifier() [8]byte
+
+	// Name returns the name of the message
+	Name() string
+
+	// Payload returns the message payload
+	Payload() Payload
+}

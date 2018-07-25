@@ -18,11 +18,11 @@ func TestRequestEmpty(t *testing.T) {
 			onRequest: func(
 				_ context.Context,
 				_ *webwire.Client,
-				msg *webwire.Message,
+				msg webwire.Message,
 			) (webwire.Payload, error) {
 				// Expect the following request to not even arrive
 				t.Error("Not expected but reached")
-				return webwire.Payload{}, nil
+				return nil, nil
 			},
 		},
 		webwire.ServerOptions{},
@@ -39,7 +39,7 @@ func TestRequestEmpty(t *testing.T) {
 
 	// Send request without a name and without a payload.
 	// Expect a protocol error in return not sending the invalid request off
-	_, err := client.connection.Request("", webwire.Payload{})
+	_, err := client.connection.Request("", nil)
 	if _, isProtoErr := err.(webwire.ProtocolErr); !isProtoErr {
 		t.Fatalf("Expected a protocol error, got: %v", err)
 	}

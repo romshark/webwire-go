@@ -47,10 +47,10 @@ func (srv *ChatRoomServer) broadcastMessage(name string, msg string) {
 	log.Printf("Broadcast message to %d clients", len(srv.connected))
 	for client := range srv.connected {
 		// Send message as signal
-		if err := client.Signal("", wwr.Payload{
-			Encoding: wwr.EncodingUtf8,
-			Data:     encoded,
-		}); err != nil {
+		if err := client.Signal("", wwr.NewPayload(
+			wwr.EncodingUtf8,
+			encoded,
+		)); err != nil {
 			log.Printf(
 				"WARNING: failed sending signal to client %s : %s",
 				client.Info().RemoteAddr,
@@ -71,11 +71,12 @@ func (srv *ChatRoomServer) broadcastMessage(name string, msg string) {
 func (srv *ChatRoomServer) handleAuth(
 	_ context.Context,
 	client *wwr.Client,
-	message *wwr.Message,
+	message wwr.Message,
 ) (wwr.Payload, error) {
-	credentialsText, err := message.Payload.Utf8()
+	payload := message.Payload()
+	credentialsText, err := payload.Utf8()
 	if err != nil {
-		return wwr.Payload{}, wwr.ReqErr{
+		return nil, wwr.ReqErr{
 			Code:    "DECODING_FAILURE",
 			Message: fmt.Sprintf("Failed decoding message: %s", err),
 		}
@@ -86,13 +87,13 @@ func (srv *ChatRoomServer) handleAuth(
 	// Try to parse credentials
 	var credentials shared.AuthenticationCredentials
 	if err := json.Unmarshal([]byte(credentialsText), &credentials); err != nil {
-		return wwr.Payload{}, fmt.Errorf("Failed parsing credentials: %s", err)
+		return nil, fmt.Errorf("Failed parsing credentials: %s", err)
 	}
 
 	// Verify username
 	password, userExists := userAccounts[credentials.Name]
 	if !userExists {
-		return wwr.Payload{}, wwr.ReqErr{
+		return nil, wwr.ReqErr{
 			Code:    "INEXISTENT_USER",
 			Message: fmt.Sprintf("No such user: '%s'", credentials.Name),
 		}
@@ -100,7 +101,7 @@ func (srv *ChatRoomServer) handleAuth(
 
 	// Verify password
 	if password != credentials.Password {
-		return wwr.Payload{}, wwr.ReqErr{
+		return nil, wwr.ReqErr{
 			Code:    "WRONG_PASSWORD",
 			Message: "Provided password is wrong",
 		}
@@ -110,7 +111,7 @@ func (srv *ChatRoomServer) handleAuth(
 	if err := client.CreateSession(&shared.SessionInfo{
 		Username: credentials.Name,
 	}); err != nil {
-		return wwr.Payload{}, fmt.Errorf("Couldn't create session: %s", err)
+		return nil, fmt.Errorf("Couldn't create session: %s", err)
 	}
 
 	log.Printf(
@@ -120,9 +121,10 @@ func (srv *ChatRoomServer) handleAuth(
 	)
 
 	// Reply to the request, use default binary encoding
-	return wwr.Payload{
-		Data: []byte(client.SessionKey()),
-	}, nil
+	return wwr.NewPayload(
+		wwr.EncodingBinary,
+		[]byte(client.SessionKey()),
+	), nil
 }
 
 /****************************************************************\
@@ -132,24 +134,25 @@ func (srv *ChatRoomServer) handleAuth(
 func (srv *ChatRoomServer) handleMessage(
 	_ context.Context,
 	client *wwr.Client,
-	message *wwr.Message,
+	message wwr.Message,
 ) (wwr.Payload, error) {
-	msgStr, err := message.Payload.Utf8()
+	payload := message.Payload()
+	msgStr, err := payload.Utf8()
 	if err != nil {
 		log.Printf(
 			"Received invalid message from %s, couldn't convert payload to UTF8: %s",
 			client.Info().RemoteAddr,
 			err,
 		)
-		return wwr.Payload{}, nil
+		return nil, nil
 	}
 
 	log.Printf(
 		"Received message from %s: '%s' (%d, %s)",
 		client.Info().RemoteAddr,
 		msgStr,
-		len(message.Payload.Data),
-		message.Payload.Encoding.String(),
+		len(payload.Data()),
+		payload.Encoding().String(),
 	)
 
 	name := "Anonymous"
@@ -160,7 +163,7 @@ func (srv *ChatRoomServer) handleMessage(
 
 	srv.broadcastMessage(name, msgStr)
 
-	return wwr.Payload{}, nil
+	return nil, nil
 }
 
 /****************************************************************\
@@ -179,7 +182,7 @@ func (srv *ChatRoomServer) OnOptions(resp http.ResponseWriter) {
 func (srv *ChatRoomServer) OnSignal(
 	_ context.Context,
 	_ *wwr.Client,
-	_ *wwr.Message,
+	_ wwr.Message,
 ) {
 }
 
@@ -194,17 +197,17 @@ func (srv *ChatRoomServer) BeforeUpgrade(resp http.ResponseWriter, req *http.Req
 func (srv *ChatRoomServer) OnRequest(
 	ctx context.Context,
 	client *wwr.Client,
-	message *wwr.Message,
+	message wwr.Message,
 ) (response wwr.Payload, err error) {
-	switch message.Name {
+	switch message.Name() {
 	case "auth":
 		return srv.handleAuth(ctx, client, message)
 	case "msg":
 		return srv.handleMessage(ctx, client, message)
 	}
-	return wwr.Payload{}, wwr.ReqErr{
+	return nil, wwr.ReqErr{
 		Code:    "BAD_REQUEST",
-		Message: fmt.Sprintf("Unsupported request name: %s", message.Name),
+		Message: fmt.Sprintf("Unsupported request name: %s", message.Name()),
 	}
 }
 

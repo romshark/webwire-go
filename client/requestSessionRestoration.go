@@ -5,6 +5,8 @@ import (
 	"fmt"
 
 	webwire "github.com/qbeon/webwire-go"
+	msg "github.com/qbeon/webwire-go/message"
+	pld "github.com/qbeon/webwire-go/payload"
 )
 
 // requestSessionRestoration sends a session restoration request
@@ -15,8 +17,8 @@ func (clt *Client) requestSessionRestoration(sessionKey []byte) (
 	error,
 ) {
 	reply, err := clt.sendNamelessRequest(
-		webwire.MsgRestoreSession,
-		webwire.Payload{
+		msg.MsgRestoreSession,
+		pld.Payload{
 			Encoding: webwire.EncodingBinary,
 			Data:     sessionKey,
 		},
@@ -28,10 +30,10 @@ func (clt *Client) requestSessionRestoration(sessionKey []byte) (
 
 	// Unmarshal JSON encoded session object
 	var encodedSessionObj webwire.JSONEncodedSession
-	if err := json.Unmarshal(reply.Data, &encodedSessionObj); err != nil {
+	if err := json.Unmarshal(reply.Data(), &encodedSessionObj); err != nil {
 		return nil, fmt.Errorf(
 			"Couldn't unmarshal restored session from reply('%s'): %s",
-			string(reply.Data),
+			string(reply.Data()),
 			err,
 		)
 	}

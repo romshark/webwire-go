@@ -31,7 +31,7 @@ func TestClientSignalAutoconn(t *testing.T) {
 	// Skip manual connection establishment and rely on autoconnect instead
 	if err := client.connection.Signal(
 		"",
-		wwr.Payload{Data: []byte("testdata")},
+		wwr.NewPayload(wwr.EncodingBinary, []byte("testdata")),
 	); err != nil {
 		t.Fatalf(
 			"Expected signal to automatically connect, got error: %s | %s",

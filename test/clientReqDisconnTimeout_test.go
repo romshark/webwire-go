@@ -25,7 +25,7 @@ func TestClientReqDisconnTimeout(t *testing.T) {
 	// Send request and await reply
 	_, err := client.connection.Request(
 		"",
-		wwr.Payload{Data: []byte("testdata")},
+		wwr.NewPayload(wwr.EncodingBinary, []byte("testdata")),
 	)
 	if _, isReqTimeoutErr := err.(wwr.ReqTimeoutErr); !isReqTimeoutErr {
 		t.Fatalf(

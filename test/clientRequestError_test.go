@@ -24,10 +24,10 @@ func TestClientRequestError(t *testing.T) {
 			onRequest: func(
 				_ context.Context,
 				_ *webwire.Client,
-				_ *webwire.Message,
+				_ webwire.Message,
 			) (webwire.Payload, error) {
 				// Fail the request by returning an error
-				return webwire.Payload{}, expectedReplyError
+				return nil, expectedReplyError
 			},
 		},
 		webwire.ServerOptions{},
@@ -47,10 +47,10 @@ func TestClientRequestError(t *testing.T) {
 	}
 
 	// Send request and await reply
-	reply, err := client.connection.Request("", webwire.Payload{
-		Encoding: webwire.EncodingUtf8,
-		Data:     []byte("webwire_test_REQUEST_payload"),
-	})
+	reply, err := client.connection.Request("", webwire.NewPayload(
+		webwire.EncodingUtf8,
+		[]byte("webwire_test_REQUEST_payload"),
+	))
 
 	// Verify returned error
 	if err == nil {
@@ -77,11 +77,11 @@ func TestClientRequestError(t *testing.T) {
 		t.Fatalf("Unexpected request failure: %v", err)
 	}
 
-	if len(reply.Data) > 0 {
+	if reply != nil {
 		t.Fatalf(
 			"Reply should have been empty, but was: '%s' (%d)",
-			string(reply.Data),
-			len(reply.Data),
+			string(reply.Data()),
+			len(reply.Data()),
 		)
 	}
 }

@@ -23,13 +23,13 @@ func TestClientOnSessionCreated(t *testing.T) {
 			onRequest: func(
 				_ context.Context,
 				clt *webwire.Client,
-				_ *webwire.Message,
+				_ webwire.Message,
 			) (webwire.Payload, error) {
 				// Try to create a new session
 				if err := clt.CreateSession(nil); err != nil {
-					return webwire.Payload{}, err
+					return nil, err
 				}
-				return webwire.Payload{}, nil
+				return nil, nil
 			},
 		},
 		webwire.ServerOptions{},
@@ -57,7 +57,7 @@ func TestClientOnSessionCreated(t *testing.T) {
 	// Send authentication request and await reply
 	if _, err := client.connection.Request(
 		"login",
-		webwire.Payload{Data: []byte("credentials")},
+		webwire.NewPayload(webwire.EncodingBinary, []byte("credentials")),
 	); err != nil {
 		t.Fatalf("Request failed: %s", err)
 	}

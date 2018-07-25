@@ -27,28 +27,29 @@ func TestRequestNamespaces(t *testing.T) {
 			onRequest: func(
 				_ context.Context,
 				_ *webwire.Client,
-				msg *webwire.Message,
+				msg webwire.Message,
 			) (webwire.Payload, error) {
-				if currentStep == 1 && msg.Name != "" {
+				msgName := msg.Name()
+				if currentStep == 1 && msgName != "" {
 					t.Errorf(
 						"Expected unnamed request, got: '%s'",
-						msg.Name,
+						msgName,
 					)
 				}
-				if currentStep == 2 && msg.Name != shortestPossibleName {
+				if currentStep == 2 && msgName != shortestPossibleName {
 					t.Errorf("Expected shortest possible "+
 						"request name, got: '%s'",
-						msg.Name,
+						msgName,
 					)
 				}
-				if currentStep == 3 && msg.Name != longestPossibleName {
+				if currentStep == 3 && msgName != longestPossibleName {
 					t.Errorf("Expected longest possible "+
 						"request name, got: '%s'",
-						msg.Name,
+						msgName,
 					)
 				}
 
-				return webwire.Payload{}, nil
+				return nil, nil
 			},
 		},
 		webwire.ServerOptions{},
@@ -71,9 +72,10 @@ func TestRequestNamespaces(t *testing.T) {
 		Step 1 - Unnamed request name
 	\*****************************************************************/
 	// Send unnamed request
-	_, err := client.connection.Request("", webwire.Payload{
-		Data: []byte("dummy"),
-	})
+	_, err := client.connection.Request("", webwire.NewPayload(
+		webwire.EncodingBinary,
+		[]byte("dummy"),
+	))
 	if err != nil {
 		t.Fatalf("Request failed: %s", err)
 	}
@@ -85,7 +87,7 @@ func TestRequestNamespaces(t *testing.T) {
 	// Send request with the shortest possible name
 	_, err = client.connection.Request(
 		shortestPossibleName,
-		webwire.Payload{Data: []byte("dummy")},
+		webwire.NewPayload(webwire.EncodingBinary, []byte("dummy")),
 	)
 	if err != nil {
 		t.Fatalf("Request failed: %s", err)
@@ -98,7 +100,7 @@ func TestRequestNamespaces(t *testing.T) {
 	// Send request with the longest possible name
 	_, err = client.connection.Request(
 		longestPossibleName,
-		webwire.Payload{Data: []byte("dummy")},
+		webwire.NewPayload(webwire.EncodingBinary, []byte("dummy")),
 	)
 	if err != nil {
 		t.Fatalf("Request failed: %s", err)

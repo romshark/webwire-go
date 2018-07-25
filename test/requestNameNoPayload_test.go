@@ -18,22 +18,24 @@ func TestRequestNameNoPayload(t *testing.T) {
 			onRequest: func(
 				_ context.Context,
 				_ *webwire.Client,
-				msg *webwire.Message,
+				msg webwire.Message,
 			) (webwire.Payload, error) {
 				// Expect a named request
-				if msg.Name != "n" {
-					t.Errorf("Unexpected request name: %s", msg.Name)
+				msgName := msg.Name()
+				if msgName != "n" {
+					t.Errorf("Unexpected request name: %s", msgName)
 				}
 
 				// Expect no payload to arrive
-				if len(msg.Payload.Data) > 0 {
+				msgPayloadData := msg.Payload().Data()
+				if len(msgPayloadData) > 0 {
 					t.Errorf(
 						"Unexpected received payload: %d",
-						len(msg.Payload.Data),
+						len(msgPayloadData),
 					)
 				}
 
-				return webwire.Payload{}, nil
+				return nil, nil
 			},
 		},
 		webwire.ServerOptions{},
@@ -49,18 +51,18 @@ func TestRequestNameNoPayload(t *testing.T) {
 	)
 
 	// Send a named binary request without a payload and await reply
-	if _, err := client.connection.Request("n", webwire.Payload{
-		Encoding: webwire.EncodingBinary,
-		Data:     nil,
-	}); err != nil {
+	if _, err := client.connection.Request("n", webwire.NewPayload(
+		webwire.EncodingBinary,
+		nil,
+	)); err != nil {
 		t.Fatalf("Request failed: %s", err)
 	}
 
 	// Send a UTF16 encoded named binary request without a payload
-	if _, err := client.connection.Request("n", webwire.Payload{
-		Encoding: webwire.EncodingUtf16,
-		Data:     nil,
-	}); err != nil {
+	if _, err := client.connection.Request("n", webwire.NewPayload(
+		webwire.EncodingUtf16,
+		nil,
+	)); err != nil {
 		t.Fatalf("Request failed: %s", err)
 	}
 }
