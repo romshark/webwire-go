@@ -8,10 +8,10 @@ import (
 
 // handleRequest handles incoming requests
 // and returns an error if the ongoing connection cannot be proceeded
-func (srv *server) handleRequest(clt *Client, message *msg.Message) {
+func (srv *server) handleRequest(conn *connection, message *msg.Message) {
 	replyPayload, returnedErr := srv.impl.OnRequest(
 		context.Background(),
-		clt,
+		conn,
 		&MessageWrapper{
 			actual: message,
 		},
@@ -27,17 +27,17 @@ func (srv *server) handleRequest(clt *Client, message *msg.Message) {
 		}
 
 		srv.fulfillMsg(
-			clt,
+			conn,
 			message,
 			encoding,
 			data,
 		)
 	case ReqErr:
-		srv.failMsg(clt, message, returnedErr)
+		srv.failMsg(conn, message, returnedErr)
 	case *ReqErr:
-		srv.failMsg(clt, message, returnedErr)
+		srv.failMsg(conn, message, returnedErr)
 	default:
 		srv.errorLog.Printf("Internal error during request handling: %s", returnedErr)
-		srv.failMsg(clt, message, returnedErr)
+		srv.failMsg(conn, message, returnedErr)
 	}
 }

@@ -36,7 +36,7 @@ type Server interface {
 	SessionConnectionsNum(sessionKey string) int
 
 	// SessionConnections implements the SessionRegistry interface
-	SessionConnections(sessionKey string) []*Client
+	SessionConnections(sessionKey string) []Connection
 
 	// CloseSession closes the session identified by the given key
 	// and returns the number of closed connections.
@@ -63,18 +63,18 @@ type ServerImplementation interface {
 	// initialization process, detaining the client from starting to listen for incoming messages.
 	// To prevent blocking the initialization process it is advised to move any time consuming work
 	// to a separate goroutine
-	OnClientConnected(client *Client)
+	OnClientConnected(client Connection)
 
 	// OnClientDisconnected is invoked when a client closes the connection to the server
 	//
 	// This hook will be invoked by the goroutine serving the calling client before it's suspended
-	OnClientDisconnected(client *Client)
+	OnClientDisconnected(client Connection)
 
 	// OnSignal is invoked when the webwire server receives a signal from a client.
 	//
 	// This hook will be invoked by the goroutine serving the calling client and will block any
 	// other interactions with this client while executing
-	OnSignal(ctx context.Context, client *Client, message Message)
+	OnSignal(ctx context.Context, client Connection, message Message)
 
 	// OnRequest is invoked when the webwire server receives a request from a client.
 	// It must return either a response payload or an error.
@@ -91,9 +91,65 @@ type ServerImplementation interface {
 	// other interactions with this client while executing
 	OnRequest(
 		ctx context.Context,
-		client *Client,
+		client Connection,
 		message Message,
 	) (response Payload, err error)
+}
+
+// Connection represents a connected client
+type Connection interface {
+	// IsActive returns true if this connection is in active state
+	// ready to accept incoming messages, otherwise returns false
+	IsActive() bool
+
+	// Info returns information about this connection including the
+	// client agent string, the remote address and the time of creation
+	Info() ClientInfo
+
+	// Signal sends a named signal containing the given payload to the client
+	Signal(name string, payload Payload) error
+
+	// CreateSession creates a new session for this connection and
+	// automatically synchronizes the new session to the remote client.
+	// The synchronization happens asynchronously using a signal
+	// and doesn't block the calling goroutine.
+	// Returns an error if there's already another session active
+	CreateSession(attachment SessionInfo) error
+
+	// CloseSession disables the currently active session for this connection
+	// and synchronize the closure to the remote client.
+	// The session will be destroyed if this is it's last connection remaining.
+	// Does nothing if there's no active session
+	CloseSession() error
+
+	// HasSession returns true if this connection currently has
+	// a session assigned, otherwise returns false
+	HasSession() bool
+
+	// Session returns an exact copy of the session object or nil if there's no
+	// session currently assigned to this connection
+	Session() *Session
+
+	// SessionKey returns the key of the currently assigned session.
+	// Returns an empty string if there's no session assigned to this connection
+	SessionKey() string
+
+	// SessionCreation returns the creation time
+	// of the currently assigned session.
+	// Warning: be sure to check whether there's a session beforehand because
+	// this function will return garbage if
+	// there's currently no session assigned
+	SessionCreation() time.Time
+
+	// SessionInfo returns a copy of the session info field value
+	// in the form of an empty interface to be casted to either concrete type
+	SessionInfo(name string) interface{}
+
+	// Close marks this connection for shutdown.
+	// It defers closing the connection until all work on it is done
+	// and removes it from the session registry.
+	// Does nothing when called multiple times
+	Close()
 }
 
 // SessionLookupResult represents the result of a session lookup
@@ -107,15 +163,15 @@ type SessionLookupResult struct {
 type SessionManager interface {
 	// OnSessionCreated is invoked after the synchronization of the new session
 	// to the remote client.
-	// The actual created session is retrieved from the provided client agent.
+	// The actual created session can be retrieved from the provided connection.
 	// If OnSessionCreated returns an error then this error is logged
 	// but the session will not be destroyed and will remain active!
 	// The only consequence of OnSessionCreation failing is that the server
 	// won't be able to restore the session after the client is disconnected.
 	//
 	// This hook will be invoked by the goroutine calling the
-	// client.CreateSession client agent method
-	OnSessionCreated(client *Client) error
+	// client.CreateSession connection method
+	OnSessionCreated(client Connection) error
 
 	// OnSessionLookup is invoked when the server is looking for a specific
 	// session given its key.
@@ -141,8 +197,8 @@ type SessionManager interface {
 	// in the OnSessionLookup hook any longer.
 	// If an error is returned then the it is logged.
 	//
-	// This hook is invoked by either a goroutine calling the client.CloseSession()
-	// client agent method, or the goroutine serving the associated client,
+	// This hook is invoked by either a goroutine calling the method
+	// connection.CloseSession(), or the goroutine serving the associated client,
 	// in the case of which it will block any other interactions with
 	// this client while executing
 	OnSessionClosed(sessionKey string) error

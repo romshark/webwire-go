@@ -73,14 +73,14 @@ func (srv *server) ServeHTTP(
 	}
 
 	// Register connected client
-	newClient := newClientAgent(conn, req.Header.Get("User-Agent"), srv)
+	connection := newConnection(conn, req.Header.Get("User-Agent"), srv)
 
-	srv.clientsLock.Lock()
-	srv.clients = append(srv.clients, newClient)
-	srv.clientsLock.Unlock()
+	srv.connectionsLock.Lock()
+	srv.connections = append(srv.connections, connection)
+	srv.connectionsLock.Unlock()
 
 	// Call hook on successful connection
-	srv.impl.OnClientConnected(newClient)
+	srv.impl.OnClientConnected(connection)
 
 	// Start heartbeat sender (if enabled)
 	stopHeartbeat := make(chan struct{}, 1)
@@ -96,13 +96,13 @@ func (srv *server) ServeHTTP(
 				srv.warnLog.Printf("Abnormal closure error: %s", err)
 			}
 
-			newClient.unlink()
-			srv.impl.OnClientDisconnected(newClient)
+			connection.unlink()
+			srv.impl.OnClientDisconnected(connection)
 			break
 		}
 
 		// Parse & handle the message
-		go srv.handleMessage(newClient, message)
+		go srv.handleMessage(connection, message)
 	}
 
 	// Connection closed

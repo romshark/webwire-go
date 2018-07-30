@@ -18,19 +18,19 @@ func TestActiveSessionRegistry(t *testing.T) {
 		&serverImpl{
 			onRequest: func(
 				_ context.Context,
-				clt *webwire.Client,
+				conn webwire.Connection,
 				msg webwire.Message,
 			) (webwire.Payload, error) {
 				// Close session on logout
 				if msg.Name() == "logout" {
-					if err := clt.CloseSession(); err != nil {
+					if err := conn.CloseSession(); err != nil {
 						t.Errorf("Couldn't close session: %s", err)
 					}
 					return nil, nil
 				}
 
 				// Try to create a new session
-				if err := clt.CreateSession(nil); err != nil {
+				if err := conn.CreateSession(nil); err != nil {
 					return nil, err
 				}
 
@@ -38,7 +38,7 @@ func TestActiveSessionRegistry(t *testing.T) {
 				// (use default binary encoding)
 				return webwire.NewPayload(
 					webwire.EncodingBinary,
-					[]byte(clt.SessionKey()),
+					[]byte(conn.SessionKey()),
 				), nil
 			},
 		},

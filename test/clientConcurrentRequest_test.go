@@ -22,7 +22,7 @@ func TestClientConcurrentRequest(t *testing.T) {
 		&serverImpl{
 			onRequest: func(
 				_ context.Context,
-				_ *webwire.Client,
+				_ webwire.Connection,
 				_ webwire.Message,
 			) (webwire.Payload, error) {
 				finished.Progress(1)

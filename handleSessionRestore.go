@@ -9,9 +9,12 @@ import (
 
 // handleSessionRestore handles session restoration (by session key) requests
 // and returns an error if the ongoing connection cannot be proceeded
-func (srv *server) handleSessionRestore(clt *Client, message *msg.Message) {
+func (srv *server) handleSessionRestore(
+	con *connection,
+	message *msg.Message,
+) {
 	if !srv.sessionsEnabled {
-		srv.failMsg(clt, message, SessionsDisabledErr{})
+		srv.failMsg(con, message, SessionsDisabledErr{})
 		return
 	}
 
@@ -20,7 +23,7 @@ func (srv *server) handleSessionRestore(clt *Client, message *msg.Message) {
 	sessConsNum := srv.sessionRegistry.sessionConnectionsNum(key)
 	if sessConsNum >= 0 && srv.sessionRegistry.maxConns > 0 &&
 		uint(sessConsNum+1) > srv.sessionRegistry.maxConns {
-		srv.failMsg(clt, message, MaxSessConnsReachedErr{})
+		srv.failMsg(con, message, MaxSessConnsReachedErr{})
 		return
 	}
 
@@ -30,10 +33,10 @@ func (srv *server) handleSessionRestore(clt *Client, message *msg.Message) {
 	// Inspect error if any
 	switch err := err.(type) {
 	case SessNotFoundErr:
-		srv.failMsg(clt, message, SessNotFoundErr{})
+		srv.failMsg(con, message, SessNotFoundErr{})
 		return
 	default:
-		srv.failMsg(clt, message, nil)
+		srv.failMsg(con, message, nil)
 		srv.errorLog.Printf("CRITICAL: Session search handler failed: %s", err)
 		return
 	case nil:
@@ -48,7 +51,7 @@ func (srv *server) handleSessionRestore(clt *Client, message *msg.Message) {
 	}
 	encodedSession, err := json.Marshal(&encodedSessionObj)
 	if err != nil {
-		srv.failMsg(clt, message, nil)
+		srv.failMsg(con, message, nil)
 		srv.errorLog.Printf(
 			"Couldn't encode session object (%v): %s",
 			encodedSessionObj,
@@ -63,17 +66,17 @@ func (srv *server) handleSessionRestore(clt *Client, message *msg.Message) {
 		parsedSessInfo = srv.sessionInfoParser(result.Info)
 	}
 
-	clt.setSession(&Session{
+	con.setSession(&Session{
 		Key:        key,
 		Creation:   result.Creation,
 		LastLookup: result.LastLookup,
 		Info:       parsedSessInfo,
 	})
-	if err := srv.sessionRegistry.register(clt); err != nil {
+	if err := srv.sessionRegistry.register(con); err != nil {
 		panic(fmt.Errorf("The number of concurrent session connections was " +
 			"unexpectedly exceeded",
 		))
 	}
 
-	srv.fulfillMsg(clt, message, EncodingUtf8, encodedSession)
+	srv.fulfillMsg(con, message, EncodingUtf8, encodedSession)
 }

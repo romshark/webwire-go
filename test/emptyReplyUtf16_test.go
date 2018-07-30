@@ -17,7 +17,7 @@ func TestEmptyReplyUtf16(t *testing.T) {
 		&serverImpl{
 			onRequest: func(
 				_ context.Context,
-				_ *wwr.Client,
+				_ wwr.Connection,
 				_ wwr.Message,
 			) (wwr.Payload, error) {
 				// Return empty reply

@@ -10,10 +10,10 @@ import (
 	wwrclt "github.com/qbeon/webwire-go/client"
 )
 
-// TestClientAgentIsConnected tests the IsConnected method of the client agent
-func TestClientAgentIsConnected(t *testing.T) {
-	var clientAgent *wwr.Client
-	clientAgentReady := tmdwg.NewTimedWaitGroup(1, 1*time.Second)
+// TestClientConnIsConnected tests the IsActive method of a connection
+func TestClientConnIsConnected(t *testing.T) {
+	var clientConn wwr.Connection
+	connectionReady := tmdwg.NewTimedWaitGroup(1, 1*time.Second)
 	clientDisconnected := tmdwg.NewTimedWaitGroup(1, 1*time.Second)
 	testerGoroutineFinished := tmdwg.NewTimedWaitGroup(1, 1*time.Second)
 
@@ -21,32 +21,32 @@ func TestClientAgentIsConnected(t *testing.T) {
 	server := setupServer(
 		t,
 		&serverImpl{
-			onClientConnected: func(newClt *wwr.Client) {
-				if !newClt.IsConnected() {
-					t.Errorf("Expected client agent to be connected")
+			onClientConnected: func(newConn wwr.Connection) {
+				if !newConn.IsActive() {
+					t.Errorf("Expected connection to be active")
 				}
-				clientAgent = newClt
+				clientConn = newConn
 
 				go func() {
-					clientAgentReady.Progress(1)
+					connectionReady.Progress(1)
 					if err := clientDisconnected.Wait(); err != nil {
 						t.Errorf("Client didn't disconnect")
 					}
 
-					if clientAgent.IsConnected() {
-						t.Errorf("Expected client agent to be disconnected")
+					if clientConn.IsActive() {
+						t.Errorf("Expected connection to be inactive")
 					}
 
 					testerGoroutineFinished.Progress(1)
 				}()
 			},
-			onClientDisconnected: func(clt *wwr.Client) {
-				if clientAgent.IsConnected() {
-					t.Errorf("Expected client agent to be disconnected")
+			onClientDisconnected: func(_ wwr.Connection) {
+				if clientConn.IsActive() {
+					t.Errorf("Expected connection to be inactive")
 				}
 
-				// Try to send a signal to a disconnected client and expect an error
-				sigErr := clientAgent.Signal("", wwr.NewPayload(
+				// Try to send a signal to a inactive client and expect an error
+				sigErr := clientConn.Signal("", wwr.NewPayload(
 					wwr.EncodingBinary,
 					[]byte("testdata"),
 				))
@@ -78,13 +78,13 @@ func TestClientAgentIsConnected(t *testing.T) {
 		t.Fatalf("Couldn't connect: %s", err)
 	}
 
-	// Wait for the client agent to be set by the OnClientConnected handler
-	if err := clientAgentReady.Wait(); err != nil {
-		t.Fatalf("Client agent not ready after 1 second")
+	// Wait for the connection to be set by the OnClientConnected handler
+	if err := connectionReady.Wait(); err != nil {
+		t.Fatalf("Connection not ready after 1 second")
 	}
 
-	if !clientAgent.IsConnected() {
-		t.Fatalf("Expected client agent to be connected")
+	if !clientConn.IsActive() {
+		t.Fatalf("Expected connection to be active")
 	}
 
 	// Close the client connection and continue in the tester goroutine

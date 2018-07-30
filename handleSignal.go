@@ -8,7 +8,7 @@ import (
 
 // handleSignal handles incoming signals
 // and returns an error if the ongoing connection cannot be proceeded
-func (srv *server) handleSignal(clt *Client, message *msg.Message) {
+func (srv *server) handleSignal(con *connection, message *msg.Message) {
 	srv.opsLock.Lock()
 	// Ignore incoming signals during shutdown
 	if srv.shutdown {
@@ -20,7 +20,7 @@ func (srv *server) handleSignal(clt *Client, message *msg.Message) {
 
 	srv.impl.OnSignal(
 		context.Background(),
-		clt,
+		con,
 		&MessageWrapper{
 			actual: message,
 		},

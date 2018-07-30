@@ -31,9 +31,9 @@ func newInMemSessManager() *inMemSessManager {
 
 // OnSessionCreated implements the session manager interface.
 // It writes the created session into a file using the session key as file name
-func (mng *inMemSessManager) OnSessionCreated(client *wwr.Client) error {
+func (mng *inMemSessManager) OnSessionCreated(conn wwr.Connection) error {
 	mng.lock.Lock()
-	sess := client.Session()
+	sess := conn.Session()
 	var sessInfo wwr.SessionInfo
 	if sess.Info != nil {
 		sessInfo = sess.Info.Copy()
@@ -84,7 +84,7 @@ func (mng *inMemSessManager) OnSessionClosed(sessionKey string) error {
 // callbackPoweredSessionManager represents a callback-powered session manager
 // for testing purposes
 type callbackPoweredSessionManager struct {
-	SessionCreated func(client *wwr.Client) error
+	SessionCreated func(client wwr.Connection) error
 	SessionLookup  func(key string) (
 		wwr.SessionLookupResult,
 		error,
@@ -95,7 +95,7 @@ type callbackPoweredSessionManager struct {
 // OnSessionCreated implements the session manager interface
 // calling the configured callback
 func (mng *callbackPoweredSessionManager) OnSessionCreated(
-	client *wwr.Client,
+	client wwr.Connection,
 ) error {
 	if mng.SessionCreated == nil {
 		return nil

@@ -20,7 +20,7 @@ func TestClientRequestRegisterOnTimeout(t *testing.T) {
 		&serverImpl{
 			onRequest: func(
 				_ context.Context,
-				_ *webwire.Client,
+				_ webwire.Connection,
 				_ webwire.Message,
 			) (webwire.Payload, error) {
 				// Verify pending requests

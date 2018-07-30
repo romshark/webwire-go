@@ -29,15 +29,15 @@ func TestDisabledSessions(t *testing.T) {
 		&serverImpl{
 			onRequest: func(
 				_ context.Context,
-				clt *wwr.Client,
+				conn wwr.Connection,
 				_ wwr.Message,
 			) (wwr.Payload, error) {
 				// Try to create a new session and expect an error
-				createErr := clt.CreateSession(nil)
+				createErr := conn.CreateSession(nil)
 				verifyError(createErr)
 
 				// Try to create a new session and expect an error
-				closeErr := clt.CloseSession()
+				closeErr := conn.CloseSession()
 				verifyError(closeErr)
 
 				return nil, nil

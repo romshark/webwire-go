@@ -23,17 +23,17 @@ func TestClientAutomaticSessionRestoration(t *testing.T) {
 		&serverImpl{
 			onRequest: func(
 				_ context.Context,
-				clt *webwire.Client,
+				conn webwire.Connection,
 				msg webwire.Message,
 			) (webwire.Payload, error) {
 				if currentStep == 2 {
 					// Expect the session to have been automatically restored
-					compareSessions(t, createdSession, clt.Session())
+					compareSessions(t, createdSession, conn.Session())
 					return nil, nil
 				}
 
 				// Try to create a new session
-				if err := clt.CreateSession(nil); err != nil {
+				if err := conn.CreateSession(nil); err != nil {
 					return nil, err
 				}
 
@@ -44,8 +44,8 @@ func TestClientAutomaticSessionRestoration(t *testing.T) {
 		webwire.ServerOptions{
 			SessionManager: &callbackPoweredSessionManager{
 				// Saves the session
-				SessionCreated: func(client *webwire.Client) error {
-					sess := client.Session()
+				SessionCreated: func(conn webwire.Connection) error {
+					sess := conn.Session()
 					sessionStorage[sess.Key] = sess
 					return nil
 				},

@@ -115,29 +115,29 @@ func TestAuthentication(t *testing.T) {
 		&serverImpl{
 			onSignal: func(
 				_ context.Context,
-				clt *wwr.Client,
+				conn wwr.Connection,
 				_ wwr.Message,
 			) {
 				defer clientSignalReceived.Progress(1)
-				sess := clt.Session()
+				sess := conn.Session()
 				compareSessions(t, createdSession, sess)
 				compareSessionInfo(sess)
 			},
 			onRequest: func(
 				_ context.Context,
-				clt *wwr.Client,
+				conn wwr.Connection,
 				_ wwr.Message,
 			) (wwr.Payload, error) {
 				// If already authenticated then check session
 				if currentStep > 1 {
-					sess := clt.Session()
+					sess := conn.Session()
 					compareSessions(t, createdSession, sess)
 					compareSessionInfo(sess)
 					return expectedConfirmation, nil
 				}
 
 				// Try to create a new session
-				if err := clt.CreateSession(sessionInfo); err != nil {
+				if err := conn.CreateSession(sessionInfo); err != nil {
 					return nil, err
 				}
 
@@ -148,7 +148,7 @@ func TestAuthentication(t *testing.T) {
 				// (use default binary encoding)
 				return wwr.NewPayload(
 					wwr.EncodingBinary,
-					[]byte(clt.SessionKey()),
+					[]byte(conn.SessionKey()),
 				), nil
 			},
 		},

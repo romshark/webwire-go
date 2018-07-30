@@ -27,18 +27,18 @@ func (srv *EchoServer) OnOptions(resp http.ResponseWriter) {
 // Does nothing, not needed in this example
 func (srv *EchoServer) OnSignal(
 	_ context.Context,
-	_ *wwr.Client,
+	_ wwr.Connection,
 	_ wwr.Message,
 ) {
 }
 
 // OnClientConnected implements the webwire.ServerImplementation interface.
 // Does nothing, not needed in this example
-func (srv *EchoServer) OnClientConnected(client *wwr.Client) {}
+func (srv *EchoServer) OnClientConnected(client wwr.Connection) {}
 
 // OnClientDisconnected implements the webwire.ServerImplementation interface
 // Does nothing, not needed in this example
-func (srv *EchoServer) OnClientDisconnected(client *wwr.Client) {}
+func (srv *EchoServer) OnClientDisconnected(client wwr.Connection) {}
 
 // BeforeUpgrade implements the webwire.ServerImplementation interface.
 // Must return true to ensure incoming connections are accepted
@@ -50,7 +50,7 @@ func (srv *EchoServer) BeforeUpgrade(resp http.ResponseWriter, req *http.Request
 // Returns the received message back to the client
 func (srv *EchoServer) OnRequest(
 	_ context.Context,
-	client *wwr.Client,
+	client wwr.Connection,
 	message wwr.Message,
 ) (response wwr.Payload, err error) {
 	log.Printf("Replied to client: %s", client.Info().RemoteAddr)

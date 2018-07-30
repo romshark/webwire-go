@@ -93,14 +93,14 @@ func (mng *DefaultSessionManager) filePath(sessionKey string) string {
 
 // OnSessionCreated implements the session manager interface.
 // It writes the created session into a file using the session key as file name
-func (mng *DefaultSessionManager) OnSessionCreated(client *Client) error {
-	sess := client.Session()
+func (mng *DefaultSessionManager) OnSessionCreated(conn Connection) error {
+	sess := conn.Session()
 	sessFile := SessionFile{
 		Creation:   sess.Creation,
 		LastLookup: sess.LastLookup,
 		Info:       SessionInfoToVarMap(sess.Info),
 	}
-	return sessFile.Save(mng.filePath(client.SessionKey()))
+	return sessFile.Save(mng.filePath(conn.SessionKey()))
 }
 
 // OnSessionLookup implements the session manager interface.

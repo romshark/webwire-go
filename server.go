@@ -30,9 +30,9 @@ type server struct {
 	shutdownRdy     chan bool
 	currentOps      uint32
 	opsLock         *sync.Mutex
-	clientsLock     *sync.Mutex
+	connectionsLock *sync.Mutex
 	handlerSlots    *semaphore.Weighted
-	clients         []*Client
+	connections     []*connection
 	sessionsEnabled bool
 	sessionRegistry *sessionRegistry
 
@@ -95,24 +95,26 @@ func (srv *server) SessionConnectionsNum(sessionKey string) int {
 }
 
 // SessionConnections implements the Server interface
-func (srv *server) SessionConnections(sessionKey string) []*Client {
-	agents := srv.sessionRegistry.sessionConnections(sessionKey)
-	if agents == nil {
+func (srv *server) SessionConnections(sessionKey string) []Connection {
+	connections := srv.sessionRegistry.sessionConnections(sessionKey)
+	if connections == nil {
 		return nil
 	}
-	list := make([]*Client, len(agents))
-	copy(list, agents)
+	list := make([]Connection, len(connections))
+	for i, connection := range connections {
+		list[i] = connection
+	}
 	return list
 }
 
 // CloseSession implements the Server interface
 func (srv *server) CloseSession(sessionKey string) int {
-	agents := srv.sessionRegistry.sessionConnections(sessionKey)
-	if agents == nil {
+	connections := srv.sessionRegistry.sessionConnections(sessionKey)
+	if connections == nil {
 		return -1
 	}
-	for _, agent := range agents {
-		agent.Close()
+	for _, connection := range connections {
+		connection.Close()
 	}
-	return len(agents)
+	return len(connections)
 }

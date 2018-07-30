@@ -17,7 +17,7 @@ func TestRequestNameNoPayload(t *testing.T) {
 		&serverImpl{
 			onRequest: func(
 				_ context.Context,
-				_ *webwire.Client,
+				_ webwire.Connection,
 				msg webwire.Message,
 			) (webwire.Payload, error) {
 				// Expect a named request

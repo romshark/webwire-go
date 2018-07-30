@@ -24,7 +24,7 @@ func TestClientSignal(t *testing.T) {
 		&serverImpl{
 			onSignal: func(
 				_ context.Context,
-				_ *webwire.Client,
+				_ webwire.Connection,
 				msg webwire.Message,
 			) {
 

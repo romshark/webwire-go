@@ -17,7 +17,7 @@ func TestRequestEmpty(t *testing.T) {
 		&serverImpl{
 			onRequest: func(
 				_ context.Context,
-				_ *webwire.Client,
+				_ webwire.Connection,
 				msg webwire.Message,
 			) (webwire.Payload, error) {
 				// Expect the following request to not even arrive

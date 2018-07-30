@@ -23,19 +23,19 @@ func TestClientOfflineSessionClosure(t *testing.T) {
 		&serverImpl{
 			onRequest: func(
 				_ context.Context,
-				clt *webwire.Client,
+				conn webwire.Connection,
 				_ webwire.Message,
 			) (webwire.Payload, error) {
 				if currentStep == 2 {
 					// Expect the session to be removed
-					if clt.HasSession() {
+					if conn.HasSession() {
 						t.Errorf("Expected client to be anonymous")
 					}
 					return nil, nil
 				}
 
 				// Try to create a new session
-				if err := clt.CreateSession(nil); err != nil {
+				if err := conn.CreateSession(nil); err != nil {
 					return nil, err
 				}
 
@@ -46,8 +46,8 @@ func TestClientOfflineSessionClosure(t *testing.T) {
 		webwire.ServerOptions{
 			SessionManager: &callbackPoweredSessionManager{
 				// Saves the session
-				SessionCreated: func(client *webwire.Client) error {
-					sess := client.Session()
+				SessionCreated: func(conn webwire.Connection) error {
+					sess := conn.Session()
 					sessionStorage[sess.Key] = sess
 					return nil
 				},

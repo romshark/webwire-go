@@ -25,9 +25,9 @@ func TestServerSignal(t *testing.T) {
 		server := setupServer(
 			t,
 			&serverImpl{
-				onClientConnected: func(client *webwire.Client) {
+				onClientConnected: func(conn webwire.Connection) {
 					// Send signal
-					if err := client.Signal(
+					if err := conn.Signal(
 						"",
 						expectedSignalPayload,
 					); err != nil {

@@ -14,14 +14,14 @@ import (
 
 // ChatRoomServer implements the webwire.ServerImplementation interface
 type ChatRoomServer struct {
-	connected map[*wwr.Client]bool
+	connected map[wwr.Connection]bool
 	lock      sync.RWMutex
 }
 
 // NewChatRoomServer constructs a new pub-sub webwire server implementation instance
 func NewChatRoomServer() *ChatRoomServer {
 	return &ChatRoomServer{
-		make(map[*wwr.Client]bool),
+		make(map[wwr.Connection]bool),
 		sync.RWMutex{},
 	}
 }
@@ -70,7 +70,7 @@ func (srv *ChatRoomServer) broadcastMessage(name string, msg string) {
 // or confirms it eventually creating a session and returning the session key
 func (srv *ChatRoomServer) handleAuth(
 	_ context.Context,
-	client *wwr.Client,
+	client wwr.Connection,
 	message wwr.Message,
 ) (wwr.Payload, error) {
 	payload := message.Payload()
@@ -133,7 +133,7 @@ func (srv *ChatRoomServer) handleAuth(
 
 func (srv *ChatRoomServer) handleMessage(
 	_ context.Context,
-	client *wwr.Client,
+	client wwr.Connection,
 	message wwr.Message,
 ) (wwr.Payload, error) {
 	payload := message.Payload()
@@ -181,7 +181,7 @@ func (srv *ChatRoomServer) OnOptions(resp http.ResponseWriter) {
 // Does nothing, not needed in this example
 func (srv *ChatRoomServer) OnSignal(
 	_ context.Context,
-	_ *wwr.Client,
+	_ wwr.Connection,
 	_ wwr.Message,
 ) {
 }
@@ -196,7 +196,7 @@ func (srv *ChatRoomServer) BeforeUpgrade(resp http.ResponseWriter, req *http.Req
 // Receives the message and dispatches it to the according handler
 func (srv *ChatRoomServer) OnRequest(
 	ctx context.Context,
-	client *wwr.Client,
+	client wwr.Connection,
 	message wwr.Message,
 ) (response wwr.Payload, err error) {
 	switch message.Name() {
@@ -213,7 +213,7 @@ func (srv *ChatRoomServer) OnRequest(
 
 // OnClientConnected implements the webwire.ServerImplementation interface.
 // Registers new connected clients
-func (srv *ChatRoomServer) OnClientConnected(newClient *wwr.Client) {
+func (srv *ChatRoomServer) OnClientConnected(newClient wwr.Connection) {
 	info := newClient.Info()
 	log.Printf(
 		"New client connected: %s | %s",
@@ -227,7 +227,7 @@ func (srv *ChatRoomServer) OnClientConnected(newClient *wwr.Client) {
 
 // OnClientDisconnected implements the webwire.ServerImplementation interface.
 // Deregisters gone clients
-func (srv *ChatRoomServer) OnClientDisconnected(client *wwr.Client) {
+func (srv *ChatRoomServer) OnClientDisconnected(client wwr.Connection) {
 	log.Printf("Client %s disconnected", client.Info().RemoteAddr)
 	srv.lock.Lock()
 	defer srv.lock.Unlock()

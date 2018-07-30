@@ -7,7 +7,7 @@ import (
 )
 
 // handleMessage handles incoming messages
-func (srv *server) handleMessage(clt *Client, message []byte) {
+func (srv *server) handleMessage(con *connection, message []byte) {
 	// Parse message
 	var parsedMessage msg.Message
 	msgTypeParsed, parserErr := parsedMessage.Parse(message)
@@ -20,13 +20,13 @@ func (srv *server) handleMessage(clt *Client, message []byte) {
 
 		// Respond with an error but don't break the connection
 		// because protocol errors are not critical errors
-		srv.failMsg(clt, &parsedMessage, ProtocolErr{})
+		srv.failMsg(con, &parsedMessage, ProtocolErr{})
 		return
 	}
 
 	// Deregister the handler only if a handler was registered
-	if srv.registerHandler(clt, &parsedMessage) {
-		defer srv.deregisterHandler(clt)
+	if srv.registerHandler(con, &parsedMessage) {
+		defer srv.deregisterHandler(con)
 	}
 
 	switch parsedMessage.Type {
@@ -35,31 +35,34 @@ func (srv *server) handleMessage(clt *Client, message []byte) {
 	case msg.MsgSignalUtf8:
 		fallthrough
 	case msg.MsgSignalUtf16:
-		srv.handleSignal(clt, &parsedMessage)
+		srv.handleSignal(con, &parsedMessage)
 
 	case msg.MsgRequestBinary:
 		fallthrough
 	case msg.MsgRequestUtf8:
 		fallthrough
 	case msg.MsgRequestUtf16:
-		srv.handleRequest(clt, &parsedMessage)
+		srv.handleRequest(con, &parsedMessage)
 
 	case msg.MsgRestoreSession:
-		srv.handleSessionRestore(clt, &parsedMessage)
+		srv.handleSessionRestore(con, &parsedMessage)
 	case msg.MsgCloseSession:
-		srv.handleSessionClosure(clt, &parsedMessage)
+		srv.handleSessionClosure(con, &parsedMessage)
 	}
 }
 
 // registerHandler increments the number of currently executed handlers.
 // It blocks if the current number of max concurrent handlers was reached
 // and frees only when a handler slot is freed for this handler to be executed
-func (srv *server) registerHandler(clt *Client, message *msg.Message) bool {
+func (srv *server) registerHandler(
+	con *connection,
+	message *msg.Message,
+) bool {
 	failMsg := false
 
 	// Wait for free handler slots
 	// if the number of concurrent handler is limited
-	if !clt.isActive() {
+	if !con.IsActive() {
 		return false
 	}
 	if srv.options.IsConcurrentHandlersLimited() {
@@ -67,9 +70,8 @@ func (srv *server) registerHandler(clt *Client, message *msg.Message) bool {
 	}
 
 	srv.opsLock.Lock()
-	if srv.shutdown || !clt.isActive() {
-		// defer failure due to shutdown of either the server
-		// or the client agent
+	if srv.shutdown || !con.IsActive() {
+		// defer failure due to shutdown of either the server or the connection
 		failMsg = true
 	} else {
 		srv.currentOps++
@@ -78,17 +80,17 @@ func (srv *server) registerHandler(clt *Client, message *msg.Message) bool {
 
 	if failMsg && message.RequiresResponse() {
 		// Don't process the message, fail it
-		srv.failMsgShutdown(clt, message)
+		srv.failMsgShutdown(con, message)
 		return false
 	}
 
-	clt.registerTask()
+	con.registerTask()
 	return true
 }
 
 // deregisterHandler decrements the number of currently executed handlers
 // and shuts down the server if scheduled and no more operations are left
-func (srv *server) deregisterHandler(clt *Client) {
+func (srv *server) deregisterHandler(con *connection) {
 	srv.opsLock.Lock()
 	srv.currentOps--
 	if srv.shutdown && srv.currentOps < 1 {
@@ -96,7 +98,7 @@ func (srv *server) deregisterHandler(clt *Client) {
 	}
 	srv.opsLock.Unlock()
 
-	clt.deregisterTask()
+	con.deregisterTask()
 
 	// Release a handler slot
 	if srv.options.IsConcurrentHandlersLimited() {
@@ -106,13 +108,13 @@ func (srv *server) deregisterHandler(clt *Client) {
 
 // fulfillMsg fulfills the message sending the reply
 func (srv *server) fulfillMsg(
-	clt *Client,
+	con *connection,
 	message *msg.Message,
 	replyPayloadEncoding PayloadEncoding,
 	replyPayloadData []byte,
 ) {
 	// Send reply
-	if err := clt.conn.Write(
+	if err := con.sock.Write(
 		msg.NewReplyMessage(
 			message.Identifier,
 			replyPayloadEncoding,
@@ -124,7 +126,11 @@ func (srv *server) fulfillMsg(
 }
 
 // failMsg fails the message returning an error reply
-func (srv *server) failMsg(clt *Client, message *msg.Message, reqErr error) {
+func (srv *server) failMsg(
+	con *connection,
+	message *msg.Message,
+	reqErr error,
+) {
 	// Don't send any failure reply if the type of the message
 	// doesn't expect any response
 	if !message.RequiresReply() {
@@ -173,14 +179,14 @@ func (srv *server) failMsg(clt *Client, message *msg.Message, reqErr error) {
 	}
 
 	// Send request failure notification
-	if err := clt.conn.Write(replyMsg); err != nil {
+	if err := con.sock.Write(replyMsg); err != nil {
 		srv.errorLog.Println("Writing failed:", err)
 	}
 }
 
 // failMsgShutdown sends request failure reply due to current server shutdown
-func (srv *server) failMsgShutdown(clt *Client, message *msg.Message) {
-	if err := clt.conn.Write(msg.NewSpecialRequestReplyMessage(
+func (srv *server) failMsgShutdown(con *connection, message *msg.Message) {
+	if err := con.sock.Write(msg.NewSpecialRequestReplyMessage(
 		msg.MsgReplyShutdown,
 		message.Identifier,
 	)); err != nil {

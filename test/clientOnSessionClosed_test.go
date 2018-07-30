@@ -21,11 +21,11 @@ func TestClientOnSessionClosed(t *testing.T) {
 		&serverImpl{
 			onRequest: func(
 				_ context.Context,
-				clt *webwire.Client,
+				conn webwire.Connection,
 				_ webwire.Message,
 			) (webwire.Payload, error) {
 				// Try to create a new session
-				if err := clt.CreateSession(nil); err != nil {
+				if err := conn.CreateSession(nil); err != nil {
 					return nil, err
 				}
 
@@ -37,7 +37,7 @@ func TestClientOnSessionClosed(t *testing.T) {
 					}
 
 					// Close the session
-					if err := clt.CloseSession(); err != nil {
+					if err := conn.CloseSession(); err != nil {
 						t.Errorf("Couldn't close session: %s", err)
 					}
 				}()

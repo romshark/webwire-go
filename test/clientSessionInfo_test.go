@@ -118,11 +118,11 @@ func TestClientSessionInfo(t *testing.T) {
 		&serverImpl{
 			onRequest: func(
 				_ context.Context,
-				clt *webwire.Client,
+				conn webwire.Connection,
 				_ webwire.Message,
 			) (webwire.Payload, error) {
 				// Try to create a new session
-				if err := clt.CreateSession(&testClientSessionInfoSessionInfo{
+				if err := conn.CreateSession(&testClientSessionInfoSessionInfo{
 					Bool:   expectedBool,
 					String: expectedString,
 					Int:    expectedInt,

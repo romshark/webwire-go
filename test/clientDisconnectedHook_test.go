@@ -14,26 +14,26 @@ import (
 // onClientDisconnected hook properly
 func TestClientDisconnectedHook(t *testing.T) {
 	disconnectedHookCalled := tmdwg.NewTimedWaitGroup(1, 1*time.Second)
-	var connectedClient *webwire.Client
+	var clientConn webwire.Connection
 	connectedClientLock := sync.Mutex{}
 
 	// Initialize webwire server given only the request
 	server := setupServer(
 		t,
 		&serverImpl{
-			onClientConnected: func(clt *webwire.Client) {
+			onClientConnected: func(conn webwire.Connection) {
 				connectedClientLock.Lock()
-				connectedClient = clt
+				clientConn = conn
 				connectedClientLock.Unlock()
 			},
-			onClientDisconnected: func(clt *webwire.Client) {
+			onClientDisconnected: func(conn webwire.Connection) {
 				connectedClientLock.Lock()
-				if clt != connectedClient {
+				if conn != clientConn {
 					t.Errorf(
 						"Connected and disconnecting clients don't match: "+
 							"disconnecting: %p | connected: %p",
-						clt,
-						connectedClient,
+						conn,
+						clientConn,
 					)
 				}
 				connectedClientLock.Unlock()

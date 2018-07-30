@@ -38,7 +38,7 @@ func TestGracefulShutdown(t *testing.T) {
 		&serverImpl{
 			onSignal: func(
 				_ context.Context,
-				_ *wwr.Client,
+				_ wwr.Connection,
 				msg wwr.Message,
 			) {
 				if msg.Name() == "1" {
@@ -50,7 +50,7 @@ func TestGracefulShutdown(t *testing.T) {
 			},
 			onRequest: func(
 				_ context.Context,
-				_ *wwr.Client,
+				_ wwr.Connection,
 				msg wwr.Message,
 			) (wwr.Payload, error) {
 				if msg.Name() == "1" {

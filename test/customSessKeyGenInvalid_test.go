@@ -18,7 +18,7 @@ func TestCustomSessKeyGenInvalid(t *testing.T) {
 		&serverImpl{
 			onRequest: func(
 				_ context.Context,
-				clt *wwr.Client,
+				conn wwr.Connection,
 				_ wwr.Message,
 			) (wwr.Payload, error) {
 				defer func() {
@@ -30,7 +30,7 @@ func TestCustomSessKeyGenInvalid(t *testing.T) {
 				}()
 
 				// Try to create a new session
-				if err := clt.CreateSession(nil); err != nil {
+				if err := conn.CreateSession(nil); err != nil {
 					return nil, err
 				}
 

@@ -18,7 +18,7 @@ import (
 // PubSubServer implements the webwire.ServerImplementation interface
 type PubSubServer struct {
 	broadcastInterval time.Duration
-	connectedClients  map[*wwr.Client]bool
+	connectedClients  map[wwr.Connection]bool
 	mapLock           sync.Mutex
 }
 
@@ -26,7 +26,7 @@ type PubSubServer struct {
 func NewPubSubServer() *PubSubServer {
 	return &PubSubServer{
 		1 * time.Second,
-		make(map[*wwr.Client]bool),
+		make(map[wwr.Connection]bool),
 		sync.Mutex{},
 	}
 }
@@ -42,7 +42,7 @@ func (srv *PubSubServer) OnOptions(resp http.ResponseWriter) {
 // Does nothing, not needed in this example
 func (srv *PubSubServer) OnSignal(
 	_ context.Context,
-	_ *wwr.Client,
+	_ wwr.Connection,
 	_ wwr.Message,
 ) {
 }
@@ -51,7 +51,7 @@ func (srv *PubSubServer) OnSignal(
 // Does nothing, not needed in this example
 func (srv *PubSubServer) OnRequest(
 	_ context.Context,
-	_ *wwr.Client,
+	_ wwr.Connection,
 	_ wwr.Message,
 ) (response wwr.Payload, err error) {
 	return nil, wwr.ReqErr{
@@ -68,7 +68,7 @@ func (srv *PubSubServer) BeforeUpgrade(resp http.ResponseWriter, req *http.Reque
 
 // OnClientConnected implements the webwire.ServerImplementation interface.
 // Registers a new connected client
-func (srv *PubSubServer) OnClientConnected(client *wwr.Client) {
+func (srv *PubSubServer) OnClientConnected(client wwr.Connection) {
 	srv.mapLock.Lock()
 	srv.connectedClients[client] = true
 	srv.mapLock.Unlock()
@@ -76,7 +76,7 @@ func (srv *PubSubServer) OnClientConnected(client *wwr.Client) {
 
 // OnClientDisconnected implements the webwire.ServerImplementation interface
 // Deregisters a gone client
-func (srv *PubSubServer) OnClientDisconnected(client *wwr.Client) {
+func (srv *PubSubServer) OnClientDisconnected(client wwr.Connection) {
 	srv.mapLock.Lock()
 	delete(srv.connectedClients, client)
 	srv.mapLock.Unlock()

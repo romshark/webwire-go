@@ -22,11 +22,11 @@ func TestClientOnSessionCreated(t *testing.T) {
 		&serverImpl{
 			onRequest: func(
 				_ context.Context,
-				clt *webwire.Client,
+				conn webwire.Connection,
 				_ webwire.Message,
 			) (webwire.Payload, error) {
 				// Try to create a new session
-				if err := clt.CreateSession(nil); err != nil {
+				if err := conn.CreateSession(nil); err != nil {
 					return nil, err
 				}
 				return nil, nil

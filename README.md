@@ -152,11 +152,11 @@ The server also can send signals to individual connected clients.
 ```go
 func OnRequest(
   _ context.Context,
-  client *Client,
-  _ Message,
+  conn wwr.Connection,
+  _ wwr.Message,
 ) (wwr.Payload, error) {
   // Send a signal to the client before replying to the request
-  client.Signal("", wwr.NewPayload(wwr.EncodingUtf8, []byte("ping!")))
+  conn.Signal("", wwr.NewPayload(wwr.EncodingUtf8, []byte("ping!")))
 
   // Reply nothing
   return nil, nil
@@ -169,10 +169,10 @@ Different kinds of requests and signals can be differentiated using the builtin 
 ```go
 func OnRequest(
   _ context.Context,
-  _ *Client,
-  message Message,
+  _ wwr.Connection,
+  msg wwr.Message,
 ) (wwr.Payload, error) {
-  switch message.Name() {
+  switch msg.Name() {
   case "auth":
     // Authentication request
     return wwr.NewPayload(
@@ -194,10 +194,10 @@ func OnRequest(
 ```go
 func OnSignal(
   _ context.Context,
-  _ *Client,
-  message Message,
+  _ wwr.Connection,
+  msg wwr.Message,
 ) {
-  switch message.Name() {
+  switch msg.Name() {
   case "event A":
     // handle event A
   case "event B":
@@ -212,18 +212,18 @@ Individual connections can get sessions assigned to identify them. The state of 
 ```go
 func OnRequest(
   _ context.Context,
-  client *Client,
-  message Message,
+  conn wwr.Connection,
+  msg wwr.Message,
 ) (wwr.Payload, error) {
   // Verify credentials
-  if string(message.Payload().Data()) != "secret:pass" {
+  if string(msg.Payload().Data()) != "secret:pass" {
     return nil, wwr.ReqErr {
       Code: "WRONG_CREDENTIALS",
       Message: "Incorrect username or password, try again"
     }
   }
   // Create session (will automatically synchronize to the client)
-  err := client.CreateSession(/*something that implements wwr.SessionInfo*/)
+  err := conn.CreateSession(/*something that implements wwr.SessionInfo*/)
   if err != nil {
     return nil, fmt.Errorf("Couldn't create session for some reason")
   }
@@ -263,7 +263,7 @@ The WebWire server will also try to keep connections alive by periodically sendi
 Messages are parsed and handled concurrently in a separate goroutine by default. The total number of concurrently executed handlers can be throttled down to a specified number using the `MaxConcurrentHandlers` server option, which disables the throttling when set to `0`.
 
 ### Thread Safety
-It's safe to use both the session agents (those that are provided by the server through messages) and the client concurrently from multiple goroutines, the library automatically synchronizes concurrent operations.
+All exported interfaces provided by both the server and the client can safely be used concurrently from multiple goroutines, the library automatically synchronizes all concurrent operations.
 
 ### Hooks
 Various hooks provide the ability to asynchronously react to different kinds of events and control the behavior of both the client and the server.

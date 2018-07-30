@@ -19,7 +19,7 @@ func TestClientRequestInternalError(t *testing.T) {
 		&serverImpl{
 			onRequest: func(
 				_ context.Context,
-				_ *webwire.Client,
+				_ webwire.Connection,
 				_ webwire.Message,
 			) (webwire.Payload, error) {
 				// Fail the request by returning a non-ReqErr error

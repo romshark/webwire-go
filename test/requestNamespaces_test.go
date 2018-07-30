@@ -26,7 +26,7 @@ func TestRequestNamespaces(t *testing.T) {
 		&serverImpl{
 			onRequest: func(
 				_ context.Context,
-				_ *webwire.Client,
+				_ webwire.Connection,
 				msg webwire.Message,
 			) (webwire.Payload, error) {
 				msgName := msg.Name()

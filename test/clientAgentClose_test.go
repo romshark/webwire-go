@@ -11,26 +11,26 @@ import (
 	wwrclt "github.com/qbeon/webwire-go/client"
 )
 
-// TestClientAgentClose tests closing a client agent on the server-side
-func TestClientAgentClose(t *testing.T) {
+// TestConnectionClose tests closing a client connection on the server-side
+func TestConnectionClose(t *testing.T) {
 	// Initialize webwire server
 	server := setupServer(
 		t,
 		&serverImpl{
 			onRequest: func(
 				_ context.Context,
-				clt *wwr.Client,
+				conn wwr.Connection,
 				msg wwr.Message,
 			) (wwr.Payload, error) {
 				switch msg.Name() {
 				case "closeA":
 					fallthrough
 				case "closeB":
-					clt.Close()
+					conn.Close()
 					return nil, nil
 				case "login":
 					// Try to create a new session
-					if err := clt.CreateSession(nil); err != nil {
+					if err := conn.CreateSession(nil); err != nil {
 						return nil, err
 					}
 
@@ -38,7 +38,7 @@ func TestClientAgentClose(t *testing.T) {
 					// (use default binary encoding)
 					return wwr.NewPayload(
 						wwr.EncodingBinary,
-						[]byte(clt.SessionKey()),
+						[]byte(conn.SessionKey()),
 					), nil
 				}
 				return nil, fmt.Errorf("Invalid request %s", msg.Name())

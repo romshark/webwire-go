@@ -26,15 +26,15 @@ func setupServer(
 		}
 	}
 	if impl.onClientConnected == nil {
-		impl.onClientConnected = func(_ *wwr.Client) {}
+		impl.onClientConnected = func(_ wwr.Connection) {}
 	}
 	if impl.onClientDisconnected == nil {
-		impl.onClientDisconnected = func(_ *wwr.Client) {}
+		impl.onClientDisconnected = func(_ wwr.Connection) {}
 	}
 	if impl.onSignal == nil {
 		impl.onSignal = func(
 			_ context.Context,
-			_ *wwr.Client,
+			_ wwr.Connection,
 			_ wwr.Message,
 		) {
 		}
@@ -42,7 +42,7 @@ func setupServer(
 	if impl.onRequest == nil {
 		impl.onRequest = func(
 			_ context.Context,
-			_ *wwr.Client,
+			_ wwr.Connection,
 			_ wwr.Message,
 		) (response wwr.Payload, err error) {
 			return nil, nil

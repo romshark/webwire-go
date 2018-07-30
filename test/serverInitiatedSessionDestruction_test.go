@@ -32,12 +32,12 @@ func TestServerInitiatedSessionDestruction(t *testing.T) {
 		&serverImpl{
 			onRequest: func(
 				_ context.Context,
-				clt *webwire.Client,
+				conn webwire.Connection,
 				msg webwire.Message,
 			) (webwire.Payload, error) {
 				// On step 2 - verify session creation and correctness
 				if currentStep == 2 {
-					sess := clt.Session()
+					sess := conn.Session()
 					compareSessions(t, createdSession, sess)
 					msgPayloadData := msg.Payload().Data()
 					if string(msgPayloadData) != sess.Key {
@@ -58,7 +58,7 @@ func TestServerInitiatedSessionDestruction(t *testing.T) {
 					\******************************************************/
 					// Attempt to destroy this clients session
 					// on the end of the first step
-					err := clt.CloseSession()
+					err := conn.CloseSession()
 					if err != nil {
 						t.Errorf(
 							"Couldn't close the active session "+
@@ -68,7 +68,7 @@ func TestServerInitiatedSessionDestruction(t *testing.T) {
 					}
 
 					// Verify destruction
-					sess := clt.Session()
+					sess := conn.Session()
 					if sess != nil {
 						t.Errorf(
 							"Expected the session to be destroyed, got: %v",
@@ -81,7 +81,7 @@ func TestServerInitiatedSessionDestruction(t *testing.T) {
 
 				// On step 4 - verify session destruction
 				if currentStep == 4 {
-					sess := clt.Session()
+					sess := conn.Session()
 					if sess != nil {
 						t.Errorf(
 							"Expected the session to be destroyed, got: %v",
@@ -92,14 +92,14 @@ func TestServerInitiatedSessionDestruction(t *testing.T) {
 				}
 
 				// On step 1 - authenticate and create a new session
-				if err := clt.CreateSession(nil); err != nil {
+				if err := conn.CreateSession(nil); err != nil {
 					return nil, err
 				}
 
 				// Return the key of the newly created session
 				return webwire.NewPayload(
 					webwire.EncodingBinary,
-					[]byte(clt.SessionKey()),
+					[]byte(conn.SessionKey()),
 				), nil
 			},
 		},

@@ -80,8 +80,8 @@ func NewHeadlessServer(
 		handlerSlots: semaphore.NewWeighted(
 			int64(opts.MaxConcurrentHandlers),
 		),
-		clients:         make([]*Client, 0),
-		clientsLock:     &sync.Mutex{},
+		connections:     make([]*connection, 0),
+		connectionsLock: &sync.Mutex{},
 		sessionsEnabled: sessionsEnabled,
 		sessionRegistry: newSessionRegistry(opts.MaxSessionConnections),
 

@@ -55,6 +55,25 @@ type Session struct {
 	Info       SessionInfo
 }
 
+// Clone returns an exact copy of the session object
+func (s *Session) Clone() *Session {
+	if s == nil {
+		return nil
+	}
+
+	var info SessionInfo
+	if s.Info != nil {
+		info = s.Info.Copy()
+	}
+
+	return &Session{
+		Key:        s.Key,
+		Creation:   s.Creation,
+		LastLookup: s.LastLookup,
+		Info:       info,
+	}
+}
+
 // NewSession generates a new session object
 // generating a cryptographically random secure key
 func NewSession(info SessionInfo, generator func() string) Session {

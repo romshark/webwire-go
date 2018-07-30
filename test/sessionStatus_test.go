@@ -17,11 +17,11 @@ func TestSessionStatus(t *testing.T) {
 		&serverImpl{
 			onRequest: func(
 				_ context.Context,
-				clt *wwr.Client,
+				conn wwr.Connection,
 				_ wwr.Message,
 			) (wwr.Payload, error) {
 				// Try to create a new session
-				if err := clt.CreateSession(nil); err != nil {
+				if err := conn.CreateSession(nil); err != nil {
 					return nil, err
 				}
 
@@ -29,7 +29,7 @@ func TestSessionStatus(t *testing.T) {
 				// (use default binary encoding)
 				return wwr.NewPayload(
 					wwr.EncodingBinary,
-					[]byte(clt.SessionKey()),
+					[]byte(conn.SessionKey()),
 				), nil
 			},
 		},

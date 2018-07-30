@@ -22,7 +22,7 @@ func TestClientConcurrentSignal(t *testing.T) {
 		&serverImpl{
 			onSignal: func(
 				_ context.Context,
-				_ *webwire.Client,
+				_ webwire.Connection,
 				_ webwire.Message,
 			) {
 				finished.Progress(1)
