@@ -111,6 +111,7 @@ func TestClientInitiatedSessionDestruction(t *testing.T) {
 
 	// Send authentication request
 	authReqReply, err := client.connection.Request(
+		context.Background(),
 		"login",
 		expectedCredentials,
 	)
@@ -150,6 +151,7 @@ func TestClientInitiatedSessionDestruction(t *testing.T) {
 
 	// Send a test-request to verify the session creation on the server
 	if _, err := client.connection.Request(
+		context.Background(),
 		"verify-session-created",
 		webwire.NewPayload(
 			webwire.EncodingBinary,
@@ -191,6 +193,7 @@ func TestClientInitiatedSessionDestruction(t *testing.T) {
 
 	// Send a test-request to verify the session was destroyed on the server
 	if _, err := client.connection.Request(
+		context.Background(),
 		"test-request",
 		placeholderMessage,
 	); err != nil {

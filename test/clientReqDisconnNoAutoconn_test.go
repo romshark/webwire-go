@@ -1,6 +1,7 @@
 package test
 
 import (
+	"context"
 	"reflect"
 	"testing"
 	"time"
@@ -26,6 +27,7 @@ func TestClientReqDisconnNoAutoconn(t *testing.T) {
 
 	// Try to send a request and expect a DisconnectedErr error
 	_, err := client.connection.Request(
+		context.Background(),
 		"",
 		wwr.NewPayload(wwr.EncodingBinary, []byte("testdata")),
 	)

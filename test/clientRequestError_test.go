@@ -47,10 +47,14 @@ func TestClientRequestError(t *testing.T) {
 	}
 
 	// Send request and await reply
-	reply, err := client.connection.Request("", webwire.NewPayload(
-		webwire.EncodingUtf8,
-		[]byte("webwire_test_REQUEST_payload"),
-	))
+	reply, err := client.connection.Request(
+		context.Background(),
+		"",
+		webwire.NewPayload(
+			webwire.EncodingUtf8,
+			[]byte("webwire_test_REQUEST_payload"),
+		),
+	)
 
 	// Verify returned error
 	if err == nil {

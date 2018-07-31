@@ -68,10 +68,14 @@ func TestClientRequestUtf16(t *testing.T) {
 	}
 
 	// Send request and await reply
-	reply, err := client.connection.Request("", webwire.NewPayload(
-		webwire.EncodingUtf16,
-		[]byte{00, 115, 00, 97, 00, 109, 00, 112, 00, 108, 00, 101},
-	))
+	reply, err := client.connection.Request(
+		context.Background(),
+		"",
+		webwire.NewPayload(
+			webwire.EncodingUtf16,
+			[]byte{00, 115, 00, 97, 00, 109, 00, 112, 00, 108, 00, 101},
+		),
+	)
 	if err != nil {
 		t.Fatalf("Request failed: %s", err)
 	}

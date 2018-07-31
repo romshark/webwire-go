@@ -41,10 +41,11 @@ func TestEmptyReply(t *testing.T) {
 	}
 
 	// Send request and await reply
-	reply, err := client.connection.Request("", wwr.NewPayload(
-		wwr.EncodingBinary,
-		[]byte("test"),
-	))
+	reply, err := client.connection.Request(
+		context.Background(),
+		"",
+		wwr.NewPayload(wwr.EncodingBinary, []byte("test")),
+	)
 	if err != nil {
 		t.Fatalf("Request failed: %s", err)
 	}

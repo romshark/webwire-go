@@ -72,10 +72,11 @@ func TestRequestNamespaces(t *testing.T) {
 		Step 1 - Unnamed request name
 	\*****************************************************************/
 	// Send unnamed request
-	_, err := client.connection.Request("", webwire.NewPayload(
-		webwire.EncodingBinary,
-		[]byte("dummy"),
-	))
+	_, err := client.connection.Request(
+		context.Background(),
+		"",
+		webwire.NewPayload(webwire.EncodingBinary, []byte("dummy")),
+	)
 	if err != nil {
 		t.Fatalf("Request failed: %s", err)
 	}
@@ -86,6 +87,7 @@ func TestRequestNamespaces(t *testing.T) {
 	currentStep = 2
 	// Send request with the shortest possible name
 	_, err = client.connection.Request(
+		context.Background(),
 		shortestPossibleName,
 		webwire.NewPayload(webwire.EncodingBinary, []byte("dummy")),
 	)
@@ -99,6 +101,7 @@ func TestRequestNamespaces(t *testing.T) {
 	currentStep = 3
 	// Send request with the longest possible name
 	_, err = client.connection.Request(
+		context.Background(),
 		longestPossibleName,
 		webwire.NewPayload(webwire.EncodingBinary, []byte("dummy")),
 	)

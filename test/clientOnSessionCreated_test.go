@@ -56,6 +56,7 @@ func TestClientOnSessionCreated(t *testing.T) {
 
 	// Send authentication request and await reply
 	if _, err := client.connection.Request(
+		context.Background(),
 		"login",
 		webwire.NewPayload(webwire.EncodingBinary, []byte("credentials")),
 	); err != nil {

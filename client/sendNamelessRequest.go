@@ -1,6 +1,7 @@
 package client
 
 import (
+	"context"
 	"time"
 
 	webwire "github.com/qbeon/webwire-go"
@@ -9,6 +10,7 @@ import (
 )
 
 func (clt *Client) sendNamelessRequest(
+	ctx context.Context,
 	messageType byte,
 	payload pld.Payload,
 	timeout time.Duration,
@@ -28,5 +30,5 @@ func (clt *Client) sendNamelessRequest(
 	}
 
 	// Block until request either times out or a response is received
-	return request.AwaitReply()
+	return request.AwaitReply(ctx)
 }

@@ -121,6 +121,7 @@ func TestGracefulShutdown(t *testing.T) {
 
 		// (REQUEST)
 		if rep, err := clientReq.connection.Request(
+			context.Background(),
 			"1",
 			wwr.NewPayload(wwr.EncodingBinary, []byte("test")),
 		); err != nil {
@@ -178,6 +179,7 @@ func TestGracefulShutdown(t *testing.T) {
 
 		// Verify request rejection during shutdown (LATE REQ)
 		_, lateReqErr := clientLateReq.connection.Request(
+			context.Background(),
 			"",
 			wwr.NewPayload(wwr.EncodingBinary, []byte("test")),
 		)

@@ -39,7 +39,7 @@ func TestRequestEmpty(t *testing.T) {
 
 	// Send request without a name and without a payload.
 	// Expect a protocol error in return not sending the invalid request off
-	_, err := client.connection.Request("", nil)
+	_, err := client.connection.Request(context.Background(), "", nil)
 	if _, isProtoErr := err.(webwire.ProtocolErr); !isProtoErr {
 		t.Fatalf("Expected a protocol error, got: %v", err)
 	}

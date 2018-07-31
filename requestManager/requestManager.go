@@ -1,7 +1,9 @@
 package requestmanager
 
 import (
+	"context"
 	"encoding/binary"
+	"fmt"
 	"sync"
 	"time"
 
@@ -40,18 +42,24 @@ func (req *Request) Identifier() RequestIdentifier {
 }
 
 // AwaitReply blocks the calling goroutine
-// until either the reply is fulfilled or failed or the request is timed out.
+// until either the reply is fulfilled or failed, the request timed out
+// a user-defined deadline was exceeded or the request was prematurely canceled.
 // The timer is started when AwaitReply is called.
-func (req *Request) AwaitReply() (webwire.Payload, error) {
+func (req *Request) AwaitReply(ctx context.Context) (webwire.Payload, error) {
 	// Start timeout timer
 	timeoutTimer := time.NewTimer(req.timeout)
+	defer timeoutTimer.Stop()
 
-	// Block until timeout or reply
+	// Block until either deadline exceeded, canceled,
+	// timed out or reply received
 	select {
+	case <-ctx.Done():
+		req.manager.deregister(req.identifier)
+		return nil, webwire.TranslateContextError(ctx.Err())
 	case <-timeoutTimer.C:
 		req.manager.deregister(req.identifier)
 		return &webwire.EncodedPayload{},
-			webwire.ReqTimeoutErr{Target: req.timeout}
+			webwire.NewTimeoutErr(fmt.Errorf("timed out"))
 	case reply := <-req.reply:
 		timeoutTimer.Stop()
 		if reply.Error != nil {

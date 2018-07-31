@@ -51,10 +51,11 @@ func TestSessionStatus(t *testing.T) {
 	)
 
 	// Authenticate and create session
-	authReqReply, err := clientA.connection.Request("login", wwr.NewPayload(
-		wwr.EncodingBinary,
-		[]byte("bla"),
-	))
+	authReqReply, err := clientA.connection.Request(
+		context.Background(),
+		"login",
+		wwr.NewPayload(wwr.EncodingBinary, []byte("bla")),
+	)
 	if err != nil {
 		t.Fatalf("Request failed: %s", err)
 	}

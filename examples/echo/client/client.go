@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log"
@@ -48,7 +49,10 @@ func (clt *EchoClient) OnSignal(_ wwr.Payload) {}
 
 // Request sends a message to the server and returns the reply.
 // panics if the request fails for whatever reason
-func (clt *EchoClient) Request(message string) wwr.Payload {
+func (clt *EchoClient) Request(
+	ctx context.Context,
+	message string,
+) wwr.Payload {
 	// Define a payload to be sent to the server, use default binary encoding
 	payload := wwr.NewPayload(wwr.EncodingBinary, []byte(message))
 
@@ -59,7 +63,7 @@ func (clt *EchoClient) Request(message string) wwr.Payload {
 	)
 
 	// Send request and await reply
-	reply, err := clt.connection.Request("", payload)
+	reply, err := clt.connection.Request(ctx, "", payload)
 	if err != nil {
 		panic(fmt.Errorf("Request failed: %s", err))
 	}
@@ -77,7 +81,7 @@ func main() {
 	echoClient := NewEchoClient(*serverAddr)
 
 	// Send request and await reply
-	reply := echoClient.Request("hey, server!")
+	reply := echoClient.Request(context.Background(), "hey, server!")
 
 	log.Printf(
 		"Received reply: '%s' (%d)",

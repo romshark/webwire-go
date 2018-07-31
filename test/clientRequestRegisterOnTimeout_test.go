@@ -2,6 +2,7 @@ package test
 
 import (
 	"context"
+	"reflect"
 	"testing"
 	"time"
 
@@ -60,13 +61,23 @@ func TestClientRequestRegisterOnTimeout(t *testing.T) {
 	}
 
 	// Send request and await reply
-	_, reqErr := client.connection.TimedRequest(
-		"",
-		webwire.NewPayload(webwire.EncodingBinary, []byte("t")),
+	contextWithDeadline, cancel := context.WithTimeout(
+		context.Background(),
 		200*time.Millisecond,
 	)
-	if _, isTimeoutErr := reqErr.(webwire.ReqTimeoutErr); !isTimeoutErr {
-		t.Fatalf("Request must have failed (timeout)")
+	defer cancel()
+	_, reqErr := client.connection.Request(
+		contextWithDeadline,
+		"",
+		webwire.NewPayload(webwire.EncodingBinary, []byte("t")),
+	)
+	_, isDeadlineExceededErr := reqErr.(webwire.DeadlineExceededErr)
+	if !isDeadlineExceededErr || !webwire.IsTimeoutErr(reqErr) {
+		t.Fatalf(
+			"Expected DeadlineExceededErr error, got: %s | %s",
+			reflect.TypeOf(reqErr),
+			reqErr,
+		)
 	}
 
 	// Verify pending requests

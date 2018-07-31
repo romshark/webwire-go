@@ -1,6 +1,7 @@
 package test
 
 import (
+	"context"
 	"reflect"
 	"testing"
 	"time"
@@ -24,10 +25,12 @@ func TestClientReqDisconnTimeout(t *testing.T) {
 
 	// Send request and await reply
 	_, err := client.connection.Request(
+		context.Background(),
 		"",
 		wwr.NewPayload(wwr.EncodingBinary, []byte("testdata")),
 	)
-	if _, isReqTimeoutErr := err.(wwr.ReqTimeoutErr); !isReqTimeoutErr {
+	_, isTimeoutErr := err.(wwr.TimeoutErr)
+	if !isTimeoutErr || !wwr.IsTimeoutErr(err) {
 		t.Fatalf(
 			"Expected request timeout error, got: %s | %s",
 			reflect.TypeOf(err),

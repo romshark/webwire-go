@@ -1,6 +1,7 @@
 package client
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
@@ -17,6 +18,7 @@ func (clt *Client) requestSessionRestoration(sessionKey []byte) (
 	error,
 ) {
 	reply, err := clt.sendNamelessRequest(
+		context.Background(),
 		msg.MsgRestoreSession,
 		pld.Payload{
 			Encoding: webwire.EncodingBinary,

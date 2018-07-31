@@ -1,6 +1,8 @@
 package client
 
 import (
+	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -22,15 +24,19 @@ func newDam() *dam {
 }
 
 // await blocks the calling goroutine until the dam is flushed
-func (dam *dam) await(timeout time.Duration) error {
+func (dam *dam) await(ctx context.Context, timeout time.Duration) error {
 	dam.lock.RLock()
 	defer dam.lock.RUnlock()
+	timer := time.NewTimer(timeout)
+	defer timer.Stop()
 	if timeout > 0 {
 		select {
+		case <-ctx.Done():
+			return wwr.TranslateContextError(ctx.Err())
 		case err := <-dam.barrier:
 			return err
-		case <-time.After(timeout):
-			return wwr.ReqTimeoutErr{Target: timeout}
+		case <-timer.C:
+			return wwr.NewTimeoutErr(fmt.Errorf("timed out"))
 		}
 	} else {
 		return <-dam.barrier

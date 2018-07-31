@@ -2,7 +2,6 @@ package webwire
 
 import (
 	"fmt"
-	"time"
 )
 
 // ConnIncompErr represents a connection error type indicating that the server
@@ -62,14 +61,35 @@ func (err ReqInternalErr) Error() string {
 	return "Internal server error"
 }
 
-// ReqTimeoutErr represents a request error type indicating that the server
-// wasn't able to reply within the given time frame causing the request to time out.
-type ReqTimeoutErr struct {
-	Target time.Duration
+// TimeoutErr represents a failure due to a timeout
+type TimeoutErr struct {
+	cause error
 }
 
-func (err ReqTimeoutErr) Error() string {
-	return fmt.Sprintf("Server didn't manage to reply within %s", err.Target)
+// NewTimeoutErr constructs a new timeout error
+func NewTimeoutErr(cause error) TimeoutErr {
+	return TimeoutErr{cause}
+}
+
+// Error implements the error interface
+func (err TimeoutErr) Error() string {
+	return err.cause.Error()
+}
+
+// DeadlineExceededErr represents a failure due to
+// an excess of a user-defined deadline
+type DeadlineExceededErr struct {
+	cause error
+}
+
+// NewDeadlineExceededErr constructs a new deadline excess error
+func NewDeadlineExceededErr(cause error) DeadlineExceededErr {
+	return DeadlineExceededErr{cause}
+}
+
+// Error implements the error interface
+func (err DeadlineExceededErr) Error() string {
+	return err.cause.Error()
 }
 
 // ReqErr represents an error returned in case of a request that couldn't be processed
@@ -138,4 +158,41 @@ func NewProtocolErr(err error) ProtocolErr {
 
 func (err ProtocolErr) Error() string {
 	return err.cause.Error()
+}
+
+// CanceledErr represents a failure due to cancelation
+type CanceledErr struct {
+	cause error
+}
+
+// NewCanceledErr constructs a new canceled errror instance
+func NewCanceledErr(cause error) CanceledErr {
+	return CanceledErr{cause}
+}
+
+// Error implements the error interface
+func (err CanceledErr) Error() string {
+	return err.cause.Error()
+}
+
+// IsTimeoutErr returns true if the given error is either a TimeoutErr
+// or a DeadlineExceededErr, otherwise returns false
+func IsTimeoutErr(err error) bool {
+	switch err.(type) {
+	case TimeoutErr:
+		return true
+	case DeadlineExceededErr:
+		return true
+	}
+	return false
+}
+
+// IsCanceledErr returns true if the given error is a CanceledErr,
+// otherwise returns false
+func IsCanceledErr(err error) bool {
+	switch err.(type) {
+	case CanceledErr:
+		return true
+	}
+	return false
 }

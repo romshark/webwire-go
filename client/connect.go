@@ -1,6 +1,7 @@
 package client
 
 import (
+	"context"
 	"sync/atomic"
 )
 
@@ -54,7 +55,10 @@ func (clt *Client) connect() error {
 				// and free up the socket
 				if atomic.LoadInt32(&clt.autoconnect) == autoconnectEnabled {
 					go func() {
-						if err := clt.tryAutoconnect(0); err != nil {
+						if err := clt.tryAutoconnect(
+							context.Background(),
+							0,
+						); err != nil {
 							clt.errorLog.Printf("Auto-reconnect failed after connection loss: %s", err)
 							return
 						}

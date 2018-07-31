@@ -222,7 +222,11 @@ func TestAuthentication(t *testing.T) {
 	}
 
 	// Send authentication request and await reply
-	authReqReply, err := client.connection.Request("login", expectedCredentials)
+	authReqReply, err := client.connection.Request(
+		context.Background(),
+		"login",
+		expectedCredentials,
+	)
 	if err != nil {
 		t.Fatalf("Request failed: %s", err)
 	}
@@ -239,7 +243,11 @@ func TestAuthentication(t *testing.T) {
 
 	// Send a test-request to verify the session on the server
 	// and await response
-	testReqReply, err := client.connection.Request("test", expectedCredentials)
+	testReqReply, err := client.connection.Request(
+		context.Background(),
+		"test",
+		expectedCredentials,
+	)
 	if err != nil {
 		t.Fatalf("Request failed: %s", err)
 	}

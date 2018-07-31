@@ -60,6 +60,7 @@ func TestCustomSessKeyGen(t *testing.T) {
 
 	// Send authentication request and await reply
 	if _, err := client.connection.Request(
+		context.Background(),
 		"login",
 		wwr.NewPayload(wwr.EncodingBinary, []byte("testdata")),
 	); err != nil {

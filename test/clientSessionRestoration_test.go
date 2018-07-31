@@ -110,6 +110,7 @@ func TestClientSessionRestoration(t *testing.T) {
 
 	// Create a new session
 	if _, err := initialClient.connection.Request(
+		context.Background(),
 		"login",
 		webwire.NewPayload(webwire.EncodingBinary, []byte("auth")),
 	); err != nil {

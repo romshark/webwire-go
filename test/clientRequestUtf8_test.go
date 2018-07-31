@@ -56,7 +56,11 @@ func TestClientRequest(t *testing.T) {
 	}
 
 	// Send request and await reply
-	reply, err := client.connection.Request("", expectedRequestPayload)
+	reply, err := client.connection.Request(
+		context.Background(),
+		"",
+		expectedRequestPayload,
+	)
 	if err != nil {
 		t.Fatalf("Request failed: %s", err)
 	}

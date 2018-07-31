@@ -106,8 +106,10 @@ Fraudulent messages are recognized by analyzing the message length, out-of-range
 Clients can initiate multiple simultaneous requests and receive replies asynchronously. Requests are multiplexed through the connection similar to HTTP2 pipelining.
 
 ```go
-// Send a request to the server, will block the goroutine until replied
-reply, err := client.Request("", wwr.NewPayload(
+// Send a request to the server,
+// this will block the goroutine until either a reply is received
+// or the default timeout triggers (if there is one)
+reply, err := client.Request(nil, "", wwr.NewPayload(
   wwr.EncodingBinary,
   []byte("sudo rm -rf /"),
 ))
@@ -117,18 +119,43 @@ if err != nil {
 reply // Here we go!
  ```
 
-Timed requests will timeout and return an error if the server doesn't manage to reply within the specified time frame.
+Requests will respect cancelable contexts and provided deadlines
 
 ```go
-// Send a request to the server, will block the goroutine for 200ms at max
-reply, err := client.TimedRequest("", wwr.Payload(
+cancelableCtx, cancel := context.WithCancel(context.Background())
+defer cancel()
+timedCtx := context.WithTimeout(cancelableCtx, 1*time.Second)
+
+// Send a cancelable request to the server with a 1 second deadline
+// will block the goroutine for 1 second at max
+reply, err := client.Request(ctx, "", wwr.Payload(
   wwr.EncodingUtf8,
   []byte("hurry up!"),
   200*time.Millisecond,
 ))
-if err != nil {
-  // Probably timed out!
+// Investigate errors manually...
+switch err.(type) {
+  case wwr.CanceledErr:
+    // Request was prematurely canceled by the sender
+  case wwr.DeadlineExceededErr:
+    // Request timed out, server didn't manage to reply
+    // within the user-specified context deadline
+  case wwr.TimeoutErr:
+    // Request timed out, server didn't manage to reply
+    // within the specified default request timeout duration
+  case nil:
+    // Replied successfully
 }
+
+// ... or check for a timeout error the easier way:
+if err != nil {
+  if wwr.IsTimeoutErr(err) {
+    // Timed out due to deadline excess or default timeout
+  } else {
+    // Unexpected error
+  }
+}
+
 reply // Just in time!
 ```
 
@@ -252,10 +279,10 @@ err := client.RestoreSession([]byte("yoursessionkeygoeshere"))
 The WebWire client maintains the connection fully automatically to guarantee maximum connection uptime. It will automatically reconnect in the background whenever the connection is lost.
 
 The only things to remember are:
-- Client API methods such as `client.Request`, `client.TimedRequest` and `client.RestoreSession` will timeout if the server is unavailable for the entire duration of the specified timeout and thus the client fails to reconnect.
+- Client API methods such as `client.Request` and `client.RestoreSession` will timeout if the server is unavailable for the entire duration of the specified timeout and thus the client fails to reconnect.
 - `client.Signal` will immediately return a `DisconnectedErr` error if there's no connection at the time the signal was sent.
 
-This feature is entirely optional and can be disabled at will which will cause `client.Request`, `client.TimedRequest` and `client.RestoreSession` to immediately return a `DisconnectedErr` error when there's no connection at the time the request is made.
+This feature is entirely optional and can be disabled at will which will cause `client.Request` and `client.RestoreSession` to immediately return a `DisconnectedErr` error when there's no connection at the time the request is made.
 
 The WebWire server will also try to keep connections alive by periodically sending heartbeats to the client. The heartbeat interval and timeout durations are adjustable through the server options and default to 30 and 60 seconds respectively.
 

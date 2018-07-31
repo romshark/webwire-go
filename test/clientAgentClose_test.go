@@ -68,10 +68,11 @@ func TestConnectionClose(t *testing.T) {
 	}
 
 	// Authenticate and create session
-	authReqReply, err := clientA.connection.Request("login", wwr.NewPayload(
-		wwr.EncodingBinary,
-		[]byte("bla"),
-	))
+	authReqReply, err := clientA.connection.Request(
+		context.Background(),
+		"login",
+		wwr.NewPayload(wwr.EncodingBinary, []byte("bla")),
+	)
 	if err != nil {
 		t.Fatalf("Request failed: %s", err)
 	}
@@ -135,10 +136,11 @@ func TestConnectionClose(t *testing.T) {
 	}
 
 	// Close first connection
-	if _, err := clientA.connection.Request("closeA", wwr.NewPayload(
-		wwr.EncodingBinary,
-		[]byte("a"),
-	)); err != nil {
+	if _, err := clientA.connection.Request(
+		context.Background(),
+		"closeA",
+		wwr.NewPayload(wwr.EncodingBinary, []byte("a")),
+	); err != nil {
 		t.Fatalf("Request failed: %s", err)
 	}
 
@@ -148,6 +150,7 @@ func TestConnectionClose(t *testing.T) {
 
 	// Test connectivity
 	_, err = clientA.connection.Request(
+		context.Background(),
 		"testA",
 		wwr.NewPayload(wwr.EncodingBinary, []byte("testA")),
 	)
@@ -176,10 +179,11 @@ func TestConnectionClose(t *testing.T) {
 	}
 
 	// Close second connection
-	if _, err := clientB.connection.Request("closeB", wwr.NewPayload(
-		wwr.EncodingBinary,
-		[]byte("b"),
-	)); err != nil {
+	if _, err := clientB.connection.Request(
+		context.Background(),
+		"closeB",
+		wwr.NewPayload(wwr.EncodingBinary, []byte("b")),
+	); err != nil {
 		t.Fatalf("Request failed: %s", err)
 	}
 
@@ -189,6 +193,7 @@ func TestConnectionClose(t *testing.T) {
 
 	// Test connectivity
 	_, err = clientB.connection.Request(
+		context.Background(),
 		"testB",
 		wwr.NewPayload(wwr.EncodingBinary, []byte("testB")),
 	)

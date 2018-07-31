@@ -68,6 +68,7 @@ func TestDisabledSessions(t *testing.T) {
 
 	// Send authentication request and await reply
 	_, err := client.connection.Request(
+		context.Background(),
 		"login",
 		wwr.NewPayload(wwr.EncodingBinary, []byte("testdata")),
 	)

@@ -1,6 +1,7 @@
 package client
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -9,6 +10,7 @@ import (
 )
 
 func (clt *Client) sendRequest(
+	ctx context.Context,
 	messageType byte,
 	name string,
 	payload webwire.Payload,
@@ -23,9 +25,17 @@ func (clt *Client) sendRequest(
 		)
 	}
 
+	// Return an error if the request was already prematurely canceled
+	// or already exceeded the user-defined deadline for its completion
+	select {
+	case <-ctx.Done():
+		return nil, webwire.TranslateContextError(ctx.Err())
+	default:
+	}
+
+	// Compose a message and register it
 	request := clt.requestManager.Create(timeout)
 	reqIdentifier := request.Identifier()
-
 	msg := msg.NewRequestMessage(
 		reqIdentifier,
 		name,
@@ -39,5 +49,5 @@ func (clt *Client) sendRequest(
 	}
 
 	// Block until request either times out or a response is received
-	return request.AwaitReply()
+	return request.AwaitReply(ctx)
 }

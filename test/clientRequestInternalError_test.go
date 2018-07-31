@@ -45,10 +45,11 @@ func TestClientRequestInternalError(t *testing.T) {
 	}
 
 	// Send request and await reply
-	reply, reqErr := client.connection.Request("", webwire.NewPayload(
-		webwire.EncodingUtf8,
-		[]byte("dummydata"),
-	))
+	reply, reqErr := client.connection.Request(
+		context.Background(),
+		"",
+		webwire.NewPayload(webwire.EncodingUtf8, []byte("dummydata")),
+	)
 
 	// Verify returned error
 	if reqErr == nil {

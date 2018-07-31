@@ -61,6 +61,7 @@ func TestActiveSessionRegistry(t *testing.T) {
 
 	// Send authentication request
 	if _, err := client.connection.Request(
+		context.Background(),
 		"login",
 		webwire.NewPayload(webwire.EncodingUtf8, []byte("nothing")),
 	); err != nil {
@@ -77,6 +78,7 @@ func TestActiveSessionRegistry(t *testing.T) {
 
 	// Send logout request
 	if _, err := client.connection.Request(
+		context.Background(),
 		"logout",
 		webwire.NewPayload(webwire.EncodingUtf8, []byte("nothing")),
 	); err != nil {

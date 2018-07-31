@@ -70,13 +70,21 @@ func TestRequestNoNameOnlyPayload(t *testing.T) {
 	)
 
 	// Send an unnamed binary request with a payload and await reply
-	_, err := client.connection.Request("", expectedRequestPayload)
+	_, err := client.connection.Request(
+		context.Background(),
+		"",
+		expectedRequestPayload,
+	)
 	if err != nil {
 		t.Fatalf("Request failed: %s", err)
 	}
 
 	// Send an unnamed UTF16 encoded binary request with a payload
-	_, err = client.connection.Request("", expectedRequestPayloadUtf16)
+	_, err = client.connection.Request(
+		context.Background(),
+		"",
+		expectedRequestPayloadUtf16,
+	)
 	if err != nil {
 		t.Fatalf("Request failed: %s", err)
 	}

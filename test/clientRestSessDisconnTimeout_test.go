@@ -24,7 +24,8 @@ func TestClientRestSessDisconnTimeout(t *testing.T) {
 
 	// Send request and await reply
 	err := client.connection.RestoreSession([]byte("inexistentkey"))
-	if _, isReqTimeoutErr := err.(wwr.ReqTimeoutErr); !isReqTimeoutErr {
+	_, isTimeoutErr := err.(wwr.TimeoutErr)
+	if !isTimeoutErr || !wwr.IsTimeoutErr(err) {
 		t.Fatalf(
 			"Expected request timeout error, got: %s | %s",
 			reflect.TypeOf(err),

@@ -1,6 +1,7 @@
 package client
 
 import (
+	"context"
 	"sync/atomic"
 	"time"
 
@@ -13,7 +14,10 @@ import (
 // If the autoconnector goroutine has already been spawned then it'll
 // just await the connection or timeout respectively blocking the calling
 // goroutine
-func (clt *Client) tryAutoconnect(timeout time.Duration) error {
+func (clt *Client) tryAutoconnect(
+	ctx context.Context,
+	timeout time.Duration,
+) error {
 	if atomic.LoadInt32(&clt.status) == StatConnected {
 		return nil
 	} else if atomic.LoadInt32(&clt.autoconnect) != autoconnectEnabled {
@@ -28,8 +32,8 @@ func (clt *Client) tryAutoconnect(timeout time.Duration) error {
 
 	if timeout > 0 {
 		// Await with timeout
-		return clt.backReconn.await(timeout)
+		return clt.backReconn.await(ctx, timeout)
 	}
 	// Await indefinitely
-	return clt.backReconn.await(0)
+	return clt.backReconn.await(ctx, 0)
 }

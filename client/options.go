@@ -19,8 +19,8 @@ type Options struct {
 
 	// Autoconnect defines whether the autoconnect feature is to be enabled.
 	//
-	// If autoconnect is enabled then client.Request, client.TimedRequest and
-	// client.RestoreSession won't immediately return a disconnected error
+	// If autoconnect is enabled then client.Request and client.RestoreSession
+	// won't immediately return a disconnected error
 	// if there's no active connection to the server,
 	// instead they will automatically try to reestablish the connection
 	// before the timeout is triggered and a timeout error is returned.

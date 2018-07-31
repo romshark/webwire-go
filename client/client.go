@@ -1,6 +1,7 @@
 package client
 
 import (
+	"context"
 	"sync/atomic"
 
 	"fmt"
@@ -55,7 +56,7 @@ type Client struct {
 	session     *webwire.Session
 
 	// The API lock synchronizes concurrent access to the public client interface.
-	// Request, TimedRequest and Signal methods are locked with a shared lock
+	// Request, and Signal methods are locked with a shared lock
 	// because performing multiple requests and/or signals simultaneously is fine.
 	// The Connect, RestoreSession, CloseSession and Close methods are locked exclusively
 	// because they should temporarily block any other interaction with this client instance.
@@ -132,7 +133,7 @@ func NewClient(
 		// Asynchronously connect to the server immediately after initialization.
 		// Call in another goroutine to not block the contructor function caller.
 		// Set timeout to zero, try indefinitely until connected.
-		go newClt.tryAutoconnect(0)
+		go newClt.tryAutoconnect(context.Background(), 0)
 	}
 
 	return newClt
@@ -163,46 +164,27 @@ func (clt *Client) Connect() error {
 // blocking the calling goroutine.
 // Returns an error if the request failed for some reason
 func (clt *Client) Request(
+	ctx context.Context,
 	name string,
 	payload webwire.Payload,
 ) (webwire.Payload, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
 	clt.apiLock.RLock()
 	defer clt.apiLock.RUnlock()
 
-	if err := clt.tryAutoconnect(clt.defaultReqTimeout); err != nil {
+	if err := clt.tryAutoconnect(ctx, clt.defaultReqTimeout); err != nil {
 		return nil, err
 	}
 
 	return clt.sendRequest(
+		ctx,
 		scanPayloadEncoding(payload),
 		name,
 		payload,
 		clt.defaultReqTimeout,
-	)
-}
-
-// TimedRequest sends a request containing the given payload to the server
-// and asynchronously returns the servers reply
-// blocking the calling goroutine.
-// Returns an error if the given timeout was exceeded awaiting the response
-// or another failure occurred
-func (clt *Client) TimedRequest(
-	name string,
-	payload webwire.Payload,
-	timeout time.Duration,
-) (webwire.Payload, error) {
-	clt.apiLock.RLock()
-	defer clt.apiLock.RUnlock()
-
-	if err := clt.tryAutoconnect(timeout); err != nil {
-		return nil, err
-	}
-
-	return clt.sendRequest(
-		scanPayloadEncoding(payload),
-		name,
-		payload,
-		timeout,
 	)
 }
 
@@ -211,7 +193,10 @@ func (clt *Client) Signal(name string, payload webwire.Payload) error {
 	clt.apiLock.RLock()
 	defer clt.apiLock.RUnlock()
 
-	if err := clt.tryAutoconnect(clt.defaultReqTimeout); err != nil {
+	if err := clt.tryAutoconnect(
+		context.Background(),
+		clt.defaultReqTimeout,
+	); err != nil {
 		return err
 	}
 
@@ -286,7 +271,10 @@ func (clt *Client) RestoreSession(sessionKey []byte) error {
 	}
 	clt.sessionLock.RUnlock()
 
-	if err := clt.tryAutoconnect(clt.defaultReqTimeout); err != nil {
+	if err := clt.tryAutoconnect(
+		context.Background(),
+		clt.defaultReqTimeout,
+	); err != nil {
 		return err
 	}
 
@@ -321,6 +309,7 @@ func (clt *Client) CloseSession() error {
 	// Synchronize session closure to the server if connected
 	if atomic.LoadInt32(&clt.status) == StatConnected {
 		if _, err := clt.sendNamelessRequest(
+			context.Background(),
 			msg.MsgCloseSession,
 			pld.Payload{},
 			clt.defaultReqTimeout,

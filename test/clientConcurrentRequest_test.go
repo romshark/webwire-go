@@ -49,6 +49,7 @@ func TestClientConcurrentRequest(t *testing.T) {
 	sendRequest := func() {
 		defer finished.Progress(1)
 		if _, err := client.connection.Request(
+			context.Background(),
 			"sample",
 			webwire.NewPayload(webwire.EncodingBinary, []byte("samplepayload")),
 		); err != nil {

@@ -38,6 +38,7 @@ func TestClientRequestDisconnected(t *testing.T) {
 
 	// Send request and await reply
 	if _, err := client.connection.Request(
+		context.Background(),
 		"",
 		wwr.NewPayload(wwr.EncodingBinary, []byte("testdata")),
 	); err != nil {

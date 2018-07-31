@@ -139,7 +139,11 @@ func TestServerInitiatedSessionDestruction(t *testing.T) {
 	}
 
 	// Send authentication request
-	authReqReply, err := client.connection.Request("login", expectedCredentials)
+	authReqReply, err := client.connection.Request(
+		context.Background(),
+		"login",
+		expectedCredentials,
+	)
 	if err != nil {
 		t.Fatalf("Authentication request failed: %s", err)
 	}
@@ -178,6 +182,7 @@ func TestServerInitiatedSessionDestruction(t *testing.T) {
 
 	// Send a test-request to verify the session creation on the server
 	if _, err := client.connection.Request(
+		context.Background(),
 		"",
 		webwire.NewPayload(
 			webwire.EncodingBinary,
@@ -193,7 +198,11 @@ func TestServerInitiatedSessionDestruction(t *testing.T) {
 	currentStep = 3
 
 	// Request session destruction
-	if _, err := client.connection.Request("", placeholderMessage); err != nil {
+	if _, err := client.connection.Request(
+		context.Background(),
+		"",
+		placeholderMessage,
+	); err != nil {
 		t.Fatalf("Session destruction request failed: %s", err)
 	}
 
@@ -217,7 +226,11 @@ func TestServerInitiatedSessionDestruction(t *testing.T) {
 	}
 
 	// Send a test-request to verify the session was destroyed on the server
-	if _, err := client.connection.Request("", placeholderMessage); err != nil {
+	if _, err := client.connection.Request(
+		context.Background(),
+		"",
+		placeholderMessage,
+	); err != nil {
 		t.Fatalf("Session destruction verification request failed: %s", err)
 	}
 }

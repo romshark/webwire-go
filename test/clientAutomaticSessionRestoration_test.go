@@ -108,6 +108,7 @@ func TestClientAutomaticSessionRestoration(t *testing.T) {
 
 	// Create a new session
 	if _, err := client.connection.Request(
+		context.Background(),
 		"login",
 		webwire.NewPayload(webwire.EncodingBinary, []byte("auth")),
 	); err != nil {
@@ -140,6 +141,7 @@ func TestClientAutomaticSessionRestoration(t *testing.T) {
 	// Verify whether the previous session was restored automatically
 	// and the server authenticates the user
 	if _, err := client.connection.Request(
+		context.Background(),
 		"verify",
 		webwire.NewPayload(webwire.EncodingBinary, []byte("isrestored?")),
 	); err != nil {

@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -69,6 +70,7 @@ MAINLOOP:
 			// for the message to be considered posted
 			go func() {
 				if _, err := clt.connection.Request(
+					context.Background(),
 					"msg",
 					webwire.NewPayload(webwire.EncodingBinary, []byte(input)),
 				); err != nil {

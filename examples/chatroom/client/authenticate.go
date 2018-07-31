@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -21,6 +22,7 @@ func (clt *ChatroomClient) Authenticate(login, password string) {
 	}
 
 	_, reqErr := clt.connection.Request(
+		context.Background(),
 		"auth",
 		webwire.NewPayload(webwire.EncodingBinary, encodedCreds),
 	)

@@ -111,6 +111,7 @@ func TestClientOfflineSessionClosure(t *testing.T) {
 
 	// Create a new session
 	if _, err := client.connection.Request(
+		context.Background(),
 		"login",
 		webwire.NewPayload(webwire.EncodingBinary, []byte("auth")),
 	); err != nil {
@@ -151,6 +152,7 @@ func TestClientOfflineSessionClosure(t *testing.T) {
 
 	// Ensure the client is anonymous
 	if _, err := client.connection.Request(
+		context.Background(),
 		"verify-restored",
 		webwire.NewPayload(webwire.EncodingBinary, []byte("isrestored?")),
 	); err != nil {

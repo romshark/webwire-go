@@ -51,18 +51,20 @@ func TestRequestNameNoPayload(t *testing.T) {
 	)
 
 	// Send a named binary request without a payload and await reply
-	if _, err := client.connection.Request("n", webwire.NewPayload(
-		webwire.EncodingBinary,
-		nil,
-	)); err != nil {
+	if _, err := client.connection.Request(
+		context.Background(),
+		"n",
+		webwire.NewPayload(webwire.EncodingBinary, nil),
+	); err != nil {
 		t.Fatalf("Request failed: %s", err)
 	}
 
 	// Send a UTF16 encoded named binary request without a payload
-	if _, err := client.connection.Request("n", webwire.NewPayload(
-		webwire.EncodingUtf16,
-		nil,
-	)); err != nil {
+	if _, err := client.connection.Request(
+		context.Background(),
+		"n",
+		webwire.NewPayload(webwire.EncodingUtf16, nil),
+	); err != nil {
 		t.Fatalf("Request failed: %s", err)
 	}
 }
