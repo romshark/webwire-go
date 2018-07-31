@@ -59,7 +59,6 @@ The [webwire-go](https://github.com/qbeon/webwire-go) library provides both a cl
   - [Automatic Session Restoration](#automatic-session-restoration)
   - [Automatic Connection Maintenance](#automatic-connection-maintenance)
   - [Concurrency](#concurrency)
-  - [Thread Safety](#thread-safety)
   - [Hooks](#hooks)
     - [Server-side Hooks](#server-side-hooks)
     - [Client-side Hooks](#client-side-hooks)
@@ -289,8 +288,7 @@ The WebWire server will also try to keep connections alive by periodically sendi
 ### Concurrency
 Messages are parsed and handled concurrently in a separate goroutine by default. The total number of concurrently executed handlers can be throttled down to a specified number using the `MaxConcurrentHandlers` server option, which disables the throttling when set to `0`.
 
-### Thread Safety
-All exported interfaces provided by both the server and the client can safely be used concurrently from multiple goroutines, the library automatically synchronizes all concurrent operations.
+All exported interfaces provided by both the server and the client are thread safe and can thus safely be used concurrently from within multiple goroutines, the library automatically synchronizes all concurrent operations.
 
 ### Hooks
 Various hooks provide the ability to asynchronously react to different kinds of events and control the behavior of both the client and the server.
