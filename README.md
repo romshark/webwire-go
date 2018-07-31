@@ -124,14 +124,14 @@ Requests will respect cancelable contexts and provided deadlines
 ```go
 cancelableCtx, cancel := context.WithCancel(context.Background())
 defer cancel()
-timedCtx := context.WithTimeout(cancelableCtx, 1*time.Second)
+timedCtx, cancelTimed := context.WithTimeout(cancelableCtx, 1*time.Second)
+defer cancelTimed()
 
 // Send a cancelable request to the server with a 1 second deadline
 // will block the goroutine for 1 second at max
-reply, err := client.Request(ctx, "", wwr.Payload(
+reply, err := client.Request(timedCtx, "", wwr.Payload(
   wwr.EncodingUtf8,
   []byte("hurry up!"),
-  200*time.Millisecond,
 ))
 // Investigate errors manually...
 switch err.(type) {
