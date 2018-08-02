@@ -22,7 +22,7 @@ func TestClientIsConnected(t *testing.T) {
 		callbackPoweredClientHooks{},
 	)
 
-	if client.connection.Status() == webwireClient.StatConnected {
+	if client.connection.Status() == webwireClient.Connected {
 		t.Fatal("Expected client to be disconnected before the connection establishment")
 	}
 
@@ -31,14 +31,14 @@ func TestClientIsConnected(t *testing.T) {
 		t.Fatalf("Couldn't connect the client to the server: %s", err)
 	}
 
-	if client.connection.Status() != webwireClient.StatConnected {
+	if client.connection.Status() != webwireClient.Connected {
 		t.Fatal("Expected client to be connected after the connection establishment")
 	}
 
 	// Disconnect the client
 	client.connection.Close()
 
-	if client.connection.Status() == webwireClient.StatConnected {
+	if client.connection.Status() == webwireClient.Connected {
 		t.Fatal("Expected client to be disconnected after closure")
 	}
 }

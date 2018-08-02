@@ -12,7 +12,7 @@ import (
 
 // verifyProtocolVersion requests the endpoint metadata
 // to verify the server is running a supported protocol version
-func (clt *Client) verifyProtocolVersion() error {
+func (clt *client) verifyProtocolVersion() error {
 	// Initialize HTTP client
 	var httpClient = &http.Client{
 		Timeout: time.Second * 10,

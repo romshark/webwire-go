@@ -14,7 +14,7 @@ type callbackPoweredClientHooks struct {
 
 // callbackPoweredClient implements the wwrclt.Implementation interface
 type callbackPoweredClient struct {
-	connection *wwrclt.Client
+	connection wwrclt.Client
 	hooks      callbackPoweredClientHooks
 }
 

@@ -9,7 +9,7 @@ import (
 	msg "github.com/qbeon/webwire-go/message"
 )
 
-func (clt *Client) sendRequest(
+func (clt *client) sendRequest(
 	ctx context.Context,
 	messageType byte,
 	name string,

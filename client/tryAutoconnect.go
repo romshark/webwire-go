@@ -14,11 +14,11 @@ import (
 // If the autoconnector goroutine has already been spawned then it'll
 // just await the connection or timeout respectively blocking the calling
 // goroutine
-func (clt *Client) tryAutoconnect(
+func (clt *client) tryAutoconnect(
 	ctx context.Context,
 	timeout time.Duration,
 ) error {
-	if atomic.LoadInt32(&clt.status) == StatConnected {
+	if atomic.LoadInt32(&clt.status) == Connected {
 		return nil
 	} else if atomic.LoadInt32(&clt.autoconnect) != autoconnectEnabled {
 		// Don't try to auto-connect if it's either temporarily deactivated

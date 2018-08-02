@@ -13,7 +13,7 @@ import (
 // requestSessionRestoration sends a session restoration request
 // and decodes the session object from the received reply.
 // Expects the client to be connected beforehand
-func (clt *Client) requestSessionRestoration(sessionKey []byte) (
+func (clt *client) requestSessionRestoration(sessionKey []byte) (
 	*webwire.Session,
 	error,
 ) {

@@ -21,11 +21,14 @@ const supportedProtocolVersion = "1.4"
 type Status = int32
 
 const (
-	// StatDisconnected represents a temporarily disconnected client instance
-	StatDisconnected Status = 0
+	// Disabled represents a permanent connection loss
+	Disabled Status = 0
 
-	// StatConnected represents a connected client instance
-	StatConnected Status = 1
+	// Disconnected represents a temporarily connection loss
+	Disconnected
+
+	// Connected represents a normal connection
+	Connected Status = 2
 )
 
 // autoconnectStatus represents the activation of auto-reconnection
@@ -42,8 +45,8 @@ const (
 	autoconnectEnabled = 2
 )
 
-// Client represents an instance of one of the servers clients
-type Client struct {
+// client represents an instance of one of the servers clients
+type client struct {
 	serverAddr        string
 	impl              Implementation
 	sessionInfoParser webwire.SessionInfoParser
@@ -81,70 +84,12 @@ type Client struct {
 	errorLog   *log.Logger
 }
 
-// NewClient creates a new client instance.
-func NewClient(
-	serverAddress string,
-	implementation Implementation,
-	opts Options,
-) *Client {
-	if implementation == nil {
-		panic(fmt.Errorf(
-			"A webwire client requires a client implementation, got nil",
-		))
-	}
-
-	// Prepare configuration
-	opts.SetDefaults()
-
-	// Enable autoconnect by default
-	autoconnect := autoconnectStatus(autoconnectEnabled)
-	if opts.Autoconnect == webwire.Disabled {
-		autoconnect = autoconnectDisabled
-	}
-
-	// Initialize new client
-	newClt := &Client{
-		serverAddress,
-		implementation,
-		opts.SessionInfoParser,
-		StatDisconnected,
-		opts.DefaultRequestTimeout,
-		opts.ReconnectionInterval,
-		autoconnect,
-
-		sync.RWMutex{},
-		nil,
-
-		sync.RWMutex{},
-		newDam(),
-		false,
-		sync.RWMutex{},
-		sync.Mutex{},
-		webwire.NewSocket(),
-		make(chan bool, 1),
-
-		reqman.NewRequestManager(),
-
-		opts.WarnLog,
-		opts.ErrorLog,
-	}
-
-	if autoconnect == autoconnectEnabled {
-		// Asynchronously connect to the server immediately after initialization.
-		// Call in another goroutine to not block the contructor function caller.
-		// Set timeout to zero, try indefinitely until connected.
-		go newClt.tryAutoconnect(context.Background(), 0)
-	}
-
-	return newClt
-}
-
 // Status returns the current client status
 // which is either disabled, disconnected or connected.
 // The client is considered disabled when it was manually closed through client.Close,
 // while disconnected is considered a temporary connection loss.
 // A disabled client won't autoconnect until enabled again.
-func (clt *Client) Status() Status {
+func (clt *client) Status() Status {
 	return atomic.LoadInt32(&clt.status)
 }
 
@@ -152,7 +97,7 @@ func (clt *Client) Status() Status {
 // returns an error in case of a connection failure.
 // Automatically tries to restore the previous session.
 // Enables autoconnect if it was disabled
-func (clt *Client) Connect() error {
+func (clt *client) Connect() error {
 	if atomic.LoadInt32(&clt.autoconnect) == autoconnectDeactivated {
 		atomic.StoreInt32(&clt.autoconnect, autoconnectEnabled)
 	}
@@ -163,7 +108,7 @@ func (clt *Client) Connect() error {
 // and asynchronously returns the servers response
 // blocking the calling goroutine.
 // Returns an error if the request failed for some reason
-func (clt *Client) Request(
+func (clt *client) Request(
 	ctx context.Context,
 	name string,
 	payload webwire.Payload,
@@ -189,7 +134,7 @@ func (clt *Client) Request(
 }
 
 // Signal sends a signal containing the given payload to the server
-func (clt *Client) Signal(name string, payload webwire.Payload) error {
+func (clt *client) Signal(name string, payload webwire.Payload) error {
 	clt.apiLock.RLock()
 	defer clt.apiLock.RUnlock()
 
@@ -226,7 +171,7 @@ func (clt *Client) Signal(name string, payload webwire.Payload) error {
 
 // Session returns an exact copy of the session object or nil if there's no
 // session currently assigned to this client
-func (clt *Client) Session() *webwire.Session {
+func (clt *client) Session() *webwire.Session {
 	clt.sessionLock.RLock()
 	defer clt.sessionLock.RUnlock()
 	if clt.session == nil {
@@ -244,7 +189,7 @@ func (clt *Client) Session() *webwire.Session {
 
 // SessionInfo returns a copy of the session info field value
 // in the form of an empty interface to be casted to either concrete type
-func (clt *Client) SessionInfo(fieldName string) interface{} {
+func (clt *client) SessionInfo(fieldName string) interface{} {
 	clt.sessionLock.RLock()
 	defer clt.sessionLock.RUnlock()
 	if clt.session == nil || clt.session.Info == nil {
@@ -254,13 +199,13 @@ func (clt *Client) SessionInfo(fieldName string) interface{} {
 }
 
 // PendingRequests returns the number of currently pending requests
-func (clt *Client) PendingRequests() int {
+func (clt *client) PendingRequests() int {
 	return clt.requestManager.PendingRequests()
 }
 
 // RestoreSession tries to restore the previously opened session.
 // Fails if a session is currently already active
-func (clt *Client) RestoreSession(sessionKey []byte) error {
+func (clt *client) RestoreSession(sessionKey []byte) error {
 	clt.apiLock.Lock()
 	defer clt.apiLock.Unlock()
 
@@ -295,7 +240,7 @@ func (clt *Client) RestoreSession(sessionKey []byte) error {
 // The session will be destroyed if this is it's last connection remaining.
 // If the client is not connected then the synchronization is skipped.
 // Does nothing if there's no active session
-func (clt *Client) CloseSession() error {
+func (clt *client) CloseSession() error {
 	clt.apiLock.Lock()
 	defer clt.apiLock.Unlock()
 
@@ -307,7 +252,7 @@ func (clt *Client) CloseSession() error {
 	clt.sessionLock.RUnlock()
 
 	// Synchronize session closure to the server if connected
-	if atomic.LoadInt32(&clt.status) == StatConnected {
+	if atomic.LoadInt32(&clt.status) == Connected {
 		if _, err := clt.sendNamelessRequest(
 			context.Background(),
 			msg.MsgCloseSession,
@@ -328,17 +273,20 @@ func (clt *Client) CloseSession() error {
 
 // Close gracefully closes the connection and disables the client.
 // A disabled client won't autoconnect until enabled again.
-func (clt *Client) Close() {
+func (clt *client) Close() {
 	clt.apiLock.Lock()
 	defer clt.apiLock.Unlock()
 
+	// Disable autoconnect and set status to disabled
 	if atomic.LoadInt32(&clt.autoconnect) != autoconnectDisabled {
 		atomic.StoreInt32(&clt.autoconnect, autoconnectDeactivated)
 	}
 
-	if atomic.LoadInt32(&clt.status) != StatConnected {
+	if atomic.LoadInt32(&clt.status) != Connected {
+		atomic.StoreInt32(&clt.status, Disabled)
 		return
 	}
+	atomic.StoreInt32(&clt.status, Disabled)
 
 	if err := clt.conn.Close(); err != nil {
 		clt.errorLog.Printf("Failed closing connection: %s", err)

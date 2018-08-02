@@ -12,7 +12,7 @@ import (
 // TestClientRequestRegisterOnReply verifies the request register of the client
 // is correctly updated when the request is successfully fulfilled
 func TestClientRequestRegisterOnReply(t *testing.T) {
-	var connection *webwireClient.Client
+	var connection webwireClient.Client
 
 	// Initialize webwire server given only the request
 	server := setupServer(

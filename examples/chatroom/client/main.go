@@ -13,7 +13,7 @@ import (
 
 // ChatroomClient implements the wwrclt.Implementation interface
 type ChatroomClient struct {
-	connection *wwrclt.Client
+	connection wwrclt.Client
 }
 
 // NewChatroomClient constructs and returns a new chatroom client instance

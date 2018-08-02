@@ -6,7 +6,7 @@ import (
 	webwire "github.com/qbeon/webwire-go"
 )
 
-func (clt *Client) backgroundReconnect() {
+func (clt *client) backgroundReconnect() {
 	clt.connectingLock.Lock()
 	defer clt.connectingLock.Unlock()
 	if clt.connecting {

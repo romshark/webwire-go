@@ -9,7 +9,7 @@ import (
 	pld "github.com/qbeon/webwire-go/payload"
 )
 
-func (clt *Client) sendNamelessRequest(
+func (clt *client) sendNamelessRequest(
 	ctx context.Context,
 	messageType byte,
 	payload pld.Payload,

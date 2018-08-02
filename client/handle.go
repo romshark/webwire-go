@@ -9,7 +9,7 @@ import (
 	pld "github.com/qbeon/webwire-go/payload"
 )
 
-func (clt *Client) handleSessionCreated(msgPayload pld.Payload) {
+func (clt *client) handleSessionCreated(msgPayload pld.Payload) {
 	var encoded webwire.JSONEncodedSession
 	if err := json.Unmarshal(msgPayload.Data, &encoded); err != nil {
 		clt.errorLog.Printf("Failed unmarshalling session object: %s", err)
@@ -32,7 +32,7 @@ func (clt *Client) handleSessionCreated(msgPayload pld.Payload) {
 	clt.impl.OnSessionCreated(clt.session)
 }
 
-func (clt *Client) handleSessionClosed() {
+func (clt *client) handleSessionClosed() {
 	// Destroy local session
 	clt.sessionLock.Lock()
 	clt.session = nil
@@ -41,7 +41,7 @@ func (clt *Client) handleSessionClosed() {
 	clt.impl.OnSessionClosed()
 }
 
-func (clt *Client) handleFailure(
+func (clt *client) handleFailure(
 	reqIdent [8]byte,
 	errCode,
 	errMessage string,
@@ -53,32 +53,32 @@ func (clt *Client) handleFailure(
 	})
 }
 
-func (clt *Client) handleInternalError(reqIdent [8]byte) {
+func (clt *client) handleInternalError(reqIdent [8]byte) {
 	// Fail request
 	clt.requestManager.Fail(reqIdent, webwire.ReqInternalErr{})
 }
 
-func (clt *Client) handleReplyShutdown(reqIdent [8]byte) {
+func (clt *client) handleReplyShutdown(reqIdent [8]byte) {
 	clt.requestManager.Fail(reqIdent, webwire.ReqSrvShutdownErr{})
 }
 
-func (clt *Client) handleSessionNotFound(reqIdent [8]byte) {
+func (clt *client) handleSessionNotFound(reqIdent [8]byte) {
 	clt.requestManager.Fail(reqIdent, webwire.SessNotFoundErr{})
 }
 
-func (clt *Client) handleMaxSessConnsReached(reqIdent [8]byte) {
+func (clt *client) handleMaxSessConnsReached(reqIdent [8]byte) {
 	clt.requestManager.Fail(reqIdent, webwire.MaxSessConnsReachedErr{})
 }
 
-func (clt *Client) handleSessionsDisabled(reqIdent [8]byte) {
+func (clt *client) handleSessionsDisabled(reqIdent [8]byte) {
 	clt.requestManager.Fail(reqIdent, webwire.SessionsDisabledErr{})
 }
 
-func (clt *Client) handleReply(reqIdent [8]byte, payload pld.Payload) {
+func (clt *client) handleReply(reqIdent [8]byte, payload pld.Payload) {
 	clt.requestManager.Fulfill(reqIdent, payload)
 }
 
-func (clt *Client) handleMessage(message []byte) error {
+func (clt *client) handleMessage(message []byte) error {
 	if len(message) < 1 {
 		return nil
 	}

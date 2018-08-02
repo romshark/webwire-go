@@ -14,7 +14,7 @@ import (
 
 // EchoClient implements the wwrclt.Implementation interface
 type EchoClient struct {
-	connection *wwrclt.Client
+	connection wwrclt.Client
 }
 
 // NewEchoClient constructs and returns a new echo client instance

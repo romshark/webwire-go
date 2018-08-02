@@ -16,7 +16,7 @@ var counterTarget = flag.Uint("n", 6, "number of signals to listen for")
 
 // PubSubClient implements the wwrclt.Implementation interface
 type PubSubClient struct {
-	connection    *wwrclt.Client
+	connection    wwrclt.Client
 	target        uint
 	counter       uint
 	targetReached sync.WaitGroup

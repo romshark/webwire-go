@@ -12,10 +12,10 @@ import (
 // Before establishing the connection - connect verifies protocol compatibility and returns an
 // error if the protocol implemented by the server doesn't match the required protocol version
 // of this client instance.
-func (clt *Client) connect() error {
+func (clt *client) connect() error {
 	clt.connectLock.Lock()
 	defer clt.connectLock.Unlock()
-	if atomic.LoadInt32(&clt.status) == StatConnected {
+	if atomic.LoadInt32(&clt.status) == Connected {
 		return nil
 	}
 
@@ -31,7 +31,7 @@ func (clt *Client) connect() error {
 	go func() {
 		defer func() {
 			// Set status
-			atomic.StoreInt32(&clt.status, StatDisconnected)
+			atomic.StoreInt32(&clt.status, Disconnected)
 			select {
 			case clt.readerClosing <- true:
 			default:
@@ -45,7 +45,7 @@ func (clt *Client) connect() error {
 					clt.errorLog.Print("Abnormal closure error:", err)
 				}
 
-				atomic.StoreInt32(&clt.status, StatDisconnected)
+				atomic.StoreInt32(&clt.status, Disconnected)
 
 				// Call hook
 				clt.impl.OnDisconnected()
@@ -73,7 +73,7 @@ func (clt *Client) connect() error {
 		}
 	}()
 
-	atomic.StoreInt32(&clt.status, StatConnected)
+	atomic.StoreInt32(&clt.status, Connected)
 
 	// Read the current sessions key if there is any
 	clt.sessionLock.RLock()

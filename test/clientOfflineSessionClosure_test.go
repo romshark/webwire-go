@@ -124,7 +124,7 @@ func TestClientOfflineSessionClosure(t *testing.T) {
 	client.connection.Close()
 
 	// Ensure the session isn't lost
-	if client.connection.Status() == webwireClient.StatConnected {
+	if client.connection.Status() == webwireClient.Connected {
 		t.Fatal("Client is expected to be disconnected")
 	}
 	if client.connection.Session().Key == "" {
