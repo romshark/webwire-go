@@ -10,7 +10,7 @@ import (
 )
 
 // NewClient creates a new client instance.
-// The new client will immediatelly begin connecting if autoconnect is enabled
+// The new client will immediately begin connecting if autoconnect is enabled
 func NewClient(
 	serverAddress string,
 	implementation Implementation,
