@@ -1262,6 +1262,30 @@ func TestMsgNewSigMsgUtf16CorruptPayload(t *testing.T) {
 	Constructors - unexpected parameters (panics)
 \****************************************************************/
 
+// TestMsgNewReqMsgNoNameNoPayload tests calling
+// the request message constructor without both the name and the payload
+func TestMsgNewReqMsgNoNameNoPayload(t *testing.T) {
+	defer func() {
+		err := recover()
+		if err == nil {
+			t.Fatal(
+				"Expected a panic after calling the " +
+					" request message constructor without both the name " +
+					"and the payload",
+			)
+		}
+	}()
+
+	id := genRndMsgIdentifier()
+
+	NewRequestMessage(
+		id,
+		"",
+		pld.Binary,
+		nil,
+	)
+}
+
 // TestMsgNewReqMsgNameTooLong tests NewRequestMessage with a too long name
 func TestMsgNewReqMsgNameTooLong(t *testing.T) {
 	defer func() {
