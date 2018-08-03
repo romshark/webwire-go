@@ -33,14 +33,21 @@ func (clt *client) sendRequest(
 	default:
 	}
 
+	payloadEncoding := webwire.EncodingBinary
+	var payloadData []byte
+	if payload != nil {
+		payloadEncoding = payload.Encoding()
+		payloadData = payload.Data()
+	}
+
 	// Compose a message and register it
 	request := clt.requestManager.Create(timeout)
 	reqIdentifier := request.Identifier()
 	msg := msg.NewRequestMessage(
 		reqIdentifier,
 		name,
-		payload.Encoding(),
-		payload.Data(),
+		payloadEncoding,
+		payloadData,
 	)
 
 	// Send request
