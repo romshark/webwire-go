@@ -202,21 +202,3 @@ func (msg *Message) RequiresReply() bool {
 	}
 	return false
 }
-
-// RequiresResponse returns true if this type of message
-// requires a response to be sent in return
-func (msg *Message) RequiresResponse() bool {
-	switch msg.Type {
-	case MsgRequestBinary:
-		return true
-	case MsgRequestUtf8:
-		return true
-	case MsgRequestUtf16:
-		return true
-	case MsgRestoreSession:
-		return true
-	case MsgCloseSession:
-		return true
-	}
-	return false
-}

@@ -78,7 +78,7 @@ func (srv *server) registerHandler(
 	}
 	srv.opsLock.Unlock()
 
-	if failMsg && message.RequiresResponse() {
+	if failMsg && message.RequiresReply() {
 		// Don't process the message, fail it
 		srv.failMsgShutdown(con, message)
 		return false
