@@ -314,11 +314,17 @@ Various hooks provide the ability to asynchronously react to different kinds of 
 ### Graceful Shutdown
 The server will finish processing all ongoing signals and requests before closing when asked to shut down.
 ```go
-// Will block the calling goroutine until all handlers have finished
+// Will block until all handlers have finished
 server.Shutdown()
 ```
 While the server is shutting down new connections are refused with `503 Service Unavailable` and incoming new requests from connected clients will be rejected with a special error: `RegErrSrvShutdown`. Any incoming signals from connected clients will be ignored during the shutdown.
 
+Server-side client connections also support graceful shutdown, a connection will be closed when all work on it is done,
+while incoming requests and signals are handled similarly to shutting down the server.
+```go
+// Will block until all work on this connection is done
+connection.Close()
+```
 
 ### Seamless JavaScript Support
 The [official JavaScript library](https://github.com/qbeon/webwire-js) enables seamless support for various JavaScript environments providing a fully compliant client implementation supporting the latest feature set of the [webwire-go](https://github.com/qbeon/webwire-go) library.
