@@ -89,7 +89,7 @@ Feel free to report bugs and propose new features or changes in the [Issues sect
 WebWire is built for speed and portability implementing an open source binary protocol.
 ![Protocol Subset Diagram](https://github.com/qbeon/webwire-go/blob/master/docs/img/wwr_msgproto_diagram.svg)
 
-The first byte defines the [type of the message](https://github.com/qbeon/webwire-go/blob/master/message.go#L51). Requests and replies contain an incremental 8-byte identifier that must be unique in the context of the senders' session. A 0 to 255 bytes long 7-bit ASCII encoded name is contained in the header of a signal or request message.
+The first byte defines the [type of the message](https://github.com/qbeon/webwire-go/blob/master/message/message.go#L91). Requests and replies contain an incremental 8-byte identifier that must be unique in the context of the senders' session. A 0 to 255 bytes long 7-bit ASCII encoded name is contained in the header of a signal or request message.
 A header-padding byte is applied in case of UTF16 payload encoding to properly align the payload sequence.
 Fraudulent messages are recognized by analyzing the message length, out-of-range memory access attacks are therefore prevented.
 
