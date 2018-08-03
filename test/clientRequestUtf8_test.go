@@ -9,8 +9,8 @@ import (
 	webwireClient "github.com/qbeon/webwire-go/client"
 )
 
-// TestClientRequest tests requests with UTF8 encoded payloads
-func TestClientRequest(t *testing.T) {
+// TestClientRequestUtf8 tests requests with UTF8 encoded payloads
+func TestClientRequestUtf8(t *testing.T) {
 	expectedRequestPayload := webwire.NewPayload(
 		webwire.EncodingUtf8,
 		[]byte("webwire_test_REQUEST_payload"),
