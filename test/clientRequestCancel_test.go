@@ -51,14 +51,14 @@ func TestClientRequestCancel(t *testing.T) {
 	go func() {
 		reply, err := client.connection.Request(cancelableCtx, "test", nil)
 		if err == nil {
-			t.Fatal("Expected a canceled-error, got nil")
+			t.Error("Expected a canceled-error, got nil")
 		}
 		if reply != nil {
-			t.Fatalf("Expected nil reply, got: %v", reply)
+			t.Errorf("Expected nil reply, got: %v", reply)
 		}
 		_, isCanceledErr := err.(wwr.CanceledErr)
 		if !isCanceledErr || !wwr.IsCanceledErr(err) {
-			t.Fatalf(
+			t.Errorf(
 				"Expected a canceled-error, got: (%s) %s",
 				err,
 				reflect.TypeOf(err),
