@@ -19,7 +19,7 @@ func TestGenericSessionInfoCopy(t *testing.T) {
 	copied := original.Copy()
 
 	check := func() {
-		require.Equal(t, []string{"field1", "field2"}, copied.Fields())
+		require.ElementsMatch(t, []string{"field1", "field2"}, copied.Fields())
 		require.Equal(t, "value1", copied.Value("field1"))
 		require.Equal(t, "value2", copied.Value("field2"))
 	}
