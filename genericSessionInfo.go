@@ -94,7 +94,7 @@ func (sinf *GenericSessionInfo) Fields() []string {
 	names := make([]string, len(sinf.data))
 	index := 0
 	for fieldName := range sinf.data {
-		names[0] = fieldName
+		names[index] = fieldName
 		index++
 	}
 	return names
