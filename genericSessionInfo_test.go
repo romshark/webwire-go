@@ -9,12 +9,12 @@ import (
 // TestGenericSessionInfoCopy tests the Copy method
 // of the generic session info implementation
 func TestGenericSessionInfoCopy(t *testing.T) {
-	original := GenericSessionInfo{
+	original := SessionInfo(&GenericSessionInfo{
 		data: map[string]interface{}{
 			"field1": "value1",
 			"field2": "value2",
 		},
-	}
+	})
 
 	copied := original.Copy()
 
@@ -28,22 +28,22 @@ func TestGenericSessionInfoCopy(t *testing.T) {
 	check()
 
 	// Verify immutability
-	delete(original.data, "field1")
-	original.data["field2"] = "another_value"
-	original.data["field3"] = "another_value"
+	delete(original.(*GenericSessionInfo).data, "field1")
+	original.(*GenericSessionInfo).data["field2"] = "another_value"
+	original.(*GenericSessionInfo).data["field3"] = "another_value"
 	check()
 }
 
 // TestGenericSessionInfoValue tests the Value getter method
 // of the generic session info implementation
 func TestGenericSessionInfoValue(t *testing.T) {
-	info := GenericSessionInfo{
+	info := SessionInfo(&GenericSessionInfo{
 		data: map[string]interface{}{
 			"string":         "stringValue",
 			"float":          12.5,
 			"arrayOfStrings": []string{"item1", "item2"},
 		},
-	}
+	})
 
 	// Check types
 	require.IsType(t, float64(12.5), info.Value("float"))
@@ -56,4 +56,22 @@ func TestGenericSessionInfoValue(t *testing.T) {
 
 	// Check value of inexistent field
 	require.Nil(t, info.Value("inexistent"))
+}
+
+// TestGenericSessionInfoEmpty tests working with an empty
+// generic session info instance
+func TestGenericSessionInfoEmpty(t *testing.T) {
+	info := SessionInfo(&GenericSessionInfo{})
+
+	check := func(info SessionInfo) {
+		require.Equal(t, nil, info.Value("inexistent"))
+		require.Equal(t, make([]string, 0), info.Fields())
+	}
+
+	// Check values
+	check(info)
+
+	copied := info.Copy()
+	require.NotNil(t, copied)
+	check(copied)
 }
