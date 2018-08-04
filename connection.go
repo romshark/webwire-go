@@ -8,6 +8,7 @@ import (
 	"time"
 
 	msg "github.com/qbeon/webwire-go/message"
+	"github.com/uber-go/atomic"
 )
 
 type connectionStatus = int32
@@ -26,9 +27,8 @@ type ClientInfo struct {
 
 // connection represents a connected client connected to the server
 type connection struct {
-	statLock    sync.RWMutex
-	stat        connectionStatus
-	tasks       int32
+	isActive    atomic.Bool
+	tasks       atomic.Int32
 	srv         *server
 	sock        Socket
 	sessionLock sync.RWMutex
@@ -43,17 +43,16 @@ func newConnection(
 	srv *server,
 ) *connection {
 	var remoteAddr net.Addr
-	stat := statInactive
+	isActive := false
 
 	if socket != nil {
-		stat = statActive
+		isActive = true
 		remoteAddr = socket.RemoteAddr()
 	}
 
 	return &connection{
-		statLock:    sync.RWMutex{},
-		stat:        stat,
-		tasks:       0,
+		isActive:    *atomic.NewBool(isActive),
+		tasks:       *atomic.NewInt32(0),
 		srv:         srv,
 		sock:        socket,
 		sessionLock: sync.RWMutex{},
@@ -68,16 +67,12 @@ func newConnection(
 
 // IsActive implements the Connection interface
 func (con *connection) IsActive() bool {
-	con.statLock.RLock()
-	defer con.statLock.RUnlock()
-	return con.stat == statActive
+	return con.isActive.Load()
 }
 
 // registerTask increments the number of currently executed tasks
 func (con *connection) registerTask() {
-	con.statLock.Lock()
-	con.tasks++
-	con.statLock.Unlock()
+	con.tasks.Inc()
 }
 
 // deregisterTask decrements the number of currently executed tasks
@@ -86,12 +81,10 @@ func (con *connection) registerTask() {
 func (con *connection) deregisterTask() {
 	unlink := false
 
-	con.statLock.Lock()
-	con.tasks--
-	if con.stat == statInactive && con.tasks < 1 {
+	con.tasks.Dec()
+	if !con.isActive.Load() && con.tasks.Load() < 1 {
 		unlink = true
 	}
-	con.statLock.Unlock()
 
 	if unlink {
 		con.unlink()
@@ -115,9 +108,7 @@ func (con *connection) unlink() {
 	con.session = nil
 	con.sessionLock.Unlock()
 
-	con.statLock.Lock()
-	con.stat = statInactive
-	con.statLock.Unlock()
+	con.isActive.Store(false)
 
 	// Close connection
 	con.sock.Close()
@@ -293,16 +284,13 @@ func (con *connection) SessionInfo(name string) interface{} {
 func (con *connection) Close() {
 	unlink := false
 
-	con.statLock.Lock()
-	if con.stat != statActive {
-		con.statLock.Unlock()
+	if !con.isActive.Load() {
 		return
 	}
-	con.stat = statInactive
-	if con.tasks < 1 {
+	con.isActive.Store(false)
+	if con.tasks.Load() < 1 {
 		unlink = true
 	}
-	con.statLock.Unlock()
 
 	if unlink {
 		con.unlink()

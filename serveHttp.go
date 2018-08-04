@@ -8,18 +8,12 @@ import (
 
 // ServeHTTP will make the server listen for incoming HTTP requests
 // eventually trying to upgrade them to WebSocket connections
-func (srv *server) ServeHTTP(
-	resp http.ResponseWriter,
-	req *http.Request,
-) {
+func (srv *server) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	// Reject incoming connections during shutdown, pretend the server is temporarily unavailable
-	srv.opsLock.Lock()
-	if srv.shutdown {
-		srv.opsLock.Unlock()
-		http.Error(resp, "Server shutting down", http.StatusServiceUnavailable)
+	if srv.isStopping.Load() {
+		http.Error(resp, "Server is shutting down", http.StatusServiceUnavailable)
 		return
 	}
-	srv.opsLock.Unlock()
 
 	switch req.Method {
 	case "OPTIONS":

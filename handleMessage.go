@@ -11,10 +11,12 @@ func (srv *server) handleMessage(con *connection, message []byte) {
 	// Parse message
 	var parsedMessage msg.Message
 	msgTypeParsed, parserErr := parsedMessage.Parse(message)
-	if !msgTypeParsed {
+
+	switch {
+	case !msgTypeParsed:
 		// Couldn't determine message type, drop message
 		return
-	} else if parserErr != nil {
+	case parserErr != nil:
 		// Couldn't parse message, protocol error
 		srv.warnLog.Println("Parser error:", parserErr)
 
@@ -30,18 +32,10 @@ func (srv *server) handleMessage(con *connection, message []byte) {
 	}
 
 	switch parsedMessage.Type {
-	case msg.MsgSignalBinary:
-		fallthrough
-	case msg.MsgSignalUtf8:
-		fallthrough
-	case msg.MsgSignalUtf16:
+	case msg.MsgSignalBinary, msg.MsgSignalUtf8, msg.MsgSignalUtf16:
 		srv.handleSignal(con, &parsedMessage)
 
-	case msg.MsgRequestBinary:
-		fallthrough
-	case msg.MsgRequestUtf8:
-		fallthrough
-	case msg.MsgRequestUtf16:
+	case msg.MsgRequestBinary, msg.MsgRequestUtf8, msg.MsgRequestUtf16:
 		srv.handleRequest(con, &parsedMessage)
 
 	case msg.MsgRestoreSession:
@@ -69,14 +63,12 @@ func (srv *server) registerHandler(
 		srv.handlerSlots.Acquire(context.Background(), 1)
 	}
 
-	srv.opsLock.Lock()
-	if srv.shutdown || !con.IsActive() {
+	if srv.isStopping.Load() || !con.IsActive() {
 		// defer failure due to shutdown of either the server or the connection
 		failMsg = true
 	} else {
-		srv.currentOps++
+		srv.currentOps.Inc()
 	}
-	srv.opsLock.Unlock()
 
 	if failMsg && message.RequiresReply() {
 		// Don't process the message, fail it
@@ -91,12 +83,10 @@ func (srv *server) registerHandler(
 // deregisterHandler decrements the number of currently executed handlers
 // and shuts down the server if scheduled and no more operations are left
 func (srv *server) deregisterHandler(con *connection) {
-	srv.opsLock.Lock()
-	srv.currentOps--
-	if srv.shutdown && srv.currentOps < 1 {
+	srv.currentOps.Dec()
+	if srv.isStopping.Load() && srv.currentOps.Load() < 1 {
 		close(srv.shutdownRdy)
 	}
-	srv.opsLock.Unlock()
 
 	con.deregisterTask()
 

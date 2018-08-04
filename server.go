@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"sync"
 
+	"github.com/uber-go/atomic"
 	"golang.org/x/sync/semaphore"
 )
 
@@ -26,10 +27,9 @@ type server struct {
 	// State
 	addr            net.Addr
 	options         ServerOptions
-	shutdown        bool
+	isStopping      atomic.Bool
 	shutdownRdy     chan bool
-	currentOps      uint32
-	opsLock         *sync.Mutex
+	currentOps      atomic.Uint32
 	connectionsLock *sync.Mutex
 	handlerSlots    *semaphore.Weighted
 	connections     []*connection
@@ -71,14 +71,11 @@ func (srv *server) Addr() net.Addr {
 
 // Shutdown implements the Server interface
 func (srv *server) Shutdown() error {
-	srv.opsLock.Lock()
-	srv.shutdown = true
+	srv.isStopping.Store(true)
 	// Don't block if there's no currently processed operations
-	if srv.currentOps < 1 {
-		srv.opsLock.Unlock()
+	if srv.currentOps.Load() < 1 {
 		return srv.shutdownHTTPServer()
 	}
-	srv.opsLock.Unlock()
 	<-srv.shutdownRdy
 
 	return srv.shutdownHTTPServer()
