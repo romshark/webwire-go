@@ -77,7 +77,7 @@ If you're using [dep](https://github.com/golang/dep), just use [dep ensure](http
 You can also use [go get](https://golang.org/cmd/go/#hdr-Download_and_install_packages_and_dependencies): ```go get github.com/qbeon/webwire-go``` but beware that this will fetch the latest commit of the [master branch](https://github.com/qbeon/webwire-go/commits/master) which is currently **not yet** considered a stable release branch. It's therefore recommended to use [dep](https://github.com/qbeon/webwire-go#dep) instead.
 
 ## Contribution
-Feel free to report bugs and propose new features or changes in the [Issues section](https://github.com/qbeon/webwire-go/issues).
+Contribution of any kind is always welcome and appreciated, check out our [Contribution Guidelines](https://github.com/qbeon/webwire-go/blob/master/CONTRIBUTING.md) for more information!
 
 ### Maintainers
 | Maintainer | Role | Specialization |
