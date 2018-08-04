@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/http"
 	"sync"
+	"sync/atomic"
 
 	"golang.org/x/sync/semaphore"
 )
@@ -26,10 +27,9 @@ type server struct {
 	// State
 	addr            net.Addr
 	options         ServerOptions
-	shutdown        bool
+	stopping        uint32
+	currentOps      int32
 	shutdownRdy     chan bool
-	currentOps      uint32
-	opsLock         *sync.Mutex
 	connectionsLock *sync.Mutex
 	handlerSlots    *semaphore.Weighted
 	connections     []*connection
@@ -71,14 +71,11 @@ func (srv *server) Addr() net.Addr {
 
 // Shutdown implements the Server interface
 func (srv *server) Shutdown() error {
-	srv.opsLock.Lock()
-	srv.shutdown = true
+	srv.setStopping()
 	// Don't block if there's no currently processed operations
-	if srv.currentOps < 1 {
-		srv.opsLock.Unlock()
+	if srv.getOps() < 1 {
 		return srv.shutdownHTTPServer()
 	}
-	srv.opsLock.Unlock()
 	<-srv.shutdownRdy
 
 	return srv.shutdownHTTPServer()
@@ -117,4 +114,24 @@ func (srv *server) CloseSession(sessionKey string) int {
 		connection.Close()
 	}
 	return len(connections)
+}
+
+func (srv *server) setStopping() {
+	atomic.StoreUint32(&srv.stopping, 1)
+}
+
+func (srv *server) isStopping() bool {
+	return atomic.LoadUint32(&srv.stopping) == 1
+}
+
+func (srv *server) incOps() {
+	atomic.AddInt32(&srv.currentOps, 1)
+}
+
+func (srv *server) decOps() {
+	atomic.AddInt32(&srv.currentOps, -1)
+}
+
+func (srv *server) getOps() int {
+	return int(atomic.LoadInt32(&srv.currentOps))
 }

@@ -13,13 +13,10 @@ func (srv *server) ServeHTTP(
 	req *http.Request,
 ) {
 	// Reject incoming connections during shutdown, pretend the server is temporarily unavailable
-	srv.opsLock.Lock()
-	if srv.shutdown {
-		srv.opsLock.Unlock()
+	if srv.isStopping() {
 		http.Error(resp, "Server shutting down", http.StatusServiceUnavailable)
 		return
 	}
-	srv.opsLock.Unlock()
 
 	switch req.Method {
 	case "OPTIONS":
