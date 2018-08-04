@@ -27,10 +27,10 @@ Before you create a new issue, please ensure there are no similar
 or [closed](https://github.com/qbeon/webwire-go/issues?q=is%3Aissue+is%3Aclosed+) issues.
 If you find your issue already exists, feel free to make relevant comments and add your reactions.
 Please use a reaction in place of a "+1" comment:
-	- 👍 for up vote
-	- 👎 for down vote
-	- 😕 for confusion
-	- 🎉 for celebration
+- 👍 for up vote
+- 👎 for down vote
+- 😕 for confusion
+- 🎉 for celebration
 
 Once submitted, your report will be marked with relevant tags by core repository maintainers as soon as possible.
 When a maintainer begins working on your issue - the issue will be assigned to him/her.
