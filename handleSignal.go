@@ -9,14 +9,11 @@ import (
 // handleSignal handles incoming signals
 // and returns an error if the ongoing connection cannot be proceeded
 func (srv *server) handleSignal(con *connection, message *msg.Message) {
-	srv.opsLock.Lock()
 	// Ignore incoming signals during shutdown
-	if srv.shutdown {
-		srv.opsLock.Unlock()
+	if srv.isStopping.Load() {
 		return
 	}
-	srv.currentOps++
-	srv.opsLock.Unlock()
+	srv.currentOps.Inc()
 
 	srv.impl.OnSignal(
 		context.Background(),
@@ -27,10 +24,8 @@ func (srv *server) handleSignal(con *connection, message *msg.Message) {
 	)
 
 	// Mark signal as done and shutdown the server if scheduled and no ops are left
-	srv.opsLock.Lock()
-	srv.currentOps--
-	if srv.shutdown && srv.currentOps < 1 {
+	srv.currentOps.Dec()
+	if srv.isStopping.Load() && srv.currentOps.Load() < 1 {
 		close(srv.shutdownRdy)
 	}
-	srv.opsLock.Unlock()
 }

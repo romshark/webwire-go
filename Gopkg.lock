@@ -35,6 +35,12 @@
   version = "v1.2.2"
 
 [[projects]]
+  name = "github.com/uber-go/atomic"
+  packages = ["."]
+  revision = "1ea20fb1cbb1cc08cbd0d913a96dead89aa18289"
+  version = "v1.3.2"
+
+[[projects]]
   branch = "master"
   name = "golang.org/x/net"
   packages = ["context"]
@@ -49,6 +55,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "982955c98ae25d92b9b6cfb46652fd2f76a96308c2bb9fa9101a5b175345e490"
+  inputs-digest = "b8f9943e92de045a522c649c8e73b7d288df38fa6891f3f2394b1f227d606151"
   solver-name = "gps-cdcl"
   solver-version = 1

@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"sync"
 
+	"github.com/uber-go/atomic"
 	"golang.org/x/sync/semaphore"
 )
 
@@ -73,10 +74,9 @@ func NewHeadlessServer(
 		// State
 		addr:        nil,
 		options:     opts,
-		shutdown:    false,
+		isStopping:  *atomic.NewBool(false),
 		shutdownRdy: make(chan bool),
-		currentOps:  0,
-		opsLock:     &sync.Mutex{},
+		currentOps:  *atomic.NewUint32(0),
 		handlerSlots: semaphore.NewWeighted(
 			int64(opts.MaxConcurrentHandlers),
 		),
