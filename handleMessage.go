@@ -69,14 +69,12 @@ func (srv *server) registerHandler(
 		srv.handlerSlots.Acquire(context.Background(), 1)
 	}
 
-	srv.opsLock.Lock()
-	if srv.shutdown || !con.IsActive() {
+	if srv.isStopping() || !con.IsActive() {
 		// defer failure due to shutdown of either the server or the connection
 		failMsg = true
 	} else {
-		srv.currentOps++
+		srv.incOps()
 	}
-	srv.opsLock.Unlock()
 
 	if failMsg && message.RequiresReply() {
 		// Don't process the message, fail it
@@ -91,12 +89,10 @@ func (srv *server) registerHandler(
 // deregisterHandler decrements the number of currently executed handlers
 // and shuts down the server if scheduled and no more operations are left
 func (srv *server) deregisterHandler(con *connection) {
-	srv.opsLock.Lock()
-	srv.currentOps--
-	if srv.shutdown && srv.currentOps < 1 {
+	srv.decOps()
+	if srv.isStopping() && srv.getOps() < 1 {
 		close(srv.shutdownRdy)
 	}
-	srv.opsLock.Unlock()
 
 	con.deregisterTask()
 

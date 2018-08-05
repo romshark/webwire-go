@@ -73,10 +73,9 @@ func NewHeadlessServer(
 		// State
 		addr:        nil,
 		options:     opts,
-		shutdown:    false,
-		shutdownRdy: make(chan bool),
+		stopping:    0,
 		currentOps:  0,
-		opsLock:     &sync.Mutex{},
+		shutdownRdy: make(chan bool),
 		handlerSlots: semaphore.NewWeighted(
 			int64(opts.MaxConcurrentHandlers),
 		),
