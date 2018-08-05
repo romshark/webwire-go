@@ -96,7 +96,7 @@ func (srv *server) ServeHTTP(
 				srv.warnLog.Printf("Abnormal closure error: %s", err)
 			}
 
-			connection.unlink()
+			connection.Close()
 			srv.impl.OnClientDisconnected(connection)
 			break
 		}

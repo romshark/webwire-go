@@ -10,13 +10,6 @@ import (
 	msg "github.com/qbeon/webwire-go/message"
 )
 
-type connectionStatus = int32
-
-const (
-	statActive connectionStatus = iota
-	statInactive
-)
-
 // ClientInfo represents basic information about a client connection
 type ClientInfo struct {
 	ConnectionTime time.Time
@@ -26,14 +19,27 @@ type ClientInfo struct {
 
 // connection represents a connected client connected to the server
 type connection struct {
-	statLock    sync.RWMutex
-	stat        connectionStatus
-	tasks       int32
-	srv         *server
-	sock        Socket
+	// stateLock protects both isActive and tasks from concurrent access
+	stateLock sync.RWMutex
+	isActive  bool
+
+	// tasks represents the number of currently performed tasks
+	tasks int32
+
+	// srv references the connection origin server instance
+	srv *server
+
+	// sock references the connection's socket
+	sock Socket
+
+	// sessionLock protects the session field from concurrent access
 	sessionLock sync.RWMutex
-	session     *Session
-	info        ClientInfo
+
+	// session references the currently assigned session, can be null
+	session *Session
+
+	// info represents overall connection information
+	info ClientInfo
 }
 
 // newConnection creates and returns a new client connection instance
@@ -42,17 +48,18 @@ func newConnection(
 	userAgent string,
 	srv *server,
 ) *connection {
+	// the connection is considered closed when no socket is referenced
 	var remoteAddr net.Addr
-	stat := statInactive
+	isActive := false
 
 	if socket != nil {
-		stat = statActive
+		isActive = true
 		remoteAddr = socket.RemoteAddr()
 	}
 
 	return &connection{
-		statLock:    sync.RWMutex{},
-		stat:        stat,
+		stateLock:   sync.RWMutex{},
+		isActive:    isActive,
 		tasks:       0,
 		srv:         srv,
 		sock:        socket,
@@ -68,16 +75,18 @@ func newConnection(
 
 // IsActive implements the Connection interface
 func (con *connection) IsActive() bool {
-	con.statLock.RLock()
-	defer con.statLock.RUnlock()
-	return con.stat == statActive
+	con.stateLock.RLock()
+	isActive := con.isActive
+	con.stateLock.RUnlock()
+	return isActive
+
 }
 
 // registerTask increments the number of currently executed tasks
 func (con *connection) registerTask() {
-	con.statLock.Lock()
+	con.stateLock.Lock()
 	con.tasks++
-	con.statLock.Unlock()
+	con.stateLock.Unlock()
 }
 
 // deregisterTask decrements the number of currently executed tasks
@@ -86,12 +95,12 @@ func (con *connection) registerTask() {
 func (con *connection) deregisterTask() {
 	unlink := false
 
-	con.statLock.Lock()
+	con.stateLock.Lock()
 	con.tasks--
-	if con.stat == statInactive && con.tasks < 1 {
+	if !con.isActive && con.tasks < 1 {
 		unlink = true
 	}
-	con.statLock.Unlock()
+	con.stateLock.Unlock()
 
 	if unlink {
 		con.unlink()
@@ -114,10 +123,6 @@ func (con *connection) unlink() {
 	con.sessionLock.Lock()
 	con.session = nil
 	con.sessionLock.Unlock()
-
-	con.statLock.Lock()
-	con.stat = statInactive
-	con.statLock.Unlock()
 
 	// Close connection
 	con.sock.Close()
@@ -248,61 +253,69 @@ func (con *connection) CloseSession() error {
 // HasSession implements the Connection interface
 func (con *connection) HasSession() bool {
 	con.sessionLock.RLock()
-	defer con.sessionLock.RUnlock()
-	return con.session != nil
+	hasSession := con.session != nil
+	con.sessionLock.RUnlock()
+	return hasSession
 }
 
 // Session implements the Connection interface
 func (con *connection) Session() *Session {
 	con.sessionLock.RLock()
-	defer con.sessionLock.RUnlock()
-	return con.session.Clone()
+	clone := con.session.Clone()
+	con.sessionLock.RUnlock()
+	return clone
 }
 
 // SessionKey implements the Connection interface
 func (con *connection) SessionKey() string {
 	con.sessionLock.RLock()
-	defer con.sessionLock.RUnlock()
 	if con.session == nil {
+		con.sessionLock.RUnlock()
 		return ""
 	}
-	return con.session.Key
+	key := con.session.Key
+	con.sessionLock.RUnlock()
+	return key
 }
 
 // SessionCreation implements the Connection interface
 func (con *connection) SessionCreation() time.Time {
 	con.sessionLock.RLock()
-	defer con.sessionLock.RUnlock()
 	if con.session == nil {
+		con.sessionLock.RUnlock()
 		return time.Time{}
 	}
-	return con.session.Creation
+	creation := con.session.Creation
+	con.sessionLock.RUnlock()
+	return creation
 }
 
 // SessionInfo implements the Connection interface
 func (con *connection) SessionInfo(name string) interface{} {
 	con.sessionLock.RLock()
-	defer con.sessionLock.RUnlock()
 	if con.session == nil || con.session.Info == nil {
+		con.sessionLock.RUnlock()
 		return nil
 	}
-	return con.session.Info.Value(name)
+	val := con.session.Info.Value(name)
+	con.sessionLock.RUnlock()
+	return val
 }
 
 // Close implements the Connection interface
 func (con *connection) Close() {
 	unlink := false
 
-	con.statLock.Lock()
-	if con.stat != statActive {
-		con.statLock.Unlock()
+	con.stateLock.Lock()
+	if !con.isActive {
+		con.stateLock.Unlock()
 		return
 	}
-	con.stat = statInactive
+	con.isActive = false
 	if con.tasks < 1 {
 		unlink = true
 	}
-	con.statLock.Unlock()
+	con.stateLock.Unlock()
 
 	if unlink {
 		con.unlink()
