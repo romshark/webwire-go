@@ -191,11 +191,13 @@ func (clt *client) Session() *webwire.Session {
 // in the form of an empty interface to be casted to either concrete type
 func (clt *client) SessionInfo(fieldName string) interface{} {
 	clt.sessionLock.RLock()
-	defer clt.sessionLock.RUnlock()
 	if clt.session == nil || clt.session.Info == nil {
+		clt.sessionLock.RUnlock()
 		return nil
 	}
-	return clt.session.Info.Value(fieldName)
+	val := clt.session.Info.Value(fieldName)
+	clt.sessionLock.RUnlock()
+	return val
 }
 
 // PendingRequests returns the number of currently pending requests

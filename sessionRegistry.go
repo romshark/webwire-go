@@ -90,19 +90,22 @@ func (asr *sessionRegistry) activeSessionsNum() int {
 // sessionConnectionsNum implements the sessionRegistry interface
 func (asr *sessionRegistry) sessionConnectionsNum(sessionKey string) int {
 	asr.lock.RLock()
-	defer asr.lock.RUnlock()
 	if connList, exists := asr.registry[sessionKey]; exists {
-		return len(connList)
+		len := len(connList)
+		asr.lock.RUnlock()
+		return len
 	}
+	asr.lock.RUnlock()
 	return -1
 }
 
 // sessionConnections implements the sessionRegistry interface
 func (asr *sessionRegistry) sessionConnections(sessionKey string) []*connection {
 	asr.lock.RLock()
-	defer asr.lock.RUnlock()
 	if connList, exists := asr.registry[sessionKey]; exists {
+		asr.lock.RUnlock()
 		return connList
 	}
+	asr.lock.RUnlock()
 	return nil
 }
