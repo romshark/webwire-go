@@ -8,11 +8,12 @@ import (
 
 func (clt *client) backgroundReconnect() {
 	clt.connectingLock.Lock()
-	defer clt.connectingLock.Unlock()
 	if clt.connecting {
+		clt.connectingLock.Unlock()
 		return
 	}
 	clt.connecting = true
+	clt.connectingLock.Unlock()
 	go func() {
 		for {
 			err := clt.connect()
