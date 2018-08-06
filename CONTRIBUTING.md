@@ -45,10 +45,9 @@ in the process of its resolution.
 	 Many issues look similar, but have different causes.
 - Provide as much information as you can to increase the likeliness
 	of someone successfully reproducing the issue and elaborating a fix.
-- Include the following with each issue:
-	- **Expected Behavior**: describe how you expect the library to behave eventually.
-	- **Actual Behavior**: describe how the library actually behaves.
-	- **Proposed Solution (optional)**: optionally describe how you would resolve this issue.
+- Use one of the [available forms](https://github.com/qbeon/webwire-go/issues/new/choose) that suit your issue best
+	- Remove optional form fields when not filled out
+	- Use the [generic form](https://github.com/qbeon/webwire-go/issues/new?template=generic-issue.md) only in case no other form suits your issue
 - Provide either a code snippet that demonstrates the issue or a link to a code repository
 	the developers can easily pull down to recreate the issue locally.
 - Use [markdown formatting](https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet)
