@@ -5,9 +5,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+
 	tmdwg "github.com/qbeon/tmdwg-go"
-	webwire "github.com/qbeon/webwire-go"
-	webwireClient "github.com/qbeon/webwire-go/client"
+	wwr "github.com/qbeon/webwire-go"
+	wwrclt "github.com/qbeon/webwire-go/client"
+	"github.com/stretchr/testify/require"
 )
 
 // TestServerInitiatedSessionDestruction verifies
@@ -15,13 +18,13 @@ import (
 func TestServerInitiatedSessionDestruction(t *testing.T) {
 	sessionCreationCallbackCalled := tmdwg.NewTimedWaitGroup(1, 1*time.Second)
 	sessionDestructionCallbackCalled := tmdwg.NewTimedWaitGroup(1, 1*time.Second)
-	var createdSession *webwire.Session
-	expectedCredentials := webwire.NewPayload(
-		webwire.EncodingUtf8,
+	var createdSession *wwr.Session
+	expectedCredentials := wwr.NewPayload(
+		wwr.EncodingUtf8,
 		[]byte("secret_credentials"),
 	)
-	placeholderMessage := webwire.NewPayload(
-		webwire.EncodingBinary,
+	placeholderMessage := wwr.NewPayload(
+		wwr.EncodingBinary,
 		[]byte("nothinginteresting"),
 	)
 	currentStep := 1
@@ -32,22 +35,14 @@ func TestServerInitiatedSessionDestruction(t *testing.T) {
 		&serverImpl{
 			onRequest: func(
 				_ context.Context,
-				conn webwire.Connection,
-				msg webwire.Message,
-			) (webwire.Payload, error) {
+				conn wwr.Connection,
+				msg wwr.Message,
+			) (wwr.Payload, error) {
 				// On step 2 - verify session creation and correctness
 				if currentStep == 2 {
-					sess := conn.Session()
-					compareSessions(t, createdSession, sess)
-					msgPayloadData := msg.Payload().Data()
-					if string(msgPayloadData) != sess.Key {
-						t.Errorf(
-							"Clients session key doesn't match: "+
-								"client: '%s' | server: '%s'",
-							string(msgPayloadData),
-							sess.Key,
-						)
-					}
+					session := conn.Session()
+					compareSessions(t, createdSession, session)
+					assert.Equal(t, session.Key, string(msg.Payload().Data()))
 					return nil, nil
 				}
 
@@ -58,74 +53,61 @@ func TestServerInitiatedSessionDestruction(t *testing.T) {
 					\******************************************************/
 					// Attempt to destroy this clients session
 					// on the end of the first step
-					err := conn.CloseSession()
-					if err != nil {
-						t.Errorf(
-							"Couldn't close the active session "+
-								"on the server: %s",
-							err,
-						)
-					}
+					assert.NoError(t, conn.CloseSession())
 
 					// Verify destruction
-					sess := conn.Session()
-					if sess != nil {
-						t.Errorf(
-							"Expected the session to be destroyed, got: %v",
-							sess,
-						)
-					}
+					assert.Nil(t,
+						conn.Session(),
+						"Expected the session to be destroyed",
+					)
 
 					return nil, nil
 				}
 
 				// On step 4 - verify session destruction
 				if currentStep == 4 {
-					sess := conn.Session()
-					if sess != nil {
-						t.Errorf(
-							"Expected the session to be destroyed, got: %v",
-							sess,
-						)
-					}
+					assert.Nil(t,
+						conn.Session(),
+						"Expected the session to be destroyed, got: %v",
+					)
 					return nil, nil
 				}
 
 				// On step 1 - authenticate and create a new session
-				if err := conn.CreateSession(nil); err != nil {
+				err := conn.CreateSession(nil)
+				assert.NoError(t, err)
+				if err != nil {
 					return nil, err
 				}
 
 				// Return the key of the newly created session
-				return webwire.NewPayload(
-					webwire.EncodingBinary,
+				return wwr.NewPayload(
+					wwr.EncodingBinary,
 					[]byte(conn.SessionKey()),
 				), nil
 			},
 		},
-		webwire.ServerOptions{},
+		wwr.ServerOptions{},
 	)
 
 	// Initialize client
 	client := newCallbackPoweredClient(
 		server.Addr().String(),
-		webwireClient.Options{
+		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
 		callbackPoweredClientHooks{
-			OnSessionCreated: func(_ *webwire.Session) {
+			OnSessionCreated: func(_ *wwr.Session) {
 				// Mark the client-side session creation callback executed
 				sessionCreationCallbackCalled.Progress(1)
 			},
 			OnSessionClosed: func() {
 				// Ensure this callback is called during the
-				if currentStep != 3 {
-					t.Errorf(
-						"Client-side session destruction callback "+
-							"called at wrong step (%d)",
-						currentStep,
-					)
-				}
+				assert.Equal(t,
+					3, currentStep,
+					"Client-side session destruction callback "+
+						"called at wrong step",
+				)
 				sessionDestructionCallbackCalled.Progress(1)
 			},
 		},
@@ -134,9 +116,7 @@ func TestServerInitiatedSessionDestruction(t *testing.T) {
 	/*****************************************************************\
 		Step 1 - Session Creation
 	\*****************************************************************/
-	if err := client.connection.Connect(); err != nil {
-		t.Fatalf("Couldn't connect: %s", err)
-	}
+	require.NoError(t, client.connection.Connect())
 
 	// Send authentication request
 	authReqReply, err := client.connection.Request(
@@ -144,36 +124,31 @@ func TestServerInitiatedSessionDestruction(t *testing.T) {
 		"login",
 		expectedCredentials,
 	)
-	if err != nil {
-		t.Fatalf("Authentication request failed: %s", err)
-	}
+	require.NoError(t, err)
 
 	createdSession = client.connection.Session()
 
 	// Verify reply
-	comparePayload(
-		t,
-		"authentication reply",
-		webwire.NewPayload(
-			webwire.EncodingBinary,
+	require.Equal(t,
+		wwr.NewPayload(
+			wwr.EncodingBinary,
 			[]byte(createdSession.Key),
 		),
 		authReqReply,
 	)
 
 	// Wait for the client-side session creation callback to be executed
-	if err := sessionCreationCallbackCalled.Wait(); err != nil {
-		t.Fatal("Session creation callback not called")
-	}
+	require.NoError(t,
+		sessionCreationCallbackCalled.Wait(),
+		"Session creation callback not called",
+	)
 
 	// Ensure the session was locally created
-	currentSessionAfterCreation := client.connection.Session()
-	if currentSessionAfterCreation.Key == "" {
-		t.Fatalf(
-			"Expected session on client-side, got none: %v",
-			currentSessionAfterCreation,
-		)
-	}
+	require.NotEqual(t,
+		"",
+		client.connection.Session(),
+		"Expected session on client-side",
+	)
 
 	/*****************************************************************\
 		Step 2 - Session Creation Verification
@@ -181,16 +156,15 @@ func TestServerInitiatedSessionDestruction(t *testing.T) {
 	currentStep = 2
 
 	// Send a test-request to verify the session creation on the server
-	if _, err := client.connection.Request(
+	_, err = client.connection.Request(
 		context.Background(),
 		"",
-		webwire.NewPayload(
-			webwire.EncodingBinary,
+		wwr.NewPayload(
+			wwr.EncodingBinary,
 			[]byte(client.connection.Session().Key),
 		),
-	); err != nil {
-		t.Fatalf("Session creation verification request failed: %s", err)
-	}
+	)
+	require.NoError(t, err)
 
 	/*****************************************************************\
 		Step 3 - Server-Side Session Destruction
@@ -198,18 +172,18 @@ func TestServerInitiatedSessionDestruction(t *testing.T) {
 	currentStep = 3
 
 	// Request session destruction
-	if _, err := client.connection.Request(
+	_, err = client.connection.Request(
 		context.Background(),
 		"",
 		placeholderMessage,
-	); err != nil {
-		t.Fatalf("Session destruction request failed: %s", err)
-	}
+	)
+	require.NoError(t, err)
 
 	// Wait for the client-side session destruction callback to be called
-	if err := sessionDestructionCallbackCalled.Wait(); err != nil {
-		t.Fatal("Session destruction callback not called")
-	}
+	require.NoError(t,
+		sessionDestructionCallbackCalled.Wait(),
+		"Session destruction callback not called",
+	)
 
 	/*****************************************************************\
 		Step 4 - Destruction Verification
@@ -217,20 +191,16 @@ func TestServerInitiatedSessionDestruction(t *testing.T) {
 	currentStep = 4
 
 	// Ensure the session is destroyed locally as well
-	currentSessionAfterDestruction := client.connection.Session()
-	if currentSessionAfterDestruction != nil {
-		t.Fatalf(
-			"Expected session to be destroyed on the client as well, got: %v",
-			currentSessionAfterDestruction,
-		)
-	}
+	require.Nil(t,
+		client.connection.Session(),
+		"Expected session to be destroyed on the client as well",
+	)
 
 	// Send a test-request to verify the session was destroyed on the server
-	if _, err := client.connection.Request(
+	_, err = client.connection.Request(
 		context.Background(),
 		"",
 		placeholderMessage,
-	); err != nil {
-		t.Fatalf("Session destruction verification request failed: %s", err)
-	}
+	)
+	require.NoError(t, err)
 }

@@ -2,18 +2,20 @@ package test
 
 import (
 	"context"
-	"reflect"
 	"testing"
 	"time"
 
-	webwire "github.com/qbeon/webwire-go"
-	webwireClient "github.com/qbeon/webwire-go/client"
+	"github.com/stretchr/testify/require"
+
+	wwr "github.com/qbeon/webwire-go"
+	wwrclt "github.com/qbeon/webwire-go/client"
+	"github.com/stretchr/testify/assert"
 )
 
 // TestClientRequestRegisterOnTimeout verifies the request register
 // of the client is correctly updated when the request times out
 func TestClientRequestRegisterOnTimeout(t *testing.T) {
-	var connection webwireClient.Client
+	var connection wwrclt.Client
 
 	// Initialize webwire server given only the request
 	server := setupServer(
@@ -21,28 +23,24 @@ func TestClientRequestRegisterOnTimeout(t *testing.T) {
 		&serverImpl{
 			onRequest: func(
 				_ context.Context,
-				_ webwire.Connection,
-				_ webwire.Message,
-			) (webwire.Payload, error) {
+				_ wwr.Connection,
+				_ wwr.Message,
+			) (wwr.Payload, error) {
 				// Verify pending requests
-				pendingReqs := connection.PendingRequests()
-				if pendingReqs != 1 {
-					t.Errorf("Unexpected pending requests: %d", pendingReqs)
-					return nil, nil
-				}
+				assert.Equal(t, 1, connection.PendingRequests())
 
 				// Wait until the request times out
 				time.Sleep(300 * time.Millisecond)
 				return nil, nil
 			},
 		},
-		webwire.ServerOptions{},
+		wwr.ServerOptions{},
 	)
 
 	// Initialize client
 	client := newCallbackPoweredClient(
 		server.Addr().String(),
-		webwireClient.Options{
+		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
 		callbackPoweredClientHooks{},
@@ -50,15 +48,10 @@ func TestClientRequestRegisterOnTimeout(t *testing.T) {
 	connection = client.connection
 
 	// Connect the client to the server
-	if err := client.connection.Connect(); err != nil {
-		t.Fatalf("Couldn't connect to the server: %s", err)
-	}
+	require.NoError(t, client.connection.Connect())
 
 	// Verify pending requests
-	pendingReqsBeforeReq := client.connection.PendingRequests()
-	if pendingReqsBeforeReq != 0 {
-		t.Fatalf("Unexpected pending requests: %d", pendingReqsBeforeReq)
-	}
+	require.Equal(t, 0, client.connection.PendingRequests())
 
 	// Send request and await reply
 	contextWithDeadline, cancel := context.WithTimeout(
@@ -69,20 +62,13 @@ func TestClientRequestRegisterOnTimeout(t *testing.T) {
 	_, reqErr := client.connection.Request(
 		contextWithDeadline,
 		"",
-		webwire.NewPayload(webwire.EncodingBinary, []byte("t")),
+		wwr.NewPayload(wwr.EncodingBinary, []byte("t")),
 	)
-	_, isDeadlineExceededErr := reqErr.(webwire.DeadlineExceededErr)
-	if !isDeadlineExceededErr || !webwire.IsTimeoutErr(reqErr) {
-		t.Fatalf(
-			"Expected DeadlineExceededErr error, got: %s | %s",
-			reflect.TypeOf(reqErr),
-			reqErr,
-		)
-	}
+	require.Error(t, reqErr)
+	require.IsType(t, wwr.DeadlineExceededErr{}, reqErr)
+	require.True(t, wwr.IsTimeoutErr(reqErr))
+	require.False(t, wwr.IsCanceledErr(reqErr))
 
 	// Verify pending requests
-	pendingReqsAfterReq := client.connection.PendingRequests()
-	if pendingReqsAfterReq != 0 {
-		t.Fatalf("Unexpected pending requests: %d", pendingReqsAfterReq)
-	}
+	require.Equal(t, 0, client.connection.PendingRequests())
 }

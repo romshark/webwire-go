@@ -4,41 +4,45 @@ import (
 	"testing"
 	"time"
 
-	webwire "github.com/qbeon/webwire-go"
-	webwireClient "github.com/qbeon/webwire-go/client"
+	"github.com/stretchr/testify/require"
+
+	wwr "github.com/qbeon/webwire-go"
+	wwrclt "github.com/qbeon/webwire-go/client"
 )
 
 // TestClientIsConnected tests the client.Status method
 func TestClientIsConnected(t *testing.T) {
 	// Initialize webwire server given only the request
-	server := setupServer(t, &serverImpl{}, webwire.ServerOptions{})
+	server := setupServer(t, &serverImpl{}, wwr.ServerOptions{})
 
 	// Initialize client
 	client := newCallbackPoweredClient(
 		server.Addr().String(),
-		webwireClient.Options{
+		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
 		callbackPoweredClientHooks{},
 	)
 
-	if client.connection.Status() == webwireClient.Connected {
-		t.Fatal("Expected client to be disconnected before the connection establishment")
-	}
+	require.NotEqual(t,
+		wwrclt.Connected, client.connection.Status(),
+		"Expected client to be disconnected "+
+			"before the connection establishment",
+	)
 
 	// Connect to the server
-	if err := client.connection.Connect(); err != nil {
-		t.Fatalf("Couldn't connect the client to the server: %s", err)
-	}
+	require.NoError(t, client.connection.Connect())
 
-	if client.connection.Status() != webwireClient.Connected {
-		t.Fatal("Expected client to be connected after the connection establishment")
-	}
+	require.Equal(t,
+		wwrclt.Connected, client.connection.Status(),
+		"Expected client to be connected after the connection establishment",
+	)
 
 	// Disconnect the client
 	client.connection.Close()
 
-	if client.connection.Status() == webwireClient.Connected {
-		t.Fatal("Expected client to be disconnected after closure")
-	}
+	require.NotEqual(t,
+		wwrclt.Connected, client.connection.Status(),
+		"Expected client to be disconnected after closure",
+	)
 }

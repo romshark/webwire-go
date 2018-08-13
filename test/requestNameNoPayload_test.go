@@ -5,8 +5,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+
 	webwire "github.com/qbeon/webwire-go"
 	webwireClient "github.com/qbeon/webwire-go/client"
+	"github.com/stretchr/testify/assert"
 )
 
 // TestRequestNameNoPayload tests named requests without a payload
@@ -22,18 +25,10 @@ func TestRequestNameNoPayload(t *testing.T) {
 			) (webwire.Payload, error) {
 				// Expect a named request
 				msgName := msg.Name()
-				if msgName != "n" {
-					t.Errorf("Unexpected request name: %s", msgName)
-				}
+				assert.Equal(t, "n", msgName)
 
 				// Expect no payload to arrive
-				msgPayloadData := msg.Payload().Data()
-				if len(msgPayloadData) > 0 {
-					t.Errorf(
-						"Unexpected received payload: %d",
-						len(msgPayloadData),
-					)
-				}
+				assert.Len(t, msg.Payload().Data(), 0)
 
 				return nil, nil
 			},
@@ -51,20 +46,18 @@ func TestRequestNameNoPayload(t *testing.T) {
 	)
 
 	// Send a named binary request without a payload and await reply
-	if _, err := client.connection.Request(
+	_, err := client.connection.Request(
 		context.Background(),
 		"n",
 		webwire.NewPayload(webwire.EncodingBinary, nil),
-	); err != nil {
-		t.Fatalf("Request failed: %s", err)
-	}
+	)
+	require.NoError(t, err)
 
 	// Send a UTF16 encoded named binary request without a payload
-	if _, err := client.connection.Request(
+	_, err = client.connection.Request(
 		context.Background(),
 		"n",
 		webwire.NewPayload(webwire.EncodingUtf16, nil),
-	); err != nil {
-		t.Fatalf("Request failed: %s", err)
-	}
+	)
+	require.NoError(t, err)
 }

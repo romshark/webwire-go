@@ -5,18 +5,21 @@ import (
 	"testing"
 	"time"
 
-	webwire "github.com/qbeon/webwire-go"
-	webwireClient "github.com/qbeon/webwire-go/client"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	wwr "github.com/qbeon/webwire-go"
+	wwrclt "github.com/qbeon/webwire-go/client"
 )
 
 // TestRequestNoNameOnlyPayload tests requests without a name but only a payload
 func TestRequestNoNameOnlyPayload(t *testing.T) {
-	expectedRequestPayload := webwire.NewPayload(
-		webwire.EncodingUtf8,
+	expectedRequestPayload := wwr.NewPayload(
+		wwr.EncodingUtf8,
 		[]byte("3"),
 	)
-	expectedRequestPayloadUtf16 := webwire.NewPayload(
-		webwire.EncodingUtf16,
+	expectedRequestPayloadUtf16 := wwr.NewPayload(
+		wwr.EncodingUtf16,
 		[]byte("12"),
 	)
 
@@ -26,44 +29,30 @@ func TestRequestNoNameOnlyPayload(t *testing.T) {
 		&serverImpl{
 			onRequest: func(
 				_ context.Context,
-				_ webwire.Connection,
-				msg webwire.Message,
-			) (webwire.Payload, error) {
+				_ wwr.Connection,
+				msg wwr.Message,
+			) (wwr.Payload, error) {
 				// Expect a named request
 				msgName := msg.Name()
-				if len(msgName) > 0 {
-					t.Errorf("Unexpected request name: %s", msgName)
-				}
+				assert.Equal(t, "", msgName)
 
 				msgPayload := msg.Payload()
-				if msgPayload.Encoding() == webwire.EncodingUtf16 {
-					// Verify request payload
-					comparePayload(
-						t,
-						"client request (UTF16)",
-						expectedRequestPayloadUtf16,
-						msgPayload,
-					)
+				if msgPayload.Encoding() == wwr.EncodingUtf16 {
+					comparePayload(t, expectedRequestPayloadUtf16, msgPayload)
 				} else {
-					// Verify request payload
-					comparePayload(
-						t,
-						"client request",
-						expectedRequestPayload,
-						msgPayload,
-					)
+					comparePayload(t, expectedRequestPayload, msgPayload)
 				}
 
 				return nil, nil
 			},
 		},
-		webwire.ServerOptions{},
+		wwr.ServerOptions{},
 	)
 
 	// Initialize client
 	client := newCallbackPoweredClient(
 		server.Addr().String(),
-		webwireClient.Options{
+		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
 		callbackPoweredClientHooks{},
@@ -75,9 +64,7 @@ func TestRequestNoNameOnlyPayload(t *testing.T) {
 		"",
 		expectedRequestPayload,
 	)
-	if err != nil {
-		t.Fatalf("Request failed: %s", err)
-	}
+	require.NoError(t, err)
 
 	// Send an unnamed UTF16 encoded binary request with a payload
 	_, err = client.connection.Request(
@@ -85,7 +72,5 @@ func TestRequestNoNameOnlyPayload(t *testing.T) {
 		"",
 		expectedRequestPayloadUtf16,
 	)
-	if err != nil {
-		t.Fatalf("Request failed: %s", err)
-	}
+	require.NoError(t, err)
 }

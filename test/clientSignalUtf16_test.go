@@ -5,40 +5,23 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+
 	tmdwg "github.com/qbeon/tmdwg-go"
-	webwire "github.com/qbeon/webwire-go"
-	webwireClient "github.com/qbeon/webwire-go/client"
+	wwr "github.com/qbeon/webwire-go"
+	wwrclt "github.com/qbeon/webwire-go/client"
+	"github.com/stretchr/testify/require"
 )
 
 // TestClientSignalUtf16 tests client-side signals with UTF16 encoded payloads
 func TestClientSignalUtf16(t *testing.T) {
-	testPayload := webwire.NewPayload(
-		webwire.EncodingUtf16,
+	testPayload := wwr.NewPayload(
+		wwr.EncodingUtf16,
 		[]byte{00, 115, 00, 97, 00, 109, 00, 112, 00, 108, 00, 101},
 	)
-	verifyPayload := func(payload webwire.Payload) {
-		payloadEncoding := payload.Encoding()
-		if payloadEncoding != webwire.EncodingUtf16 {
-			t.Errorf(
-				"Unexpected payload encoding: %s",
-				payloadEncoding.String(),
-			)
-		}
-		testPayloadData := testPayload.Data()
-		payloadData := payload.Data()
-		if len(testPayloadData) != len(payloadData) {
-			t.Errorf("Corrupt payload: %s", payloadData)
-		}
-		for i := 0; i < len(testPayloadData); i++ {
-			if testPayloadData[i] != payloadData[i] {
-				t.Errorf(
-					"Corrupt payload, mismatching byte at position %d: %s",
-					i,
-					payloadData,
-				)
-				return
-			}
-		}
+	verifyPayload := func(payload wwr.Payload) {
+		assert.Equal(t, wwr.EncodingUtf16, payload.Encoding())
+		assert.Equal(t, testPayload.Data(), payload.Data())
 	}
 	signalArrived := tmdwg.NewTimedWaitGroup(1, 1*time.Second)
 
@@ -48,8 +31,8 @@ func TestClientSignalUtf16(t *testing.T) {
 		&serverImpl{
 			onSignal: func(
 				_ context.Context,
-				_ webwire.Connection,
-				msg webwire.Message,
+				_ wwr.Connection,
+				msg wwr.Message,
 			) {
 				verifyPayload(msg.Payload())
 
@@ -57,33 +40,26 @@ func TestClientSignalUtf16(t *testing.T) {
 				signalArrived.Progress(1)
 			},
 		},
-		webwire.ServerOptions{},
+		wwr.ServerOptions{},
 	)
 
 	// Initialize client
 	client := newCallbackPoweredClient(
 		server.Addr().String(),
-		webwireClient.Options{
+		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
 		callbackPoweredClientHooks{},
 	)
 
-	if err := client.connection.Connect(); err != nil {
-		t.Fatalf("Couldn't connect: %s", err)
-	}
+	require.NoError(t, client.connection.Connect())
 
 	// Send signal
-	err := client.connection.Signal("", webwire.NewPayload(
-		webwire.EncodingUtf16,
+	require.NoError(t, client.connection.Signal("", wwr.NewPayload(
+		wwr.EncodingUtf16,
 		[]byte{00, 115, 00, 97, 00, 109, 00, 112, 00, 108, 00, 101},
-	))
-	if err != nil {
-		t.Fatalf("Couldn't send signal: %s", err)
-	}
+	)))
 
 	// Synchronize, await signal arrival
-	if err := signalArrived.Wait(); err != nil {
-		t.Fatal("Signal wasn't processed")
-	}
+	require.NoError(t, signalArrived.Wait(), "Signal wasn't processed")
 }

@@ -2,9 +2,12 @@ package test
 
 import (
 	"context"
-	"reflect"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/stretchr/testify/require"
 
 	"github.com/qbeon/tmdwg-go"
 	wwr "github.com/qbeon/webwire-go"
@@ -40,9 +43,7 @@ func TestClientRequestCancel(t *testing.T) {
 		callbackPoweredClientHooks{},
 	)
 
-	if err := client.connection.Connect(); err != nil {
-		t.Fatalf("Couldn't connect: %s", err)
-	}
+	require.NoError(t, client.connection.Connect())
 
 	cancelableCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -50,20 +51,11 @@ func TestClientRequestCancel(t *testing.T) {
 	// Send request and await reply
 	go func() {
 		reply, err := client.connection.Request(cancelableCtx, "test", nil)
-		if err == nil {
-			t.Error("Expected a canceled-error, got nil")
-		}
-		if reply != nil {
-			t.Errorf("Expected nil reply, got: %v", reply)
-		}
-		_, isCanceledErr := err.(wwr.CanceledErr)
-		if !isCanceledErr || !wwr.IsCanceledErr(err) {
-			t.Errorf(
-				"Expected a canceled-error, got: (%s) %s",
-				err,
-				reflect.TypeOf(err),
-			)
-		}
+		assert.Error(t, err, "Expected a canceled-error")
+		assert.Nil(t, reply)
+		assert.IsType(t, wwr.CanceledErr{}, err)
+		assert.True(t, wwr.IsCanceledErr(err))
+		assert.False(t, wwr.IsTimeoutErr(err))
 		requestFinished.Progress(1)
 	}()
 
@@ -72,7 +64,5 @@ func TestClientRequestCancel(t *testing.T) {
 	cancel()
 
 	// Wait for the requestor goroutine to finish
-	if err := requestFinished.Wait(); err != nil {
-		t.Fatal("Test timed out")
-	}
+	require.NoError(t, requestFinished.Wait(), "Test timed out")
 }

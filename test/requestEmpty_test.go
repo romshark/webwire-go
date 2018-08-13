@@ -5,8 +5,10 @@ import (
 	"testing"
 	"time"
 
-	webwire "github.com/qbeon/webwire-go"
-	webwireClient "github.com/qbeon/webwire-go/client"
+	"github.com/stretchr/testify/require"
+
+	wwr "github.com/qbeon/webwire-go"
+	wwrclt "github.com/qbeon/webwire-go/client"
 )
 
 // TestRequestEmpty tests empty requests without a name and without a payload
@@ -17,21 +19,21 @@ func TestRequestEmpty(t *testing.T) {
 		&serverImpl{
 			onRequest: func(
 				_ context.Context,
-				_ webwire.Connection,
-				msg webwire.Message,
-			) (webwire.Payload, error) {
+				_ wwr.Connection,
+				msg wwr.Message,
+			) (wwr.Payload, error) {
 				// Expect the following request to not even arrive
 				t.Error("Not expected but reached")
 				return nil, nil
 			},
 		},
-		webwire.ServerOptions{},
+		wwr.ServerOptions{},
 	)
 
 	// Initialize client
 	client := newCallbackPoweredClient(
 		server.Addr().String(),
-		webwireClient.Options{
+		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
 		callbackPoweredClientHooks{},
@@ -40,7 +42,6 @@ func TestRequestEmpty(t *testing.T) {
 	// Send request without a name and without a payload.
 	// Expect a protocol error in return not sending the invalid request off
 	_, err := client.connection.Request(context.Background(), "", nil)
-	if _, isProtoErr := err.(webwire.ProtocolErr); !isProtoErr {
-		t.Fatalf("Expected a protocol error, got: %v", err)
-	}
+	require.Error(t, err)
+	require.IsType(t, wwr.ProtocolErr{}, err)
 }

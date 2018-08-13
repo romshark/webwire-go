@@ -4,15 +4,19 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+
+	"github.com/stretchr/testify/require"
+
 	tmdwg "github.com/qbeon/tmdwg-go"
-	webwire "github.com/qbeon/webwire-go"
-	webwireClient "github.com/qbeon/webwire-go/client"
+	wwr "github.com/qbeon/webwire-go"
+	wwrclt "github.com/qbeon/webwire-go/client"
 )
 
 // TestServerSignal tests server-side signals
 func TestServerSignal(t *testing.T) {
-	expectedSignalPayload := webwire.NewPayload(
-		webwire.EncodingBinary,
+	expectedSignalPayload := wwr.NewPayload(
+		wwr.EncodingBinary,
 		[]byte("webwire_test_SERVER_SIGNAL_payload"),
 	)
 	var addr string
@@ -25,17 +29,15 @@ func TestServerSignal(t *testing.T) {
 		server := setupServer(
 			t,
 			&serverImpl{
-				onClientConnected: func(conn webwire.Connection) {
+				onClientConnected: func(conn wwr.Connection) {
 					// Send signal
-					if err := conn.Signal(
+					assert.NoError(t, conn.Signal(
 						"",
 						expectedSignalPayload,
-					); err != nil {
-						t.Fatalf("Couldn't send signal to client: %s", err)
-					}
+					))
 				},
 			},
-			webwire.ServerOptions{},
+			wwr.ServerOptions{},
 		)
 		addr = server.Addr().String()
 
@@ -53,18 +55,13 @@ func TestServerSignal(t *testing.T) {
 	// Initialize client
 	client := newCallbackPoweredClient(
 		addr,
-		webwireClient.Options{
+		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
 		callbackPoweredClientHooks{
-			OnSignal: func(signalPayload webwire.Payload) {
+			OnSignal: func(signalPayload wwr.Payload) {
 				// Verify server signal payload
-				comparePayload(
-					t,
-					"server signal",
-					expectedSignalPayload,
-					signalPayload,
-				)
+				comparePayload(t, expectedSignalPayload, signalPayload)
 
 				// Synchronize, unlock main goroutine to pass the test case
 				serverSignalArrived.Progress(1)
@@ -74,16 +71,15 @@ func TestServerSignal(t *testing.T) {
 	defer client.connection.Close()
 
 	// Connect client
-	if err := client.connection.Connect(); err != nil {
-		t.Fatalf("Couldn't connect client: %s", err)
-	}
+	require.NoError(t, client.connection.Connect())
 
 	// Synchronize, notify the server the client was initialized
 	// and request the signal
 	sendSignal <- true
 
 	// Synchronize, await signal arrival
-	if err := serverSignalArrived.Wait(); err != nil {
-		t.Fatal("Server signal didn't arrive")
-	}
+	require.NoError(t,
+		serverSignalArrived.Wait(),
+		"Server signal didn't arrive",
+	)
 }

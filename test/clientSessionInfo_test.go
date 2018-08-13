@@ -2,12 +2,15 @@ package test
 
 import (
 	"context"
-	"reflect"
 	"testing"
 	"time"
 
-	webwire "github.com/qbeon/webwire-go"
-	webwireClient "github.com/qbeon/webwire-go/client"
+	"github.com/stretchr/testify/assert"
+
+	"github.com/stretchr/testify/require"
+
+	wwr "github.com/qbeon/webwire-go"
+	wwrclt "github.com/qbeon/webwire-go/client"
 )
 
 type testClientSessionInfoStruct struct {
@@ -23,9 +26,9 @@ type testClientSessionInfoSessionInfo struct {
 	Struct testClientSessionInfoStruct
 }
 
-// Copy implements the webwire.SessionInfo interface.
+// Copy implements the wwr.SessionInfo interface.
 // It deep-copies the object and returns it's exact clone
-func (sinf *testClientSessionInfoSessionInfo) Copy() webwire.SessionInfo {
+func (sinf *testClientSessionInfoSessionInfo) Copy() wwr.SessionInfo {
 	arrayClone := make([]string, len(sinf.Array))
 	copy(arrayClone, sinf.Array)
 
@@ -39,7 +42,7 @@ func (sinf *testClientSessionInfoSessionInfo) Copy() webwire.SessionInfo {
 	}
 }
 
-// Fields implements the webwire.SessionInfo interface.
+// Fields implements the wwr.SessionInfo interface.
 // It returns a constant list of the names of all fields of the object
 func (sinf *testClientSessionInfoSessionInfo) Fields() []string {
 	return []string{
@@ -52,7 +55,7 @@ func (sinf *testClientSessionInfoSessionInfo) Fields() []string {
 	}
 }
 
-// Copy implements the webwire.SessionInfo interface.
+// Copy implements the wwr.SessionInfo interface.
 // It deep-copies the field identified by the provided name
 // and returns it's exact clone
 func (sinf *testClientSessionInfoSessionInfo) Value(
@@ -77,7 +80,7 @@ func (sinf *testClientSessionInfoSessionInfo) Value(
 
 func testClientSessionInfoSessionInfoParser(
 	data map[string]interface{},
-) webwire.SessionInfo {
+) wwr.SessionInfo {
 	// Parse array field
 	encodedArray := data["array"].([]interface{})
 	typedArray := make([]string, len(encodedArray))
@@ -118,11 +121,11 @@ func TestClientSessionInfo(t *testing.T) {
 		&serverImpl{
 			onRequest: func(
 				_ context.Context,
-				conn webwire.Connection,
-				_ webwire.Message,
-			) (webwire.Payload, error) {
+				conn wwr.Connection,
+				_ wwr.Message,
+			) (wwr.Payload, error) {
 				// Try to create a new session
-				if err := conn.CreateSession(&testClientSessionInfoSessionInfo{
+				err := conn.CreateSession(&testClientSessionInfoSessionInfo{
 					Bool:   expectedBool,
 					String: expectedString,
 					Int:    expectedInt,
@@ -133,19 +136,21 @@ func TestClientSessionInfo(t *testing.T) {
 					}{
 						SampleString: expectedStruct.SampleString,
 					},
-				}); err != nil {
+				})
+				assert.NoError(t, err)
+				if err != nil {
 					return nil, err
 				}
 				return nil, nil
 			},
 		},
-		webwire.ServerOptions{},
+		wwr.ServerOptions{},
 	)
 
 	// Initialize client
 	client := newCallbackPoweredClient(
 		server.Addr().String(),
-		webwireClient.Options{
+		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 			SessionInfoParser:     testClientSessionInfoSessionInfoParser,
 		},
@@ -153,118 +158,49 @@ func TestClientSessionInfo(t *testing.T) {
 	)
 	defer client.connection.Close()
 
-	if err := client.connection.Connect(); err != nil {
-		t.Fatalf("Couldn't connect: %s", err)
-	}
+	require.NoError(t, client.connection.Connect())
 
 	// Send authentication request and await reply
-	if _, err := client.connection.Request(
+	_, err := client.connection.Request(
 		context.Background(),
 		"login",
-		webwire.NewPayload(webwire.EncodingBinary, []byte("credentials")),
-	); err != nil {
-		t.Fatalf("Request failed: %s", err)
-	}
+		wwr.NewPayload(wwr.EncodingBinary, []byte("credentials")),
+	)
+	require.NoError(t, err)
 
 	// Verify getting inexistent field
-	inexistent := client.connection.SessionInfo("inexistent")
-	if inexistent != nil {
-		t.Fatalf(
-			"Expected nil for inexistent session info field, got: %v",
-			inexistent,
-		)
-	}
+	require.Nil(t, client.connection.SessionInfo("inexistent"))
 
 	// Verify field: bool
-	samplebool, ok := client.connection.SessionInfo("bool").(bool)
-	if !ok {
-		t.Fatalf(
-			"Expected field 'bool' to be boolean, got: %v",
-			reflect.TypeOf(client.connection.SessionInfo("bool")),
-		)
-	}
-	if samplebool != expectedBool {
-		t.Fatalf("Expected bool %t for field %s", expectedBool, "bool")
-	}
+	sampleBool := client.connection.SessionInfo("bool")
+	require.IsType(t, expectedBool, sampleBool)
+	require.Equal(t, expectedBool, sampleBool.(bool))
 
 	// Verify field: string
-	samplestring, ok := client.connection.SessionInfo("string").(string)
-	if !ok {
-		t.Fatalf(
-			"Expected field 'string' to be string, got: %v",
-			reflect.TypeOf(client.connection.SessionInfo("string")),
-		)
-	}
-	if samplestring != expectedString {
-		t.Fatalf("Expected string %s for field %s", expectedString, "string")
-	}
+	sampleString := client.connection.SessionInfo("string")
+	require.IsType(t, expectedString, sampleString)
+	require.Equal(t, expectedString, sampleString.(string))
 
 	// Verify field: int
-	sampleint, ok := client.connection.SessionInfo("int").(int)
-	if !ok {
-		t.Fatalf(
-			"Expected field 'int' to be int, got: %v",
-			reflect.TypeOf(client.connection.SessionInfo("int")),
-		)
-	}
-	if sampleint != expectedInt {
-		t.Fatalf(
-			"Expected int %d for field %s",
-			expectedInt,
-			"int",
-		)
-	}
+	sampleInt := client.connection.SessionInfo("int")
+	require.IsType(t, expectedInt, sampleInt)
+	require.Equal(t, expectedInt, sampleInt.(int))
 
 	// Verify field: number
-	samplenumber, ok := client.connection.SessionInfo("number").(float64)
-	if !ok {
-		t.Fatalf(
-			"Expected field 'number' to be float64, got: %v",
-			reflect.TypeOf(client.connection.SessionInfo("number")),
-		)
-	}
-	if samplenumber != expectedNumber {
-		t.Fatalf(
-			"Expected float64 number %f for field %s",
-			expectedNumber,
-			"number",
-		)
-	}
+	sampleNumber := client.connection.SessionInfo("number")
+	require.IsType(t, expectedNumber, sampleNumber)
+	require.Equal(t, expectedNumber, sampleNumber.(float64))
 
 	// Verify field: array
-	samplearray, ok := client.connection.SessionInfo("array").([]string)
-	if !ok {
-		t.Fatalf(
-			"Expected field 'array' to be array of empty interfaces, got: %v",
-			reflect.TypeOf(client.connection.SessionInfo("array")),
-		)
-	}
-	for index, value := range samplearray {
-		if expectedArray[index] != value {
-			t.Fatalf(
-				"Expected array item at index %d to be string('%s'), got: %v",
-				index,
-				expectedArray[index],
-				value,
-			)
-		}
-	}
+	sampleArray := client.connection.SessionInfo("array")
+	require.IsType(t, expectedArray, sampleArray)
+	require.Equal(t, expectedArray, sampleArray.([]string))
 
 	// Verify field: struct
-	samplestruct, ok := client.connection.SessionInfo(
-		"struct",
-	).(testClientSessionInfoStruct)
-	if !ok {
-		t.Fatalf(
-			"Expected field 'struct' to be map of empty interfaces, got: %v",
-			reflect.TypeOf(client.connection.SessionInfo("struct")),
-		)
-	}
-	if samplestruct.SampleString != expectedStruct.SampleString {
-		t.Fatalf(
-			"Expected struct field 'struct_string' to be string('%s'), got: %v",
-			expectedStruct.SampleString,
-			samplestruct.SampleString,
-		)
-	}
+	sampleStruct := client.connection.SessionInfo("struct")
+	require.IsType(t, expectedStruct, sampleStruct)
+	require.Equal(t,
+		expectedStruct.SampleString,
+		sampleStruct.(testClientSessionInfoStruct).SampleString,
+	)
 }

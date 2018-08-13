@@ -2,20 +2,22 @@ package test
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
-	webwire "github.com/qbeon/webwire-go"
-	webwireClient "github.com/qbeon/webwire-go/client"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	wwr "github.com/qbeon/webwire-go"
+	wwrclt "github.com/qbeon/webwire-go/client"
 )
 
 // TestClientOfflineSessionClosure tests offline session closure
 func TestClientOfflineSessionClosure(t *testing.T) {
-	sessionStorage := make(map[string]*webwire.Session)
+	sessionStorage := make(map[string]*wwr.Session)
 
 	currentStep := 1
-	var createdSession *webwire.Session
+	var createdSession *wwr.Session
 
 	// Initialize webwire server
 	server := setupServer(
@@ -23,19 +25,22 @@ func TestClientOfflineSessionClosure(t *testing.T) {
 		&serverImpl{
 			onRequest: func(
 				_ context.Context,
-				conn webwire.Connection,
-				_ webwire.Message,
-			) (webwire.Payload, error) {
+				conn wwr.Connection,
+				_ wwr.Message,
+			) (wwr.Payload, error) {
 				if currentStep == 2 {
 					// Expect the session to be removed
-					if conn.HasSession() {
-						t.Errorf("Expected client to be anonymous")
-					}
+					assert.False(t,
+						conn.HasSession(),
+						"Expected client to be anonymous",
+					)
 					return nil, nil
 				}
 
 				// Try to create a new session
-				if err := conn.CreateSession(nil); err != nil {
+				err := conn.CreateSession(nil)
+				assert.NoError(t, err)
+				if err != nil {
 					return nil, err
 				}
 
@@ -43,50 +48,32 @@ func TestClientOfflineSessionClosure(t *testing.T) {
 				return nil, nil
 			},
 		},
-		webwire.ServerOptions{
+		wwr.ServerOptions{
 			SessionManager: &callbackPoweredSessionManager{
 				// Saves the session
-				SessionCreated: func(conn webwire.Connection) error {
-					sess := conn.Session()
-					sessionStorage[sess.Key] = sess
+				SessionCreated: func(conn wwr.Connection) error {
+					session := conn.Session()
+					sessionStorage[session.Key] = session
 					return nil
 				},
 				// Finds session by key
 				SessionLookup: func(key string) (
-					webwire.SessionLookupResult,
+					wwr.SessionLookupResult,
 					error,
 				) {
 					// Expect the key of the created session to be looked up
-					if key != createdSession.Key {
-						err := fmt.Errorf(
-							"Expected and looked up session keys differ: %s | %s",
-							createdSession.Key,
-							key,
-						)
-						t.Fatalf("Session lookup mismatch: %s", err)
-						return webwire.SessionLookupResult{}, err
-					}
+					assert.Equal(t, createdSession.Key, key)
 
-					if session, exists := sessionStorage[key]; exists {
-						// Session found
-						return webwire.SessionLookupResult{
-							Creation:   session.Creation,
-							LastLookup: session.LastLookup,
-							Info: webwire.SessionInfoToVarMap(
-								session.Info,
-							),
-						}, nil
-					}
-
-					// Expect the session to be found
-					t.Fatalf(
-						"Expected session (%s) not found in: %v",
-						createdSession.Key,
-						sessionStorage,
-					)
-					// Session not found
-					return webwire.SessionLookupResult{},
-						webwire.SessNotFoundErr{}
+					assert.Contains(t, sessionStorage, key)
+					session := sessionStorage[key]
+					// Session found
+					return wwr.SessionLookupResult{
+						Creation:   session.Creation,
+						LastLookup: session.LastLookup,
+						Info: wwr.SessionInfoToVarMap(
+							session.Info,
+						),
+					}, nil
 				},
 			},
 		},
@@ -95,28 +82,25 @@ func TestClientOfflineSessionClosure(t *testing.T) {
 	// Initialize client
 	client := newCallbackPoweredClient(
 		server.Addr().String(),
-		webwireClient.Options{
+		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
 		callbackPoweredClientHooks{},
 	)
 
-	if err := client.connection.Connect(); err != nil {
-		t.Fatalf("Couldn't connect: %s", err)
-	}
+	require.NoError(t, client.connection.Connect())
 
 	/*****************************************************************\
 		Step 1 - Create session and disconnect
 	\*****************************************************************/
 
 	// Create a new session
-	if _, err := client.connection.Request(
+	_, err := client.connection.Request(
 		context.Background(),
 		"login",
-		webwire.NewPayload(webwire.EncodingBinary, []byte("auth")),
-	); err != nil {
-		t.Fatalf("Auth request failed: %s", err)
-	}
+		wwr.NewPayload(wwr.EncodingBinary, []byte("auth")),
+	)
+	require.NoError(t, err)
 
 	createdSession = client.connection.Session()
 
@@ -124,38 +108,36 @@ func TestClientOfflineSessionClosure(t *testing.T) {
 	client.connection.Close()
 
 	// Ensure the session isn't lost
-	if client.connection.Status() == webwireClient.Connected {
-		t.Fatal("Client is expected to be disconnected")
-	}
-	if client.connection.Session().Key == "" {
-		t.Fatal("Session lost after disconnection")
-	}
+	require.NotEqual(t,
+		wwrclt.Connected, client.connection.Status(),
+		"Client is expected to be disconnected",
+	)
+	require.NotEqual(t,
+		"", client.connection.Session().Key,
+		"Session lost after disconnection",
+	)
 
 	/*****************************************************************\
 		Step 2 - Close session, reconnect and verify
 	\*****************************************************************/
 	currentStep = 2
 
-	if err := client.connection.CloseSession(); err != nil {
-		t.Fatalf("Offline session closure failed: %s", err)
-	}
+	require.NoError(t,
+		client.connection.CloseSession(),
+		"Offline session closure failed",
+	)
 
 	// Ensure the session is removed locally
-	if client.connection.Session() != nil {
-		t.Fatal("Session not removed")
-	}
+	require.Nil(t, client.connection.Session(), "Session not removed")
 
 	// Reconnect
-	if err := client.connection.Connect(); err != nil {
-		t.Fatalf("Couldn't reconnect: %s", err)
-	}
+	require.NoError(t, client.connection.Connect())
 
 	// Ensure the client is anonymous
-	if _, err := client.connection.Request(
+	_, err = client.connection.Request(
 		context.Background(),
 		"verify-restored",
-		webwire.NewPayload(webwire.EncodingBinary, []byte("isrestored?")),
-	); err != nil {
-		t.Fatalf("Second request failed: %s", err)
-	}
+		wwr.NewPayload(wwr.EncodingBinary, []byte("is_restored?")),
+	)
+	require.NoError(t, err)
 }

@@ -1,12 +1,12 @@
 package test
 
 import (
-	"reflect"
 	"testing"
 	"time"
 
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
+	"github.com/stretchr/testify/require"
 )
 
 // TestClientRestSessDisconnNoAutoconn tests disconnected error
@@ -25,12 +25,7 @@ func TestClientRestSessDisconnNoAutoconn(t *testing.T) {
 	)
 
 	// Try to restore a session and expect a DisconnectedErr error
-	err := client.connection.RestoreSession([]byte("inexistentkey"))
-	if _, isDisconnErr := err.(wwr.DisconnectedErr); !isDisconnErr {
-		t.Fatalf(
-			"Expected disconnected error error, got: %s | %s",
-			reflect.TypeOf(err),
-			err,
-		)
-	}
+	err := client.connection.RestoreSession([]byte("inexistent_key"))
+	require.Error(t, err)
+	require.IsType(t, wwr.DisconnectedErr{}, err)
 }

@@ -5,6 +5,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+
+	"github.com/stretchr/testify/require"
+
 	webwire "github.com/qbeon/webwire-go"
 	webwireClient "github.com/qbeon/webwire-go/client"
 )
@@ -30,25 +34,14 @@ func TestRequestNamespaces(t *testing.T) {
 				msg webwire.Message,
 			) (webwire.Payload, error) {
 				msgName := msg.Name()
-				if currentStep == 1 && msgName != "" {
-					t.Errorf(
-						"Expected unnamed request, got: '%s'",
-						msgName,
-					)
+				switch currentStep {
+				case 1:
+					assert.Equal(t, "", msgName)
+				case 2:
+					assert.Equal(t, shortestPossibleName, msgName)
+				case 3:
+					assert.Equal(t, longestPossibleName, msgName)
 				}
-				if currentStep == 2 && msgName != shortestPossibleName {
-					t.Errorf("Expected shortest possible "+
-						"request name, got: '%s'",
-						msgName,
-					)
-				}
-				if currentStep == 3 && msgName != longestPossibleName {
-					t.Errorf("Expected longest possible "+
-						"request name, got: '%s'",
-						msgName,
-					)
-				}
-
 				return nil, nil
 			},
 		},
@@ -64,9 +57,7 @@ func TestRequestNamespaces(t *testing.T) {
 		callbackPoweredClientHooks{},
 	)
 
-	if err := client.connection.Connect(); err != nil {
-		t.Fatalf("Couldn't connect: %s", err)
-	}
+	require.NoError(t, client.connection.Connect())
 
 	/*****************************************************************\
 		Step 1 - Unnamed request name
@@ -77,9 +68,7 @@ func TestRequestNamespaces(t *testing.T) {
 		"",
 		webwire.NewPayload(webwire.EncodingBinary, []byte("dummy")),
 	)
-	if err != nil {
-		t.Fatalf("Request failed: %s", err)
-	}
+	require.NoError(t, err)
 
 	/*****************************************************************\
 		Step 2 - Shortest possible request name
@@ -91,9 +80,7 @@ func TestRequestNamespaces(t *testing.T) {
 		shortestPossibleName,
 		webwire.NewPayload(webwire.EncodingBinary, []byte("dummy")),
 	)
-	if err != nil {
-		t.Fatalf("Request failed: %s", err)
-	}
+	require.NoError(t, err)
 
 	/*****************************************************************\
 		Step 3 - Longest possible request name
@@ -105,7 +92,5 @@ func TestRequestNamespaces(t *testing.T) {
 		longestPossibleName,
 		webwire.NewPayload(webwire.EncodingBinary, []byte("dummy")),
 	)
-	if err != nil {
-		t.Fatalf("Request failed: %s", err)
-	}
+	require.NoError(t, err)
 }

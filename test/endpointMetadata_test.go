@@ -7,7 +7,8 @@ import (
 	"testing"
 	"time"
 
-	webwire "github.com/qbeon/webwire-go"
+	wwr "github.com/qbeon/webwire-go"
+	"github.com/stretchr/testify/require"
 )
 
 // TestEndpointMetadata tests server endpoint metadata
@@ -15,7 +16,7 @@ func TestEndpointMetadata(t *testing.T) {
 	expectedVersion := "1.4"
 
 	// Initialize webwire server
-	server := setupServer(t, &serverImpl{}, webwire.ServerOptions{})
+	server := setupServer(t, &serverImpl{}, wwr.ServerOptions{})
 
 	// Initialize HTTP client
 	var httpClient = &http.Client{
@@ -28,35 +29,21 @@ func TestEndpointMetadata(t *testing.T) {
 		"http://"+server.Addr().String()+"/",
 		nil,
 	)
-	if err != nil {
-		t.Fatalf("Couldn't create HTTP request: %s", err)
-	}
+	require.NoError(t, err)
 	response, err := httpClient.Do(request)
-	if err != nil {
-		t.Fatalf("HTTP request failed: %s", err)
-	}
+	require.NoError(t, err)
 
 	// Read response body
 	defer response.Body.Close()
 	encodedData, err := ioutil.ReadAll(response.Body)
-	if err != nil {
-		t.Fatalf("Couldn't read response body: %s", err)
-	}
+	require.NoError(t, err)
 
 	// Unmarshal response
 	var metadata struct {
 		ProtocolVersion string `json:"protocol-version"`
 	}
-	if err := json.Unmarshal(encodedData, &metadata); err != nil {
-		t.Fatalf(
-			"Couldn't parse HTTP response ('%s'): %s",
-			string(encodedData),
-			err,
-		)
-	}
+	require.NoError(t, json.Unmarshal(encodedData, &metadata))
 
 	// Verify metadata
-	if metadata.ProtocolVersion != expectedVersion {
-		t.Fatalf("Unexpected protocol version: %s", metadata.ProtocolVersion)
-	}
+	require.Equal(t, expectedVersion, metadata.ProtocolVersion)
 }

@@ -1,9 +1,10 @@
 package test
 
 import (
-	"reflect"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
 
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
@@ -30,12 +31,7 @@ func TestClientRestSessAutoconn(t *testing.T) {
 	)
 
 	// Skip manual connection establishment and rely on autoconnect instead
-	err := client.connection.RestoreSession([]byte("inexistentkey"))
-	if _, isSessNotFoundErr := err.(wwr.SessNotFoundErr); !isSessNotFoundErr {
-		t.Fatalf(
-			"Expected disconnected error, got: %s | %s",
-			reflect.TypeOf(err),
-			err,
-		)
-	}
+	err := client.connection.RestoreSession([]byte("inexistent_key"))
+	require.Error(t, err)
+	require.IsType(t, wwr.SessNotFoundErr{}, err)
 }

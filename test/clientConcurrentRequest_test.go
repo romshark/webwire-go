@@ -5,9 +5,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+
 	tmdwg "github.com/qbeon/tmdwg-go"
-	webwire "github.com/qbeon/webwire-go"
-	webwireClient "github.com/qbeon/webwire-go/client"
+	wwr "github.com/qbeon/webwire-go"
+	wwrclt "github.com/qbeon/webwire-go/client"
+	"github.com/stretchr/testify/require"
 )
 
 // TestClientConcurrentRequest verifies concurrent calling of client.Request
@@ -22,46 +25,41 @@ func TestClientConcurrentRequest(t *testing.T) {
 		&serverImpl{
 			onRequest: func(
 				_ context.Context,
-				_ webwire.Connection,
-				_ webwire.Message,
-			) (webwire.Payload, error) {
+				_ wwr.Connection,
+				_ wwr.Message,
+			) (wwr.Payload, error) {
 				finished.Progress(1)
 				return nil, nil
 			},
 		},
-		webwire.ServerOptions{},
+		wwr.ServerOptions{},
 	)
 
 	// Initialize client
 	client := newCallbackPoweredClient(
 		server.Addr().String(),
-		webwireClient.Options{
+		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
 		callbackPoweredClientHooks{},
 	)
 	defer client.connection.Close()
 
-	if err := client.connection.Connect(); err != nil {
-		t.Fatalf("Couldn't connect: %s", err)
-	}
+	require.NoError(t, client.connection.Connect())
 
 	sendRequest := func() {
 		defer finished.Progress(1)
-		if _, err := client.connection.Request(
+		_, err := client.connection.Request(
 			context.Background(),
 			"sample",
-			webwire.NewPayload(webwire.EncodingBinary, []byte("samplepayload")),
-		); err != nil {
-			t.Errorf("Request failed: %s", err)
-		}
+			wwr.NewPayload(wwr.EncodingBinary, []byte("samplepayload")),
+		)
+		assert.NoError(t, err)
 	}
 
 	for i := 0; i < concurrentAccessors; i++ {
 		go sendRequest()
 	}
 
-	if err := finished.Wait(); err != nil {
-		t.Fatal("Expectation timed out")
-	}
+	require.NoError(t, finished.Wait(), "Expectation timed out")
 }

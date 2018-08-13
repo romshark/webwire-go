@@ -4,8 +4,9 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 
 	wwr "github.com/qbeon/webwire-go"
 )
@@ -81,47 +82,18 @@ func setupServer(
 	return server
 }
 
-func comparePayload(t *testing.T, name string, expected, actual wwr.Payload) {
-	if actual.Encoding() != expected.Encoding() {
-		t.Errorf(
-			"Invalid %s: payload encoding differs:"+
-				"\n expected: '%v'\n actual:   '%v'",
-			name,
-			expected.Encoding(),
-			actual.Encoding(),
-		)
-		return
-	}
-	if !reflect.DeepEqual(actual.Data(), expected.Data()) {
-		t.Errorf(
-			"Invalid %s: payload data differs:"+
-				"\n expected: '%s'\n actual:   '%s'",
-			name,
-			string(expected.Data()),
-			string(actual.Data()),
-		)
-	}
+func comparePayload(t *testing.T, expected, actual wwr.Payload) {
+	assert.Equal(t, expected.Encoding(), actual.Encoding())
+	assert.Equal(t, expected.Data(), actual.Data())
 }
 
 func compareSessions(t *testing.T, expected, actual *wwr.Session) {
 	if actual == nil && expected == nil {
 		return
-	} else if (actual == nil && expected != nil) ||
-		(expected == nil && actual != nil) {
-		t.Errorf("Sessions differ:\n expected: '%v'\n actual:   '%v'",
-			expected,
-			actual,
-		)
-	} else if actual.Key != expected.Key {
-		t.Errorf("Session keys differ:\n expected: '%s'\n actual:   '%s'",
-			expected.Key,
-			actual.Key,
-		)
-	} else if actual.Creation.Unix() != expected.Creation.Unix() {
-		t.Errorf("Session creation dates differ:\n"+
-			" expected: '%s'\n actual:   '%s'",
-			expected.Creation,
-			actual.Creation,
-		)
 	}
+
+	assert.NotNil(t, expected)
+	assert.NotNil(t, actual)
+	assert.Equal(t, expected.Key, actual.Key)
+	assert.Equal(t, expected.Creation.Unix(), actual.Creation.Unix())
 }

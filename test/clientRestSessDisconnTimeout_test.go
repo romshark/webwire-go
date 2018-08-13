@@ -1,9 +1,10 @@
 package test
 
 import (
-	"reflect"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
 
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
@@ -23,13 +24,8 @@ func TestClientRestSessDisconnTimeout(t *testing.T) {
 	)
 
 	// Send request and await reply
-	err := client.connection.RestoreSession([]byte("inexistentkey"))
-	_, isTimeoutErr := err.(wwr.TimeoutErr)
-	if !isTimeoutErr || !wwr.IsTimeoutErr(err) {
-		t.Fatalf(
-			"Expected request timeout error, got: %s | %s",
-			reflect.TypeOf(err),
-			err,
-		)
-	}
+	err := client.connection.RestoreSession([]byte("inexistent_key"))
+	require.Error(t, err)
+	require.IsType(t, wwr.TimeoutErr{}, err)
+	require.True(t, wwr.IsTimeoutErr(err))
 }

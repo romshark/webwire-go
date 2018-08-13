@@ -5,16 +5,20 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+
+	"github.com/stretchr/testify/assert"
+
 	tmdwg "github.com/qbeon/tmdwg-go"
-	webwire "github.com/qbeon/webwire-go"
-	webwireClient "github.com/qbeon/webwire-go/client"
+	wwr "github.com/qbeon/webwire-go"
+	wwrclt "github.com/qbeon/webwire-go/client"
 )
 
 // TestClientOnSessionCreated tests the OnSessionCreated hook of the client
 func TestClientOnSessionCreated(t *testing.T) {
 	hookCalled := tmdwg.NewTimedWaitGroup(1, 1*time.Second)
-	var createdSession *webwire.Session
-	var sessionFromHook *webwire.Session
+	var createdSession *wwr.Session
+	var sessionFromHook *wwr.Session
 
 	// Initialize webwire server
 	server := setupServer(
@@ -22,27 +26,29 @@ func TestClientOnSessionCreated(t *testing.T) {
 		&serverImpl{
 			onRequest: func(
 				_ context.Context,
-				conn webwire.Connection,
-				_ webwire.Message,
-			) (webwire.Payload, error) {
+				conn wwr.Connection,
+				_ wwr.Message,
+			) (wwr.Payload, error) {
 				// Try to create a new session
-				if err := conn.CreateSession(nil); err != nil {
+				err := conn.CreateSession(nil)
+				assert.NoError(t, err)
+				if err != nil {
 					return nil, err
 				}
 				return nil, nil
 			},
 		},
-		webwire.ServerOptions{},
+		wwr.ServerOptions{},
 	)
 
 	// Initialize client
 	client := newCallbackPoweredClient(
 		server.Addr().String(),
-		webwireClient.Options{
+		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
 		callbackPoweredClientHooks{
-			OnSessionCreated: func(newSession *webwire.Session) {
+			OnSessionCreated: func(newSession *wwr.Session) {
 				sessionFromHook = newSession
 				hookCalled.Progress(1)
 			},
@@ -50,25 +56,20 @@ func TestClientOnSessionCreated(t *testing.T) {
 	)
 	defer client.connection.Close()
 
-	if err := client.connection.Connect(); err != nil {
-		t.Fatalf("Couldn't connect: %s", err)
-	}
+	require.NoError(t, client.connection.Connect())
 
 	// Send authentication request and await reply
-	if _, err := client.connection.Request(
+	_, err := client.connection.Request(
 		context.Background(),
 		"login",
-		webwire.NewPayload(webwire.EncodingBinary, []byte("credentials")),
-	); err != nil {
-		t.Fatalf("Request failed: %s", err)
-	}
+		wwr.NewPayload(wwr.EncodingBinary, []byte("credentials")),
+	)
+	require.NoError(t, err)
 
 	createdSession = client.connection.Session()
 
 	// Verify client session
-	if err := hookCalled.Wait(); err != nil {
-		t.Fatal("Hook not called")
-	}
+	require.NoError(t, hookCalled.Wait(), "Hook not called")
 
 	// Compare the actual created session with the session received in the hook
 	compareSessions(t, createdSession, sessionFromHook)

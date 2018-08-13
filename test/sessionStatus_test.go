@@ -7,6 +7,7 @@ import (
 
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
+	"github.com/stretchr/testify/require"
 )
 
 // TestSessionStatus tests session monitoring methods
@@ -36,10 +37,7 @@ func TestSessionStatus(t *testing.T) {
 		wwr.ServerOptions{},
 	)
 
-	actSess := server.ActiveSessionsNum()
-	if actSess != 0 {
-		t.Fatalf("Unexpected number of active sessions: %d", actSess)
-	}
+	require.Equal(t, 0, server.ActiveSessionsNum())
 
 	// Initialize client A
 	clientA := newCallbackPoweredClient(
@@ -56,30 +54,15 @@ func TestSessionStatus(t *testing.T) {
 		"login",
 		wwr.NewPayload(wwr.EncodingBinary, []byte("bla")),
 	)
-	if err != nil {
-		t.Fatalf("Request failed: %s", err)
-	}
+	require.NoError(t, err)
 
 	session := clientA.connection.Session()
-	if session.Key != string(authReqReply.Data()) {
-		t.Fatalf("Unexpected session key")
-	}
+	require.Equal(t, session.Key, string(authReqReply.Data()))
 
 	// Check status, expect 1 session with 1 connection
-	actSess = server.ActiveSessionsNum()
-	if actSess != 1 {
-		t.Fatalf("Unexpected active sessions number: %d", actSess)
-	}
-
-	sessConnsNum := server.SessionConnectionsNum(session.Key)
-	if sessConnsNum != 1 {
-		t.Fatalf("Unexpected session connections number: %d", sessConnsNum)
-	}
-
-	sessConns := server.SessionConnections(session.Key)
-	if len(sessConns) != 1 {
-		t.Fatalf("Unexpected session connections: %d", len(sessConns))
-	}
+	require.Equal(t, 1, server.ActiveSessionsNum())
+	require.Equal(t, 1, server.SessionConnectionsNum(session.Key))
+	require.Len(t, server.SessionConnections(session.Key), 1)
 
 	// Initialize client B
 	clientB := newCallbackPoweredClient(
@@ -90,67 +73,26 @@ func TestSessionStatus(t *testing.T) {
 		callbackPoweredClientHooks{},
 	)
 
-	if err := clientB.connection.RestoreSession(
-		authReqReply.Data(),
-	); err != nil {
-		t.Fatalf("Unexpected error: %s", err)
-	}
+	require.NoError(t, clientB.connection.RestoreSession(authReqReply.Data()))
 
 	// Check status, expect 1 session with 2 connections
-	actSess = server.ActiveSessionsNum()
-	if actSess != 1 {
-		t.Fatalf("Unexpected active sessions number: %d", actSess)
-	}
-
-	sessConnsNum = server.SessionConnectionsNum(session.Key)
-	if sessConnsNum != 2 {
-		t.Fatalf("Unexpected session connections number: %d", sessConnsNum)
-	}
-
-	sessConns = server.SessionConnections(session.Key)
-	if len(sessConns) != 2 {
-		t.Fatalf("Unexpected session connections: %d", len(sessConns))
-	}
+	require.Equal(t, 1, server.ActiveSessionsNum())
+	require.Equal(t, 2, server.SessionConnectionsNum(session.Key))
+	require.Len(t, server.SessionConnections(session.Key), 2)
 
 	// Close first connection
-	if err := clientA.connection.CloseSession(); err != nil {
-		t.Fatalf("Unexpected error: %s", err)
-	}
+	require.NoError(t, clientA.connection.CloseSession())
 
 	// Check status, expect 1 session with 1 connection
-	actSess = server.ActiveSessionsNum()
-	if actSess != 1 {
-		t.Fatalf("Unexpected active sessions number: %d", actSess)
-	}
-
-	sessConnsNum = server.SessionConnectionsNum(session.Key)
-	if sessConnsNum != 1 {
-		t.Fatalf("Unexpected session connections number: %d", sessConnsNum)
-	}
-
-	sessConns = server.SessionConnections(session.Key)
-	if len(sessConns) != 1 {
-		t.Fatalf("Unexpected session connections: %d", len(sessConns))
-	}
+	require.Equal(t, 1, server.ActiveSessionsNum())
+	require.Equal(t, 1, server.SessionConnectionsNum(session.Key))
+	require.Len(t, server.SessionConnections(session.Key), 1)
 
 	// Close second connection
-	if err := clientB.connection.CloseSession(); err != nil {
-		t.Fatalf("Unexpected error: %s", err)
-	}
+	require.NoError(t, clientB.connection.CloseSession())
 
 	// Check status, expect 0 sessions
-	actSess = server.ActiveSessionsNum()
-	if actSess != 0 {
-		t.Fatalf("Unexpected active sessions number: %d", actSess)
-	}
-
-	sessConnsNum = server.SessionConnectionsNum(session.Key)
-	if sessConnsNum != -1 {
-		t.Fatalf("Unexpected session connections number: %d", sessConnsNum)
-	}
-
-	sessConns = server.SessionConnections(session.Key)
-	if sessConns != nil {
-		t.Fatalf("Unexpected session connections: %d", len(sessConns))
-	}
+	require.Equal(t, 0, server.ActiveSessionsNum())
+	require.Equal(t, -1, server.SessionConnectionsNum(session.Key))
+	require.Nil(t, server.SessionConnections(session.Key))
 }

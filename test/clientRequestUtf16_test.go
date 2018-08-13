@@ -5,32 +5,23 @@ import (
 	"testing"
 	"time"
 
-	webwire "github.com/qbeon/webwire-go"
-	webwireClient "github.com/qbeon/webwire-go/client"
+	"github.com/stretchr/testify/require"
+
+	"github.com/stretchr/testify/assert"
+
+	wwr "github.com/qbeon/webwire-go"
+	wwrclt "github.com/qbeon/webwire-go/client"
 )
 
 // TestClientRequestUtf16 tests requests with UTF16 encoded payloads
 func TestClientRequestUtf16(t *testing.T) {
-	testPayload := webwire.NewPayload(
-		webwire.EncodingUtf16,
+	testPayload := wwr.NewPayload(
+		wwr.EncodingUtf16,
 		[]byte{00, 115, 00, 97, 00, 109, 00, 112, 00, 108, 00, 101},
 	)
-	verifyPayload := func(payload webwire.Payload) {
-		payloadEncoding := payload.Encoding()
-		if payloadEncoding != webwire.EncodingUtf16 {
-			t.Errorf("Unexpected payload encoding: %s", payloadEncoding.String())
-		}
-		testPayloadData := testPayload.Data()
-		payloadData := payload.Data()
-		if len(testPayloadData) != len(payloadData) {
-			t.Errorf("Corrupt payload: %s", payloadData)
-		}
-		for i := 0; i < len(testPayloadData); i++ {
-			if testPayloadData[i] != payloadData[i] {
-				t.Errorf("Corrupt payload, mismatching byte at position %d: %s", i, payloadData)
-				return
-			}
-		}
+	verifyPayload := func(payload wwr.Payload) {
+		assert.Equal(t, wwr.EncodingUtf16, payload.Encoding())
+		assert.Equal(t, testPayload.Data(), payload.Data())
 	}
 
 	// Initialize webwire server given only the request
@@ -39,46 +30,41 @@ func TestClientRequestUtf16(t *testing.T) {
 		&serverImpl{
 			onRequest: func(
 				_ context.Context,
-				_ webwire.Connection,
-				msg webwire.Message,
-			) (webwire.Payload, error) {
-
+				_ wwr.Connection,
+				msg wwr.Message,
+			) (wwr.Payload, error) {
 				verifyPayload(msg.Payload())
 
-				return webwire.NewPayload(
-					webwire.EncodingUtf16,
+				return wwr.NewPayload(
+					wwr.EncodingUtf16,
 					[]byte{00, 115, 00, 97, 00, 109, 00, 112, 00, 108, 00, 101},
 				), nil
 			},
 		},
-		webwire.ServerOptions{},
+		wwr.ServerOptions{},
 	)
 
 	// Initialize client
 	client := newCallbackPoweredClient(
 		server.Addr().String(),
-		webwireClient.Options{
+		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
 		callbackPoweredClientHooks{},
 	)
 
-	if err := client.connection.Connect(); err != nil {
-		t.Fatalf("Couldn't connect: %s", err)
-	}
+	require.NoError(t, client.connection.Connect())
 
 	// Send request and await reply
 	reply, err := client.connection.Request(
 		context.Background(),
 		"",
-		webwire.NewPayload(
-			webwire.EncodingUtf16,
+		wwr.NewPayload(
+			wwr.EncodingUtf16,
 			[]byte{00, 115, 00, 97, 00, 109, 00, 112, 00, 108, 00, 101},
 		),
 	)
-	if err != nil {
-		t.Fatalf("Request failed: %s", err)
-	}
+	require.NoError(t, err)
 
 	// Verify reply
 	verifyPayload(reply)

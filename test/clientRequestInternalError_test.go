@@ -6,8 +6,10 @@ import (
 	"testing"
 	"time"
 
-	webwire "github.com/qbeon/webwire-go"
-	webwireClient "github.com/qbeon/webwire-go/client"
+	"github.com/stretchr/testify/require"
+
+	wwr "github.com/qbeon/webwire-go"
+	wwrclt "github.com/qbeon/webwire-go/client"
 )
 
 // TestClientRequestInternalError tests returning of non-ReqErr errors
@@ -19,52 +21,38 @@ func TestClientRequestInternalError(t *testing.T) {
 		&serverImpl{
 			onRequest: func(
 				_ context.Context,
-				_ webwire.Connection,
-				_ webwire.Message,
-			) (webwire.Payload, error) {
+				_ wwr.Connection,
+				_ wwr.Message,
+			) (wwr.Payload, error) {
 				// Fail the request by returning a non-ReqErr error
 				return nil, fmt.Errorf(
 					"don't worry, this internal error is expected",
 				)
 			},
 		},
-		webwire.ServerOptions{},
+		wwr.ServerOptions{},
 	)
 
 	// Initialize client
 	client := newCallbackPoweredClient(
 		server.Addr().String(),
-		webwireClient.Options{
+		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
 		callbackPoweredClientHooks{},
 	)
 
-	if err := client.connection.Connect(); err != nil {
-		t.Fatalf("Couldn't connect: %s", err)
-	}
+	require.NoError(t, client.connection.Connect())
 
 	// Send request and await reply
 	reply, reqErr := client.connection.Request(
 		context.Background(),
 		"",
-		webwire.NewPayload(webwire.EncodingUtf8, []byte("dummydata")),
+		wwr.NewPayload(wwr.EncodingUtf8, []byte("dummydata")),
 	)
 
 	// Verify returned error
-	if reqErr == nil {
-		t.Fatal("Expected an error, got nil")
-	}
-
-	if _, isInternalErr := reqErr.(webwire.ReqInternalErr); !isInternalErr {
-		t.Fatalf("Expected an internal server error, got: %v", reqErr)
-	}
-
-	if reply != nil {
-		t.Fatalf(
-			"Reply should have been empty, but was: '%s' (%d)",
-			string(reply.Data()),
-			len(reply.Data()),
-		)
-	}
+	require.Error(t, reqErr)
+	require.IsType(t, wwr.ReqInternalErr{}, reqErr)
+	require.Nil(t, reply)
 }

@@ -5,6 +5,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+
+	"github.com/stretchr/testify/require"
+
 	tmdwg "github.com/qbeon/tmdwg-go"
 	webwire "github.com/qbeon/webwire-go"
 	webwireClient "github.com/qbeon/webwire-go/client"
@@ -34,33 +38,15 @@ func TestSignalNamespaces(t *testing.T) {
 				msg webwire.Message,
 			) {
 				msgName := msg.Name()
-				if currentStep == 1 && msgName != "" {
-					t.Errorf(
-						"Expected unnamed signal, got: '%s'",
-						msgName,
-					)
-				}
-				if currentStep == 2 &&
-					msgName != shortestPossibleName {
-					t.Errorf(
-						"Expected shortest possible signal name, got: '%s'",
-						msgName,
-					)
-				}
-				if currentStep == 3 &&
-					msgName != longestPossibleName {
-					t.Errorf(
-						"Expected longest possible signal name, got: '%s'",
-						msgName,
-					)
-				}
-
 				switch currentStep {
 				case 1:
+					assert.Equal(t, "", msgName)
 					unnamedSignalArrived.Progress(1)
 				case 2:
+					assert.Equal(t, shortestPossibleName, msgName)
 					shortestNameSignalArrived.Progress(1)
 				case 3:
+					assert.Equal(t, longestPossibleName, msgName)
 					longestNameSignalArrived.Progress(1)
 				}
 			},
@@ -77,54 +63,48 @@ func TestSignalNamespaces(t *testing.T) {
 		callbackPoweredClientHooks{},
 	)
 
-	if err := client.connection.Connect(); err != nil {
-		t.Fatalf("Couldn't connect: %s", err)
-	}
+	require.NoError(t, client.connection.Connect())
 
 	/*****************************************************************\
 		Step 1 - Unnamed signal name
 	\*****************************************************************/
 	// Send unnamed signal
-	err := client.connection.Signal("", webwire.NewPayload(
+	require.NoError(t, client.connection.Signal("", webwire.NewPayload(
 		webwire.EncodingBinary,
 		[]byte("dummy"),
-	))
-	if err != nil {
-		t.Fatalf("Request failed: %s", err)
-	}
-	if err := unnamedSignalArrived.Wait(); err != nil {
-		t.Fatal("Unnamed signal didn't arrive")
-	}
+	)))
+	require.NoError(t,
+		unnamedSignalArrived.Wait(),
+		"Unnamed signal didn't arrive",
+	)
 
 	/*****************************************************************\
 		Step 2 - Shortest possible request name
 	\*****************************************************************/
 	currentStep = 2
+
 	// Send request with the shortest possible name
-	err = client.connection.Signal(
+	require.NoError(t, client.connection.Signal(
 		shortestPossibleName,
 		webwire.NewPayload(webwire.EncodingBinary, []byte("dummy")),
+	))
+	require.NoError(t,
+		shortestNameSignalArrived.Wait(),
+		"Signal with shortest name didn't arrive",
 	)
-	if err != nil {
-		t.Fatalf("Request failed: %s", err)
-	}
-	if err := shortestNameSignalArrived.Wait(); err != nil {
-		t.Fatal("Signal with shortest name didn't arrive")
-	}
 
 	/*****************************************************************\
 		Step 3 - Longest possible request name
 	\*****************************************************************/
 	currentStep = 3
+
 	// Send request with the longest possible name
-	err = client.connection.Signal(
+	require.NoError(t, client.connection.Signal(
 		longestPossibleName,
 		webwire.NewPayload(webwire.EncodingBinary, []byte("dummy")),
+	))
+	require.NoError(t,
+		longestNameSignalArrived.Wait(),
+		"Signal with longest name didn't arrive",
 	)
-	if err != nil {
-		t.Fatalf("Request failed: %s", err)
-	}
-	if err := longestNameSignalArrived.Wait(); err != nil {
-		t.Fatal("Signal with longest name didn't arrive")
-	}
 }

@@ -5,6 +5,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+
+	"github.com/stretchr/testify/require"
+
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
 )
@@ -30,7 +34,9 @@ func TestCustomSessKeyGenInvalid(t *testing.T) {
 				}()
 
 				// Try to create a new session
-				if err := conn.CreateSession(nil); err != nil {
+				err := conn.CreateSession(nil)
+				assert.NoError(t, err)
+				if err != nil {
 					return nil, err
 				}
 
@@ -60,11 +66,10 @@ func TestCustomSessKeyGenInvalid(t *testing.T) {
 	defer client.connection.Close()
 
 	// Send authentication request and await reply
-	if _, err := client.connection.Request(
+	_, err := client.connection.Request(
 		context.Background(),
 		"login",
 		wwr.NewPayload(wwr.EncodingBinary, []byte("testdata")),
-	); err != nil {
-		t.Fatalf("Request failed: %s", err)
-	}
+	)
+	require.NoError(t, err)
 }

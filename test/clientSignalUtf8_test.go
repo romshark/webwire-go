@@ -5,15 +5,17 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+
 	tmdwg "github.com/qbeon/tmdwg-go"
-	webwire "github.com/qbeon/webwire-go"
-	webwireClient "github.com/qbeon/webwire-go/client"
+	wwr "github.com/qbeon/webwire-go"
+	wwrclt "github.com/qbeon/webwire-go/client"
 )
 
 // TestClientSignal tests client-side signals with UTF8 encoded payloads
 func TestClientSignal(t *testing.T) {
-	expectedSignalPayload := webwire.NewPayload(
-		webwire.EncodingUtf8,
+	expectedSignalPayload := wwr.NewPayload(
+		wwr.EncodingUtf8,
 		[]byte("webwire_test_SIGNAL_payload"),
 	)
 	signalArrived := tmdwg.NewTimedWaitGroup(1, 1*time.Second)
@@ -24,46 +26,34 @@ func TestClientSignal(t *testing.T) {
 		&serverImpl{
 			onSignal: func(
 				_ context.Context,
-				_ webwire.Connection,
-				msg webwire.Message,
+				_ wwr.Connection,
+				msg wwr.Message,
 			) {
 
 				// Verify signal payload
-				comparePayload(
-					t,
-					"client signal",
-					expectedSignalPayload,
-					msg.Payload(),
-				)
+				comparePayload(t, expectedSignalPayload, msg.Payload())
 
 				// Synchronize, notify signal arrival
 				signalArrived.Progress(1)
 			},
 		},
-		webwire.ServerOptions{},
+		wwr.ServerOptions{},
 	)
 
 	// Initialize client
 	client := newCallbackPoweredClient(
 		server.Addr().String(),
-		webwireClient.Options{
+		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
 		callbackPoweredClientHooks{},
 	)
 
-	if err := client.connection.Connect(); err != nil {
-		t.Fatalf("Couldn't connect: %s", err)
-	}
+	require.NoError(t, client.connection.Connect())
 
 	// Send signal
-	err := client.connection.Signal("", expectedSignalPayload)
-	if err != nil {
-		t.Fatalf("Couldn't send signal: %s", err)
-	}
+	require.NoError(t, client.connection.Signal("", expectedSignalPayload))
 
 	// Synchronize, await signal arrival
-	if err := signalArrived.Wait(); err != nil {
-		t.Fatal("Signal wasn't processed")
-	}
+	require.NoError(t, signalArrived.Wait(), "Signal wasn't processed")
 }

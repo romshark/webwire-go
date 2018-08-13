@@ -5,18 +5,20 @@ import (
 	"testing"
 	"time"
 
-	webwire "github.com/qbeon/webwire-go"
-	webwireClient "github.com/qbeon/webwire-go/client"
+	"github.com/stretchr/testify/require"
+
+	wwr "github.com/qbeon/webwire-go"
+	wwrclt "github.com/qbeon/webwire-go/client"
 )
 
 // TestClientRequestUtf8 tests requests with UTF8 encoded payloads
 func TestClientRequestUtf8(t *testing.T) {
-	expectedRequestPayload := webwire.NewPayload(
-		webwire.EncodingUtf8,
+	expectedRequestPayload := wwr.NewPayload(
+		wwr.EncodingUtf8,
 		[]byte("webwire_test_REQUEST_payload"),
 	)
-	expectedReplyPayload := webwire.NewPayload(
-		webwire.EncodingUtf8,
+	expectedReplyPayload := wwr.NewPayload(
+		wwr.EncodingUtf8,
 		[]byte("webwire_test_RESPONSE_message"),
 	)
 
@@ -26,34 +28,27 @@ func TestClientRequestUtf8(t *testing.T) {
 		&serverImpl{
 			onRequest: func(
 				_ context.Context,
-				_ webwire.Connection,
-				msg webwire.Message,
-			) (webwire.Payload, error) {
+				_ wwr.Connection,
+				msg wwr.Message,
+			) (wwr.Payload, error) {
 				// Verify request payload
-				comparePayload(
-					t,
-					"client request",
-					expectedRequestPayload,
-					msg.Payload(),
-				)
+				comparePayload(t, expectedRequestPayload, msg.Payload())
 				return expectedReplyPayload, nil
 			},
 		},
-		webwire.ServerOptions{},
+		wwr.ServerOptions{},
 	)
 
 	// Initialize client
 	client := newCallbackPoweredClient(
 		server.Addr().String(),
-		webwireClient.Options{
+		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
 		callbackPoweredClientHooks{},
 	)
 
-	if err := client.connection.Connect(); err != nil {
-		t.Fatalf("Couldn't connect: %s", err)
-	}
+	require.NoError(t, client.connection.Connect())
 
 	// Send request and await reply
 	reply, err := client.connection.Request(
@@ -61,10 +56,8 @@ func TestClientRequestUtf8(t *testing.T) {
 		"",
 		expectedRequestPayload,
 	)
-	if err != nil {
-		t.Fatalf("Request failed: %s", err)
-	}
+	require.NoError(t, err)
 
 	// Verify reply
-	comparePayload(t, "server reply", expectedReplyPayload, reply)
+	comparePayload(t, expectedReplyPayload, reply)
 }

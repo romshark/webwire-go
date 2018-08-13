@@ -172,10 +172,11 @@ func TestAuthentication(t *testing.T) {
 	createdSession = client.connection.Session()
 
 	// Verify reply
-	comparePayload(
-		t,
-		"authentication reply",
-		wwr.NewPayload(wwr.EncodingBinary, []byte(createdSession.Key)),
+	comparePayload(t,
+		wwr.NewPayload(
+			wwr.EncodingBinary,
+			[]byte(createdSession.Key),
+		),
 		authReqReply,
 	)
 
@@ -189,7 +190,7 @@ func TestAuthentication(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify reply
-	comparePayload(t, "test reply", expectedConfirmation, testReqReply)
+	comparePayload(t, expectedConfirmation, testReqReply)
 
 	// Send a test-signal to verify the session on the server
 	require.NoError(t, client.connection.Signal(

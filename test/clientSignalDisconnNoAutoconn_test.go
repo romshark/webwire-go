@@ -6,6 +6,7 @@ import (
 
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
+	"github.com/stretchr/testify/require"
 )
 
 // TestClientSignalDisconnectedErr tests client.Signal
@@ -35,10 +36,6 @@ func TestClientSignalDisconnectedErr(t *testing.T) {
 		wwr.EncodingBinary,
 		[]byte("test"),
 	))
-	if err == nil {
-		t.Fatalf("Expected DisconnectedErr, got nil")
-	}
-	if err, converted := err.(wwr.DisconnectedErr); !converted {
-		t.Fatalf("Expected DisconnectedErr, got: %s", err)
-	}
+	require.Error(t, err)
+	require.IsType(t, wwr.DisconnectedErr{}, err)
 }

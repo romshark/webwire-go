@@ -1,16 +1,17 @@
 package test
 
 import (
-	"reflect"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
 
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
 )
 
 // TestClientSignalAutoconn tests sending signals on disconnected clients
-// expecting it to automatically connect
+// expecting it to connect automatically
 func TestClientSignalAutoconn(t *testing.T) {
 	// Initialize webwire server given only the request
 	server := setupServer(
@@ -29,14 +30,8 @@ func TestClientSignalAutoconn(t *testing.T) {
 	)
 
 	// Skip manual connection establishment and rely on autoconnect instead
-	if err := client.connection.Signal(
+	require.NoError(t, client.connection.Signal(
 		"",
 		wwr.NewPayload(wwr.EncodingBinary, []byte("testdata")),
-	); err != nil {
-		t.Fatalf(
-			"Expected signal to automatically connect, got error: %s | %s",
-			reflect.TypeOf(err),
-			err,
-		)
-	}
+	))
 }

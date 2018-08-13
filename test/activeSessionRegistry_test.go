@@ -9,8 +9,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	webwire "github.com/qbeon/webwire-go"
-	webwireClient "github.com/qbeon/webwire-go/client"
+	wwr "github.com/qbeon/webwire-go"
+	wwrclt "github.com/qbeon/webwire-go/client"
 )
 
 // TestActiveSessionRegistry verifies that the session registry
@@ -22,9 +22,9 @@ func TestActiveSessionRegistry(t *testing.T) {
 		&serverImpl{
 			onRequest: func(
 				_ context.Context,
-				conn webwire.Connection,
-				msg webwire.Message,
-			) (webwire.Payload, error) {
+				conn wwr.Connection,
+				msg wwr.Message,
+			) (wwr.Payload, error) {
 				// Close session on logout
 				if msg.Name() == "logout" {
 					assert.NoError(t, conn.CloseSession())
@@ -40,19 +40,19 @@ func TestActiveSessionRegistry(t *testing.T) {
 
 				// Return the key of the newly created session
 				// (use default binary encoding)
-				return webwire.NewPayload(
-					webwire.EncodingBinary,
+				return wwr.NewPayload(
+					wwr.EncodingBinary,
 					[]byte(conn.SessionKey()),
 				), nil
 			},
 		},
-		webwire.ServerOptions{},
+		wwr.ServerOptions{},
 	)
 
 	// Initialize client
 	client := newCallbackPoweredClient(
 		server.Addr().String(),
-		webwireClient.Options{
+		wwrclt.Options{
 			DefaultRequestTimeout: time.Second * 2,
 		},
 		callbackPoweredClientHooks{},
@@ -65,29 +65,27 @@ func TestActiveSessionRegistry(t *testing.T) {
 	_, err := client.connection.Request(
 		context.Background(),
 		"login",
-		webwire.NewPayload(webwire.EncodingUtf8, []byte("nothing")),
+		wwr.NewPayload(wwr.EncodingUtf8, []byte("nothing")),
 	)
 	require.NoError(t, err)
 
 	activeSessionNumberBefore := server.ActiveSessionsNum()
 	require.Equal(t,
 		1, activeSessionNumberBefore,
-		"Unexpected active session number after authentication: %d",
-		activeSessionNumberBefore,
+		"Unexpected active session number after authentication",
 	)
 
 	// Send logout request
 	_, err = client.connection.Request(
 		context.Background(),
 		"logout",
-		webwire.NewPayload(webwire.EncodingUtf8, []byte("nothing")),
+		wwr.NewPayload(wwr.EncodingUtf8, []byte("nothing")),
 	)
 	require.NoError(t, err)
 
 	activeSessionNumberAfter := server.ActiveSessionsNum()
 	require.Equal(t,
 		0, activeSessionNumberAfter,
-		"Unexpected active session number after logout: %d",
-		activeSessionNumberAfter,
+		"Unexpected active session number after logout",
 	)
 }
