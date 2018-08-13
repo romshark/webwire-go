@@ -2,9 +2,12 @@ package test
 
 import (
 	"context"
-	"reflect"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
+
+	"github.com/stretchr/testify/assert"
 
 	tmdwg "github.com/qbeon/tmdwg-go"
 	wwr "github.com/qbeon/webwire-go"
@@ -50,46 +53,19 @@ func TestAuthentication(t *testing.T) {
 	// Because compareSessions doesn't compare the sessions attached info:
 	compareSessionInfo := func(actual *wwr.Session) {
 		// Check uid
-		field := "session.info.UserID"
 		expectedUserIdent := "clientidentifiergoeshere"
-		actualUserIdent, correctType := actual.Info.Value("uid").(string)
-		if !correctType {
-			t.Errorf(
-				"%s incorrect type: %s",
-				field,
-				reflect.TypeOf(actual.Info.Value("uid")),
-			)
-		}
-		if actualUserIdent != expectedUserIdent {
-			t.Errorf(
-				"%s differs: %s | %s",
-				field,
-				actualUserIdent,
-				expectedUserIdent,
-			)
-			return
-		}
+
+		assert.IsType(t, "string", actual.Info.Value("uid"))
+		actualUserIdent := actual.Info.Value("uid").(string)
+
+		assert.Equal(t, expectedUserIdent, actualUserIdent)
 
 		// Check some-number
-		field = "session.info.some-number"
 		expectedNumber := int(12345)
-		actualNumber, correctType := actual.Info.Value("some-number").(int)
-		if !correctType {
-			t.Errorf(
-				"%s incorrect type: %s",
-				field,
-				reflect.TypeOf(actual.Info.Value("some-number")),
-			)
-		}
-		if actualNumber != expectedNumber {
-			t.Errorf(
-				"%s differs: %d | %d",
-				field,
-				actualNumber,
-				expectedNumber,
-			)
-			return
-		}
+
+		assert.IsType(t, expectedNumber, actual.Info.Value("some-number"))
+		actualNumber := actual.Info.Value("some-number").(int)
+		assert.Equal(t, expectedNumber, actualNumber)
 	}
 
 	onSessionCreatedHookExecuted := tmdwg.NewTimedWaitGroup(1, 1*time.Second)
@@ -137,7 +113,9 @@ func TestAuthentication(t *testing.T) {
 				}
 
 				// Try to create a new session
-				if err := conn.CreateSession(sessionInfo); err != nil {
+				err := conn.CreateSession(sessionInfo)
+				assert.NoError(t, err)
+				if err != nil {
 					return nil, err
 				}
 
@@ -174,52 +152,14 @@ func TestAuthentication(t *testing.T) {
 				// The session info object won't be of initial structure type
 				// because of intermediate JSON encoding
 				// it'll be a map of arbitrary values with string keys
-				info := session.Info
-
-				// Check uid
-				field := "session.info.uid"
-				expectedUserIdent := "clientidentifiergoeshere"
-				actualUID, ok := info.Value("uid").(string)
-				if !ok {
-					t.Errorf("expected %s not string", field)
-					return
-				}
-				if actualUID != expectedUserIdent {
-					t.Errorf(
-						"%s differs: %s | %s",
-						field,
-						actualUID,
-						expectedUserIdent,
-					)
-					return
-				}
-
-				// Check some-number
-				field = "session.info.some-number"
-				expectedNumber := int(12345)
-				actualNumber, ok := info.Value("some-number").(int)
-				if !ok {
-					t.Errorf("expected %s isn't of type int", field)
-					return
-				}
-				if actualNumber != expectedNumber {
-					t.Errorf(
-						"%s differs: %d | %d",
-						field,
-						actualNumber,
-						expectedNumber,
-					)
-					return
-				}
+				compareSessionInfo(session)
 				onSessionCreatedHookExecuted.Progress(1)
 			},
 		},
 	)
 	defer client.connection.Close()
 
-	if err := client.connection.Connect(); err != nil {
-		t.Fatalf("Couldn't connect: %s", err)
-	}
+	require.NoError(t, client.connection.Connect())
 
 	// Send authentication request and await reply
 	authReqReply, err := client.connection.Request(
@@ -227,9 +167,7 @@ func TestAuthentication(t *testing.T) {
 		"login",
 		expectedCredentials,
 	)
-	if err != nil {
-		t.Fatalf("Request failed: %s", err)
-	}
+	require.NoError(t, err)
 
 	createdSession = client.connection.Session()
 
@@ -248,27 +186,25 @@ func TestAuthentication(t *testing.T) {
 		"test",
 		expectedCredentials,
 	)
-	if err != nil {
-		t.Fatalf("Request failed: %s", err)
-	}
+	require.NoError(t, err)
 
 	// Verify reply
 	comparePayload(t, "test reply", expectedConfirmation, testReqReply)
 
 	// Send a test-signal to verify the session on the server
-	if err := client.connection.Signal(
+	require.NoError(t, client.connection.Signal(
 		"test",
 		expectedCredentials,
-	); err != nil {
-		t.Fatalf("Request failed: %s", err)
-	}
+	))
 
-	if err := clientSignalReceived.Wait(); err != nil {
-		t.Fatal("Client signal not received")
-	}
+	require.NoError(t,
+		clientSignalReceived.Wait(),
+		"Client signal not received",
+	)
 
 	// Expect the session creation hook to be executed in the client
-	if err := onSessionCreatedHookExecuted.Wait(); err != nil {
-		t.Fatalf("client.OnSessionCreated hook wasn't executed")
-	}
+	require.NoError(t,
+		onSessionCreatedHookExecuted.Wait(),
+		"client.OnSessionCreated hook wasn't executed",
+	)
 }
