@@ -3,11 +3,11 @@ package message
 import (
 	"fmt"
 	"math/rand"
-	"reflect"
 	"testing"
 	"time"
 
 	pld "github.com/qbeon/webwire-go/payload"
+	"github.com/stretchr/testify/require"
 )
 
 func init() {
@@ -17,28 +17,14 @@ func init() {
 func tryParse(t *testing.T, encoded []byte) (Message, error) {
 	var parsedMsg Message
 	typeDetermined, err := parsedMsg.Parse(encoded)
-	if !typeDetermined {
-		t.Fatal("Couldn't determine message type")
-	}
+	require.True(t, typeDetermined, "Couldn't determine message type")
 	return parsedMsg, err
 }
 
 func tryParseNoErr(t *testing.T, encoded []byte) Message {
 	msg, err := tryParse(t, encoded)
-	if err != nil {
-		t.Fatalf("Failed parsing: %s", err)
-	}
+	require.NoError(t, err)
 	return msg
-}
-
-func comparePayload(t *testing.T, expected, actual []byte) {
-	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf(
-			"Payload differs:\n expected: '%s'\n actual:   '%s'",
-			string(expected),
-			string(actual),
-		)
-	}
 }
 
 // genRndMsgIdentifier returns a randomly generated message id
