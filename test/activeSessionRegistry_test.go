@@ -5,6 +5,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+
+	"github.com/stretchr/testify/assert"
+
 	webwire "github.com/qbeon/webwire-go"
 	webwireClient "github.com/qbeon/webwire-go/client"
 )
@@ -23,14 +27,14 @@ func TestActiveSessionRegistry(t *testing.T) {
 			) (webwire.Payload, error) {
 				// Close session on logout
 				if msg.Name() == "logout" {
-					if err := conn.CloseSession(); err != nil {
-						t.Errorf("Couldn't close session: %s", err)
-					}
+					assert.NoError(t, conn.CloseSession())
 					return nil, nil
 				}
 
 				// Try to create a new session
-				if err := conn.CreateSession(nil); err != nil {
+				err := conn.CreateSession(nil)
+				assert.NoError(t, err)
+				if err != nil {
 					return nil, err
 				}
 
@@ -55,41 +59,35 @@ func TestActiveSessionRegistry(t *testing.T) {
 	)
 	defer client.connection.Close()
 
-	if err := client.connection.Connect(); err != nil {
-		t.Fatalf("Couldn't connect: %s", err)
-	}
+	require.NoError(t, client.connection.Connect())
 
 	// Send authentication request
-	if _, err := client.connection.Request(
+	_, err := client.connection.Request(
 		context.Background(),
 		"login",
 		webwire.NewPayload(webwire.EncodingUtf8, []byte("nothing")),
-	); err != nil {
-		t.Fatalf("Request failed: %s", err)
-	}
+	)
+	require.NoError(t, err)
 
 	activeSessionNumberBefore := server.ActiveSessionsNum()
-	if activeSessionNumberBefore != 1 {
-		t.Fatalf(
-			"Unexpected active session number after authentication: %d",
-			activeSessionNumberBefore,
-		)
-	}
+	require.Equal(t,
+		1, activeSessionNumberBefore,
+		"Unexpected active session number after authentication: %d",
+		activeSessionNumberBefore,
+	)
 
 	// Send logout request
-	if _, err := client.connection.Request(
+	_, err = client.connection.Request(
 		context.Background(),
 		"logout",
 		webwire.NewPayload(webwire.EncodingUtf8, []byte("nothing")),
-	); err != nil {
-		t.Fatalf("Request failed: %s", err)
-	}
+	)
+	require.NoError(t, err)
 
 	activeSessionNumberAfter := server.ActiveSessionsNum()
-	if activeSessionNumberAfter != 0 {
-		t.Fatalf(
-			"Unexpected active session number after logout: %d",
-			activeSessionNumberAfter,
-		)
-	}
+	require.Equal(t,
+		0, activeSessionNumberAfter,
+		"Unexpected active session number after logout: %d",
+		activeSessionNumberAfter,
+	)
 }
