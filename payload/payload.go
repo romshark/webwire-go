@@ -17,7 +17,9 @@ type Payload struct {
 func (pld *Payload) Utf8() (string, error) {
 	if pld.Encoding == Utf16 {
 		if len(pld.Data)%2 != 0 {
-			return "", fmt.Errorf("Cannot convert invalid UTF16 payload data to UTF8")
+			return "", fmt.Errorf(
+				"Cannot convert invalid UTF16 payload data to UTF8",
+			)
 		}
 		u16str := make([]uint16, 1)
 		utf8str := &bytes.Buffer{}
