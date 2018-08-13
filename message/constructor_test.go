@@ -1,10 +1,10 @@
 package message
 
 import (
-	"reflect"
 	"testing"
 
 	pld "github.com/qbeon/webwire-go/payload"
+	"github.com/stretchr/testify/require"
 )
 
 /****************************************************************\
@@ -31,9 +31,7 @@ func TestMsgNewNamelessReqMsg(t *testing.T) {
 		[]byte(sessionKey),
 	)
 
-	if !reflect.DeepEqual(expected, actual) {
-		t.Fatalf("Binary results differ:\n%v\n%v", expected, actual)
-	}
+	require.Equal(t, expected, actual)
 }
 
 // TestMsgNewEmptyReqMsg tests NewEmptyRequestMessage
@@ -48,9 +46,7 @@ func TestMsgNewEmptyReqMsg(t *testing.T) {
 
 	actual := NewEmptyRequestMessage(MsgCloseSession, id)
 
-	if !reflect.DeepEqual(expected, actual) {
-		t.Fatalf("Binary results differ:\n%v\n%v", expected, actual)
-	}
+	require.Equal(t, expected, actual)
 }
 
 // TestMsgNewReqMsgBinary tests NewRequestMessage
@@ -83,9 +79,7 @@ func TestMsgNewReqMsgBinary(t *testing.T) {
 		payload.Data,
 	)
 
-	if !reflect.DeepEqual(expected, actual) {
-		t.Fatalf("Binary results differ:\n%v\n%v", expected, actual)
-	}
+	require.Equal(t, expected, actual)
 }
 
 // TestMsgNewReqMsgUtf8 tests NewRequestMessage using UTF8 payload encoding
@@ -117,9 +111,7 @@ func TestMsgNewReqMsgUtf8(t *testing.T) {
 		payload.Data,
 	)
 
-	if !reflect.DeepEqual(expected, actual) {
-		t.Fatalf("Binary results differ:\n%v\n%v", expected, actual)
-	}
+	require.Equal(t, expected, actual)
 }
 
 // TestMsgNewReqMsgUtf16 tests NewRequestMessage using UTF8 payload encoding
@@ -154,9 +146,7 @@ func TestMsgNewReqMsgUtf16(t *testing.T) {
 		payload.Data,
 	)
 
-	if !reflect.DeepEqual(expected, actual) {
-		t.Fatalf("Binary results differ:\n%v\n%v", expected, actual)
-	}
+	require.Equal(t, expected, actual)
 }
 
 // TestMsgNewReqMsgUtf16OddNameLen tests NewRequestMessage using
@@ -184,9 +174,7 @@ func TestMsgNewReqMsgUtf16OddNameLen(t *testing.T) {
 
 	actual := NewRequestMessage(id, "odd", payload.Encoding, payload.Data)
 
-	if !reflect.DeepEqual(expected, actual) {
-		t.Fatalf("Binary results differ:\n%v\n%v", expected, actual)
-	}
+	require.Equal(t, expected, actual)
 }
 
 // TestMsgNewReplyMsgBinary tests NewReplyMessage
@@ -213,9 +201,7 @@ func TestMsgNewReplyMsgBinary(t *testing.T) {
 		payload.Data,
 	)
 
-	if !reflect.DeepEqual(expected, actual) {
-		t.Fatalf("Binary results differ:\n%v\n%v", expected, actual)
-	}
+	require.Equal(t, expected, actual)
 }
 
 // TestMsgNewReplyMsgUtf8 tests NewReplyMessage using UTF8 payload encoding
@@ -241,9 +227,7 @@ func TestMsgNewReplyMsgUtf8(t *testing.T) {
 		payload.Data,
 	)
 
-	if !reflect.DeepEqual(expected, actual) {
-		t.Fatalf("Binary results differ:\n%v\n%v", expected, actual)
-	}
+	require.Equal(t, expected, actual)
 }
 
 // TestMsgNewReplyMsgUtf16 tests NewReplyMessage using UTF16 payload encoding
@@ -271,9 +255,7 @@ func TestMsgNewReplyMsgUtf16(t *testing.T) {
 		payload.Data,
 	)
 
-	if !reflect.DeepEqual(expected, actual) {
-		t.Fatalf("Binary results differ:\n%v\n%v", expected, actual)
-	}
+	require.Equal(t, expected, actual)
 }
 
 // TestMsgNewSigMsgBinary tests NewSignalMessage
@@ -301,9 +283,7 @@ func TestMsgNewSigMsgBinary(t *testing.T) {
 		payload.Data,
 	)
 
-	if !reflect.DeepEqual(expected, actual) {
-		t.Fatalf("Binary results differ:\n%v\n%v", expected, actual)
-	}
+	require.Equal(t, expected, actual)
 }
 
 // TestMsgNewSigMsgUtf8 tests NewSignalMessage using UTF8 encoding
@@ -330,9 +310,7 @@ func TestMsgNewSigMsgUtf8(t *testing.T) {
 		payload.Data,
 	)
 
-	if !reflect.DeepEqual(expected, actual) {
-		t.Fatalf("Binary results differ:\n%v\n%v", expected, actual)
-	}
+	require.Equal(t, expected, actual)
 }
 
 // TestMsgNewSigMsgUtf16 tests NewSignalMessage using UTF16 encoding
@@ -363,9 +341,7 @@ func TestMsgNewSigMsgUtf16(t *testing.T) {
 		payload.Data,
 	)
 
-	if !reflect.DeepEqual(expected, actual) {
-		t.Fatalf("Binary results differ:\n%v\n%v", expected, actual)
-	}
+	require.Equal(t, expected, actual)
 }
 
 // TestMsgNewSigMsgUtf16OddNameLen tests NewSignalMessage using UTF16 encoding
@@ -394,7 +370,5 @@ func TestMsgNewSigMsgUtf16OddNameLen(t *testing.T) {
 		payload.Data,
 	)
 
-	if !reflect.DeepEqual(expected, actual) {
-		t.Fatalf("Binary results differ:\n%v\n%v", expected, actual)
-	}
+	require.Equal(t, expected, actual)
 }

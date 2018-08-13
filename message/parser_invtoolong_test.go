@@ -1,6 +1,10 @@
 package message
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/stretchr/testify/require"
+)
 
 /****************************************************************\
 	Parser - invalid messages (too long)
@@ -14,11 +18,11 @@ func TestMsgParseInvalidSessionClosedTooLong(t *testing.T) {
 
 	invalidMessage[0] = MsgSessionClosed
 
-	if _, err := tryParse(t, invalidMessage); err == nil {
-		t.Fatalf(
-			"Expected error while parsing invalid session closed message "+
-				"(too long: %d)",
-			lenTooLong,
-		)
-	}
+	_, err := tryParse(t, invalidMessage)
+	require.Error(t,
+		err,
+		"Expected error while parsing invalid session closed message "+
+			"(too long: %d)",
+		lenTooLong,
+	)
 }

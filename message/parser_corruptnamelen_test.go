@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	pld "github.com/qbeon/webwire-go/payload"
+	"github.com/stretchr/testify/require"
 )
 
 /****************************************************************\
@@ -37,11 +38,11 @@ func TestMsgParseRequestCorruptNameLenFlag(t *testing.T) {
 	encoded.Write(payload.Data)
 
 	// Parse
-	if _, err := tryParse(t, encoded.Bytes()); err == nil {
-		t.Fatal(
-			"Expected Parse to return an error due to corrupt name length flag",
-		)
-	}
+	_, err := tryParse(t, encoded.Bytes())
+	require.Error(t,
+		err,
+		"Expected Parse to return an error due to corrupt name length flag",
+	)
 }
 
 // TestMsgParseRequestUtf16CorruptNameLenFlag tests parsing of a named
@@ -70,11 +71,11 @@ func TestMsgParseRequestUtf16CorruptNameLenFlag(t *testing.T) {
 	encoded.Write(payload.Data)
 
 	// Parse
-	if _, err := tryParse(t, encoded.Bytes()); err == nil {
-		t.Fatal(
-			"Expected Parse to return an error due to corrupt name length flag",
-		)
-	}
+	_, err := tryParse(t, encoded.Bytes())
+	require.Error(t,
+		err,
+		"Expected Parse to return an error due to corrupt name length flag",
+	)
 }
 
 // TestMsgParseSignalCorruptNameLenFlag tests parsing of a named
@@ -100,11 +101,11 @@ func TestMsgParseSignalCorruptNameLenFlag(t *testing.T) {
 	encoded.Write(payload.Data)
 
 	// Parse
-	if _, err := tryParse(t, encoded.Bytes()); err == nil {
-		t.Fatal(
-			"Expected Parse to return an error due to corrupt name length flag",
-		)
-	}
+	_, err := tryParse(t, encoded.Bytes())
+	require.Error(t,
+		err,
+		"Expected Parse to return an error due to corrupt name length flag",
+	)
 }
 
 // TestMsgParseSignalUtf16CorruptNameLenFlag tests parsing of a named
@@ -130,9 +131,9 @@ func TestMsgParseSignalUtf16CorruptNameLenFlag(t *testing.T) {
 	encoded.Write(payload.Data)
 
 	// Parse
-	if _, err := tryParse(t, encoded.Bytes()); err == nil {
-		t.Fatal(
-			"Expected Parse to return an error due to corrupt name length flag",
-		)
-	}
+	_, err := tryParse(t, encoded.Bytes())
+	require.Error(t,
+		err,
+		"Expected Parse to return an error due to corrupt name length flag",
+	)
 }

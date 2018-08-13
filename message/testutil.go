@@ -41,46 +41,6 @@ func comparePayload(t *testing.T, expected, actual []byte) {
 	}
 }
 
-// compareMessage fails the given test, if expected and actual messages
-// aren't exactly equal
-func compareMessages(t *testing.T, expected, actual Message) {
-	if actual.Type != expected.Type {
-		t.Errorf(
-			"message.Type differs:"+
-				"\n expected: '%s'\n actual:   '%s'",
-			string(expected.Type),
-			string(actual.Type),
-		)
-	}
-	if !reflect.DeepEqual(actual.Identifier, expected.Identifier) {
-		t.Errorf(
-			"message.Identifier differs:"+
-				"\n expected: '%s'\n actual:   '%s'",
-			string(expected.Identifier[:]),
-			string(actual.Identifier[:]),
-		)
-	}
-	if actual.Name != expected.Name {
-		t.Errorf(
-			"message.Name differs: %s | %s",
-			expected.Name,
-			actual.Name,
-		)
-	}
-	if actual.Payload.Encoding != expected.Payload.Encoding {
-		t.Errorf(
-			"message.Payload.Encoding differs: %v | %v",
-			expected.Payload.Encoding,
-			actual.Payload.Encoding,
-		)
-	}
-	comparePayload(t, expected.Payload.Data, actual.Payload.Data)
-
-	if !reflect.DeepEqual(expected, actual) {
-		t.Errorf("Deep equality assertion failed")
-	}
-}
-
 // genRndMsgIdentifier returns a randomly generated message id
 func genRndMsgIdentifier() (randomIdentifier [8]byte) {
 	rand.Read(randomIdentifier[:])

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	pld "github.com/qbeon/webwire-go/payload"
+	"github.com/stretchr/testify/require"
 )
 
 /****************************************************************\
@@ -37,7 +38,7 @@ func TestMsgParseCloseSessReq(t *testing.T) {
 	actual := tryParseNoErr(t, encoded)
 
 	// Compare
-	compareMessages(t, expected, actual)
+	require.Equal(t, expected, actual)
 }
 
 // TestMsgParseRestrSessReq tests parsing of a session restoration request
@@ -70,7 +71,7 @@ func TestMsgParseRestrSessReq(t *testing.T) {
 	actual := tryParseNoErr(t, encoded)
 
 	// Compare
-	compareMessages(t, expected, actual)
+	require.Equal(t, expected, actual)
 }
 
 // TestMsgParseRequestBinary tests parsing of a named binary encoded request
@@ -93,7 +94,7 @@ func TestMsgParseRequestBinary(t *testing.T) {
 	actual := tryParseNoErr(t, encoded)
 
 	// Compare
-	compareMessages(t, expected, actual)
+	require.Equal(t, expected, actual)
 }
 
 // TestMsgParseRequestUtf8 tests parsing of a named UTF8 encoded request
@@ -116,7 +117,7 @@ func TestMsgParseRequestUtf8(t *testing.T) {
 	actual := tryParseNoErr(t, encoded)
 
 	// Compare
-	compareMessages(t, expected, actual)
+	require.Equal(t, expected, actual)
 }
 
 // TestMsgParseRequestUtf16 tests parsing of a named UTF16 encoded request
@@ -138,7 +139,7 @@ func TestMsgParseRequestUtf16(t *testing.T) {
 	actual := tryParseNoErr(t, encoded)
 
 	// Compare
-	compareMessages(t, expected, actual)
+	require.Equal(t, expected, actual)
 }
 
 // TestMsgParseReplyBinary tests parsing of binary encoded reply message
@@ -160,7 +161,7 @@ func TestMsgParseReplyBinary(t *testing.T) {
 	actual := tryParseNoErr(t, encoded)
 
 	// Compare
-	compareMessages(t, expected, actual)
+	require.Equal(t, expected, actual)
 }
 
 // TestMsgParseReplyUtf8 tests parsing of UTF8 encoded reply message
@@ -182,7 +183,7 @@ func TestMsgParseReplyUtf8(t *testing.T) {
 	actual := tryParseNoErr(t, encoded)
 
 	// Compare
-	compareMessages(t, expected, actual)
+	require.Equal(t, expected, actual)
 }
 
 // TestMsgParseReplyUtf16 tests parsing of UTF16 encoded reply message
@@ -203,7 +204,7 @@ func TestMsgParseReplyUtf16(t *testing.T) {
 	actual := tryParseNoErr(t, encoded)
 
 	// Compare
-	compareMessages(t, expected, actual)
+	require.Equal(t, expected, actual)
 }
 
 // TestMsgParseSignalBinary tests parsing of a named binary encoded signal
@@ -225,7 +226,7 @@ func TestMsgParseSignalBinary(t *testing.T) {
 	actual := tryParseNoErr(t, encoded)
 
 	// Compare
-	compareMessages(t, expected, actual)
+	require.Equal(t, expected, actual)
 }
 
 // TestMsgParseSignalUtf8 tests parsing of a named UTF8 encoded signal
@@ -247,7 +248,7 @@ func TestMsgParseSignalUtf8(t *testing.T) {
 	actual := tryParseNoErr(t, encoded)
 
 	// Compare
-	compareMessages(t, expected, actual)
+	require.Equal(t, expected, actual)
 }
 
 // TestMsgParseSignalUtf16 tests parsing of a named UTF16 encoded signal
@@ -269,7 +270,7 @@ func TestMsgParseSignalUtf16(t *testing.T) {
 	actual := tryParseNoErr(t, encoded)
 
 	// Compare
-	compareMessages(t, expected, actual)
+	require.Equal(t, expected, actual)
 }
 
 // TestMsgParseSessCreatedSig tests parsing of session created signal
@@ -286,9 +287,7 @@ func TestMsgParseSessCreatedSig(t *testing.T) {
 		Info:     nil,
 	}
 	marshalledSession, err := json.Marshal(&session)
-	if err != nil {
-		t.Fatalf("Couldn't marshal session object: %s", err)
-	}
+	require.NoError(t, err)
 	payload := pld.Payload{
 		Encoding: pld.Binary,
 		Data:     marshalledSession,
@@ -312,7 +311,7 @@ func TestMsgParseSessCreatedSig(t *testing.T) {
 	actual := tryParseNoErr(t, encoded)
 
 	// Compare
-	compareMessages(t, expected, actual)
+	require.Equal(t, expected, actual)
 }
 
 // TestMsgParseSessClosedSig tests parsing of session sloed signal
@@ -333,7 +332,7 @@ func TestMsgParseSessClosedSig(t *testing.T) {
 	actual := tryParseNoErr(t, encoded)
 
 	// Compare
-	compareMessages(t, expected, actual)
+	require.Equal(t, expected, actual)
 }
 
 // TestMsgParseUnknownMessageType tests parsing of messages
@@ -343,7 +342,6 @@ func TestMsgParseUnknownMessageType(t *testing.T) {
 	msgOfUnknownType[0] = byte(255)
 
 	var actual Message
-	if typeDetermined, _ := actual.Parse(msgOfUnknownType); typeDetermined {
-		t.Fatalf("Expected type not to be determined")
-	}
+	typeDetermined, _ := actual.Parse(msgOfUnknownType)
+	require.False(t, typeDetermined, "Expected type not to be determined")
 }

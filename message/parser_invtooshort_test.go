@@ -1,6 +1,10 @@
 package message
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/stretchr/testify/require"
+)
 
 /****************************************************************\
 	Parser - invalid messages (too short)
@@ -12,12 +16,12 @@ func TestMsgParseInvalidMessageTooShort(t *testing.T) {
 	invalidMessage := make([]byte, 0)
 
 	var actual Message
-	if typeDetermined, _ := actual.Parse(invalidMessage); typeDetermined {
-		t.Fatalf(
-			"Expected type to not be determined " +
-				"when parsing empty message",
-		)
-	}
+	typeDetermined, _ := actual.Parse(invalidMessage)
+	require.False(t,
+		typeDetermined,
+		"Expected type to not be determined "+
+			"when parsing empty message",
+	)
 }
 
 // TestMsgParseInvalidReplyTooShort tests parsing of an invalid
@@ -28,13 +32,12 @@ func TestMsgParseInvalidReplyTooShort(t *testing.T) {
 
 	invalidMessage[0] = MsgReplyBinary
 
-	if _, err := tryParse(t, invalidMessage); err == nil {
-		t.Fatalf(
-			"Expected error while parsing invalid reply message "+
-				"(too short: %d)",
-			lenTooShort,
-		)
-	}
+	_, err := tryParse(t, invalidMessage)
+	require.Error(t,
+		err,
+		"Expected error while parsing invalid reply message (too short: %d)",
+		lenTooShort,
+	)
 }
 
 // TestMsgParseInvalidReplyUtf16TooShort tests parsing of an invalid
@@ -45,13 +48,13 @@ func TestMsgParseInvalidReplyUtf16TooShort(t *testing.T) {
 
 	invalidMessage[0] = MsgReplyUtf16
 
-	if _, err := tryParse(t, invalidMessage); err == nil {
-		t.Fatalf(
-			"Expected error while parsing invalid UTF16 reply message "+
-				"(too short: %d)",
-			lenTooShort,
-		)
-	}
+	_, err := tryParse(t, invalidMessage)
+	require.Error(t,
+		err,
+		"Expected error while parsing invalid UTF16 reply message "+
+			"(too short: %d)",
+		lenTooShort,
+	)
 }
 
 // TestMsgParseInvalidRequestTooShort tests parsing of an invalid
@@ -62,13 +65,12 @@ func TestMsgParseInvalidRequestTooShort(t *testing.T) {
 
 	invalidMessage[0] = MsgRequestBinary
 
-	if _, err := tryParse(t, invalidMessage); err == nil {
-		t.Fatalf(
-			"Expected error while parsing invalid request message "+
-				"(too short: %d)",
-			lenTooShort,
-		)
-	}
+	_, err := tryParse(t, invalidMessage)
+	require.Error(t,
+		err,
+		"Expected error while parsing invalid request message (too short: %d)",
+		lenTooShort,
+	)
 }
 
 // TestMsgParseInvalidRequestUtf16TooShort tests parsing of an invalid
@@ -79,13 +81,13 @@ func TestMsgParseInvalidRequestUtf16TooShort(t *testing.T) {
 
 	invalidMessage[0] = MsgRequestUtf16
 
-	if _, err := tryParse(t, invalidMessage); err == nil {
-		t.Fatalf(
-			"Expected error while parsing invalid UTF16 "+
-				"encoded request message (too short: %d)",
-			lenTooShort,
-		)
-	}
+	_, err := tryParse(t, invalidMessage)
+	require.Error(t,
+		err,
+		"Expected error while parsing invalid UTF16 "+
+			"encoded request message (too short: %d)",
+		lenTooShort,
+	)
 }
 
 // TestMsgParseInvalidRestrSessReqTooShort tests parsing of an invalid
@@ -97,13 +99,13 @@ func TestMsgParseInvalidRestrSessReqTooShort(t *testing.T) {
 
 	invalidMessage[0] = MsgRestoreSession
 
-	if _, err := tryParse(t, invalidMessage); err == nil {
-		t.Fatalf(
-			"Expected error while parsing invalid session restoration "+
-				"request message (too short: %d)",
-			lenTooShort,
-		)
-	}
+	_, err := tryParse(t, invalidMessage)
+	require.Error(t,
+		err,
+		"Expected error while parsing invalid session restoration "+
+			"request message (too short: %d)",
+		lenTooShort,
+	)
 }
 
 // TestMsgParseInvalidSessCloseReqTooShort tests parsing of an invalid
@@ -115,13 +117,13 @@ func TestMsgParseInvalidSessCloseReqTooShort(t *testing.T) {
 
 	invalidMessage[0] = MsgCloseSession
 
-	if _, err := tryParse(t, invalidMessage); err == nil {
-		t.Fatalf(
-			"Expected error while parsing invalid session destruction "+
-				"request message (too short: %d)",
-			lenTooShort,
-		)
-	}
+	_, err := tryParse(t, invalidMessage)
+	require.Error(t,
+		err,
+		"Expected error while parsing invalid session destruction "+
+			"request message (too short: %d)",
+		lenTooShort,
+	)
 }
 
 // TestMsgParseInvalidSessCreatedSigTooShort tests parsing of an invalid
@@ -133,13 +135,13 @@ func TestMsgParseInvalidSessCreatedSigTooShort(t *testing.T) {
 
 	invalidMessage[0] = MsgSessionCreated
 
-	if _, err := tryParse(t, invalidMessage); err == nil {
-		t.Fatalf(
-			"Expected error while parsing invalid session creation "+
-				"notification message (too short: %d)",
-			lenTooShort,
-		)
-	}
+	_, err := tryParse(t, invalidMessage)
+	require.Error(t,
+		err,
+		"Expected error while parsing invalid session creation "+
+			"notification message (too short: %d)",
+		lenTooShort,
+	)
 }
 
 // TestMsgParseInvalidSignalTooShort tests parsing of an invalid
@@ -150,13 +152,12 @@ func TestMsgParseInvalidSignalTooShort(t *testing.T) {
 
 	invalidMessage[0] = MsgSignalBinary
 
-	if _, err := tryParse(t, invalidMessage); err == nil {
-		t.Fatalf(
-			"Expected error while parsing invalid signal message "+
-				"(too short: %d)",
-			lenTooShort,
-		)
-	}
+	_, err := tryParse(t, invalidMessage)
+	require.Error(t,
+		err,
+		"Expected error while parsing invalid signal message (too short: %d)",
+		lenTooShort,
+	)
 }
 
 // TestMsgParseInvalidSignalUtf16TooShort tests parsing of an invalid
@@ -167,13 +168,13 @@ func TestMsgParseInvalidSignalUtf16TooShort(t *testing.T) {
 
 	invalidMessage[0] = MsgSignalUtf16
 
-	if _, err := tryParse(t, invalidMessage); err == nil {
-		t.Fatalf(
-			"Expected error while parsing invalid UTF16 signal message "+
-				"(too short: %d)",
-			lenTooShort,
-		)
-	}
+	_, err := tryParse(t, invalidMessage)
+	require.Error(t,
+		err,
+		"Expected error while parsing invalid UTF16 signal message "+
+			"(too short: %d)",
+		lenTooShort,
+	)
 }
 
 // TestMsgParseInvalidErrorReplyTooShort tests parsing of an invalid
@@ -184,13 +185,13 @@ func TestMsgParseInvalidErrorReplyTooShort(t *testing.T) {
 
 	invalidMessage[0] = MsgErrorReply
 
-	if _, err := tryParse(t, invalidMessage); err == nil {
-		t.Fatalf(
-			"Expected error while parsing invalid error reply message "+
-				"(too short: %d)",
-			lenTooShort,
-		)
-	}
+	_, err := tryParse(t, invalidMessage)
+	require.Error(t,
+		err,
+		"Expected error while parsing invalid error reply message "+
+			"(too short: %d)",
+		lenTooShort,
+	)
 }
 
 // TestMsgParseInvalidSpecialReplyTooShort tests parsing of an invalid
@@ -201,10 +202,10 @@ func TestMsgParseInvalidSpecialReplyTooShort(t *testing.T) {
 	// Internal error is a special reply message type
 	invalidMessage[0] = MsgInternalError
 
-	if _, err := tryParse(t, invalidMessage); err == nil {
-		t.Fatalf(
-			"Expected error while parsing invalid special reply message " +
-				"(too short: 8)",
-		)
-	}
+	_, err := tryParse(t, invalidMessage)
+	require.Error(t,
+		err,
+		"Expected error while parsing invalid special reply message "+
+			"(too short: 8)",
+	)
 }

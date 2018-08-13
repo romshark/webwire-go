@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	pld "github.com/qbeon/webwire-go/payload"
+	"github.com/stretchr/testify/require"
 )
 
 /****************************************************************\
@@ -31,9 +32,11 @@ func TestMsgParseReplyUtf16CorruptInput(t *testing.T) {
 	encoded = append(encoded, payload.Data...)
 
 	// Parse
-	if _, err := tryParse(t, encoded); err == nil {
-		t.Fatal("Expected Parse to return an error due to corrupt input stream")
-	}
+	_, err := tryParse(t, encoded)
+	require.Error(t,
+		err,
+		"Expected Parse to return an error due to corrupt input stream",
+	)
 }
 
 // TestMsgParseRequestUtf16CorruptInput tests parsing of a named
@@ -64,9 +67,11 @@ func TestMsgParseRequestUtf16CorruptInput(t *testing.T) {
 	encoded = append(encoded, payload.Data...)
 
 	// Parse
-	if _, err := tryParse(t, encoded); err == nil {
-		t.Fatal("Expected Parse to return an error due to corrupt input stream")
-	}
+	_, err := tryParse(t, encoded)
+	require.Error(t,
+		err,
+		"Expected Parse to return an error due to corrupt input stream",
+	)
 }
 
 // TestMsgParseSignalUtf16CorruptInput tests parsing of a named
@@ -94,7 +99,9 @@ func TestMsgParseSignalUtf16CorruptInput(t *testing.T) {
 	encoded = append(encoded, payload.Data...)
 
 	// Parse
-	if _, err := tryParse(t, encoded); err == nil {
-		t.Fatal("Expected Parse to return an error due to corrupt input stream")
-	}
+	_, err := tryParse(t, encoded)
+	require.Error(t,
+		err,
+		"Expected Parse to return an error due to corrupt input stream",
+	)
 }
