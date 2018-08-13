@@ -4,6 +4,10 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/stretchr/testify/require"
 )
 
 // TestSessRegRegisteration tests registeration
@@ -15,19 +19,13 @@ func TestSessRegRegisteration(t *testing.T) {
 	sess := NewSession(nil, func() string { return "testkey_A" })
 	clt.session = &sess
 
-	if err := reg.register(clt); err != nil {
-		t.Fatalf("Unexpected error: %s", err)
-	}
+	require.NoError(t, reg.register(clt))
 
 	// Expect 1 active session
-	if reg.activeSessionsNum() != 1 {
-		t.Fatal("Expected ActiveSessionsNum to return 1")
-	}
+	require.Equal(t, 1, reg.activeSessionsNum())
 
 	// Expect 1 active connection on session A
-	if reg.sessionConnectionsNum("testkey_A") != 1 {
-		t.Fatal("Expected ActiveSessionsNum to return 1")
-	}
+	require.Equal(t, 1, reg.sessionConnectionsNum("testkey_A"))
 }
 
 // TestSessRegActiveSessionsNum tests the ActiveSessionsNum method
@@ -44,25 +42,15 @@ func TestSessRegActiveSessionsNum(t *testing.T) {
 	sessB := NewSession(nil, func() string { return "testkey_B" })
 	cltB1.session = &sessB
 
-	if err := reg.register(cltA1); err != nil {
-		t.Fatalf("Unexpected error: %s", err)
-	}
-	if err := reg.register(cltB1); err != nil {
-		t.Fatalf("Unexpected error: %s", err)
-	}
+	require.NoError(t, reg.register(cltA1))
+	require.NoError(t, reg.register(cltB1))
 
 	// Expect 2 active sessions
-	if reg.activeSessionsNum() != expectedSessionsNum {
-		t.Fatalf("Expected ActiveSessionsNum to return %d", expectedSessionsNum)
-	}
+	require.Equal(t, expectedSessionsNum, reg.activeSessionsNum())
 
 	// Expect 1 active connection on each session
-	if reg.sessionConnectionsNum("testkey_A") != 1 {
-		t.Fatal("Expected ActiveSessionsNum to return 1")
-	}
-	if reg.sessionConnectionsNum("testkey_B") != 1 {
-		t.Fatal("Expected ActiveSessionsNum to return 1")
-	}
+	require.Equal(t, 1, reg.sessionConnectionsNum("testkey_A"))
+	require.Equal(t, 1, reg.sessionConnectionsNum("testkey_B"))
 }
 
 // TestSessRegsessionConnectionsNum tests the sessionConnectionsNum method
@@ -75,28 +63,20 @@ func TestSessRegsessionConnectionsNum(t *testing.T) {
 	sessA1 := NewSession(nil, func() string { return "testkey_A" })
 	cltA1.session = &sessA1
 
-	if err := reg.register(cltA1); err != nil {
-		t.Fatalf("Unexpected error: %s", err)
-	}
+	require.NoError(t, reg.register(cltA1))
 
 	// Register second connection on same session
 	cltA2 := newConnection(nil, "", nil)
 	sessA2 := NewSession(nil, func() string { return "testkey_A" })
 	cltA2.session = &sessA2
 
-	if err := reg.register(cltA2); err != nil {
-		t.Fatalf("Unexpected error: %s", err)
-	}
+	require.NoError(t, reg.register(cltA2))
 
 	// Expect 1 active session
-	if reg.activeSessionsNum() != expectedSessionsNum {
-		t.Fatalf("Expected ActiveSessionsNum to return %d", expectedSessionsNum)
-	}
+	require.Equal(t, expectedSessionsNum, reg.activeSessionsNum())
 
 	// Expect 2 active connections on session A
-	if reg.sessionConnectionsNum("testkey_A") != 2 {
-		t.Fatal("Expected ActiveSessionsNum to return 2")
-	}
+	require.Equal(t, 2, reg.sessionConnectionsNum("testkey_A"))
 }
 
 // TestSessRegSessionMaxConns tests the Register method
@@ -110,20 +90,18 @@ func TestSessRegSessionMaxConns(t *testing.T) {
 	sessA1 := NewSession(nil, func() string { return "testkey_A" })
 	cltA1.session = &sessA1
 
-	if err := reg.register(cltA1); err != nil {
-		t.Fatalf("Unexpected error: %s", err)
-	}
+	require.NoError(t, reg.register(cltA1))
 
 	// Register first connection on session A
 	cltA2 := newConnection(nil, "", nil)
 	sessA2 := NewSession(nil, func() string { return "testkey_A" })
 	cltA2.session = &sessA2
 
-	if reg.register(cltA1) == nil {
-		t.Fatal("Expected register to return an error " +
+	require.Error(t,
+		reg.register(cltA1),
+		"Expected register to return an error "+
 			"due to the limit of concurrent connection being reached",
-		)
-	}
+	)
 }
 
 // TestSessRegDeregistration tests deregistration
@@ -139,61 +117,35 @@ func TestSessRegDeregistration(t *testing.T) {
 	sessB := NewSession(nil, func() string { return "testkey_B" })
 	cltB1.session = &sessB
 
-	if err := reg.register(cltA1); err != nil {
-		t.Fatalf("Unexpected error: %s", err)
-	}
-	if err := reg.register(cltB1); err != nil {
-		t.Fatalf("Unexpected error: %s", err)
-	}
+	require.NoError(t, reg.register(cltA1))
+	require.NoError(t, reg.register(cltB1))
 
 	// Expect 2 active sessions
-	if reg.activeSessionsNum() != 2 {
-		t.Fatal("Expected ActiveSessionsNum to return 2")
-	}
+	require.Equal(t, 2, reg.activeSessionsNum())
 
 	// Expect 1 active connection on each session
-	if reg.sessionConnectionsNum("testkey_A") != 1 {
-		t.Fatal("Expected ActiveSessionsNum to return 1")
-	}
-	if reg.sessionConnectionsNum("testkey_B") != 1 {
-		t.Fatal("Expected ActiveSessionsNum to return 1")
-	}
+	require.Equal(t, 1, reg.sessionConnectionsNum("testkey_A"))
+	require.Equal(t, 1, reg.sessionConnectionsNum("testkey_B"))
 
 	// Deregister first connection, expect 0 because session was removed
-	if reg.deregister(cltA1) != 0 {
-		t.Fatal("Expected deregister to return 0")
-	}
+	require.Equal(t, 0, reg.deregister(cltA1))
 
 	// Expect 1 active session after deregistration of the first connection
-	if reg.activeSessionsNum() != 1 {
-		t.Fatal("Expected ActiveSessionsNum to return 1")
-	}
+	require.Equal(t, 1, reg.activeSessionsNum())
 
 	// Expect 0 active connections on deregistered session
-	if reg.sessionConnectionsNum("testkey_A") != -1 {
-		t.Fatal("Expected ActiveSessionsNum to return -1")
-	}
-	if reg.sessionConnectionsNum("testkey_B") != 1 {
-		t.Fatal("Expected ActiveSessionsNum to return 1")
-	}
+	require.Equal(t, -1, reg.sessionConnectionsNum("testkey_A"))
+	require.Equal(t, 1, reg.sessionConnectionsNum("testkey_B"))
 
 	// Deregister second connection, expect 0 because session was removed
-	if reg.deregister(cltB1) != 0 {
-		t.Fatal("Expected deregister to return 0")
-	}
+	require.Equal(t, 0, reg.deregister(cltB1))
 
 	// Expect no active sessions after deregistration of the second connection
-	if reg.activeSessionsNum() != 0 {
-		t.Fatal("Expected ActiveSessionsNum to return 0")
-	}
+	require.Equal(t, 0, reg.activeSessionsNum())
 
 	// Expect no active connections on both sessions
-	if reg.sessionConnectionsNum("testkey_A") != -1 {
-		t.Fatal("Expected ActiveSessionsNum to return -1")
-	}
-	if reg.sessionConnectionsNum("testkey_B") != -1 {
-		t.Fatal("Expected ActiveSessionsNum to return -1")
-	}
+	require.Equal(t, -1, reg.sessionConnectionsNum("testkey_A"))
+	require.Equal(t, -1, reg.sessionConnectionsNum("testkey_B"))
 }
 
 // TestSessRegDeregistrationMultiple tests deregistration of multiple
@@ -210,53 +162,33 @@ func TestSessRegDeregistrationMultiple(t *testing.T) {
 	sessA2 := NewSession(nil, func() string { return "testkey_A" })
 	cltA2.session = &sessA2
 
-	if err := reg.register(cltA1); err != nil {
-		t.Fatalf("Unexpected error: %s", err)
-	}
-	if err := reg.register(cltA2); err != nil {
-		t.Fatalf("Unexpected error: %s", err)
-	}
+	require.NoError(t, reg.register(cltA1))
+	require.NoError(t, reg.register(cltA2))
 
 	// Expect 1 active session
-	if reg.activeSessionsNum() != 1 {
-		t.Fatal("Expected ActiveSessionsNum to return 1")
-	}
+	require.Equal(t, 1, reg.activeSessionsNum())
 
 	// Expect 2 active connections on session A
-	if reg.sessionConnectionsNum("testkey_A") != 2 {
-		t.Fatal("Expected ActiveSessionsNum to return 2")
-	}
+	require.Equal(t, 2, reg.sessionConnectionsNum("testkey_A"))
 
 	// Deregister first connection, expect 1
-	if reg.deregister(cltA1) != 1 {
-		t.Fatal("Expected deregister to return 1")
-	}
+	require.Equal(t, 1, reg.deregister(cltA1))
 
 	// Still expect 1 active session
 	// after deregistration of the first connection
-	if reg.activeSessionsNum() != 1 {
-		t.Fatal("Expected ActiveSessionsNum to return 1")
-	}
+	require.Equal(t, 1, reg.activeSessionsNum())
 
 	// Expect 1 remaining active connection on deregistered session
-	if reg.sessionConnectionsNum("testkey_A") != 1 {
-		t.Fatal("Expected ActiveSessionsNum to return 0")
-	}
+	require.Equal(t, 1, reg.sessionConnectionsNum("testkey_A"))
 
 	// Deregister second connection, expect 0 because session was removed
-	if reg.deregister(cltA2) != 0 {
-		t.Fatal("Expected deregister to return 0")
-	}
+	require.Equal(t, 0, reg.deregister(cltA2))
 
 	// Expect no active sessions after deregistration of the second connection
-	if reg.activeSessionsNum() != 0 {
-		t.Fatal("Expected ActiveSessionsNum to return 0")
-	}
+	require.Equal(t, 0, reg.activeSessionsNum())
 
 	// Expect no active connections session A
-	if reg.sessionConnectionsNum("testkey_A") != -1 {
-		t.Fatal("Expected ActiveSessionsNum to return -1")
-	}
+	require.Equal(t, -1, reg.sessionConnectionsNum("testkey_A"))
 }
 
 // TestSessRegConcurrentAccess tests concurrent (de)registeration
@@ -283,9 +215,7 @@ func TestSessRegConcurrentAccess(t *testing.T) {
 	for i := uint(0); i < connsToRegister; i++ {
 		index := i
 		go func() {
-			if err := reg.register(registeredConns[index]); err != nil {
-				t.Errorf("Unexpected error: %s", err)
-			}
+			assert.NoError(t, reg.register(registeredConns[index]))
 			awaitRegistration.Done()
 		}()
 	}
@@ -294,22 +224,12 @@ func TestSessRegConcurrentAccess(t *testing.T) {
 	awaitRegistration.Wait()
 
 	// Expect 1 active session
-	if reg.activeSessionsNum() != 1 {
-		t.Fatal("Expected ActiveSessionsNum to return 1")
-	}
+	require.Equal(t, 1, reg.activeSessionsNum())
 
 	// Expect N active connections on session A
 	actualSessCons := reg.sessionConnectionsNum("testkey_A")
-	if actualSessCons < 0 {
-		t.Fatalf("Missing session testkey_A")
-	}
-	if uint(actualSessCons) != connsToRegister {
-		t.Fatalf(
-			"Expected ActiveSessionsNum to return %d, got: %d",
-			connsToRegister,
-			actualSessCons,
-		)
-	}
+	require.NotEqual(t, -1, actualSessCons, "Missing session testkey_A")
+	require.Equal(t, connsToRegister, uint(actualSessCons))
 
 	// Concurrently deregister multiple connections from different goroutines
 	negativeReturnCounter := uint32(0)
@@ -328,26 +248,13 @@ func TestSessRegConcurrentAccess(t *testing.T) {
 	// Wait for all goroutines to finish before evaluating the results
 	awaitDeregistration.Wait()
 
-	if negativeReturnCounter > 1 {
-		t.Fatalf(
-			"deregister returned false %d times, expected 1",
-			negativeReturnCounter,
-		)
-	}
+	require.Equal(t, uint32(0), negativeReturnCounter)
 
 	// Expect 1 active session
-	if reg.activeSessionsNum() != 0 {
-		t.Fatal("Expected ActiveSessionsNum to return 0")
-	}
+	require.Equal(t, 0, reg.activeSessionsNum())
 
 	// Expect no active connections on session A
-	actualSessConsAfter := reg.sessionConnectionsNum("testkey_A")
-	if actualSessConsAfter != -1 {
-		t.Fatalf(
-			"Expected ActiveSessionsNum to return 0, got: %d",
-			actualSessConsAfter,
-		)
-	}
+	require.Equal(t, -1, reg.sessionConnectionsNum("testkey_A"))
 }
 
 // TestSessRegSessionConnections tests the sessionConnections method
@@ -360,33 +267,21 @@ func TestSessRegSessionConnections(t *testing.T) {
 	sessA1 := NewSession(nil, func() string { return "testkey_A" })
 	cltA1.session = &sessA1
 
-	if err := reg.register(cltA1); err != nil {
-		t.Fatalf("Unexpected error: %s", err)
-	}
+	require.NoError(t, reg.register(cltA1))
 
 	// Register second connection on same session
 	cltA2 := newConnection(nil, "A2", nil)
 	sessA2 := NewSession(nil, func() string { return "testkey_A" })
 	cltA2.session = &sessA2
 
-	if err := reg.register(cltA2); err != nil {
-		t.Fatalf("Unexpected error: %s", err)
-	}
+	require.NoError(t, reg.register(cltA2))
 
 	// Expect 1 active session
-	if reg.activeSessionsNum() != expectedSessionsNum {
-		t.Fatalf("Expected ActiveSessionsNum to return %d", expectedSessionsNum)
-	}
+	require.Equal(t, expectedSessionsNum, reg.activeSessionsNum())
 
 	// Expect 2 active connections on session A
 	list := reg.sessionConnections("testkey_A")
-	if len(list) != 2 {
-		t.Fatal("Expected 2 active connections on session testkey_A")
-	}
-	if list[0] != cltA1 {
-		t.Fatal("Expected cltA1 to be in the list of active connections")
-	}
-	if list[1] != cltA2 {
-		t.Fatal("Expected cltA2 to be in the list of active connections")
-	}
+	require.Len(t, list, 2)
+	require.Equal(t, cltA1, list[0])
+	require.Equal(t, cltA2, list[1])
 }
