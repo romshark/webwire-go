@@ -31,8 +31,10 @@
 	<a href="https://godoc.org/github.com/qbeon/webwire-go">
 		<img src="https://godoc.org/github.com/zalando/skipper?status.svg" alt="GoDoc">
 	</a>
-	<a href="https://www.paypal.me/romshark">
-		<img src="https://img.shields.io/badge/Donate-PayPal-green.svg" alt="Donate">
+</p>
+<p align="center">
+	<a href="https://opencollective.com/webwire-go">
+		<img src="https://opencollective.com/webwire-go/tiers/backer.svg?avatarHeight=64" alt="OpenCollective">
 	</a>
 </p>
 <br>
