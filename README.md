@@ -333,10 +333,10 @@ The [official JavaScript library](https://github.com/qbeon/webwire-js) enables s
 
 ## Dependencies
 This library depends on:
-- **[websocket](https://github.com/gorilla/websocket)** version [v1.2.0](https://github.com/gorilla/websocket/releases/tag/v1.2.0) by **[Gorilla web toolkit](https://github.com/gorilla)** - A WebSocket implementation for Go.  
+- **[websocket](https://github.com/gorilla/websocket)** (**embedded**) version [v1.2.0](https://github.com/gorilla/websocket/releases/tag/v1.2.0) by **[Gorilla web toolkit](https://github.com/gorilla)** - A WebSocket implementation for Go.  
 This library is used internally to abstract away the underlying websockets implementation.
 - **[tmdwg-go](https://github.com/qbeon/tmdwg-go)** version [v1.0.0](https://github.com/qbeon/tmdwg-go/releases/tag/1.0.0) by **[QBEON](https://github.com/qbeon)** - A timed wait group implementation used internally for asynchronous testing.
-
+- **[testify](https://github.com/stretchr/testify)** version [v1.2.2](https://github.com/stretchr/testify/releases/tag/v1.2.2) by **[stretchr](https://github.com/stretchr)** - A set of packages that provide testing tools used internally for testing.
 
 ----
 
