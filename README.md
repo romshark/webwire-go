@@ -33,8 +33,8 @@
 	</a>
 </p>
 <p align="center">
-	<a href="https://opencollective.com/webwire-go">
-		<img src="https://opencollective.com/webwire-go/tiers/backer.svg?avatarHeight=64" alt="OpenCollective">
+	<a href="https://opencollective.com/webwire">
+		<img src="https://opencollective.com/webwire/tiers/backer.svg?avatarHeight=64" alt="OpenCollective">
 	</a>
 </p>
 <br>
