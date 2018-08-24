@@ -29,7 +29,7 @@
 		<img src="https://img.shields.io/badge/License-MIT-green.svg" alt="Licence: MIT">
 	</a>
 	<a href="https://godoc.org/github.com/qbeon/webwire-go">
-		<img src="https://godoc.org/github.com/zalando/skipper?status.svg" alt="GoDoc">
+		<img src="https://godoc.org/github.com/qbeon/webwire-go?status.svg" alt="GoDoc">
 	</a>
 </p>
 <p align="center">
