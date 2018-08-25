@@ -62,13 +62,11 @@ func TestClientSessionRestoration(t *testing.T) {
 					assert.Equal(t, createdSession.Key, key)
 					assert.Contains(t, sessionStorage, key)
 					session := sessionStorage[key]
-					return wwr.SessionLookupResult{
-						Creation:   session.Creation,
-						LastLookup: session.LastLookup,
-						Info: wwr.SessionInfoToVarMap(
-							session.Info,
-						),
-					}, nil
+					return wwr.NewSessionLookupResult(
+						session.Creation,                      // Creation
+						session.LastLookup,                    // LastLookup
+						wwr.SessionInfoToVarMap(session.Info), // Info
+					), nil
 				},
 			},
 		},

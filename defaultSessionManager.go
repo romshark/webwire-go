@@ -9,15 +9,15 @@ import (
 	"time"
 )
 
-// SessionFile represents the serialization structure of a default session file
-type SessionFile struct {
+// sessionFile represents the serialization structure of a default session file
+type sessionFile struct {
 	Creation   time.Time              `json:"c"`
 	LastLookup time.Time              `json:"l"`
 	Info       map[string]interface{} `json:"i"`
 }
 
 // Parse parses the session file from a file
-func (sessf *SessionFile) Parse(filePath string) error {
+func (sessf *sessionFile) Parse(filePath string) error {
 	contents, err := ioutil.ReadFile(filePath)
 	if err != nil {
 		return fmt.Errorf(
@@ -29,7 +29,7 @@ func (sessf *SessionFile) Parse(filePath string) error {
 }
 
 // Save writes the session file to a file on the filesystem
-func (sessf *SessionFile) Save(filePath string) error {
+func (sessf *sessionFile) Save(filePath string) error {
 	encoded, err := json.Marshal(sessf)
 	if err != nil {
 		return fmt.Errorf("Couldn't marshal session file: %s", err)
@@ -95,7 +95,7 @@ func (mng *DefaultSessionManager) filePath(sessionKey string) string {
 // It writes the created session into a file using the session key as file name
 func (mng *DefaultSessionManager) OnSessionCreated(conn Connection) error {
 	sess := conn.Session()
-	sessFile := SessionFile{
+	sessFile := sessionFile{
 		Creation:   sess.Creation,
 		LastLookup: sess.LastLookup,
 		Info:       SessionInfoToVarMap(sess.Info),
@@ -115,37 +115,41 @@ func (mng *DefaultSessionManager) OnSessionLookup(key string) (
 	// Lookup session file
 	_, err := os.Stat(path)
 	if os.IsNotExist(err) {
-		return SessionLookupResult{}, SessNotFoundErr{}
+		return nil, nil
 	} else if err != nil {
-		return SessionLookupResult{}, fmt.Errorf(
+		return nil, fmt.Errorf(
 			"Unexpected error during file lookup: %s",
 			err,
 		)
 	}
 
 	// Parse session file
-	var file SessionFile
+	var file sessionFile
 	if err := file.Parse(path); err != nil {
-		return SessionLookupResult{}, fmt.Errorf(
+		return nil, fmt.Errorf(
 			"Couldn't parse session file: %s",
 			err,
 		)
 	}
 
 	// Update last lookup
-	newSessionFile := SessionFile{
+	newSessionFile := sessionFile{
 		Creation:   file.Creation,
 		LastLookup: time.Now().UTC(),
 		Info:       file.Info,
 	}
 	if err := newSessionFile.Save(mng.filePath(key)); err != nil {
-		return SessionLookupResult{}, fmt.Errorf(
+		return nil, fmt.Errorf(
 			"Couldn't update last lookup field, failed writing file: %s",
 			err,
 		)
 	}
 
-	return SessionLookupResult(file), nil
+	return NewSessionLookupResult(
+		file.Creation,
+		file.LastLookup,
+		file.Info,
+	), nil
 }
 
 // OnSessionClosed implements the session manager interface.

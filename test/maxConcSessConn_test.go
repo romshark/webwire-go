@@ -52,17 +52,16 @@ func TestMaxConcSessConn(t *testing.T) {
 					error,
 				) {
 					if session, exists := sessionStorage[key]; exists {
-						return webwire.SessionLookupResult{
-							Creation:   session.Creation,
-							LastLookup: session.LastLookup,
-							Info: webwire.SessionInfoToVarMap(
+						return webwire.NewSessionLookupResult(
+							session.Creation,   // Creation
+							session.LastLookup, // LastLookup
+							webwire.SessionInfoToVarMap(
 								session.Info,
-							),
-						}, nil
+							), // Info
+						), nil
 					}
 					// Session not found
-					return webwire.SessionLookupResult{},
-						webwire.SessNotFoundErr{}
+					return nil, nil
 				},
 			},
 		},

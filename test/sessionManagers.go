@@ -61,15 +61,15 @@ func (mng *inMemSessManager) OnSessionLookup(key string) (
 		mng.sessions[key] = session
 
 		// Session found
-		return wwr.SessionLookupResult{
-			Creation:   session.Creation,
-			LastLookup: session.LastLookup,
-			Info:       wwr.SessionInfoToVarMap(session.Info),
-		}, nil
+		return wwr.NewSessionLookupResult(
+			session.Creation,                      // Creation
+			session.LastLookup,                    // LastLookup
+			wwr.SessionInfoToVarMap(session.Info), // Info
+		), nil
 	}
 
 	// Session not found
-	return wwr.SessionLookupResult{}, wwr.SessNotFoundErr{}
+	return nil, nil
 }
 
 // OnSessionClosed implements the session manager interface.
@@ -109,7 +109,7 @@ func (mng *callbackPoweredSessionManager) OnSessionLookup(
 	key string,
 ) (wwr.SessionLookupResult, error) {
 	if mng.SessionLookup == nil {
-		return wwr.SessionLookupResult{}, wwr.SessNotFoundErr{}
+		return nil, nil
 	}
 	return mng.SessionLookup(key)
 }

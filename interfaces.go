@@ -153,10 +153,16 @@ type Connection interface {
 }
 
 // SessionLookupResult represents the result of a session lookup
-type SessionLookupResult struct {
-	Creation   time.Time
-	LastLookup time.Time
-	Info       map[string]interface{}
+type SessionLookupResult interface {
+	// Creation returns the retrieved creation time
+	Creation() time.Time
+
+	// LastLookup returns the retrieved last lookup time
+	LastLookup() time.Time
+
+	// Info returns the retrieved session information
+	// in the form of a JSON compliant variant map
+	Info() map[string]interface{}
 }
 
 // SessionManager defines the interface of a webwire server's session manager
@@ -175,11 +181,10 @@ type SessionManager interface {
 
 	// OnSessionLookup is invoked when the server is looking for a specific
 	// session given its key.
-	// If the session wasn't found it must return a webwire.SessNotFoundErr,
-	// otherwise it must first update the LastLookup field of the session
-	// to ensure it's not garbage collected and then return
-	// a webwire.SessionLookupResult object containing the time of the sessions
-	// creation and the exact copy of the session info object.
+	// If the session wasn't found `nil` must be returned without an error,
+	// otherwise if the session was found then a SessionLookupResult instance
+	// created by wwr.NewSessionLookupResult must be returned with the required
+	// parameters set.
 	//
 	// If an error (that's not a webwire.SessNotFoundErr) is returned then
 	// it'll be logged and the session restoration will fail.

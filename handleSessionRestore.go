@@ -30,24 +30,29 @@ func (srv *server) handleSessionRestore(
 	// Call session manager lookup hook
 	result, err := srv.sessionManager.OnSessionLookup(key)
 
-	// Inspect error if any
-	switch err := err.(type) {
-	case SessNotFoundErr:
-		srv.failMsg(con, message, SessNotFoundErr{})
-		return
-	default:
+	if err != nil {
+		// Fail message with internal error and log it in case the handler fails
 		srv.failMsg(con, message, nil)
 		srv.errorLog.Printf("CRITICAL: Session search handler failed: %s", err)
 		return
-	case nil:
 	}
+
+	if result == nil {
+		// Fail message with special error if the session wasn't found
+		srv.failMsg(con, message, SessNotFoundErr{})
+		return
+	}
+
+	sessionCreation := result.Creation()
+	sessionLastLookup := result.LastLookup()
+	sessionInfo := result.Info()
 
 	// JSON encode the session
 	encodedSessionObj := JSONEncodedSession{
 		Key:        key,
-		Creation:   result.Creation,
-		LastLookup: result.LastLookup,
-		Info:       result.Info,
+		Creation:   sessionCreation,
+		LastLookup: sessionLastLookup,
+		Info:       sessionInfo,
 	}
 	encodedSession, err := json.Marshal(&encodedSessionObj)
 	if err != nil {
@@ -62,14 +67,14 @@ func (srv *server) handleSessionRestore(
 
 	// Parse attached session info
 	var parsedSessInfo SessionInfo
-	if result.Info != nil && srv.sessionInfoParser != nil {
-		parsedSessInfo = srv.sessionInfoParser(result.Info)
+	if sessionInfo != nil && srv.sessionInfoParser != nil {
+		parsedSessInfo = srv.sessionInfoParser(sessionInfo)
 	}
 
 	con.setSession(&Session{
 		Key:        key,
-		Creation:   result.Creation,
-		LastLookup: result.LastLookup,
+		Creation:   sessionCreation,
+		LastLookup: sessionLastLookup,
 		Info:       parsedSessInfo,
 	})
 	if err := srv.sessionRegistry.register(con); err != nil {
