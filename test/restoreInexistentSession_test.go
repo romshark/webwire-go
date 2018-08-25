@@ -34,7 +34,9 @@ func TestRestoreInexistentSession(t *testing.T) {
 
 	// Try to restore the session and expect it to fail
 	// due to the session being inexistent
-	sessionRestorationError := client.connection.RestoreSession([]byte("lalala"))
+	sessionRestorationError := client.connection.RestoreSession(
+		[]byte("lalala"),
+	)
 	require.Error(t, sessionRestorationError)
 	require.IsType(t, wwr.SessNotFoundErr{}, sessionRestorationError)
 }

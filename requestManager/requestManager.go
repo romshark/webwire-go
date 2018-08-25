@@ -11,7 +11,8 @@ import (
 	pld "github.com/qbeon/webwire-go/payload"
 )
 
-// RequestIdentifier represents the universally unique minified UUIDv4 identifier of a request.
+// RequestIdentifier represents the universally unique, minified
+// UUIDv4 identifier of a request.
 type RequestIdentifier = [8]byte
 
 // reply is used by the request manager to represent the results
@@ -96,7 +97,8 @@ func NewRequestManager() RequestManager {
 }
 
 // Create creates and registers a new request.
-// Create doesn't start the timeout timer, this is done in the subsequent request.AwaitReply
+// Create doesn't start the timeout timer,
+// this is done in the subsequent request.AwaitReply
 func (manager *RequestManager) Create(timeout time.Duration) *Request {
 	manager.lock.Lock()
 
@@ -122,7 +124,8 @@ func (manager *RequestManager) Create(timeout time.Duration) *Request {
 	return newRequest
 }
 
-// deregister deregisters the given clients session from the list of currently pending requests
+// deregister deregisters the given clients session from the list
+// of currently pending requests
 func (manager *RequestManager) deregister(identifier RequestIdentifier) {
 	manager.lock.Lock()
 	delete(manager.pending, identifier)
@@ -131,7 +134,8 @@ func (manager *RequestManager) deregister(identifier RequestIdentifier) {
 
 // Fulfill fulfills the request associated with the given request identifier
 // with the provided reply payload.
-// Returns true if a pending request was fulfilled and deregistered, otherwise returns false
+// Returns true if a pending request was fulfilled and deregistered,
+// otherwise returns false
 func (manager *RequestManager) Fulfill(
 	identifier RequestIdentifier,
 	payload pld.Payload,
@@ -153,9 +157,13 @@ func (manager *RequestManager) Fulfill(
 	return true
 }
 
-// Fail fails the request associated with the given request identifier with the provided error.
-// Returns true if a pending request was failed and deregistered, otherwise returns false
-func (manager *RequestManager) Fail(identifier RequestIdentifier, err error) bool {
+// Fail fails the request associated with the given request identifier
+// with the provided error. Returns true if a pending request
+// was failed and deregistered, otherwise returns false
+func (manager *RequestManager) Fail(
+	identifier RequestIdentifier,
+	err error,
+) bool {
 	manager.lock.RLock()
 	req, exists := manager.pending[identifier]
 	manager.lock.RUnlock()
@@ -178,7 +186,8 @@ func (manager *RequestManager) PendingRequests() int {
 	return len
 }
 
-// IsPending returns true if the request associated with the given identifier is pending
+// IsPending returns true if the request associated
+// with the given identifier is pending
 func (manager *RequestManager) IsPending(identifier RequestIdentifier) bool {
 	manager.lock.RLock()
 	_, exists := manager.pending[identifier]

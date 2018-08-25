@@ -7,11 +7,12 @@ import (
 
 // connect will try to establish a connection to the configured webwire server
 // and try to automatically restore the session if there is any.
-// If the session restoration fails connect won't fail, instead it will reset the current session
-// and return normally.
-// Before establishing the connection - connect verifies protocol compatibility and returns an
-// error if the protocol implemented by the server doesn't match the required protocol version
-// of this client instance.
+// If the session restoration fails connect won't fail,
+// instead it will reset the current session and return normally.
+// Before establishing the connection - connect verifies
+// protocol compatibility and returns an error if
+// the protocol implemented by the server doesn't match
+// the required protocol version of this client instance.
 func (clt *client) connect() error {
 	clt.connectLock.Lock()
 	defer clt.connectLock.Unlock()
@@ -59,7 +60,11 @@ func (clt *client) connect() error {
 							context.Background(),
 							0,
 						); err != nil {
-							clt.errorLog.Printf("Auto-reconnect failed after connection loss: %s", err)
+							clt.errorLog.Printf(
+								"Auto-reconnect failed "+
+									"after connection loss: %s",
+								err,
+							)
 							return
 						}
 					}()
@@ -87,9 +92,14 @@ func (clt *client) connect() error {
 	// Try to restore session if necessary
 	restoredSession, err := clt.requestSessionRestoration([]byte(sessionKey))
 	if err != nil {
-		// Just log a warning and still return nil, even if session restoration failed,
-		// because we only care about the connection establishment in this method
-		clt.warningLog.Printf("Couldn't restore session on reconnection: %s", err)
+		// Just log a warning and still return nil,
+		// even if session restoration failed,
+		// because we only care about the connection establishment
+		// in this method
+		clt.warningLog.Printf(
+			"Couldn't restore session on reconnection: %s",
+			err,
+		)
 
 		// Reset the session
 		clt.sessionLock.Lock()

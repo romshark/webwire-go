@@ -5,7 +5,8 @@ import (
 	"sync"
 )
 
-// sessionRegistry represents a thread safe registry of all currently active sessions
+// sessionRegistry represents a thread safe registry
+// of all currently active sessions
 type sessionRegistry struct {
 	lock     sync.RWMutex
 	maxConns uint
@@ -13,8 +14,8 @@ type sessionRegistry struct {
 }
 
 // newSessionRegistry returns a new instance of a session registry.
-// maxConns defines the maximum number of concurrent connections for a single session
-// while zero stands for unlimited
+// maxConns defines the maximum number of concurrent connections
+// for a single session while zero stands for unlimited
 func newSessionRegistry(maxConns uint) *sessionRegistry {
 	return &sessionRegistry{
 		lock:     sync.RWMutex{},
@@ -100,7 +101,9 @@ func (asr *sessionRegistry) sessionConnectionsNum(sessionKey string) int {
 }
 
 // sessionConnections implements the sessionRegistry interface
-func (asr *sessionRegistry) sessionConnections(sessionKey string) []*connection {
+func (asr *sessionRegistry) sessionConnections(
+	sessionKey string,
+) []*connection {
 	asr.lock.RLock()
 	if connList, exists := asr.registry[sessionKey]; exists {
 		asr.lock.RUnlock()

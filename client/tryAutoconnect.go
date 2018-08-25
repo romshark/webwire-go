@@ -27,7 +27,8 @@ func (clt *client) tryAutoconnect(
 	}
 
 	// Start the reconnector goroutine if not already started.
-	// If it's already started then just proceed to wait until either connected or timed out
+	// If it's already started then just proceed to wait until
+	// either connected or timed out
 	clt.backgroundReconnect()
 
 	if timeout > 0 {

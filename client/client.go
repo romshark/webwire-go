@@ -58,14 +58,18 @@ type client struct {
 	sessionLock sync.RWMutex
 	session     *webwire.Session
 
-	// The API lock synchronizes concurrent access to the public client interface.
+	// The API lock synchronizes concurrent access
+	// to the public client interface.
 	// Request, and Signal methods are locked with a shared lock
-	// because performing multiple requests and/or signals simultaneously is fine.
-	// The Connect, RestoreSession, CloseSession and Close methods are locked exclusively
-	// because they should temporarily block any other interaction with this client instance.
+	// because performing multiple requests and/or signals simultaneously
+	// is fine.
+	// The Connect, RestoreSession, CloseSession and Close methods
+	// are locked exclusively because they should temporarily block
+	// any other interaction with this client instance.
 	apiLock sync.RWMutex
 
-	// backReconn is a dam that's flushed when the client establishes a connection.
+	// backReconn is a dam that's flushed
+	// when the client establishes a connection.
 	backReconn *dam
 	// connecting prevents multiple autoconnection attempts from spawning
 	// superfluous multiple goroutines each polling the server
@@ -86,8 +90,9 @@ type client struct {
 
 // Status returns the current client status
 // which is either disabled, disconnected or connected.
-// The client is considered disabled when it was manually closed through client.Close,
-// while disconnected is considered a temporary connection loss.
+// The client is considered disabled when it was manually closed
+// through client.Close, while disconnected is considered
+// a temporary connection loss.
 // A disabled client won't autoconnect until enabled again.
 func (clt *client) Status() Status {
 	return atomic.LoadInt32(&clt.status)
@@ -214,7 +219,9 @@ func (clt *client) RestoreSession(sessionKey []byte) error {
 	clt.sessionLock.RLock()
 	if clt.session != nil {
 		clt.sessionLock.RUnlock()
-		return fmt.Errorf("Can't restore session if another one is already active")
+		return fmt.Errorf(
+			"Can't restore session if another one is already active",
+		)
 	}
 	clt.sessionLock.RUnlock()
 

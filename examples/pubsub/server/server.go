@@ -22,7 +22,8 @@ type PubSubServer struct {
 	mapLock           sync.Mutex
 }
 
-// NewPubSubServer constructs a new pub-sub webwire server implementation instance
+// NewPubSubServer constructs a new pub-sub
+// webwire server implementation instance
 func NewPubSubServer() *PubSubServer {
 	return &PubSubServer{
 		1 * time.Second,
@@ -62,7 +63,10 @@ func (srv *PubSubServer) OnRequest(
 
 // BeforeUpgrade implements the webwire.ServerImplementation interface.
 // Must return true to ensure incoming connections are accepted
-func (srv *PubSubServer) BeforeUpgrade(resp http.ResponseWriter, req *http.Request) bool {
+func (srv *PubSubServer) BeforeUpgrade(
+	resp http.ResponseWriter,
+	req *http.Request,
+) bool {
 	return true
 }
 
@@ -98,7 +102,11 @@ func (srv *PubSubServer) Broadcast() {
 
 		msg := time.Now().String()
 
-		log.Printf("Broadcasting message '%s', to %d clients", msg, len(srv.connectedClients))
+		log.Printf(
+			"Broadcasting message '%s', to %d clients",
+			msg,
+			len(srv.connectedClients),
+		)
 
 		for client := range srv.connectedClients {
 			client.Signal("", wwr.NewPayload(wwr.EncodingBinary, []byte(msg)))

@@ -6,7 +6,8 @@ import (
 	pld "github.com/qbeon/webwire-go/payload"
 )
 
-// NewReplyMessage composes a new reply message and returns its binary representation
+// NewReplyMessage composes a new reply message
+// and returns its binary representation
 func NewReplyMessage(
 	requestIdentifier [8]byte,
 	payloadEncoding pld.Encoding,
@@ -17,7 +18,10 @@ func NewReplyMessage(
 
 	// Verify payload data validity in case of UTF16 encoding
 	if payloadEncoding == pld.Utf16 && len(payloadData)%2 != 0 {
-		panic(fmt.Errorf("Invalid UTF16 reply payload data length: %d", len(payloadData)))
+		panic(fmt.Errorf(
+			"Invalid UTF16 reply payload data length: %d",
+			len(payloadData),
+		))
 	}
 
 	// Check if a header padding is necessary.

@@ -31,7 +31,10 @@ func (srv *serverImpl) OnOptions(resp http.ResponseWriter) {
 }
 
 // BeforeUpgrade implements the webwire.ServerImplementation interface
-func (srv *serverImpl) BeforeUpgrade(resp http.ResponseWriter, req *http.Request) bool {
+func (srv *serverImpl) BeforeUpgrade(
+	resp http.ResponseWriter,
+	req *http.Request,
+) bool {
 	return srv.beforeUpgrade(resp, req)
 }
 

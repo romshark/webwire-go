@@ -104,11 +104,13 @@ func (msg *Message) parseSignal(message []byte) error {
 	nameLen := int(byte(message[1:2][0]))
 	payloadOffset := 2 + nameLen
 
-	// Verify total message size to prevent segmentation faults caused by inconsistent flags,
-	// this could happen if the specified name length doesn't correspond to the actual name length
+	// Verify total message size to prevent segmentation faults
+	// caused by inconsistent flags. This could happen if the specified
+	// name length doesn't correspond to the actual name length
 	if len(message) < MsgMinLenSignal+nameLen {
 		return fmt.Errorf(
-			"Invalid signal message, too short for full name (%d) and the minimum payload (1)",
+			"Invalid signal message, too short for full name (%d) "+
+				"and the minimum payload (1)",
 			nameLen,
 		)
 	}
@@ -135,7 +137,8 @@ func (msg *Message) parseSignalUtf16(message []byte) error {
 
 	if len(message)%2 != 0 {
 		return fmt.Errorf(
-			"Unaligned UTF16 encoded signal message (probably missing header padding)",
+			"Unaligned UTF16 encoded signal message " +
+				"(probably missing header padding)",
 		)
 	}
 
@@ -152,11 +155,13 @@ func (msg *Message) parseSignalUtf16(message []byte) error {
 		payloadOffset++
 	}
 
-	// Verify total message size to prevent segmentation faults caused by inconsistent flags,
-	// this could happen if the specified name length doesn't correspond to the actual name length
+	// Verify total message size to prevent segmentation faults
+	// caused by inconsistent flags. This could happen if the specified
+	// name length doesn't correspond to the actual name length
 	if len(message) < minMsgSize {
 		return fmt.Errorf(
-			"Invalid signal message, too short for full name (%d) and the minimum payload (2)",
+			"Invalid signal message, too short for full name (%d) "+
+				"and the minimum payload (2)",
 			nameLen,
 		)
 	}
@@ -191,7 +196,7 @@ func (msg *Message) parseRequest(message []byte) error {
 	payloadOffset := 10 + nameLen
 
 	// Verify total message size to prevent segmentation faults caused
-	// by inconsistent flags, this could happen if the specified name length
+	// by inconsistent flags. This could happen if the specified name length
 	// doesn't correspond to the actual name length
 	if nameLen > 0 {
 		// Subtract one to not require the payload but at least the name
@@ -228,7 +233,8 @@ func (msg *Message) parseRequestUtf16(message []byte) error {
 
 	if len(message)%2 != 0 {
 		return fmt.Errorf(
-			"Unaligned UTF16 encoded request message (probably missing header padding)",
+			"Unaligned UTF16 encoded request message " +
+				"(probably missing header padding)",
 		)
 	}
 
@@ -257,7 +263,7 @@ func (msg *Message) parseRequestUtf16(message []byte) error {
 	}
 
 	// Verify total message size to prevent segmentation faults caused
-	// by inconsistent flags, this could happen if the specified name length
+	// by inconsistent flags. This could happen if the specified name length
 	// doesn't correspond to the actual name length
 	if nameLen > 0 {
 		if len(message) < minRequiredMsgSize {
@@ -315,7 +321,8 @@ func (msg *Message) parseReplyUtf16(message []byte) error {
 
 	if len(message)%2 != 0 {
 		return fmt.Errorf(
-			"Unaligned UTF16 encoded reply message (probably missing header padding)",
+			"Unaligned UTF16 encoded reply message " +
+				"(probably missing header padding)",
 		)
 	}
 
@@ -341,7 +348,8 @@ func (msg *Message) parseReplyUtf16(message []byte) error {
 }
 
 // parseErrorReply parses the given message assuming it's an error reply message
-// parsing the error code into the name field and the UTF8 encoded error message into the payload
+// parsing the error code into the name field
+// and the UTF8 encoded error message into the payload
 func (msg *Message) parseErrorReply(message []byte) error {
 	if len(message) < MsgMinLenErrorReply {
 		return fmt.Errorf("Invalid error reply message, too short")
@@ -358,16 +366,20 @@ func (msg *Message) parseErrorReply(message []byte) error {
 
 	// Verify error code length (must be at least 1 character long)
 	if errCodeLen < 1 {
-		return fmt.Errorf("Invalid error reply message, error code length flag is zero")
+		return fmt.Errorf(
+			"Invalid error reply message, error code length flag is zero",
+		)
 	}
 
-	// Verify total message size to prevent segmentation faults caused by inconsistent flags,
-	// this could happen if the specified error code length
-	// doesn't correspond to the actual length of the provided error code.
+	// Verify total message size to prevent segmentation faults
+	// caused by inconsistent flags. This could happen if the specified
+	// error code length doesn't correspond to the actual length
+	// of the provided error code.
 	// Subtract 1 character already taken into account by MsgMinLenErrorReply
 	if len(message) < MsgMinLenErrorReply+errCodeLen-1 {
 		return fmt.Errorf(
-			"Invalid error reply message, too short for specified code length (%d)",
+			"Invalid error reply message, "+
+				"too short for specified code length (%d)",
 			errCodeLen,
 		)
 	}
@@ -383,7 +395,9 @@ func (msg *Message) parseErrorReply(message []byte) error {
 
 func (msg *Message) parseRestoreSession(message []byte) error {
 	if len(message) < MsgMinLenRestoreSession {
-		return fmt.Errorf("Invalid session restoration request message, too short")
+		return fmt.Errorf(
+			"Invalid session restoration request message, too short",
+		)
 	}
 
 	// Read identifier
@@ -400,7 +414,9 @@ func (msg *Message) parseRestoreSession(message []byte) error {
 
 func (msg *Message) parseCloseSession(message []byte) error {
 	if len(message) != MsgMinLenCloseSession {
-		return fmt.Errorf("Invalid session destruction request message, too short")
+		return fmt.Errorf(
+			"Invalid session destruction request message, too short",
+		)
 	}
 
 	// Read identifier
@@ -413,7 +429,9 @@ func (msg *Message) parseCloseSession(message []byte) error {
 
 func (msg *Message) parseSessionCreated(message []byte) error {
 	if len(message) < MsgMinLenSessionCreated {
-		return fmt.Errorf("Invalid session creation notification message, too short")
+		return fmt.Errorf(
+			"Invalid session creation notification message, too short",
+		)
 	}
 
 	msg.Payload = pld.Payload{
@@ -424,7 +442,9 @@ func (msg *Message) parseSessionCreated(message []byte) error {
 
 func (msg *Message) parseSessionClosed(message []byte) error {
 	if len(message) != MsgMinLenSessionClosed {
-		return fmt.Errorf("Invalid session closure notification message, too short")
+		return fmt.Errorf(
+			"Invalid session closure notification message, too short",
+		)
 	}
 	return nil
 }

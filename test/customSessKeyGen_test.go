@@ -36,7 +36,8 @@ func TestCustomSessKeyGen(t *testing.T) {
 				key := conn.SessionKey()
 				assert.Equal(t, expectedSessionKey, key)
 
-				// Return the key of the newly created session (use default binary encoding)
+				// Return the key of the newly created session
+				// (use default binary encoding)
 				return wwr.NewPayload(
 					wwr.EncodingBinary,
 					[]byte(key),

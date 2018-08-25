@@ -26,7 +26,8 @@ func (srv *server) handleSignal(con *connection, message *msg.Message) {
 		},
 	)
 
-	// Mark signal as done and shutdown the server if scheduled and no ops are left
+	// Mark signal as done and shutdown the server
+	// if scheduled and no ops are left
 	srv.opsLock.Lock()
 	srv.currentOps--
 	if srv.shutdown && srv.currentOps < 1 {

@@ -6,19 +6,26 @@ import (
 	pld "github.com/qbeon/webwire-go/payload"
 )
 
-// NewSignalMessage composes a new named signal message and returns its binary representation
+// NewSignalMessage composes a new named signal message
+// and returns its binary representation
 func NewSignalMessage(
 	name string,
 	payloadEncoding pld.Encoding,
 	payloadData []byte,
 ) (msg []byte) {
 	if len(name) > 255 {
-		panic(fmt.Errorf("Unsupported request message name length: %d", len(name)))
+		panic(fmt.Errorf(
+			"Unsupported request message name length: %d",
+			len(name),
+		))
 	}
 
 	// Verify payload data validity in case of UTF16 encoding
 	if payloadEncoding == pld.Utf16 && len(payloadData)%2 != 0 {
-		panic(fmt.Errorf("Invalid UTF16 signal payload data length: %d", len(payloadData)))
+		panic(fmt.Errorf(
+			"Invalid UTF16 signal payload data length: %d",
+			len(payloadData),
+		))
 	}
 
 	// Determine total message length
@@ -52,7 +59,10 @@ func NewSignalMessage(
 	for i := 0; i < len(name); i++ {
 		char := name[i]
 		if char < 32 || char > 126 {
-			panic(fmt.Errorf("Unsupported character in request name: %s", string(char)))
+			panic(fmt.Errorf(
+				"Unsupported character in request name: %s",
+				string(char),
+			))
 		}
 		msg[2+i] = char
 	}

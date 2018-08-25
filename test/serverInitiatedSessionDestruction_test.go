@@ -17,7 +17,10 @@ import (
 // server-initiated session destruction
 func TestServerInitiatedSessionDestruction(t *testing.T) {
 	sessionCreationCallbackCalled := tmdwg.NewTimedWaitGroup(1, 1*time.Second)
-	sessionDestructionCallbackCalled := tmdwg.NewTimedWaitGroup(1, 1*time.Second)
+	sessionDestructionCallbackCalled := tmdwg.NewTimedWaitGroup(
+		1,
+		1*time.Second,
+	)
 	var createdSession *wwr.Session
 	expectedCredentials := wwr.NewPayload(
 		wwr.EncodingUtf8,

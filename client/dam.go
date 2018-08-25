@@ -9,7 +9,8 @@ import (
 	wwr "github.com/qbeon/webwire-go"
 )
 
-// dam represents a "goroutine dam" that accumulates goroutines blocking them until it's flushed
+// dam represents a "goroutine dam" that accumulates goroutines blocking them
+// until it's flushed
 type dam struct {
 	lock    sync.RWMutex
 	barrier chan error

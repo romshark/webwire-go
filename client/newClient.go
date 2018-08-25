@@ -55,9 +55,11 @@ func NewClient(
 	}
 
 	if autoconnect == autoconnectEnabled {
-		// Asynchronously connect to the server immediately after initialization.
-		// Call in another goroutine to not block the contructor function caller.
-		// Set timeout to zero, try indefinitely until connected.
+		// Asynchronously connect to the server
+		// immediately after initialization.
+		// Call in another goroutine to prevent blocking
+		// the constructor function caller.
+		// Set timeout to zero, try indefinitely until connected
 		go newClt.tryAutoconnect(context.Background(), 0)
 	}
 

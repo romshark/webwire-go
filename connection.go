@@ -173,7 +173,10 @@ func (con *connection) CreateSession(attachment SessionInfo) error {
 	// Try to notify about session creation
 	if err := con.notifySessionCreated(&newSession); err != nil {
 		con.sessionLock.Unlock()
-		return fmt.Errorf("Couldn't notify client about the session creation: %s", err)
+		return fmt.Errorf(
+			"Couldn't notify client about the session creation: %s",
+			err,
+		)
 	}
 
 	// Register the session

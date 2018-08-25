@@ -35,11 +35,17 @@ func (clt *client) verifyProtocolVersion() error {
 	defer response.Body.Close()
 	encodedData, err := ioutil.ReadAll(response.Body)
 	if err != nil {
-		return webwire.NewProtocolErr(fmt.Errorf("Couldn't read metadata response body: %s", err))
+		return webwire.NewProtocolErr(fmt.Errorf(
+			"Couldn't read metadata response body: %s",
+			err,
+		))
 	}
 
 	if response.StatusCode == http.StatusServiceUnavailable {
-		return webwire.NewDisconnectedErr(fmt.Errorf("Endpoint unavailable: %s", response.Status))
+		return webwire.NewDisconnectedErr(fmt.Errorf(
+			"Endpoint unavailable: %s",
+			response.Status,
+		))
 	}
 
 	// Unmarshal response
@@ -56,7 +62,10 @@ func (clt *client) verifyProtocolVersion() error {
 
 	// Verify metadata
 	if metadata.ProtocolVersion != supportedProtocolVersion {
-		return webwire.NewConnIncompErr(metadata.ProtocolVersion, supportedProtocolVersion)
+		return webwire.NewConnIncompErr(
+			metadata.ProtocolVersion,
+			supportedProtocolVersion,
+		)
 	}
 
 	return nil

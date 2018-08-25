@@ -20,7 +20,8 @@ const (
 	Enabled
 )
 
-// ServerOptions represents the options used during the creation of a new WebWire server instance
+// ServerOptions represents the options
+// used during the creation of a new WebWire server instance
 type ServerOptions struct {
 	Address               string
 	Sessions              OptionValue
@@ -44,7 +45,8 @@ func (srvOpt *ServerOptions) SetDefaults() {
 	}
 
 	if srvOpt.Sessions == Enabled && srvOpt.SessionManager == nil {
-		// Force the default session manager to use the default session directory
+		// Force the default session manager
+		// to use the default session directory
 		srvOpt.SessionManager = NewDefaultSessionManager("")
 	}
 

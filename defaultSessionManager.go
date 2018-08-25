@@ -47,15 +47,18 @@ type DefaultSessionManager struct {
 }
 
 // NewDefaultSessionManager constructs a new default session manager instance.
-// Verifies the existence of the given session directory and creates it if it doesn't exist yet
+// Verifies the existence of the given session directory
+// and creates it if it doesn't exist yet
 func NewDefaultSessionManager(sessFilesPath string) *DefaultSessionManager {
 	if len(sessFilesPath) < 1 {
-		// Use the current directory as parent of the session directory by default
+		// Use the current directory as parent of the session directory
+		// by default
 		var err error
 		sessFilesPath, err = filepath.Abs(filepath.Dir(os.Args[0]))
 		if err != nil {
 			panic(fmt.Errorf(
-				"Failed to get the current directory ('%s') for the default session manager: %s",
+				"Failed to get the current directory ('%s') "+
+					"for the default session manager: %s",
 				sessFilesPath,
 				err,
 			))
@@ -75,7 +78,8 @@ func NewDefaultSessionManager(sessFilesPath string) *DefaultSessionManager {
 		}
 	} else if err != nil {
 		panic(fmt.Errorf(
-			"Unexpected error during default session directory creation('%s'): %s",
+			"Unexpected error during default session directory creation "+
+				"('%s'): %s",
 			sessFilesPath,
 			err,
 		))

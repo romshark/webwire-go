@@ -37,7 +37,10 @@ func (srv *server) handleRequest(conn *connection, message *msg.Message) {
 	case *ReqErr:
 		srv.failMsg(conn, message, returnedErr)
 	default:
-		srv.errorLog.Printf("Internal error during request handling: %s", returnedErr)
+		srv.errorLog.Printf(
+			"Internal error during request handling: %s",
+			returnedErr,
+		)
 		srv.failMsg(conn, message, returnedErr)
 	}
 }

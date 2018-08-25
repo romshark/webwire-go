@@ -1,7 +1,7 @@
 package message
 
-// NewNamelessRequestMessage composes a new nameless (initially without a name) request message
-// and returns its binary representation
+// NewNamelessRequestMessage composes a new nameless (initially without a name)
+// request message and returns its binary representation
 func NewNamelessRequestMessage(
 	reqType byte,
 	identifier [8]byte,

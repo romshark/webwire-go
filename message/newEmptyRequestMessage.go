@@ -1,6 +1,7 @@
 package message
 
-// NewEmptyRequestMessage composes a new request message consisting only of the type and identifier
+// NewEmptyRequestMessage composes a new request message
+// consisting only of the type and identifier
 // and returns its binary representation
 func NewEmptyRequestMessage(msgType byte, id [8]byte) (msg []byte) {
 	msg = make([]byte, 9)

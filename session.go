@@ -79,7 +79,9 @@ func (s *Session) Clone() *Session {
 func NewSession(info SessionInfo, generator func() string) Session {
 	key := generator()
 	if len(key) < 1 {
-		panic(fmt.Errorf("Invalid session key returned by the session key generator (empty)"))
+		panic(fmt.Errorf(
+			"Invalid session key returned by the session key generator (empty)",
+		))
 	}
 	timeNow := time.Now()
 	return Session{
@@ -90,10 +92,12 @@ func NewSession(info SessionInfo, generator func() string) Session {
 	}
 }
 
-// DefaultSessionKeyGenerator implements the webwire.SessionKeyGenerator interface
+// DefaultSessionKeyGenerator implements
+// the webwire.SessionKeyGenerator interface
 type DefaultSessionKeyGenerator struct{}
 
-// NewDefaultSessionKeyGenerator constructs a new default session key generator implementation
+// NewDefaultSessionKeyGenerator constructs a new default
+// session key generator implementation
 func NewDefaultSessionKeyGenerator() SessionKeyGenerator {
 	return &DefaultSessionKeyGenerator{}
 }

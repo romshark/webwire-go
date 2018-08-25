@@ -12,7 +12,8 @@ func (srv *server) ServeHTTP(
 	resp http.ResponseWriter,
 	req *http.Request,
 ) {
-	// Reject incoming connections during shutdown, pretend the server is temporarily unavailable
+	// Reject incoming connections during shutdown,
+	// pretend the server is temporarily unavailable
 	srv.opsLock.Lock()
 	if srv.shutdown {
 		srv.opsLock.Unlock()

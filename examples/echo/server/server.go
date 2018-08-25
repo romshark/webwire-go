@@ -42,7 +42,10 @@ func (srv *EchoServer) OnClientDisconnected(client wwr.Connection) {}
 
 // BeforeUpgrade implements the webwire.ServerImplementation interface.
 // Must return true to ensure incoming connections are accepted
-func (srv *EchoServer) BeforeUpgrade(resp http.ResponseWriter, req *http.Request) bool {
+func (srv *EchoServer) BeforeUpgrade(
+	resp http.ResponseWriter,
+	req *http.Request,
+) bool {
 	return true
 }
 

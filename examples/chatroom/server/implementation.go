@@ -18,7 +18,8 @@ type ChatRoomServer struct {
 	lock      sync.RWMutex
 }
 
-// NewChatRoomServer constructs a new pub-sub webwire server implementation instance
+// NewChatRoomServer constructs a new
+// webwire server implementation instance
 func NewChatRoomServer() *ChatRoomServer {
 	return &ChatRoomServer{
 		make(map[wwr.Connection]bool),
@@ -66,8 +67,9 @@ func (srv *ChatRoomServer) broadcastMessage(name string, msg string) {
 \****************************************************************/
 
 // onAuth handles incoming authentication requests.
-// It parses and verifies the provided credentials and either rejects the authentication
-// or confirms it eventually creating a session and returning the session key
+// It parses and verifies the provided credentials
+// and either rejects the authentication or confirms it eventually
+// creating a session and returning the session key
 func (srv *ChatRoomServer) handleAuth(
 	_ context.Context,
 	client wwr.Connection,
@@ -86,7 +88,10 @@ func (srv *ChatRoomServer) handleAuth(
 
 	// Try to parse credentials
 	var credentials shared.AuthenticationCredentials
-	if err := json.Unmarshal([]byte(credentialsText), &credentials); err != nil {
+	if err := json.Unmarshal(
+		[]byte(credentialsText),
+		&credentials,
+	); err != nil {
 		return nil, fmt.Errorf("Failed parsing credentials: %s", err)
 	}
 
@@ -140,7 +145,8 @@ func (srv *ChatRoomServer) handleMessage(
 	msgStr, err := payload.Utf8()
 	if err != nil {
 		log.Printf(
-			"Received invalid message from %s, couldn't convert payload to UTF8: %s",
+			"Received invalid message from %s, "+
+				"couldn't convert payload to UTF8: %s",
 			client.Info().RemoteAddr,
 			err,
 		)
@@ -188,7 +194,10 @@ func (srv *ChatRoomServer) OnSignal(
 
 // BeforeUpgrade implements the webwire.ServerImplementation interface.
 // Must return true to ensure incoming connections are accepted
-func (srv *ChatRoomServer) BeforeUpgrade(resp http.ResponseWriter, req *http.Request) bool {
+func (srv *ChatRoomServer) BeforeUpgrade(
+	resp http.ResponseWriter,
+	req *http.Request,
+) bool {
 	return true
 }
 
