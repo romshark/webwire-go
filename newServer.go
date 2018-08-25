@@ -54,7 +54,9 @@ func NewHeadlessServer(
 	opts ServerOptions,
 ) (instance Server, err error) {
 	if implementation == nil {
-		panic(fmt.Errorf("A headed webwire server requires a server implementation, got nil"))
+		panic(fmt.Errorf(
+			"server instance requires an implementation, got nil",
+		))
 	}
 
 	opts.SetDefaults()
