@@ -28,7 +28,6 @@ type ServerOptions struct {
 	SessionManager        SessionManager
 	SessionKeyGenerator   SessionKeyGenerator
 	SessionInfoParser     SessionInfoParser
-	MaxConcurrentHandlers uint32
 	MaxSessionConnections uint
 	Heartbeat             OptionValue
 	HeartbeatTimeout      time.Duration
@@ -90,10 +89,4 @@ func (srvOpt *ServerOptions) SetDefaults() {
 			log.Ldate|log.Ltime|log.Lshortfile,
 		)
 	}
-}
-
-// IsConcurrentHandlersLimited returns true if the number of
-// concurrent handlers is limited, otherwise returns false
-func (srvOpt *ServerOptions) IsConcurrentHandlersLimited() bool {
-	return srvOpt.MaxConcurrentHandlers > 0
 }

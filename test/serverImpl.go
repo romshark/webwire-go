@@ -9,7 +9,10 @@ import (
 
 // serverImpl implements the webwire.ServerImplementation interface
 type serverImpl struct {
-	beforeUpgrade        func(resp http.ResponseWriter, req *http.Request) bool
+	beforeUpgrade func(
+		resp http.ResponseWriter,
+		req *http.Request,
+	) wwr.ConnectionOptions
 	onClientConnected    func(connection wwr.Connection)
 	onClientDisconnected func(connection wwr.Connection)
 	onSignal             func(
@@ -34,7 +37,7 @@ func (srv *serverImpl) OnOptions(resp http.ResponseWriter) {
 func (srv *serverImpl) BeforeUpgrade(
 	resp http.ResponseWriter,
 	req *http.Request,
-) bool {
+) wwr.ConnectionOptions {
 	return srv.beforeUpgrade(resp, req)
 }
 

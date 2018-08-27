@@ -288,7 +288,7 @@ This feature is entirely optional and can be disabled at will which will cause `
 The WebWire server will also try to keep connections alive by periodically sending heartbeats to the client. The heartbeat interval and timeout durations are adjustable through the server options and default to 30 and 60 seconds respectively.
 
 ### Concurrency
-Messages are parsed and handled concurrently in a separate goroutine by default. The total number of concurrently executed handlers can be throttled down to a specified number using the `MaxConcurrentHandlers` server option, which disables the throttling when set to `0`.
+Messages are parsed and handled concurrently in a separate goroutine by default. The total number of concurrently executed handlers can be independently throttled down for each individual connection, which is unlimited by default.
 
 All exported interfaces provided by both the server and the client are thread safe and can thus safely be used concurrently from within multiple goroutines, the library automatically synchronizes all concurrent operations.
 

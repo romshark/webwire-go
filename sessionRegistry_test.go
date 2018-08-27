@@ -15,7 +15,7 @@ func TestSessRegRegisteration(t *testing.T) {
 	reg := newSessionRegistry(0)
 
 	// Register connection with session
-	clt := newConnection(nil, "", nil)
+	clt := newConnection(nil, "", nil, nil)
 	sess := NewSession(nil, func() string { return "testkey_A" })
 	clt.session = &sess
 
@@ -34,11 +34,11 @@ func TestSessRegActiveSessionsNum(t *testing.T) {
 	reg := newSessionRegistry(0)
 
 	// Register 2 connections on two separate sessions
-	cltA1 := newConnection(nil, "", nil)
+	cltA1 := newConnection(nil, "", nil, nil)
 	sessA := NewSession(nil, func() string { return "testkey_A" })
 	cltA1.session = &sessA
 
-	cltB1 := newConnection(nil, "", nil)
+	cltB1 := newConnection(nil, "", nil, nil)
 	sessB := NewSession(nil, func() string { return "testkey_B" })
 	cltB1.session = &sessB
 
@@ -59,14 +59,14 @@ func TestSessRegsessionConnectionsNum(t *testing.T) {
 	reg := newSessionRegistry(0)
 
 	// Register first connection on session A
-	cltA1 := newConnection(nil, "", nil)
+	cltA1 := newConnection(nil, "", nil, nil)
 	sessA1 := NewSession(nil, func() string { return "testkey_A" })
 	cltA1.session = &sessA1
 
 	require.NoError(t, reg.register(cltA1))
 
 	// Register second connection on same session
-	cltA2 := newConnection(nil, "", nil)
+	cltA2 := newConnection(nil, "", nil, nil)
 	sessA2 := NewSession(nil, func() string { return "testkey_A" })
 	cltA2.session = &sessA2
 
@@ -86,14 +86,14 @@ func TestSessRegSessionMaxConns(t *testing.T) {
 	reg := newSessionRegistry(1)
 
 	// Register first connection on session A
-	cltA1 := newConnection(nil, "", nil)
+	cltA1 := newConnection(nil, "", nil, nil)
 	sessA1 := NewSession(nil, func() string { return "testkey_A" })
 	cltA1.session = &sessA1
 
 	require.NoError(t, reg.register(cltA1))
 
 	// Register first connection on session A
-	cltA2 := newConnection(nil, "", nil)
+	cltA2 := newConnection(nil, "", nil, nil)
 	sessA2 := NewSession(nil, func() string { return "testkey_A" })
 	cltA2.session = &sessA2
 
@@ -109,11 +109,11 @@ func TestSessRegDeregistration(t *testing.T) {
 	reg := newSessionRegistry(0)
 
 	// Register 2 connections on two separate sessions
-	cltA1 := newConnection(nil, "", nil)
+	cltA1 := newConnection(nil, "", nil, nil)
 	sessA := NewSession(nil, func() string { return "testkey_A" })
 	cltA1.session = &sessA
 
-	cltB1 := newConnection(nil, "", nil)
+	cltB1 := newConnection(nil, "", nil, nil)
 	sessB := NewSession(nil, func() string { return "testkey_B" })
 	cltB1.session = &sessB
 
@@ -154,11 +154,11 @@ func TestSessRegDeregistrationMultiple(t *testing.T) {
 	reg := newSessionRegistry(0)
 
 	// Register 2 connections on two separate sessions
-	cltA1 := newConnection(nil, "", nil)
+	cltA1 := newConnection(nil, "", nil, nil)
 	sessA1 := NewSession(nil, func() string { return "testkey_A" })
 	cltA1.session = &sessA1
 
-	cltA2 := newConnection(nil, "", nil)
+	cltA2 := newConnection(nil, "", nil, nil)
 	sessA2 := NewSession(nil, func() string { return "testkey_A" })
 	cltA2.session = &sessA2
 
@@ -202,7 +202,7 @@ func TestSessRegConcurrentAccess(t *testing.T) {
 	// Populate registered conns map
 	for i := uint(0); i < connsToRegister; i++ {
 		// Create a connection on session A
-		clt := newConnection(nil, "", nil)
+		clt := newConnection(nil, "", nil, nil)
 		sess := NewSession(nil, func() string { return "testkey_A" })
 		clt.session = &sess
 		registeredConns[i] = clt
@@ -263,14 +263,14 @@ func TestSessRegSessionConnections(t *testing.T) {
 	reg := newSessionRegistry(0)
 
 	// Register first connection on session A
-	cltA1 := newConnection(nil, "A1", nil)
+	cltA1 := newConnection(nil, "A1", nil, nil)
 	sessA1 := NewSession(nil, func() string { return "testkey_A" })
 	cltA1.session = &sessA1
 
 	require.NoError(t, reg.register(cltA1))
 
 	// Register second connection on same session
-	cltA2 := newConnection(nil, "A2", nil)
+	cltA2 := newConnection(nil, "A2", nil, nil)
 	sessA2 := NewSession(nil, func() string { return "testkey_A" })
 	cltA2.session = &sessA2
 

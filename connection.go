@@ -8,6 +8,7 @@ import (
 	"time"
 
 	msg "github.com/qbeon/webwire-go/message"
+	"golang.org/x/sync/semaphore"
 )
 
 // ClientInfo represents basic information about a client connection
@@ -19,12 +20,18 @@ type ClientInfo struct {
 
 // connection represents a connected client connected to the server
 type connection struct {
+	// options represents the options defined during the connection upgrade
+	options ConnectionOptions
+
 	// stateLock protects both isActive and tasks from concurrent access
 	stateLock sync.RWMutex
 	isActive  bool
 
 	// tasks represents the number of currently performed tasks
 	tasks int32
+
+	// handlerSlots keeps track of available handler slots
+	handlerSlots *semaphore.Weighted
 
 	// srv references the connection origin server instance
 	srv *server
@@ -47,6 +54,7 @@ func newConnection(
 	socket Socket,
 	userAgent string,
 	srv *server,
+	options ConnectionOptions,
 ) *connection {
 	// the connection is considered closed when no socket is referenced
 	var remoteAddr net.Addr
@@ -57,14 +65,21 @@ func newConnection(
 		remoteAddr = socket.RemoteAddr()
 	}
 
+	concurrencyLimit := int64(0)
+	if options != nil {
+		concurrencyLimit = int64(options.ConcurrencyLimit())
+	}
+
 	return &connection{
-		stateLock:   sync.RWMutex{},
-		isActive:    isActive,
-		tasks:       0,
-		srv:         srv,
-		sock:        socket,
-		sessionLock: sync.RWMutex{},
-		session:     nil,
+		options:      options,
+		stateLock:    sync.RWMutex{},
+		isActive:     isActive,
+		tasks:        0,
+		handlerSlots: semaphore.NewWeighted(concurrencyLimit),
+		srv:          srv,
+		sock:         socket,
+		sessionLock:  sync.RWMutex{},
+		session:      nil,
 		info: ClientInfo{
 			time.Now(),
 			userAgent,

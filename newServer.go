@@ -5,8 +5,6 @@ import (
 	"net"
 	"net/http"
 	"sync"
-
-	"golang.org/x/sync/semaphore"
 )
 
 // NewServer creates a new headed WebWire server instance
@@ -73,15 +71,12 @@ func NewHeadlessServer(
 		sessionInfoParser: opts.SessionInfoParser,
 
 		// State
-		addr:        nil,
-		options:     opts,
-		shutdown:    false,
-		shutdownRdy: make(chan bool),
-		currentOps:  0,
-		opsLock:     &sync.Mutex{},
-		handlerSlots: semaphore.NewWeighted(
-			int64(opts.MaxConcurrentHandlers),
-		),
+		addr:            nil,
+		options:         opts,
+		shutdown:        false,
+		shutdownRdy:     make(chan bool),
+		currentOps:      0,
+		opsLock:         &sync.Mutex{},
 		connections:     make([]*connection, 0),
 		connectionsLock: &sync.Mutex{},
 		sessionsEnabled: sessionsEnabled,

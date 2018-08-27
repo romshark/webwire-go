@@ -66,8 +66,8 @@ func (srv *PubSubServer) OnRequest(
 func (srv *PubSubServer) BeforeUpgrade(
 	resp http.ResponseWriter,
 	req *http.Request,
-) bool {
-	return true
+) wwr.ConnectionOptions {
+	return wwr.AcceptConnection(wwr.UnlimitedConcurrency)
 }
 
 // OnClientConnected implements the webwire.ServerImplementation interface.

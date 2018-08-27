@@ -31,7 +31,10 @@ func (srv *server) ServeHTTP(
 		return
 	}
 
-	if !srv.impl.BeforeUpgrade(resp, req) {
+	connectionOptions := srv.impl.BeforeUpgrade(resp, req)
+
+	// Abort connection establishment if no options are provided
+	if connectionOptions == nil {
 		return
 	}
 
@@ -74,7 +77,12 @@ func (srv *server) ServeHTTP(
 	}
 
 	// Register connected client
-	connection := newConnection(conn, req.Header.Get("User-Agent"), srv)
+	connection := newConnection(
+		conn,
+		req.Header.Get("User-Agent"),
+		srv,
+		connectionOptions,
+	)
 
 	srv.connectionsLock.Lock()
 	srv.connections = append(srv.connections, connection)

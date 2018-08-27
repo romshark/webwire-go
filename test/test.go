@@ -22,8 +22,11 @@ func setupServer(
 	// Setup headed server on arbitrary port
 
 	if impl.beforeUpgrade == nil {
-		impl.beforeUpgrade = func(_ http.ResponseWriter, _ *http.Request) bool {
-			return true
+		impl.beforeUpgrade = func(
+			_ http.ResponseWriter,
+			_ *http.Request,
+		) wwr.ConnectionOptions {
+			return wwr.AcceptConnection(wwr.UnlimitedConcurrency)
 		}
 	}
 	if impl.onClientConnected == nil {

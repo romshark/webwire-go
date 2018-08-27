@@ -51,7 +51,8 @@ func (srv *server) handleMessage(con *connection, message []byte) {
 	}
 }
 
-// registerHandler increments the number of currently executed handlers.
+// registerHandler increments the number of currently executed handlers
+// for this particular client.
 // It blocks if the current number of max concurrent handlers was reached
 // and frees only when a handler slot is freed for this handler to be executed
 func (srv *server) registerHandler(
@@ -60,13 +61,14 @@ func (srv *server) registerHandler(
 ) bool {
 	failMsg := false
 
-	// Wait for free handler slots
-	// if the number of concurrent handler is limited
 	if !con.IsActive() {
 		return false
 	}
-	if srv.options.IsConcurrentHandlersLimited() {
-		srv.handlerSlots.Acquire(context.Background(), 1)
+
+	// Wait for free handler slots
+	// if the number of concurrent handlers is limited
+	if con.options.ConcurrencyLimit() > 0 {
+		con.handlerSlots.Acquire(context.Background(), 1)
 	}
 
 	srv.opsLock.Lock()
@@ -101,8 +103,8 @@ func (srv *server) deregisterHandler(con *connection) {
 	con.deregisterTask()
 
 	// Release a handler slot
-	if srv.options.IsConcurrentHandlersLimited() {
-		srv.handlerSlots.Release(1)
+	if con.options.ConcurrencyLimit() > 0 {
+		con.handlerSlots.Release(1)
 	}
 }
 

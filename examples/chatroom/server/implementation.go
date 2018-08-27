@@ -197,8 +197,8 @@ func (srv *ChatRoomServer) OnSignal(
 func (srv *ChatRoomServer) BeforeUpgrade(
 	resp http.ResponseWriter,
 	req *http.Request,
-) bool {
-	return true
+) wwr.ConnectionOptions {
+	return wwr.AcceptConnection(wwr.UnlimitedConcurrency)
 }
 
 // OnRequest implements the webwire.ServerImplementation interface.
