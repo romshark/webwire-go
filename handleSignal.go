@@ -21,9 +21,7 @@ func (srv *server) handleSignal(con *connection, message *msg.Message) {
 	srv.impl.OnSignal(
 		context.Background(),
 		con,
-		&MessageWrapper{
-			actual: message,
-		},
+		NewMessageWrapper(message),
 	)
 
 	// Mark signal as done and shutdown the server

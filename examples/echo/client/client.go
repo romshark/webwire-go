@@ -45,7 +45,7 @@ func (clt *EchoClient) OnSessionClosed() {}
 func (clt *EchoClient) OnSessionCreated(_ *wwr.Session) {}
 
 // OnSignal implements the wwrclt.Implementation interface
-func (clt *EchoClient) OnSignal(_ wwr.Payload) {}
+func (clt *EchoClient) OnSignal(_ wwr.Message) {}
 
 // Request sends a message to the server and returns the reply.
 // panics if the request fails for whatever reason

@@ -12,9 +12,7 @@ func (srv *server) handleRequest(conn *connection, message *msg.Message) {
 	replyPayload, returnedErr := srv.impl.OnRequest(
 		context.Background(),
 		conn,
-		&MessageWrapper{
-			actual: message,
-		},
+		NewMessageWrapper(message),
 	)
 	switch returnedErr.(type) {
 	case nil:

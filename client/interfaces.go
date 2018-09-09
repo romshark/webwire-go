@@ -70,9 +70,8 @@ type Implementation interface {
 	// from the server for any reason.
 	OnDisconnected()
 
-	// OnSignal is invoked when the client receives a signal
-	// from the server
-	OnSignal(payload webwire.Payload)
+	// OnSignal is invoked when the client receives a signal from the server
+	OnSignal(message webwire.Message)
 
 	// OnSessionCreated is invoked when the client was assigned a new session
 	OnSessionCreated(*webwire.Session)

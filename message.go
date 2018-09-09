@@ -5,6 +5,13 @@ import (
 	pld "github.com/qbeon/webwire-go/payload"
 )
 
+// NewMessageWrapper creates a new Message interface compliant message object
+func NewMessageWrapper(message *msg.Message) *MessageWrapper {
+	return &MessageWrapper{
+		actual: message,
+	}
+}
+
 // MessageWrapper wraps a msg.Message pointer
 // to make it implement the Message interface
 type MessageWrapper struct {

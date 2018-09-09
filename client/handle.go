@@ -123,9 +123,7 @@ func (clt *client) handleMessage(message []byte) error {
 	case msg.MsgSignalUtf8:
 		fallthrough
 	case msg.MsgSignalUtf16:
-		clt.impl.OnSignal(&webwire.EncodedPayload{
-			Payload: parsedMsg.Payload,
-		})
+		clt.impl.OnSignal(webwire.NewMessageWrapper(&parsedMsg))
 
 	case msg.MsgSessionCreated:
 		clt.handleSessionCreated(parsedMsg.Payload)

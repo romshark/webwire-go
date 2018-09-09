@@ -43,9 +43,13 @@ func TestServerSignal(t *testing.T) {
 			DefaultRequestTimeout: 2 * time.Second,
 		},
 		callbackPoweredClientHooks{
-			OnSignal: func(signalPayload wwr.Payload) {
+			OnSignal: func(signalMessage wwr.Message) {
 				// Verify server signal payload
-				comparePayload(t, expectedSignalPayload, signalPayload)
+				comparePayload(
+					t,
+					expectedSignalPayload,
+					signalMessage.Payload(),
+				)
 
 				// Synchronize, unlock main goroutine to pass the test case
 				signalProcessed.Progress(1)

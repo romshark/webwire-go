@@ -19,11 +19,11 @@ func (clt *ChatroomClient) OnSessionCreated(newSession *webwire.Session) {
 // OnSignal implements the webwireClient.Implementation interface.
 // it's invoked when the client receives a signal from the server
 // containing a chatroom message
-func (clt *ChatroomClient) OnSignal(message webwire.Payload) {
+func (clt *ChatroomClient) OnSignal(message webwire.Message) {
 	var msg shared.ChatMessage
 
 	// Interpret the message as UTF8 encoded JSON
-	jsonString, err := message.Utf8()
+	jsonString, err := message.Payload().Utf8()
 	if err != nil {
 		log.Printf("Couldn't decode incoming message: %s\n", err)
 	}
