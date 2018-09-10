@@ -138,10 +138,7 @@ func TestClientSessionInfo(t *testing.T) {
 					},
 				})
 				assert.NoError(t, err)
-				if err != nil {
-					return nil, err
-				}
-				return nil, nil
+				return nil, err
 			},
 		},
 		wwr.ServerOptions{},

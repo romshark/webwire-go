@@ -32,10 +32,7 @@ func TestClientOnSessionCreated(t *testing.T) {
 				// Try to create a new session
 				err := conn.CreateSession(nil)
 				assert.NoError(t, err)
-				if err != nil {
-					return nil, err
-				}
-				return nil, nil
+				return nil, err
 			},
 		},
 		wwr.ServerOptions{},

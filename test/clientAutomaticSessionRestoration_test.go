@@ -38,12 +38,7 @@ func TestClientAutomaticSessionRestoration(t *testing.T) {
 				// Try to create a new session
 				err := conn.CreateSession(nil)
 				assert.NoError(t, err)
-				if err != nil {
-					return nil, err
-				}
-
-				// Return the key of the newly created session
-				return nil, nil
+				return nil, err
 			},
 		},
 		wwr.ServerOptions{

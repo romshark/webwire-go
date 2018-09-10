@@ -36,13 +36,7 @@ func TestCustomSessKeyGenInvalid(t *testing.T) {
 				// Try to create a new session
 				err := conn.CreateSession(nil)
 				assert.NoError(t, err)
-				if err != nil {
-					return nil, err
-				}
-
-				// Return the key of the newly created session
-				// (use default binary encoding)
-				return nil, nil
+				return nil, err
 			},
 		},
 		wwr.ServerOptions{
