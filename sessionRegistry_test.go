@@ -153,14 +153,13 @@ func TestSessRegDeregistration(t *testing.T) {
 func TestSessRegDeregistrationMultiple(t *testing.T) {
 	reg := newSessionRegistry(0)
 
-	// Register 2 connections on two separate sessions
+	// Register 2 connections on the same session
 	cltA1 := newConnection(nil, "", nil, nil)
 	sessA1 := NewSession(nil, func() string { return "testkey_A" })
 	cltA1.session = &sessA1
 
 	cltA2 := newConnection(nil, "", nil, nil)
-	sessA2 := NewSession(nil, func() string { return "testkey_A" })
-	cltA2.session = &sessA2
+	cltA2.session = &sessA1
 
 	require.NoError(t, reg.register(cltA1))
 	require.NoError(t, reg.register(cltA2))

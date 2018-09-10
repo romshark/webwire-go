@@ -72,7 +72,7 @@ func (asr *sessionRegistry) deregister(conn *connection) int {
 
 		// Find and remove the client from the connections list
 		delete(connSet, conn)
-		return len(connSet) - 1
+		return len(connSet)
 	}
 	return -1
 }
