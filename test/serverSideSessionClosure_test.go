@@ -73,7 +73,7 @@ func TestServerSideSessionClosure(t *testing.T) {
 
 	// Authenticate first client to get the session key
 	firstClient := clients[0]
-	_, err := firstClient.connection.Request(nil, "auth", nil)
+	_, err := firstClient.connection.Request(context.Background(), "auth", nil)
 	require.NoError(t, err)
 
 	// Extract session key
