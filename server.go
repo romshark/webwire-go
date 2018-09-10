@@ -98,20 +98,47 @@ func (srv *server) SessionConnections(sessionKey string) []Connection {
 		return nil
 	}
 	list := make([]Connection, len(connections))
-	for i, connection := range connections {
+	i := 0
+	for connection := range connections {
 		list[i] = connection
+		i++
 	}
 	return list
 }
 
 // CloseSession implements the Server interface
-func (srv *server) CloseSession(sessionKey string) int {
+func (srv *server) CloseSession(sessionKey string) (
+	affectedConnections []Connection,
+	errors []error,
+	generalError error,
+) {
 	connections := srv.sessionRegistry.sessionConnections(sessionKey)
+
+	errors = make([]error, len(connections))
 	if connections == nil {
-		return -1
+		return nil, nil, nil
 	}
-	for _, connection := range connections {
-		connection.Close()
+	affectedConnections = make([]Connection, len(connections))
+	i := 0
+	errNum := 0
+	for connection := range connections {
+		affectedConnections[i] = connection
+		err := connection.CloseSession()
+		if err != nil {
+			errors[i] = err
+			errNum++
+		} else {
+			errors[i] = nil
+		}
+		i++
 	}
-	return len(connections)
+
+	if errNum > 0 {
+		generalError = fmt.Errorf(
+			"%d errors during the closure of a session",
+			errNum,
+		)
+	}
+
+	return affectedConnections, errors, generalError
 }

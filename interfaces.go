@@ -38,10 +38,16 @@ type Server interface {
 	// SessionConnections implements the SessionRegistry interface
 	SessionConnections(sessionKey string) []Connection
 
-	// CloseSession closes the session identified by the given key
-	// and returns the number of closed connections.
-	// If there was no session found -1 is returned
-	CloseSession(sessionKey string) int
+	// CloseSession closes the session identified by the given key and returns
+	// the affected connections, a list of errors for each session session
+	// closure attempt and a general error which is not nil if at least
+	// of the closeErrors errors is not nil.
+	// If no session was closed then (nil, nil, nil) is returned.
+	CloseSession(sessionKey string) (
+		affectedConnections []Connection,
+		closeErrors []error,
+		err error,
+	)
 }
 
 // ConnectionOptions represents the connection upgrade options

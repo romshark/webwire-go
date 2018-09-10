@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestSessRegRegisteration tests registeration
-func TestSessRegRegisteration(t *testing.T) {
+// TestSessRegRegistration tests registration
+func TestSessRegRegistration(t *testing.T) {
 	reg := newSessionRegistry(0)
 
 	// Register connection with session
@@ -191,7 +191,7 @@ func TestSessRegDeregistrationMultiple(t *testing.T) {
 	require.Equal(t, -1, reg.sessionConnectionsNum("testkey_A"))
 }
 
-// TestSessRegConcurrentAccess tests concurrent (de)registeration
+// TestSessRegConcurrentAccess tests concurrent (de)registration
 func TestSessRegConcurrentAccess(t *testing.T) {
 	reg := newSessionRegistry(0)
 	connsToRegister := uint(16)
@@ -282,6 +282,6 @@ func TestSessRegSessionConnections(t *testing.T) {
 	// Expect 2 active connections on session A
 	list := reg.sessionConnections("testkey_A")
 	require.Len(t, list, 2)
-	require.Equal(t, cltA1, list[0])
-	require.Equal(t, cltA2, list[1])
+	require.Contains(t, list, cltA1)
+	require.Contains(t, list, cltA2)
 }

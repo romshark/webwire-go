@@ -260,6 +260,7 @@ func (con *connection) CloseSession() error {
 		con.sessionLock.Unlock()
 		return nil
 	}
+
 	// Deregister session from active sessions registry
 	con.srv.sessionRegistry.deregister(con)
 	con.session = nil
