@@ -45,7 +45,7 @@ func (asr *sessionRegistry) register(con *connection) error {
 		return nil
 	}
 	newList := map[*connection]struct{}{
-		con: struct{}{},
+		con: {},
 	}
 	asr.registry[con.session.Key] = newList
 	return nil
