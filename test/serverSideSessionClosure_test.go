@@ -68,7 +68,6 @@ func TestServerSideSessionClosure(t *testing.T) {
 	// Connect clients
 	for _, client := range clients {
 		require.NoError(t, client.connection.Connect())
-		time.Sleep(2000 * time.Millisecond)
 	}
 
 	// Authenticate first client to get the session key
