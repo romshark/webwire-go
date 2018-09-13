@@ -302,7 +302,8 @@ Various hooks provide the ability to asynchronously react to different kinds of 
 - OnClientDisconnected
 - OnSignal
 - OnRequest
-- OnSessionKeyGeneration
+
+#### SessionManager Hooks
 - OnSessionCreated
 - OnSessionLookup
 - OnSessionClosed
@@ -312,6 +313,9 @@ Various hooks provide the ability to asynchronously react to different kinds of 
 - OnSessionCreated
 - OnSessionClosed
 - OnDisconnected
+
+#### SessionKeyGenerator Hooks
+- Generate
 
 ### Graceful Shutdown
 The server will finish processing all ongoing signals and requests before closing when asked to shut down.
