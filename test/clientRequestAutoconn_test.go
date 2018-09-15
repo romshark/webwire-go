@@ -11,8 +11,9 @@ import (
 	wwrclt "github.com/qbeon/webwire-go/client"
 )
 
-// TestClientRequestDisconnected tests sending requests on disconnected clients
-func TestClientRequestDisconnected(t *testing.T) {
+// TestClientRequestAutoconn tests sending requests on disconnected clients
+// expecting it to connect automatically
+func TestClientRequestAutoconn(t *testing.T) {
 	// Initialize webwire server given only the request
 	server := setupServer(
 		t,
@@ -33,7 +34,6 @@ func TestClientRequestDisconnected(t *testing.T) {
 		server.Addr().String(),
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
-			Autoconnect:           wwrclt.Disabled,
 		},
 		callbackPoweredClientHooks{},
 	)
@@ -44,5 +44,5 @@ func TestClientRequestDisconnected(t *testing.T) {
 		"",
 		wwr.NewPayload(wwr.EncodingBinary, []byte("testdata")),
 	)
-	require.NoError(t, err)
+	require.NoError(t, err, "Expected client.Request to automatically connect")
 }
