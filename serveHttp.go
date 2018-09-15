@@ -34,7 +34,7 @@ func (srv *server) ServeHTTP(
 	connectionOptions := srv.impl.BeforeUpgrade(resp, req)
 
 	// Abort connection establishment if no options are provided
-	if connectionOptions == nil {
+	if connectionOptions == nil || !connectionOptions.Accept() {
 		return
 	}
 
