@@ -65,7 +65,7 @@ The [webwire-go](https://github.com/qbeon/webwire-go) library provides both a cl
     - [Server-side Hooks](#server-side-hooks)
     - [SessionManager Hooks](#sessionmanager-hooks)
     - [Client-side Hooks](#client-side-hooks)
-    - [SessionKeyGenerator Hooks](sessionkeygenerator-hooks)
+    - [SessionKeyGenerator Hooks](#sessionkeygenerator-hooks)
   - [Graceful Shutdown](#graceful-shutdown)
   - [Seamless JavaScript Support](#seamless-javascript-support)
 - [Dependencies](#dependencies)
