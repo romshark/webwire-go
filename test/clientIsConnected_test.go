@@ -20,6 +20,7 @@ func TestClientIsConnected(t *testing.T) {
 		server.Addr().String(),
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
+			Autoconnect:           wwr.Disabled,
 		},
 		callbackPoweredClientHooks{},
 	)
