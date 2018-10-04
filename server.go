@@ -52,10 +52,23 @@ func (srv *server) shutdownHTTPServer() error {
 // Run implements the Server interface
 func (srv *server) Run() error {
 	// Launch HTTP server
-	if err := srv.httpServer.Serve(
-		tcpKeepAliveListener{srv.listener.(*net.TCPListener)},
-	); err != http.ErrServerClosed {
-		return fmt.Errorf("HTTP Server failure: %s", err)
+	if srv.options.TLS == Enabled {
+		if len(srv.options.TLSCertFile) == 0 || len(srv.options.TLSKeyFile) == 0 {
+			return fmt.Errorf("Empty tls files but TLS option is enabled")
+		}
+		if err := srv.httpServer.ServeTLS(
+			tcpKeepAliveListener{srv.listener.(*net.TCPListener)},
+			srv.options.TLSCertFile,
+			srv.options.TLSKeyFile,
+		); err != http.ErrServerClosed {
+			return fmt.Errorf("HTTPS Server failure: %s", err)
+		}
+	} else {
+		if err := srv.httpServer.Serve(
+			tcpKeepAliveListener{srv.listener.(*net.TCPListener)},
+		); err != http.ErrServerClosed {
+			return fmt.Errorf("HTTP Server failure: %s", err)
+		}
 	}
 
 	return nil

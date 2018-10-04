@@ -32,6 +32,9 @@ type ServerOptions struct {
 	Heartbeat             OptionValue
 	HeartbeatTimeout      time.Duration
 	HeartbeatInterval     time.Duration
+	TLS                   OptionValue
+	TLSCertFile           string
+	TLSKeyFile            string
 	WarnLog               *log.Logger
 	ErrorLog              *log.Logger
 }
@@ -72,6 +75,10 @@ func (srvOpt *ServerOptions) SetDefaults() {
 	// if the specified timeout is below 1 second
 	if srvOpt.HeartbeatInterval < 1*time.Second {
 		srvOpt.HeartbeatInterval = 30 * time.Second
+	}
+
+	if srvOpt.TLS == OptionUnset {
+		srvOpt.TLS = Disabled
 	}
 
 	// Create default loggers to std-out/err when no loggers are specified
