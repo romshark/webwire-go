@@ -40,17 +40,17 @@ func TestRefuseConnections(t *testing.T) {
 		},
 		wwr.ServerOptions{},
 	)
-	serverAddr := server.Addr().String()
 
 	clients := make([]*callbackPoweredClient, numClients)
 	for i := 0; i < numClients; i++ {
 		clt := newCallbackPoweredClient(
-			serverAddr,
+			server.AddressURL(),
 			wwrclt.Options{
 				DefaultRequestTimeout: 2 * time.Second,
 				Autoconnect:           wwr.Disabled,
 			},
 			callbackPoweredClientHooks{},
+			nil, // No TLS configuration
 		)
 		defer clt.connection.Close()
 		clients[i] = clt

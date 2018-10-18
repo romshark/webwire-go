@@ -1,11 +1,12 @@
 package client
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"net/http"
-	"time"
 
 	"github.com/qbeon/webwire-go"
 )
@@ -13,15 +14,29 @@ import (
 // verifyProtocolVersion requests the endpoint metadata
 // to verify the server is running a supported protocol version
 func (clt *client) verifyProtocolVersion() error {
-	// Initialize HTTP client
-	var httpClient = &http.Client{
-		Timeout: time.Second * 10,
+	// Clone TLS configuration (if any)
+	var tlsConfig *tls.Config
+	if clt.tlsConfig != nil {
+		tlsConfig = clt.tlsConfig.Clone()
 	}
 
-	request, err := http.NewRequest(
-		"WEBWIRE", "http://"+clt.serverAddr+"/", nil,
-	)
+	// Initialize HTTP client
+	var httpClient = &http.Client{
+		Timeout: clt.reconnInterval,
+		Transport: &http.Transport{
+			Dial: (&net.Dialer{
+				Timeout: clt.reconnInterval,
+			}).Dial,
+			TLSHandshakeTimeout: clt.reconnInterval,
+			TLSClientConfig:     tlsConfig,
+		},
+	}
+
+	addr := clt.serverAddr.String()
+	request, err := http.NewRequest("WEBWIRE", addr, nil)
 	if err != nil {
+		// Panic because the request is always expected to be valid
+		// except something is broken here internally
 		panic(fmt.Errorf("Couldn't create HTTP metadata request: %s", err))
 	}
 	response, err := httpClient.Do(request)

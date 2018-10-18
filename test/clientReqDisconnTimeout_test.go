@@ -2,6 +2,7 @@ package test
 
 import (
 	"context"
+	"net/url"
 	"testing"
 	"time"
 
@@ -16,12 +17,13 @@ import (
 func TestClientReqDisconnTimeout(t *testing.T) {
 	// Initialize client
 	client := newCallbackPoweredClient(
-		"127.0.0.1:65000",
+		url.URL{Host: "127.0.0.1:65000"},
 		wwrclt.Options{
 			ReconnectionInterval:  5 * time.Millisecond,
 			DefaultRequestTimeout: 50 * time.Millisecond,
 		},
 		callbackPoweredClientHooks{},
+		nil, // No TLS configuration
 	)
 
 	// Send request and await reply

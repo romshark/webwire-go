@@ -43,7 +43,7 @@ func TestDisabledSessions(t *testing.T) {
 
 	// Initialize client
 	client := newCallbackPoweredClient(
-		server.Addr().String(),
+		server.AddressURL(),
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
@@ -52,6 +52,7 @@ func TestDisabledSessions(t *testing.T) {
 				t.Errorf("OnSessionCreated was not expected to be called")
 			},
 		},
+		nil, // No TLS configuration
 	)
 	defer client.connection.Close()
 

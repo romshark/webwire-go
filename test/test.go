@@ -59,7 +59,7 @@ func setupServer(
 	}
 
 	// Use default address
-	opts.Address = "127.0.0.1:0"
+	opts.Host = "127.0.0.1:0"
 
 	// Use default heartbeat configuration if not set
 	if opts.Heartbeat == wwr.OptionUnset {

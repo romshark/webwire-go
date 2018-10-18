@@ -1,6 +1,7 @@
 package webwire
 
 import (
+	"crypto/tls"
 	"fmt"
 	"net"
 	"net/http"
@@ -67,6 +68,7 @@ type socket struct {
 	connected bool
 	lock      sync.RWMutex
 	conn      *websocket.Conn
+	tlsConfig *tls.Config
 }
 
 // newConnectedSocket creates a new gorilla/websocket based socket instance
@@ -83,24 +85,31 @@ func newConnectedSocket(conn *websocket.Conn) Socket {
 }
 
 // NewSocket creates a new disconnected gorilla/websocket based socket instance
-func NewSocket() Socket {
+func NewSocket(tlsConfig *tls.Config) Socket {
 	connected := false
+
+	if tlsConfig == nil {
+		tlsConfig = &tls.Config{}
+	}
+
 	return &socket{
 		connected: connected,
 		lock:      sync.RWMutex{},
+		tlsConfig: tlsConfig,
 	}
 }
 
 // Dial implements the webwire.Socket interface
-func (sock *socket) Dial(serverAddr string) (err error) {
-	connURL := url.URL{Scheme: "ws", Host: serverAddr, Path: "/"}
+func (sock *socket) Dial(serverAddr url.URL) (err error) {
 	sock.lock.Lock()
 	defer sock.lock.Unlock()
 	if sock.connected {
 		sock.conn.Close()
 		sock.conn = nil
 	}
-	sock.conn, _, err = websocket.DefaultDialer.Dial(connURL.String(), nil)
+
+	websocket.DefaultDialer.TLSClientConfig = sock.tlsConfig.Clone()
+	sock.conn, _, err = websocket.DefaultDialer.Dial(serverAddr.String(), nil)
 	if err != nil {
 		return NewDisconnectedErr(fmt.Errorf("Dial failure: %s", err))
 	}

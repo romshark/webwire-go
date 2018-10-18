@@ -2,7 +2,9 @@ package client
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
+	"net/url"
 	"sync"
 
 	webwire "github.com/qbeon/webwire-go"
@@ -12,14 +14,20 @@ import (
 // NewClient creates a new client instance.
 // The new client will immediately begin connecting if autoconnect is enabled
 func NewClient(
-	serverAddress string,
+	serverAddress url.URL,
 	implementation Implementation,
 	opts Options,
-) Client {
+	tlsConfig *tls.Config,
+) (Client, error) {
 	if implementation == nil {
-		panic(fmt.Errorf(
-			"A webwire client requires a client implementation, got nil",
-		))
+		return nil, fmt.Errorf(
+			"webwire client requires a client implementation, got nil",
+		)
+	}
+
+	// Prepare server address
+	if serverAddress.Scheme != "https" {
+		serverAddress.Scheme = "http"
 	}
 
 	// Prepare configuration
@@ -31,9 +39,14 @@ func NewClient(
 		autoconnect = autoconnectDisabled
 	}
 
+	if tlsConfig != nil {
+		tlsConfig = tlsConfig.Clone()
+	}
+
 	// Initialize new client
 	newClt := &client{
 		serverAddr:        serverAddress,
+		tlsConfig:         tlsConfig,
 		impl:              implementation,
 		sessionInfoParser: opts.SessionInfoParser,
 		status:            Disconnected,
@@ -47,7 +60,7 @@ func NewClient(
 		connecting:        false,
 		connectingLock:    sync.RWMutex{},
 		connectLock:       sync.Mutex{},
-		conn:              webwire.NewSocket(),
+		conn:              webwire.NewSocket(tlsConfig),
 		readerClosing:     make(chan bool, 1),
 		requestManager:    reqman.NewRequestManager(),
 		warningLog:        opts.WarnLog,
@@ -63,5 +76,5 @@ func NewClient(
 		go newClt.tryAutoconnect(context.Background(), 0)
 	}
 
-	return newClt
+	return newClt, nil
 }

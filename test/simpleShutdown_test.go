@@ -19,16 +19,15 @@ func TestSimpleShutdown(t *testing.T) {
 		wwr.ServerOptions{},
 	)
 
-	serverAddr := server.Addr().String()
-
 	clients := make([]*callbackPoweredClient, connectedClientsNum)
 	for i := 0; i < connectedClientsNum; i++ {
 		client := newCallbackPoweredClient(
-			serverAddr,
+			server.AddressURL(),
 			wwrclt.Options{
 				Autoconnect: wwr.Disabled,
 			},
 			callbackPoweredClientHooks{},
+			nil, // No TLS configuration
 		)
 		require.NoError(t, client.connection.Connect())
 		defer client.connection.Close()

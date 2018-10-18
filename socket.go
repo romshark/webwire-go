@@ -3,6 +3,7 @@ package webwire
 import (
 	"net"
 	"net/http"
+	"net/url"
 	"time"
 )
 
@@ -16,7 +17,7 @@ type SockReadErr interface {
 // Socket defines the abstract socket implementation interface
 type Socket interface {
 	// Dial must connect the socket to the specified server
-	Dial(serverAddr string) error
+	Dial(serverAddr url.URL) error
 
 	// Write must send the given data to the other side of the socket
 	// while protecting the connection from concurrent writes

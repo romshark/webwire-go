@@ -20,11 +20,7 @@ func TestEndpointOptions(t *testing.T) {
 	}
 
 	// Request metadata
-	request, err := http.NewRequest(
-		"OPTIONS",
-		"http://"+server.Addr().String()+"/",
-		nil,
-	)
+	request, err := http.NewRequest("OPTIONS", server.Address(), nil)
 	require.NoError(t, err)
 	response, err := httpClient.Do(request)
 	require.NoError(t, err)

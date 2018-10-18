@@ -51,7 +51,7 @@ func TestServerSideSessionClosureInexistent(t *testing.T) {
 	clients := make([]*callbackPoweredClient, simultaneousClients)
 	for i := 0; i < simultaneousClients; i++ {
 		client := newCallbackPoweredClient(
-			server.Addr().String(),
+			server.AddressURL(),
 			wwrclt.Options{
 				DefaultRequestTimeout: 2 * time.Second,
 				Autoconnect:           wwr.Disabled,
@@ -61,6 +61,7 @@ func TestServerSideSessionClosureInexistent(t *testing.T) {
 					onSessionClosedHooksExecuted.Progress(1)
 				},
 			},
+			nil, // No TLS configuration
 		)
 		defer client.connection.Close()
 		clients[i] = client

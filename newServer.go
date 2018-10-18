@@ -1,9 +1,11 @@
 package webwire
 
 import (
+	"crypto/tls"
 	"fmt"
 	"net"
 	"net/http"
+	"net/url"
 	"sync"
 )
 
@@ -12,35 +14,91 @@ import (
 func NewServer(
 	implementation ServerImplementation,
 	opts ServerOptions,
-) (instance Server, err error) {
+) (Server, error) {
 	opts.SetDefaults()
 
-	instance, err = NewHeadlessServer(implementation, opts)
+	headlessInstance, err := NewHeadlessServer(implementation, opts)
 	if err != nil {
 		return nil, err
 	}
 
-	srv := instance.(*server)
+	srv := headlessInstance.(*server)
 	srv.options = opts
 
 	// Initialize HTTP server
 	srv.httpServer = &http.Server{
-		Addr:    opts.Address,
+		Addr:    opts.Host,
 		Handler: srv,
 	}
 
 	// Determine final address
-	if opts.Address == "" {
-		opts.Address = ":http"
+	if opts.Host == "" {
+		opts.Host = ":http"
 	}
 
 	// Initialize TCP/IP listener
-	srv.listener, err = net.Listen("tcp", opts.Address)
+	srv.listener, err = net.Listen("tcp", opts.Host)
 	if err != nil {
 		return nil, fmt.Errorf("Failed setting up TCP/IP listener: %s", err)
 	}
 
-	srv.addr = srv.listener.Addr()
+	srv.addr = url.URL{
+		Scheme: "http",
+		Host:   srv.listener.Addr().String(),
+		Path:   "/",
+	}
+
+	return srv, nil
+}
+
+// NewServerSecure creates a new headed WebWire server instance
+// with a built-in HTTPS server hosting it
+func NewServerSecure(
+	implementation ServerImplementation,
+	opts ServerOptions,
+	certFilePath,
+	keyFilePath string,
+	TLSConfig *tls.Config,
+) (Server, error) {
+	opts.SetDefaults()
+
+	if TLSConfig == nil {
+		TLSConfig = &tls.Config{}
+	}
+
+	headlessInstance, err := NewHeadlessServer(implementation, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	srv := headlessInstance.(*server)
+	srv.options = opts
+	srv.certFilePath = certFilePath
+	srv.keyFilePath = keyFilePath
+
+	// Initialize HTTPS server
+	srv.httpServer = &http.Server{
+		Addr:      opts.Host,
+		Handler:   srv,
+		TLSConfig: TLSConfig,
+	}
+
+	// Determine final address
+	if opts.Host == "" {
+		opts.Host = ":http"
+	}
+
+	// Initialize TCP/IP listener
+	srv.listener, err = net.Listen("tcp", opts.Host)
+	if err != nil {
+		return nil, fmt.Errorf("Failed setting up TCP/IP listener: %s", err)
+	}
+
+	srv.addr = url.URL{
+		Scheme: "https",
+		Host:   srv.listener.Addr().String(),
+		Path:   "/",
+	}
 
 	return srv, nil
 }
@@ -50,7 +108,7 @@ func NewServer(
 func NewHeadlessServer(
 	implementation ServerImplementation,
 	opts ServerOptions,
-) (instance Server, err error) {
+) (instance HeadlessServer, err error) {
 	if implementation == nil {
 		panic(fmt.Errorf(
 			"server instance requires an implementation, got nil",
@@ -71,7 +129,7 @@ func NewHeadlessServer(
 		sessionInfoParser: opts.SessionInfoParser,
 
 		// State
-		addr:            nil,
+		addr:            url.URL{},
 		options:         opts,
 		shutdown:        false,
 		shutdownRdy:     make(chan bool),

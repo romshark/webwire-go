@@ -1,8 +1,10 @@
 package main
 
 import (
+	"crypto/tls"
 	"flag"
 	"log"
+	"net/url"
 	"os"
 	"time"
 
@@ -17,11 +19,11 @@ type ChatroomClient struct {
 }
 
 // NewChatroomClient constructs and returns a new chatroom client instance
-func NewChatroomClient(serverAddr string) *ChatroomClient {
+func NewChatroomClient(serverAddr url.URL) (*ChatroomClient, error) {
 	newChatroomClient := &ChatroomClient{}
 
 	// Initialize connection
-	newChatroomClient.connection = wwrclt.NewClient(
+	connection, err := wwrclt.NewClient(
 		serverAddr,
 		newChatroomClient,
 		wwrclt.Options{
@@ -45,9 +47,25 @@ func NewChatroomClient(serverAddr string) *ChatroomClient {
 				log.Ldate|log.Ltime|log.Lshortfile,
 			),
 		},
+		/*
+			--------------------------------------------------------------
+			WARNING! NEVER DISABLE CERTIFICATE VERIFICATION IN PRODUCTION!
+			--------------------------------------------------------------
+			InsecureSkipVerify is enabled for demonstration purposes only
+			to allow the use of a self-signed localhost SSL certificate.
+			Enabling this option in production is dangerous and irresponsible.
+		*/
+		&tls.Config{
+			InsecureSkipVerify: true,
+		},
 	)
+	if err != nil {
+		return nil, err
+	}
 
-	return newChatroomClient
+	newChatroomClient.connection = connection
+
+	return newChatroomClient, nil
 }
 
 var serverAddr = flag.String("addr", ":9090", "server address")
@@ -59,7 +77,14 @@ func main() {
 	flag.Parse()
 
 	// Create a new chatroom client instance including its connection
-	chatroomClient := NewChatroomClient(*serverAddr)
+	chatroomClient, err := NewChatroomClient(url.URL{
+		Scheme: "https",
+		Host:   *serverAddr,
+		Path:   "/",
+	})
+	if err != nil {
+		panic(err)
+	}
 
 	// Authenticate if credentials are already provided from the CLI
 	if *username != "" && *password != "" {

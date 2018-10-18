@@ -23,11 +23,12 @@ func TestClientRestSessAutoconn(t *testing.T) {
 
 	// Initialize client
 	client := newCallbackPoweredClient(
-		server.Addr().String(),
+		server.AddressURL(),
 		wwrclt.Options{
 			DefaultRequestTimeout: 100 * time.Millisecond,
 		},
 		callbackPoweredClientHooks{},
+		nil, // No TLS configuration
 	)
 
 	// Skip manual connection establishment and rely on autoconnect instead

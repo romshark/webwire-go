@@ -57,13 +57,14 @@ func TestConnectionClose(t *testing.T) {
 
 	// Initialize client A
 	clientA := newCallbackPoweredClient(
-		server.Addr().String(),
+		server.AddressURL(),
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 			// Disable autoconnect to prevent automatic reconnection
 			Autoconnect: wwr.Disabled,
 		},
 		callbackPoweredClientHooks{},
+		nil, // No TLS configuration
 	)
 
 	require.NoError(t, clientA.connection.Connect())
@@ -100,13 +101,14 @@ func TestConnectionClose(t *testing.T) {
 
 	// Initialize client B
 	clientB := newCallbackPoweredClient(
-		server.Addr().String(),
+		server.AddressURL(),
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 			// Disable autoconnect to prevent automatic reconnection
 			Autoconnect: wwr.Disabled,
 		},
 		callbackPoweredClientHooks{},
+		nil, // No TLS configuration
 	)
 
 	if err := clientB.connection.Connect(); err != nil {

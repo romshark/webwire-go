@@ -129,7 +129,7 @@ func main() {
 	server, err := wwr.NewServer(
 		serverImpl,
 		wwr.ServerOptions{
-			Address: *serverAddr,
+			Host: *serverAddr,
 		},
 	)
 	if err != nil {
@@ -155,7 +155,7 @@ func main() {
 		log.Println("Server gracefully terminated")
 	}()
 
-	log.Printf("Listening on %s", server.Addr().String())
+	log.Printf("Listening on %s", server.Address())
 
 	// Launch server
 	if err := server.Run(); err != nil {

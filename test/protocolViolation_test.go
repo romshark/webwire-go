@@ -1,7 +1,6 @@
 package test
 
 import (
-	"net/url"
 	"testing"
 	"time"
 
@@ -22,19 +21,20 @@ func TestProtocolViolation(t *testing.T) {
 		wwr.ServerOptions{},
 	)
 
-	serverAddr := server.Addr().String()
 	defaultReadTimeout := 2 * time.Second
 
 	// Setup a regular websocket connection
 	setupAndSend := func(
 		message []byte,
 	) (response []byte, writeErr, readErr error) {
-		endpointUrl := url.URL{
-			Scheme: "ws",
-			Host:   serverAddr,
-			Path:   "/",
+		serverAddr := server.AddressURL()
+		if serverAddr.Scheme == "https" {
+			serverAddr.Scheme = "wss"
+		} else {
+			serverAddr.Scheme = "ws"
 		}
-		conn, _, err := websocket.DefaultDialer.Dial(endpointUrl.String(), nil)
+
+		conn, _, err := websocket.DefaultDialer.Dial(serverAddr.String(), nil)
 		require.NoError(t, err)
 		defer conn.Close()
 

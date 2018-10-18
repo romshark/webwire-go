@@ -95,7 +95,7 @@ func TestServerInitiatedSessionDestruction(t *testing.T) {
 
 	// Initialize client
 	client := newCallbackPoweredClient(
-		server.Addr().String(),
+		server.AddressURL(),
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
@@ -114,6 +114,7 @@ func TestServerInitiatedSessionDestruction(t *testing.T) {
 				sessionDestructionCallbackCalled.Progress(1)
 			},
 		},
+		nil, // No TLS configuration
 	)
 
 	/*****************************************************************\

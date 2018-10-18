@@ -2,10 +2,12 @@ package client
 
 import (
 	"context"
+	"crypto/tls"
 	"sync/atomic"
 
 	"fmt"
 	"log"
+	"net/url"
 	"sync"
 	"time"
 
@@ -47,7 +49,8 @@ const (
 
 // client represents an instance of one of the servers clients
 type client struct {
-	serverAddr        string
+	serverAddr        url.URL
+	tlsConfig         *tls.Config
 	impl              Implementation
 	sessionInfoParser webwire.SessionInfoParser
 	status            Status

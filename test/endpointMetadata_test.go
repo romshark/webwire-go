@@ -24,11 +24,7 @@ func TestEndpointMetadata(t *testing.T) {
 	}
 
 	// Request metadata
-	request, err := http.NewRequest(
-		"WEBWIRE",
-		"http://"+server.Addr().String()+"/",
-		nil,
-	)
+	request, err := http.NewRequest("WEBWIRE", server.Address(), nil)
 	require.NoError(t, err)
 	response, err := httpClient.Do(request)
 	require.NoError(t, err)

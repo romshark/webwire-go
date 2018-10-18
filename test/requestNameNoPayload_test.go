@@ -38,11 +38,12 @@ func TestRequestNameNoPayload(t *testing.T) {
 
 	// Initialize client
 	client := newCallbackPoweredClient(
-		server.Addr().String(),
+		server.AddressURL(),
 		webwireClient.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
 		callbackPoweredClientHooks{},
+		nil, // No TLS configuration
 	)
 
 	// Send a named binary request without a payload and await reply

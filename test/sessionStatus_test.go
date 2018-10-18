@@ -41,11 +41,12 @@ func TestSessionStatus(t *testing.T) {
 
 	// Initialize client A
 	clientA := newCallbackPoweredClient(
-		server.Addr().String(),
+		server.AddressURL(),
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
 		callbackPoweredClientHooks{},
+		nil, // No TLS configuration
 	)
 
 	// Authenticate and create session
@@ -66,11 +67,12 @@ func TestSessionStatus(t *testing.T) {
 
 	// Initialize client B
 	clientB := newCallbackPoweredClient(
-		server.Addr().String(),
+		server.AddressURL(),
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
 		callbackPoweredClientHooks{},
+		nil, // No TLS configuration
 	)
 
 	require.NoError(t, clientB.connection.RestoreSession(authReqReply.Data()))

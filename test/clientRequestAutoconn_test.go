@@ -31,11 +31,12 @@ func TestClientRequestAutoconn(t *testing.T) {
 
 	// Initialize client and skip manual connection establishment
 	client := newCallbackPoweredClient(
-		server.Addr().String(),
+		server.AddressURL(),
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
 		callbackPoweredClientHooks{},
+		nil, // No TLS configuration
 	)
 
 	// Send request and await reply

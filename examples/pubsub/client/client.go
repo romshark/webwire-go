@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"log"
+	"net/url"
 	"sync"
 	"time"
 
@@ -23,7 +24,10 @@ type PubSubClient struct {
 }
 
 // NewPubSubClient constructs and returns a new pub-sub client instance
-func NewPubSubClient(serverAddr string, counterTarget uint) *PubSubClient {
+func NewPubSubClient(
+	serverAddr url.URL,
+	counterTarget uint,
+) (*PubSubClient, error) {
 	newPubSubClient := &PubSubClient{
 		target:        counterTarget,
 		counter:       0,
@@ -33,7 +37,7 @@ func NewPubSubClient(serverAddr string, counterTarget uint) *PubSubClient {
 	newPubSubClient.targetReached.Add(int(counterTarget))
 
 	// Initialize connection
-	newPubSubClient.connection = wwrclt.NewClient(
+	connection, err := wwrclt.NewClient(
 		serverAddr,
 		newPubSubClient,
 		wwrclt.Options{
@@ -41,9 +45,15 @@ func NewPubSubClient(serverAddr string, counterTarget uint) *PubSubClient {
 			DefaultRequestTimeout: 10 * time.Second,
 			ReconnectionInterval:  2 * time.Second,
 		},
+		nil, // No TLS configuration
 	)
+	if err != nil {
+		return nil, err
+	}
 
-	return newPubSubClient
+	newPubSubClient.connection = connection
+
+	return newPubSubClient, nil
 }
 
 // OnDisconnected implements the wwrclt.Implementation interface
@@ -78,7 +88,10 @@ func main() {
 	flag.Parse()
 
 	// Initialize a new pub-sub client instance
-	client := NewPubSubClient(*serverAddr, *counterTarget)
+	client, err := NewPubSubClient(url.URL{Host: *serverAddr}, *counterTarget)
+	if err != nil {
+		panic(err)
+	}
 
 	// Wait until N signals are received before disconnecting
 	client.AwaitCounterTargetReached()

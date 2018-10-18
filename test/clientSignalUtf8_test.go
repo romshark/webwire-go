@@ -42,11 +42,12 @@ func TestClientSignal(t *testing.T) {
 
 	// Initialize client
 	client := newCallbackPoweredClient(
-		server.Addr().String(),
+		server.AddressURL(),
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
 		callbackPoweredClientHooks{},
+		nil, // No TLS configuration
 	)
 
 	require.NoError(t, client.connection.Connect())

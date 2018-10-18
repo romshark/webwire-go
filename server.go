@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"net/url"
 	"sync"
 )
 
@@ -22,8 +23,10 @@ type server struct {
 	sessionInfoParser SessionInfoParser
 
 	// State
-	addr            net.Addr
+	addr            url.URL
 	options         ServerOptions
+	certFilePath    string
+	keyFilePath     string
 	shutdown        bool
 	shutdownRdy     chan bool
 	currentOps      uint32
@@ -51,18 +54,34 @@ func (srv *server) shutdownHTTPServer() error {
 
 // Run implements the Server interface
 func (srv *server) Run() error {
-	// Launch HTTP server
-	if err := srv.httpServer.Serve(
-		tcpKeepAliveListener{srv.listener.(*net.TCPListener)},
-	); err != http.ErrServerClosed {
-		return fmt.Errorf("HTTP Server failure: %s", err)
+	if srv.httpServer.TLSConfig != nil {
+		// Launch HTTPS server
+		if err := srv.httpServer.ServeTLS(
+			tcpKeepAliveListener{srv.listener.(*net.TCPListener)},
+			srv.certFilePath,
+			srv.keyFilePath,
+		); err != http.ErrServerClosed {
+			return fmt.Errorf("HTTPS Server failure: %s", err)
+		}
+	} else {
+		// Launch HTTP server
+		if err := srv.httpServer.Serve(
+			tcpKeepAliveListener{srv.listener.(*net.TCPListener)},
+		); err != http.ErrServerClosed {
+			return fmt.Errorf("HTTP Server failure: %s", err)
+		}
 	}
 
 	return nil
 }
 
-// Addr implements the Server interface
-func (srv *server) Addr() net.Addr {
+// Address implements the Server interface
+func (srv *server) Address() string {
+	return srv.addr.String()
+}
+
+// AddressURL implements the Server interface
+func (srv *server) AddressURL() url.URL {
 	return srv.addr
 }
 

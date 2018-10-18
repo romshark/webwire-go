@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net/url"
 	"time"
 
 	wwr "github.com/qbeon/webwire-go"
@@ -18,11 +19,11 @@ type EchoClient struct {
 }
 
 // NewEchoClient constructs and returns a new echo client instance
-func NewEchoClient(serverAddr string) *EchoClient {
+func NewEchoClient(serverAddr url.URL) (*EchoClient, error) {
 	newEchoClient := &EchoClient{}
 
 	// Initialize connection
-	newEchoClient.connection = wwrclt.NewClient(
+	connection, err := wwrclt.NewClient(
 		serverAddr,
 		newEchoClient,
 		wwrclt.Options{
@@ -30,9 +31,15 @@ func NewEchoClient(serverAddr string) *EchoClient {
 			DefaultRequestTimeout: 10 * time.Second,
 			ReconnectionInterval:  2 * time.Second,
 		},
+		nil, // No TLS configuration
 	)
+	if err != nil {
+		return nil, err
+	}
 
-	return newEchoClient
+	newEchoClient.connection = connection
+
+	return newEchoClient, nil
 }
 
 // OnDisconnected implements the wwrclt.Implementation interface
@@ -78,7 +85,10 @@ func main() {
 	flag.Parse()
 
 	// Initialize a new echo client instance
-	echoClient := NewEchoClient(*serverAddr)
+	echoClient, err := NewEchoClient(url.URL{Host: *serverAddr})
+	if err != nil {
+		panic(err)
+	}
 
 	// Send request and await reply
 	reply := echoClient.Request(context.Background(), "hey, server!")

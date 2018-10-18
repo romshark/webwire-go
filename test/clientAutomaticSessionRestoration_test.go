@@ -72,9 +72,10 @@ func TestClientAutomaticSessionRestoration(t *testing.T) {
 
 	// Initialize client
 	client := newCallbackPoweredClient(
-		server.Addr().String(),
+		server.AddressURL(),
 		wwrclt.Options{},
 		callbackPoweredClientHooks{},
+		nil, // No TLS configuration
 	)
 
 	require.NoError(t, client.connection.Connect())

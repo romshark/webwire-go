@@ -12,16 +12,26 @@ import (
 )
 
 var serverAddr = flag.String("addr", ":9090", "server address")
+var certFile = flag.String(
+	"sslcert",
+	"./server.crt",
+	"path to the SSL certificate file",
+)
+var privateKeyFile = flag.String(
+	"sslkey",
+	"./server.key",
+	"path to the SSL private-key file",
+)
 
 func main() {
 	// Parse command line arguments
 	flag.Parse()
 
 	// Setup a new webwire server instance
-	server, err := wwr.NewServer(
+	server, err := wwr.NewServerSecure(
 		NewChatRoomServer(),
 		wwr.ServerOptions{
-			Address: *serverAddr,
+			Host: *serverAddr,
 			WarnLog: log.New(
 				os.Stdout,
 				"WARN: ",
@@ -33,6 +43,9 @@ func main() {
 				log.Ldate|log.Ltime|log.Lshortfile,
 			),
 		},
+		*certFile,
+		*privateKeyFile,
+		nil,
 	)
 	if err != nil {
 		panic(fmt.Errorf("Failed setting up WebWire server: %s", err))
@@ -51,7 +64,7 @@ func main() {
 	}()
 
 	// Launch server
-	log.Printf("Listening on %s", server.Addr().String())
+	log.Printf("Listening on %v", server.Address())
 	if err := server.Run(); err != nil {
 		panic(fmt.Errorf("WebWire server failed: %s", err))
 	}

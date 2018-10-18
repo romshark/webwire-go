@@ -24,7 +24,14 @@ func (clt *client) connect() error {
 		return err
 	}
 
-	if err := clt.conn.Dial(clt.serverAddr); err != nil {
+	serverAddr := clt.serverAddr
+	if serverAddr.Scheme == "https" {
+		serverAddr.Scheme = "wss"
+	} else {
+		serverAddr.Scheme = "ws"
+	}
+
+	if err := clt.conn.Dial(serverAddr); err != nil {
 		return err
 	}
 

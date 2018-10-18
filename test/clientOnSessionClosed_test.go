@@ -54,7 +54,7 @@ func TestClientOnSessionClosed(t *testing.T) {
 
 	// Initialize client
 	client := newCallbackPoweredClient(
-		server.Addr().String(),
+		server.AddressURL(),
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
@@ -63,6 +63,7 @@ func TestClientOnSessionClosed(t *testing.T) {
 				hookCalled.Progress(1)
 			},
 		},
+		nil, // No TLS configuration
 	)
 
 	require.NoError(t, client.connection.Connect())

@@ -69,11 +69,12 @@ func TestClientSessionRestoration(t *testing.T) {
 
 	// Initialize client
 	initialClient := newCallbackPoweredClient(
-		server.Addr().String(),
+		server.AddressURL(),
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
 		callbackPoweredClientHooks{},
+		nil, // No TLS configuration
 	)
 
 	require.NoError(t, initialClient.connection.Connect())
@@ -102,11 +103,12 @@ func TestClientSessionRestoration(t *testing.T) {
 
 	// Initialize client
 	secondClient := newCallbackPoweredClient(
-		server.Addr().String(),
+		server.AddressURL(),
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
 		callbackPoweredClientHooks{},
+		nil, // No TLS configuration
 	)
 
 	require.NoError(t, secondClient.connection.Connect())

@@ -72,7 +72,7 @@ func main() {
 	server, err := wwr.NewServer(
 		&EchoServer{},
 		wwr.ServerOptions{
-			Address: *serverAddr,
+			Host: *serverAddr,
 		},
 	)
 	if err != nil {
@@ -92,7 +92,7 @@ func main() {
 	}()
 
 	// Launch echo server
-	log.Printf("Listening on %s", server.Addr().String())
+	log.Printf("Listening on %s", server.Address())
 	if err := server.Run(); err != nil {
 		panic(fmt.Errorf("WebWire server failed: %s", err))
 	}

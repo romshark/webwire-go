@@ -2,23 +2,15 @@ package webwire
 
 import (
 	"context"
-	"net"
 	"net/http"
+	"net/url"
 	"time"
 )
 
-// Server defines the interface of a webwire server instance
-type Server interface {
+// HeadlessServer defines the interface of a headless webwire server instance
+type HeadlessServer interface {
 	// ServeHTTP implements the HTTP handler interface
 	ServeHTTP(resp http.ResponseWriter, req *http.Request)
-
-	// Run will launch the webwire server blocking the calling goroutine
-	// until the server is either gracefully shut down
-	// or crashes returning an error
-	Run() error
-
-	// Addr returns the address the webwire server is listening on
-	Addr() net.Addr
 
 	// Shutdown appoints a server shutdown and blocks the calling goroutine
 	// until the server is gracefully stopped awaiting all currently processed
@@ -48,6 +40,22 @@ type Server interface {
 		closeErrors []error,
 		err error,
 	)
+}
+
+// Server defines the interface of a headed webwire server instance
+type Server interface {
+	// Run will launch the webwire server blocking the calling goroutine
+	// until the server is either gracefully shut down
+	// or crashes returning an error
+	Run() error
+
+	// Address returns the address the webwire server is listening on
+	Address() string
+
+	// AddressURL returns the URL address the webwire server is listening on
+	AddressURL() url.URL
+
+	HeadlessServer
 }
 
 // ConnectionOptions represents the connection upgrade options

@@ -51,11 +51,12 @@ func TestActiveSessionRegistry(t *testing.T) {
 
 	// Initialize client
 	client := newCallbackPoweredClient(
-		server.Addr().String(),
+		server.AddressURL(),
 		wwrclt.Options{
 			DefaultRequestTimeout: time.Second * 2,
 		},
 		callbackPoweredClientHooks{},
+		nil, // No TLS configuration
 	)
 	defer client.connection.Close()
 
