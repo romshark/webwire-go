@@ -68,6 +68,7 @@ The [webwire-go](https://github.com/qbeon/webwire-go) library provides both a cl
     - [SessionKeyGenerator Hooks](#sessionkeygenerator-hooks)
   - [Graceful Shutdown](#graceful-shutdown)
   - [Seamless JavaScript Support](#seamless-javascript-support)
+  - [Encryption](#encryption)
 - [Dependencies](#dependencies)
 
 
@@ -336,6 +337,28 @@ connection.Close()
 
 ### Seamless JavaScript Support
 The [official JavaScript library](https://github.com/qbeon/webwire-js) enables seamless support for various JavaScript environments providing a fully compliant client implementation supporting the latest feature set of the [webwire-go](https://github.com/qbeon/webwire-go) library.
+
+### Encryption
+Webwire can be hosted by a [TLS](https://en.wikipedia.org/wiki/Transport_Layer_Security) protected HTTPS server to prevent [man-in-the-middle attacks](https://en.wikipedia.org/wiki/Man-in-the-middle_attack) as well as to verify the identity of the server. Setting up a TLS protected server is easy:
+```go
+// Setup a secure webwire server instance
+server, err := wwr.NewServerSecure(
+	serverImplementation,
+	wwr.ServerOptions{
+		Host: "localhost:443",
+	},
+	"path/to/certificate.crt",
+	"path/to/private.key",
+	nil, // TLS configurations
+)
+if err != nil {
+	panic(fmt.Errorf("failed setting up wwr server: %s", err))
+}
+// Launch
+if err := server.Run(); err != nil {
+	panic(fmt.Errorf("wwr server failed: %s", err))
+}
+```
 
 ## Dependencies
 This library depends on:
