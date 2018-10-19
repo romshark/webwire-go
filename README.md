@@ -68,7 +68,7 @@ The [webwire-go](https://github.com/qbeon/webwire-go) library provides both a cl
     - [SessionKeyGenerator Hooks](#sessionkeygenerator-hooks)
   - [Graceful Shutdown](#graceful-shutdown)
   - [Seamless JavaScript Support](#seamless-javascript-support)
-  - [Encryption](#encryption)
+  - [Security](#security)
 - [Dependencies](#dependencies)
 
 
@@ -338,7 +338,7 @@ connection.Close()
 ### Seamless JavaScript Support
 The [official JavaScript library](https://github.com/qbeon/webwire-js) enables seamless support for various JavaScript environments providing a fully compliant client implementation supporting the latest feature set of the [webwire-go](https://github.com/qbeon/webwire-go) library.
 
-### Encryption
+### Security
 Webwire can be hosted by a [TLS](https://en.wikipedia.org/wiki/Transport_Layer_Security) protected HTTPS server to prevent [man-in-the-middle attacks](https://en.wikipedia.org/wiki/Man-in-the-middle_attack) as well as to verify the identity of the server. Setting up a TLS protected server is easy:
 ```go
 // Setup a secure webwire server instance
@@ -349,7 +349,7 @@ server, err := wwr.NewServerSecure(
 	},
 	"path/to/certificate.crt",
 	"path/to/private.key",
-	nil, // TLS configurations
+	nil, // Use default TLS configurations
 )
 if err != nil {
 	panic(fmt.Errorf("failed setting up wwr server: %s", err))
@@ -358,6 +358,42 @@ if err != nil {
 if err := server.Run(); err != nil {
 	panic(fmt.Errorf("wwr server failed: %s", err))
 }
+```
+
+To connect the client to a TLS protected webwire server `"https"` must be used as the URL scheme:
+```go
+connection, err := wwrclt.NewClient(
+	url.URL{
+		Scheme: "https",
+		Host: "localhost:443",
+	},
+	clientImplementation,
+	wwrclt.Options{/*...*/},
+	nil, // Use default TLS configuration
+)
+```
+
+In case of a self-signed certificate used for testing purposes the client will fail to connect but TLS can be configured to skip the certificate verification (which **must be disabled in production!**):
+```go
+connection, err := wwrclt.NewClient(
+	url.URL{
+		Scheme: "https",
+		Host: "localhost:443",
+	},
+	clientImplementation,
+	wwrclt.Options{/*...*/},
+	/*
+		--------------------------------------------------------------
+		WARNING! NEVER DISABLE CERTIFICATE VERIFICATION IN PRODUCTION!
+		--------------------------------------------------------------
+		InsecureSkipVerify is enabled for testing purposes only
+		to allow the use of a self-signed localhost SSL certificate.
+		Enabling this option in production is dangerous and irresponsible.
+	*/
+	&tls.Config{
+		InsecureSkipVerify: true,
+	},
+)
 ```
 
 ## Dependencies
