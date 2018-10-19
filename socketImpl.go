@@ -68,7 +68,7 @@ type socket struct {
 	connected bool
 	lock      sync.RWMutex
 	conn      *websocket.Conn
-	tlsConfig *tls.Config
+	dialer    websocket.Dialer
 }
 
 // newConnectedSocket creates a new gorilla/websocket based socket instance
@@ -86,16 +86,18 @@ func newConnectedSocket(conn *websocket.Conn) Socket {
 
 // NewSocket creates a new disconnected gorilla/websocket based socket instance
 func NewSocket(tlsConfig *tls.Config) Socket {
-	connected := false
-
 	if tlsConfig == nil {
 		tlsConfig = &tls.Config{}
 	}
 
 	return &socket{
-		connected: connected,
+		connected: false,
 		lock:      sync.RWMutex{},
-		tlsConfig: tlsConfig,
+		dialer: websocket.Dialer{
+			Proxy:            http.ProxyFromEnvironment,
+			HandshakeTimeout: 45 * time.Second,
+			TLSClientConfig:  tlsConfig.Clone(),
+		},
 	}
 }
 
@@ -108,8 +110,7 @@ func (sock *socket) Dial(serverAddr url.URL) (err error) {
 		sock.conn = nil
 	}
 
-	websocket.DefaultDialer.TLSClientConfig = sock.tlsConfig.Clone()
-	sock.conn, _, err = websocket.DefaultDialer.Dial(serverAddr.String(), nil)
+	sock.conn, _, err = sock.dialer.Dial(serverAddr.String(), nil)
 	if err != nil {
 		return NewDisconnectedErr(fmt.Errorf("Dial failure: %s", err))
 	}
