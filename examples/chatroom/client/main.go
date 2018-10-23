@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/tls"
 	"flag"
+	"fmt"
 	"log"
 	"net/url"
 	"os"
@@ -54,6 +55,9 @@ func NewChatroomClient(serverAddr url.URL) (*ChatroomClient, error) {
 			InsecureSkipVerify is enabled for demonstration purposes only
 			to allow the use of a self-signed localhost SSL certificate.
 			Enabling this option in production is dangerous and irresponsible.
+			Alternatively, you can install the "wwrexampleCA.pem" root
+			certificate to make your system accept the self-signed "server.crt"
+			certificate for "localhost" and disable InsecureSkipVerify.
 		*/
 		&tls.Config{
 			InsecureSkipVerify: true,
@@ -68,7 +72,7 @@ func NewChatroomClient(serverAddr url.URL) (*ChatroomClient, error) {
 	return newChatroomClient, nil
 }
 
-var serverAddr = flag.String("addr", ":9090", "server address")
+var serverAddr = flag.String("addr", "localhost:9090", "server address")
 var password = flag.String("pass", "", "password")
 var username = flag.String("name", "", "username")
 
@@ -77,11 +81,14 @@ func main() {
 	flag.Parse()
 
 	// Create a new chatroom client instance including its connection
-	chatroomClient, err := NewChatroomClient(url.URL{
+	serverAddr := url.URL{
 		Scheme: "https",
 		Host:   *serverAddr,
 		Path:   "/",
-	})
+	}
+
+	fmt.Printf("Connecting to %s\n", serverAddr.String())
+	chatroomClient, err := NewChatroomClient(serverAddr)
 	if err != nil {
 		panic(err)
 	}
