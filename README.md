@@ -396,6 +396,8 @@ connection, err := wwrclt.NewClient(
 )
 ```
 
+An alternative, somewhat safer approach would be to install the root CA certificate on the test system to make clients accept the self-signed server ceretificate (which was signed using the installed root certificate) instead of enabling `InsecureSkipVerify`.
+
 ## Dependencies
 This library depends on:
 - **[websocket](https://github.com/gorilla/websocket)** (**embedded**) version [v1.2.0](https://github.com/gorilla/websocket/releases/tag/v1.2.0) by **[Gorilla web toolkit](https://github.com/gorilla)** - A WebSocket implementation for Go.  
