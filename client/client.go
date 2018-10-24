@@ -83,7 +83,6 @@ type client struct {
 	connectLock   sync.Mutex
 	conn          webwire.Socket
 	readerClosing chan bool
-	endpointMeta  endpointMeta
 
 	heartbeat      heartbeat
 	requestManager reqman.RequestManager
