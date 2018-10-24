@@ -61,13 +61,12 @@ func (srv *PubSubServer) OnRequest(
 	}
 }
 
-// BeforeUpgrade implements the webwire.ServerImplementation interface.
-// Must return true to ensure incoming connections are accepted
+// BeforeUpgrade implements the webwire.ServerImplementation interface
 func (srv *PubSubServer) BeforeUpgrade(
 	resp http.ResponseWriter,
 	req *http.Request,
 ) wwr.ConnectionOptions {
-	return wwr.AcceptConnection(wwr.UnlimitedConcurrency)
+	return wwr.ConnectionOptions{}
 }
 
 // OnClientConnected implements the webwire.ServerImplementation interface.

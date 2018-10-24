@@ -2,6 +2,7 @@ package webwire
 
 import (
 	"context"
+	"time"
 
 	msg "github.com/qbeon/webwire-go/message"
 )
@@ -21,6 +22,22 @@ func (srv *server) handleMessage(con *connection, message []byte) {
 		// Respond with an error but don't break the connection
 		// because protocol errors are not critical errors
 		srv.failMsg(con, &parsedMessage, ProtocolErr{})
+		return
+	}
+
+	// Reset read deadline on valid message
+	if err := con.sock.SetReadDeadline(
+		time.Now().Add(srv.options.ReadTimeout),
+	); err != nil {
+		srv.errorLog.Printf("couldn't set read deadline: %s", err)
+		return
+	}
+
+	// Don't register a task handler for heartbeat messages
+	//
+	// TODO: probably this check should include any message type that's not
+	// handled by handleMessage to avoid registering a handler
+	if parsedMessage.Type == msg.MsgHeartbeat {
 		return
 	}
 
@@ -67,7 +84,7 @@ func (srv *server) registerHandler(
 
 	// Wait for free handler slots
 	// if the number of concurrent handlers is limited
-	if con.options.ConcurrencyLimit() > 0 {
+	if con.options.ConcurrencyLimit > 0 {
 		con.handlerSlots.Acquire(context.Background(), 1)
 	}
 
@@ -103,7 +120,7 @@ func (srv *server) deregisterHandler(con *connection) {
 	con.deregisterTask()
 
 	// Release a handler slot
-	if con.options.ConcurrencyLimit() > 0 {
+	if con.options.ConcurrencyLimit > 0 {
 		con.handlerSlots.Release(1)
 	}
 }

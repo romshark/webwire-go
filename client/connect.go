@@ -20,7 +20,8 @@ func (clt *client) connect() error {
 		return nil
 	}
 
-	if err := clt.verifyProtocolVersion(); err != nil {
+	endpointMeta, err := clt.verifyProtocolVersion()
+	if err != nil {
 		return err
 	}
 
@@ -34,6 +35,11 @@ func (clt *client) connect() error {
 	if err := clt.conn.Dial(serverAddr); err != nil {
 		return err
 	}
+
+	// Start heartbeat
+	go clt.heartbeat.start(
+		endpointMeta.ReadTimeout - endpointMeta.ReadTimeout/4,
+	)
 
 	// Setup reader thread
 	go func() {
@@ -54,6 +60,9 @@ func (clt *client) connect() error {
 				}
 
 				atomic.StoreInt32(&clt.status, Disconnected)
+
+				// Stop heartbeat
+				clt.heartbeat.stop()
 
 				// Call hook
 				clt.impl.OnDisconnected()

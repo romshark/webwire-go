@@ -29,9 +29,7 @@ type ServerOptions struct {
 	SessionKeyGenerator   SessionKeyGenerator
 	SessionInfoParser     SessionInfoParser
 	MaxSessionConnections uint
-	Heartbeat             OptionValue
-	HeartbeatTimeout      time.Duration
-	HeartbeatInterval     time.Duration
+	ReadTimeout           time.Duration
 	WarnLog               *log.Logger
 	ErrorLog              *log.Logger
 }
@@ -57,21 +55,8 @@ func (srvOpt *ServerOptions) SetDefaults() {
 		srvOpt.SessionInfoParser = GenericSessionInfoParser
 	}
 
-	// Disable heartbeat by default
-	if srvOpt.Heartbeat == OptionUnset {
-		srvOpt.Heartbeat = Disabled
-	}
-
-	// Use a default 60 seconds heartbeat timeout
-	// if the specified timeout is below 2 seconds
-	if srvOpt.HeartbeatTimeout < 2*time.Second {
-		srvOpt.HeartbeatTimeout = 60 * time.Second
-	}
-
-	// Use a default 30 seconds heartbeat interval
-	// if the specified timeout is below 1 second
-	if srvOpt.HeartbeatInterval < 1*time.Second {
-		srvOpt.HeartbeatInterval = 30 * time.Second
+	if srvOpt.ReadTimeout < 1*time.Second {
+		srvOpt.ReadTimeout = 60 * time.Second
 	}
 
 	// Create default loggers to std-out/err when no loggers are specified

@@ -18,6 +18,10 @@ func (msg *Message) Parse(message []byte) (parsedMsgType bool, err error) {
 
 	switch msgType {
 
+	// Heartbeat
+	case MsgHeartbeat:
+		err = msg.parseHeartbeat(message)
+
 	// Request error reply message
 	case MsgErrorReply:
 		err = msg.parseErrorReply(message)
@@ -459,5 +463,12 @@ func (msg *Message) parseSpecialReplyMessage(message []byte) error {
 	copy(id[:], message[1:9])
 	msg.Identifier = id
 
+	return nil
+}
+
+func (msg *Message) parseHeartbeat(message []byte) error {
+	if len(message) != 1 {
+		return fmt.Errorf("Invalid heartbeat message (len: %d)", len(message))
+	}
 	return nil
 }

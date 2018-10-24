@@ -40,13 +40,12 @@ func (srv *EchoServer) OnClientConnected(client wwr.Connection) {}
 // Does nothing, not needed in this example
 func (srv *EchoServer) OnClientDisconnected(client wwr.Connection) {}
 
-// BeforeUpgrade implements the webwire.ServerImplementation interface.
-// Must return true to ensure incoming connections are accepted
+// BeforeUpgrade implements the webwire.ServerImplementation interface
 func (srv *EchoServer) BeforeUpgrade(
 	resp http.ResponseWriter,
 	req *http.Request,
 ) wwr.ConnectionOptions {
-	return wwr.AcceptConnection(wwr.UnlimitedConcurrency)
+	return wwr.ConnectionOptions{}
 }
 
 // OnRequest implements the webwire.ServerImplementation interface.

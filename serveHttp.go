@@ -34,7 +34,7 @@ func (srv *server) ServeHTTP(
 	connectionOptions := srv.impl.BeforeUpgrade(resp, req)
 
 	// Abort connection establishment if no options are provided
-	if connectionOptions == nil || !connectionOptions.Accept() {
+	if connectionOptions.Connection != Accept {
 		return
 	}
 
@@ -49,7 +49,7 @@ func (srv *server) ServeHTTP(
 	// Set ping/pong handlers
 	conn.OnPong(func(string) error {
 		if err := conn.SetReadDeadline(
-			time.Now().Add(srv.options.HeartbeatTimeout),
+			time.Now().Add(srv.options.ReadTimeout),
 		); err != nil {
 			return fmt.Errorf(
 				"Couldn't set read deadline in Pong handler: %s",
@@ -60,7 +60,7 @@ func (srv *server) ServeHTTP(
 	})
 	conn.OnPing(func(string) error {
 		if err := conn.SetReadDeadline(
-			time.Now().Add(srv.options.HeartbeatTimeout),
+			time.Now().Add(srv.options.ReadTimeout),
 		); err != nil {
 			return fmt.Errorf(
 				"Couldn't set read deadline in Ping handler: %s",
@@ -69,8 +69,9 @@ func (srv *server) ServeHTTP(
 		}
 		return nil
 	})
+
 	if err := conn.SetReadDeadline(
-		time.Now().Add(srv.options.HeartbeatTimeout),
+		time.Now().Add(srv.options.ReadTimeout),
 	); err != nil {
 		srv.errorLog.Printf("Couldn't set read deadline: %s", err)
 		return
@@ -91,12 +92,6 @@ func (srv *server) ServeHTTP(
 	// Call hook on successful connection
 	srv.impl.OnClientConnected(connection)
 
-	// Start heartbeat sender (if enabled)
-	stopHeartbeat := make(chan struct{}, 1)
-	if srv.options.Heartbeat == Enabled {
-		go srv.heartbeat(conn, stopHeartbeat)
-	}
-
 	for {
 		// Await message
 		message, err := conn.Read()
@@ -112,10 +107,5 @@ func (srv *server) ServeHTTP(
 
 		// Parse & handle the message
 		go srv.handleMessage(connection, message)
-	}
-
-	// Connection closed
-	if srv.options.Heartbeat == Enabled {
-		stopHeartbeat <- struct{}{}
 	}
 }

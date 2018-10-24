@@ -314,7 +314,7 @@ func TestMsgParseSessCreatedSig(t *testing.T) {
 	require.Equal(t, expected, actual)
 }
 
-// TestMsgParseSessClosedSig tests parsing of session sloed signal
+// TestMsgParseSessClosedSig tests parsing of session closed signal
 func TestMsgParseSessClosedSig(t *testing.T) {
 	// Compose encoded message
 	// Add type flag
@@ -326,6 +326,24 @@ func TestMsgParseSessClosedSig(t *testing.T) {
 		Identifier: [8]byte{0, 0, 0, 0, 0, 0, 0, 0},
 		Name:       "",
 		Payload:    pld.Payload{},
+	}
+
+	// Parse
+	actual := tryParseNoErr(t, encoded)
+
+	// Compare
+	require.Equal(t, expected, actual)
+}
+
+// TestMsgParseHeartbeat tests parsing of heartbeat messages
+func TestMsgParseHeartbeat(t *testing.T) {
+	// Compose encoded message
+	// Add type flag
+	encoded := []byte{MsgHeartbeat}
+
+	// Initialize expected message
+	expected := Message{
+		Type: MsgHeartbeat,
 	}
 
 	// Parse

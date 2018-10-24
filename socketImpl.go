@@ -166,20 +166,30 @@ func (sock *socket) Close() error {
 
 // SetReadDeadline implements the webwire.Socket interface
 func (sock *socket) SetReadDeadline(deadline time.Time) error {
-	return sock.conn.SetReadDeadline(deadline)
+	sock.lock.Lock()
+	err := sock.conn.SetReadDeadline(deadline)
+	sock.lock.Unlock()
+	return err
 }
 
 // OnPong implements the webwire.Socket interface
 func (sock *socket) OnPong(handler func(string) error) {
+	sock.lock.Lock()
 	sock.conn.SetPongHandler(handler)
+	sock.lock.Unlock()
 }
 
 // OnPing implements the webwire.Socket interface
 func (sock *socket) OnPing(handler func(string) error) {
+	sock.lock.Lock()
 	sock.conn.SetPingHandler(handler)
+	sock.lock.Unlock()
 }
 
 // WritePing implements the webwire.Socket interface
 func (sock *socket) WritePing(data []byte, deadline time.Time) error {
-	return sock.conn.WriteControl(websocket.PingMessage, data, deadline)
+	sock.lock.Lock()
+	err := sock.conn.WriteControl(websocket.PingMessage, data, deadline)
+	sock.lock.Unlock()
+	return err
 }

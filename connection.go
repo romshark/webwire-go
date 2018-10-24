@@ -65,17 +65,12 @@ func newConnection(
 		remoteAddr = socket.RemoteAddr()
 	}
 
-	concurrencyLimit := int64(0)
-	if options != nil {
-		concurrencyLimit = int64(options.ConcurrencyLimit())
-	}
-
 	return &connection{
 		options:      options,
 		stateLock:    sync.RWMutex{},
 		isActive:     isActive,
 		tasks:        0,
-		handlerSlots: semaphore.NewWeighted(concurrencyLimit),
+		handlerSlots: semaphore.NewWeighted(int64(options.ConcurrencyLimit)),
 		srv:          srv,
 		sock:         socket,
 		sessionLock:  sync.RWMutex{},

@@ -58,20 +58,6 @@ type Server interface {
 	HeadlessServer
 }
 
-// ConnectionOptions represents the connection upgrade options
-// used in the BeforeUpgrade server implementation hook
-type ConnectionOptions interface {
-	// Accept returns true if the incoming connection shall be accepted,
-	// otherwise returns false indicating that the connection shall be refused
-	Accept() bool
-
-	// ConcurrencyLimit returns the maximum number of operations to be allowed
-	// to concurrently be processed for this particular client connection.
-	// If ConcurrencyLimit is 0 then the number of concurrent operations
-	// for this particular connection will be unlimited
-	ConcurrencyLimit() uint
-}
-
 // ServerImplementation defines the interface
 // of a webwire server implementation
 type ServerImplementation interface {
@@ -81,10 +67,9 @@ type ServerImplementation interface {
 
 	// BeforeUpgrade is invoked right before the upgrade of an incoming HTTP
 	// connection request to a WebSocket connection and can be used to
-	// intercept, configure or prevent incoming connections.
-	// BeforeUpgrade must return either the result of the `AcceptConnection`
-	// or the result of the `RefuseConnection` functions.
-	// Returning nil will refuse the incoming connection without an explanation
+	// intercept, configure or prevent incoming connections. BeforeUpgrade must
+	// return the connection options to be applied or set options.Connection to
+	// wwr.Refuse to refuse the incoming connection
 	BeforeUpgrade(
 		resp http.ResponseWriter,
 		req *http.Request,

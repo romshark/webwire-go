@@ -25,8 +25,8 @@ func TestRefuseConnections(t *testing.T) {
 				_ http.ResponseWriter,
 				_ *http.Request,
 			) wwr.ConnectionOptions {
-				// Refuse connections
-				return wwr.RefuseConnection("sample reason")
+				// Refuse all incoming connections
+				return wwr.ConnectionOptions{Connection: wwr.Refuse}
 			},
 			onRequest: func(
 				_ context.Context,

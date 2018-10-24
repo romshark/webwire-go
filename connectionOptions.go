@@ -1,39 +1,26 @@
 package webwire
 
+// ConnectionAcceptance defines whether a connection is to be accepted
+type ConnectionAcceptance byte
+
 const (
-	// UnlimitedConcurrency represents an option for an unlimited
-	// number of concurrent handlers of a connection
-	UnlimitedConcurrency uint = 0
+	// Accept instructs the server to accept the incoming connection
+	Accept ConnectionAcceptance = iota
+
+	// Refuse instructs the server to refuse the incoming connection
+	Refuse
 )
 
-// connectionOptions represents an implementation
+// ConnectionOptions represents an implementation
 // of the ConnectionOptions interface
-type connectionOptions struct {
-	accept           bool
-	concurrencyLimit uint
-}
+type ConnectionOptions struct {
+	// Connection refuses the incoming connection when explicitly set to
+	// wwr.Refuse. It's set to wwr.Accept by default.
+	Connection ConnectionAcceptance
 
-// Accept implements the ConnectionOptions interface
-func (conopts *connectionOptions) Accept() bool {
-	return conopts.accept
-}
-
-// ConcurrencyLimit implements the ConnectionOptions interface
-func (conopts *connectionOptions) ConcurrencyLimit() uint {
-	return conopts.concurrencyLimit
-}
-
-// AcceptConnection accepts an incoming connection using the given configuration
-func AcceptConnection(concurrencyLimit uint) ConnectionOptions {
-	return &connectionOptions{
-		accept:           true,
-		concurrencyLimit: concurrencyLimit,
-	}
-}
-
-// RefuseConnection refuses an incoming connection using the given configuration
-func RefuseConnection(reason string) ConnectionOptions {
-	return &connectionOptions{
-		accept: false,
-	}
+	// ConcurrencyLimit defines the maximum number of operations to be processed
+	// concurrently for this particular client connection. If ConcurrencyLimit
+	// is 0 (which it is by default) then the number of concurrent operations
+	// for this particular connection will be unlimited
+	ConcurrencyLimit uint
 }

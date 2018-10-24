@@ -17,7 +17,7 @@ import (
 	reqman "github.com/qbeon/webwire-go/requestManager"
 )
 
-const supportedProtocolVersion = "1.4"
+const supportedProtocolVersion = "1.5"
 
 // Status represents the status of a client instance
 type Status = int32
@@ -83,7 +83,9 @@ type client struct {
 	connectLock   sync.Mutex
 	conn          webwire.Socket
 	readerClosing chan bool
+	endpointMeta  endpointMeta
 
+	heartbeat      heartbeat
 	requestManager reqman.RequestManager
 
 	// Loggers
@@ -170,11 +172,17 @@ func (clt *client) Signal(name string, payload webwire.Payload) error {
 		data = payload.Data()
 	}
 
-	return clt.conn.Write(msg.NewSignalMessage(
+	if err := clt.conn.Write(msg.NewSignalMessage(
 		name,
 		encoding,
 		data,
-	))
+	)); err != nil {
+		return err
+	}
+
+	clt.heartbeat.reset()
+
+	return nil
 }
 
 // Session returns an exact copy of the session object or nil if there's no

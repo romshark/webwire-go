@@ -288,8 +288,6 @@ The only things to remember are:
 
 This feature is entirely optional and can be disabled at will which will cause `client.Request` and `client.RestoreSession` to immediately return a `DisconnectedErr` error when there's no connection at the time the request is made.
 
-The WebWire server will also try to keep connections alive by periodically sending heartbeats to the client. The heartbeat interval and timeout durations are adjustable through the server options and default to 30 and 60 seconds respectively.
-
 ### Concurrency
 Messages are parsed and handled concurrently in a separate goroutine by default. The total number of concurrently executed handlers can be independently throttled down for each individual connection, which is unlimited by default.
 

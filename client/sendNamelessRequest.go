@@ -29,6 +29,8 @@ func (clt *client) sendNamelessRequest(
 		return nil, webwire.NewReqTransErr(err)
 	}
 
+	clt.heartbeat.reset()
+
 	// Block until request either times out or a response is received
 	return request.AwaitReply(ctx)
 }

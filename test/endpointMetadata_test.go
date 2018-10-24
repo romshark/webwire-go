@@ -13,10 +13,12 @@ import (
 
 // TestEndpointMetadata tests server endpoint metadata
 func TestEndpointMetadata(t *testing.T) {
-	expectedVersion := "1.4"
+	expectedVersion := "1.5"
 
 	// Initialize webwire server
-	server := setupServer(t, &serverImpl{}, wwr.ServerOptions{})
+	server := setupServer(t, &serverImpl{}, wwr.ServerOptions{
+		ReadTimeout: 60 * time.Second,
+	})
 
 	// Initialize HTTP client
 	var httpClient = &http.Client{
@@ -37,9 +39,11 @@ func TestEndpointMetadata(t *testing.T) {
 	// Unmarshal response
 	var metadata struct {
 		ProtocolVersion string `json:"protocol-version"`
+		ReadTimeout     uint32 `json:"read-timeout"`
 	}
 	require.NoError(t, json.Unmarshal(encodedData, &metadata))
 
 	// Verify metadata
 	require.Equal(t, expectedVersion, metadata.ProtocolVersion)
+	require.Equal(t, uint32(60), metadata.ReadTimeout)
 }

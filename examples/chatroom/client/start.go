@@ -65,6 +65,12 @@ MAINLOOP:
 				log.Printf("WARNING: Session destruction failed: %s", err)
 			}
 			fmt.Println("Logged out, you're anonymous now")
+		case ":disconnect":
+			clt.connection.Close()
+		case ":connect":
+			if err := clt.connection.Connect(); err != nil {
+				fmt.Printf("Error while connecting: %s\n", err)
+			}
 		default:
 			// Send the message and await server reply
 			// for the message to be considered posted

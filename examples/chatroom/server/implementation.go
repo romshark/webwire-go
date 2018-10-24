@@ -192,13 +192,12 @@ func (srv *ChatRoomServer) OnSignal(
 ) {
 }
 
-// BeforeUpgrade implements the webwire.ServerImplementation interface.
-// Must return true to ensure incoming connections are accepted
+// BeforeUpgrade implements the webwire.ServerImplementation interface
 func (srv *ChatRoomServer) BeforeUpgrade(
 	resp http.ResponseWriter,
 	req *http.Request,
 ) wwr.ConnectionOptions {
-	return wwr.AcceptConnection(wwr.UnlimitedConcurrency)
+	return wwr.ConnectionOptions{}
 }
 
 // OnRequest implements the webwire.ServerImplementation interface.

@@ -26,7 +26,7 @@ func setupServer(
 			_ http.ResponseWriter,
 			_ *http.Request,
 		) wwr.ConnectionOptions {
-			return wwr.AcceptConnection(wwr.UnlimitedConcurrency)
+			return wwr.ConnectionOptions{}
 		}
 	}
 	if impl.onClientConnected == nil {
@@ -60,11 +60,6 @@ func setupServer(
 
 	// Use default address
 	opts.Host = "127.0.0.1:0"
-
-	// Use default heartbeat configuration if not set
-	if opts.Heartbeat == wwr.OptionUnset {
-		opts.Heartbeat = wwr.Disabled
-	}
 
 	server, err := wwr.NewServer(
 		impl,

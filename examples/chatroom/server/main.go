@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	wwr "github.com/qbeon/webwire-go"
 )
@@ -42,6 +43,7 @@ func main() {
 				"ERR: ",
 				log.Ldate|log.Ltime|log.Lshortfile,
 			),
+			ReadTimeout: 3 * time.Second,
 		},
 		*certFile,
 		*privateKeyFile,

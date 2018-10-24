@@ -43,6 +43,8 @@ func NewClient(
 		tlsConfig = tlsConfig.Clone()
 	}
 
+	conn := webwire.NewSocket(tlsConfig)
+
 	// Initialize new client
 	newClt := &client{
 		serverAddr:        serverAddress,
@@ -60,8 +62,9 @@ func NewClient(
 		connecting:        false,
 		connectingLock:    sync.RWMutex{},
 		connectLock:       sync.Mutex{},
-		conn:              webwire.NewSocket(tlsConfig),
+		conn:              conn,
 		readerClosing:     make(chan bool, 1),
+		heartbeat:         newHeartbeat(conn, opts.ErrorLog),
 		requestManager:    reqman.NewRequestManager(),
 		warningLog:        opts.WarnLog,
 		errorLog:          opts.ErrorLog,

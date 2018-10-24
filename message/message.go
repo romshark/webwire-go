@@ -154,6 +154,11 @@ const (
 	// to request session restoration
 	MsgRestoreSession = byte(32)
 
+	// MsgHeartbeat is sent by the client to acknowledge the server about the
+	// activity of the connection to prevent it from shutting the connection
+	// down on read timeout
+	MsgHeartbeat = byte(33)
+
 	// SIGNAL
 	// Signals are sent by both the client and the server
 	// and represents a one-way signal message that doesn't require a reply
