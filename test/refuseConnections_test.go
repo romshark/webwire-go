@@ -2,11 +2,11 @@ package test
 
 import (
 	"context"
-	"net/http"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"github.com/valyala/fasthttp"
 
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
@@ -22,8 +22,7 @@ func TestRefuseConnections(t *testing.T) {
 		t,
 		&serverImpl{
 			beforeUpgrade: func(
-				_ http.ResponseWriter,
-				_ *http.Request,
+				_ *fasthttp.RequestCtx,
 			) wwr.ConnectionOptions {
 				// Refuse all incoming connections
 				return wwr.ConnectionOptions{Connection: wwr.Refuse}

@@ -43,7 +43,7 @@ func NewClient(
 		tlsConfig = tlsConfig.Clone()
 	}
 
-	conn := webwire.NewSocket(tlsConfig)
+	conn := webwire.NewFasthttpSocket(tlsConfig)
 
 	// Initialize new client
 	newClt := &client{

@@ -43,6 +43,8 @@ func (srv *server) handleMessage(con *connection, message []byte) {
 
 	// Deregister the handler only if a handler was registered
 	if srv.registerHandler(con, &parsedMessage) {
+		// This defer is necessary to ensure the handler is deregistered even in
+		// such situations when one of the handlers panics
 		defer srv.deregisterHandler(con)
 	}
 

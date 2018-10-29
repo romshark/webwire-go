@@ -3,10 +3,10 @@ package test
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/valyala/fasthttp"
 
 	wwr "github.com/qbeon/webwire-go"
 )
@@ -23,8 +23,7 @@ func setupServer(
 
 	if impl.beforeUpgrade == nil {
 		impl.beforeUpgrade = func(
-			_ http.ResponseWriter,
-			_ *http.Request,
+			_ *fasthttp.RequestCtx,
 		) wwr.ConnectionOptions {
 			return wwr.ConnectionOptions{}
 		}

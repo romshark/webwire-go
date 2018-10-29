@@ -2,17 +2,14 @@ package test
 
 import (
 	"context"
-	"net/http"
 
 	wwr "github.com/qbeon/webwire-go"
+	"github.com/valyala/fasthttp"
 )
 
 // serverImpl implements the webwire.ServerImplementation interface
 type serverImpl struct {
-	beforeUpgrade func(
-		resp http.ResponseWriter,
-		req *http.Request,
-	) wwr.ConnectionOptions
+	beforeUpgrade        func(ctx *fasthttp.RequestCtx) wwr.ConnectionOptions
 	onClientConnected    func(connection wwr.Connection)
 	onClientDisconnected func(connection wwr.Connection)
 	onSignal             func(
@@ -28,17 +25,16 @@ type serverImpl struct {
 }
 
 // OnOptions implements the webwire.ServerImplementation interface
-func (srv *serverImpl) OnOptions(resp http.ResponseWriter) {
-	resp.Header().Set("Access-Control-Allow-Origin", "*")
-	resp.Header().Set("Access-Control-Allow-Methods", "WEBWIRE")
+func (srv *serverImpl) OnOptions(ctx *fasthttp.RequestCtx) {
+	ctx.Response.Header.Set("Access-Control-Allow-Origin", "*")
+	ctx.Response.Header.Set("Access-Control-Allow-Methods", "WEBWIRE")
 }
 
 // BeforeUpgrade implements the webwire.ServerImplementation interface
 func (srv *serverImpl) BeforeUpgrade(
-	resp http.ResponseWriter,
-	req *http.Request,
+	ctx *fasthttp.RequestCtx,
 ) wwr.ConnectionOptions {
-	return srv.beforeUpgrade(resp, req)
+	return srv.beforeUpgrade(ctx)
 }
 
 // OnClientConnected implements the webwire.ServerImplementation interface

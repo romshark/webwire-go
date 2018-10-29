@@ -5,11 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"net/http"
 	"sync"
 
 	wwr "github.com/qbeon/webwire-go"
 	"github.com/qbeon/webwire-go/examples/chatroom/shared"
+	"github.com/valyala/fasthttp"
 )
 
 // ChatRoomServer implements the webwire.ServerImplementation interface
@@ -178,9 +178,9 @@ func (srv *ChatRoomServer) handleMessage(
 
 // OnOptions implements the webwire.ServerImplementation interface.
 // Sets HTTP access control headers to satisfy CORS
-func (srv *ChatRoomServer) OnOptions(resp http.ResponseWriter) {
-	resp.Header().Set("Access-Control-Allow-Origin", "*")
-	resp.Header().Set("Access-Control-Allow-Methods", "WEBWIRE")
+func (srv *ChatRoomServer) OnOptions(ctx *fasthttp.RequestCtx) {
+	ctx.Response.Header.Set("Access-Control-Allow-Origin", "*")
+	ctx.Response.Header.Set("Access-Control-Allow-Methods", "WEBWIRE")
 }
 
 // OnSignal implements the webwire.ServerImplementation interface
@@ -194,8 +194,7 @@ func (srv *ChatRoomServer) OnSignal(
 
 // BeforeUpgrade implements the webwire.ServerImplementation interface
 func (srv *ChatRoomServer) BeforeUpgrade(
-	resp http.ResponseWriter,
-	req *http.Request,
+	_ *fasthttp.RequestCtx,
 ) wwr.ConnectionOptions {
 	return wwr.ConnectionOptions{}
 }
@@ -229,8 +228,8 @@ func (srv *ChatRoomServer) OnClientConnected(newClient wwr.Connection) {
 		info.UserAgent,
 	)
 	srv.lock.Lock()
-	defer srv.lock.Unlock()
 	srv.connected[newClient] = true
+	srv.lock.Unlock()
 }
 
 // OnClientDisconnected implements the webwire.ServerImplementation interface.
@@ -238,6 +237,6 @@ func (srv *ChatRoomServer) OnClientConnected(newClient wwr.Connection) {
 func (srv *ChatRoomServer) OnClientDisconnected(client wwr.Connection) {
 	log.Printf("Client %s disconnected", client.Info().RemoteAddr)
 	srv.lock.Lock()
-	defer srv.lock.Unlock()
 	delete(srv.connected, client)
+	srv.lock.Unlock()
 }

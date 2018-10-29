@@ -15,13 +15,14 @@ import (
 // the required protocol version of this client instance.
 func (clt *client) connect() error {
 	clt.connectLock.Lock()
-	defer clt.connectLock.Unlock()
 	if atomic.LoadInt32(&clt.status) == Connected {
+		clt.connectLock.Unlock()
 		return nil
 	}
 
 	endpointMeta, err := clt.verifyProtocolVersion()
 	if err != nil {
+		clt.connectLock.Unlock()
 		return err
 	}
 
@@ -33,6 +34,7 @@ func (clt *client) connect() error {
 	}
 
 	if err := clt.conn.Dial(serverAddr); err != nil {
+		clt.connectLock.Unlock()
 		return err
 	}
 
@@ -100,6 +102,7 @@ func (clt *client) connect() error {
 	clt.sessionLock.RLock()
 	if clt.session == nil {
 		clt.sessionLock.RUnlock()
+		clt.connectLock.Unlock()
 		return nil
 	}
 	sessionKey := clt.session.Key
@@ -121,11 +124,13 @@ func (clt *client) connect() error {
 		clt.sessionLock.Lock()
 		clt.session = nil
 		clt.sessionLock.Unlock()
+		clt.connectLock.Unlock()
 		return nil
 	}
 
 	clt.sessionLock.Lock()
 	clt.session = restoredSession
 	clt.sessionLock.Unlock()
+	clt.connectLock.Unlock()
 	return nil
 }

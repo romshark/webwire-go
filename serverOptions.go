@@ -1,6 +1,7 @@
 package webwire
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"time"
@@ -32,46 +33,75 @@ type ServerOptions struct {
 	ReadTimeout           time.Duration
 	WarnLog               *log.Logger
 	ErrorLog              *log.Logger
+	ReadBufferSize        uint
+	WriteBufferSize       uint
+	MaxConnsPerIP         uint
 }
 
-// SetDefaults sets the defaults for undefined required values
-func (srvOpt *ServerOptions) SetDefaults() {
+// Prepare verifies the specified options and sets the default values to
+// unspecified options
+func (op *ServerOptions) Prepare() error {
 	// Enable sessions by default
-	if srvOpt.Sessions == OptionUnset {
-		srvOpt.Sessions = Enabled
+	if op.Sessions == OptionUnset {
+		op.Sessions = Enabled
 	}
 
-	if srvOpt.Sessions == Enabled && srvOpt.SessionManager == nil {
+	if op.Sessions == Enabled && op.SessionManager == nil {
 		// Force the default session manager
 		// to use the default session directory
-		srvOpt.SessionManager = NewDefaultSessionManager("")
+		op.SessionManager = NewDefaultSessionManager("")
 	}
 
-	if srvOpt.Sessions == Enabled && srvOpt.SessionKeyGenerator == nil {
-		srvOpt.SessionKeyGenerator = NewDefaultSessionKeyGenerator()
+	if op.Sessions == Enabled && op.SessionKeyGenerator == nil {
+		op.SessionKeyGenerator = NewDefaultSessionKeyGenerator()
 	}
 
-	if srvOpt.SessionInfoParser == nil {
-		srvOpt.SessionInfoParser = GenericSessionInfoParser
+	if op.SessionInfoParser == nil {
+		op.SessionInfoParser = GenericSessionInfoParser
 	}
 
-	if srvOpt.ReadTimeout < 1*time.Second {
-		srvOpt.ReadTimeout = 60 * time.Second
+	if op.ReadTimeout < 1*time.Second {
+		op.ReadTimeout = 60 * time.Second
 	}
 
 	// Create default loggers to std-out/err when no loggers are specified
-	if srvOpt.WarnLog == nil {
-		srvOpt.WarnLog = log.New(
+	if op.WarnLog == nil {
+		op.WarnLog = log.New(
 			os.Stdout,
 			"WEBWIRE_WARN: ",
 			log.Ldate|log.Ltime|log.Lshortfile,
 		)
 	}
-	if srvOpt.ErrorLog == nil {
-		srvOpt.ErrorLog = log.New(
+	if op.ErrorLog == nil {
+		op.ErrorLog = log.New(
 			os.Stderr,
 			"WEBWIRE_ERR: ",
 			log.Ldate|log.Ltime|log.Lshortfile,
 		)
 	}
+
+	const minBufferSize = 16 * 1024
+
+	// Verify buffer sizes
+	if op.ReadBufferSize == 0 {
+		op.ReadBufferSize = minBufferSize
+	} else if op.ReadBufferSize < minBufferSize {
+		return fmt.Errorf(
+			"read buffer size too small: %d bytes (min: %d bytes)",
+			op.ReadBufferSize,
+			minBufferSize,
+		)
+	}
+
+	if op.WriteBufferSize == 0 {
+		op.WriteBufferSize = minBufferSize
+	} else if op.WriteBufferSize < minBufferSize {
+		return fmt.Errorf(
+			"write buffer size too small: %d bytes (min: %d bytes)",
+			op.WriteBufferSize,
+			minBufferSize,
+		)
+	}
+
+	return nil
 }

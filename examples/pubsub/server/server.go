@@ -5,7 +5,6 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"net/http"
 	"os"
 	"os/signal"
 	"sync"
@@ -13,6 +12,7 @@ import (
 	"time"
 
 	wwr "github.com/qbeon/webwire-go"
+	"github.com/valyala/fasthttp"
 )
 
 // PubSubServer implements the webwire.ServerImplementation interface
@@ -34,9 +34,9 @@ func NewPubSubServer() *PubSubServer {
 
 // OnOptions implements the webwire.ServerImplementation interface.
 // Sets HTTP access control headers to satisfy CORS
-func (srv *PubSubServer) OnOptions(resp http.ResponseWriter) {
-	resp.Header().Set("Access-Control-Allow-Origin", "*")
-	resp.Header().Set("Access-Control-Allow-Methods", "WEBWIRE")
+func (srv *PubSubServer) OnOptions(ctx *fasthttp.RequestCtx) {
+	ctx.Response.Header.Set("Access-Control-Allow-Origin", "*")
+	ctx.Response.Header.Set("Access-Control-Allow-Methods", "WEBWIRE")
 }
 
 // OnSignal implements the webwire.ServerImplementation interface
@@ -63,8 +63,7 @@ func (srv *PubSubServer) OnRequest(
 
 // BeforeUpgrade implements the webwire.ServerImplementation interface
 func (srv *PubSubServer) BeforeUpgrade(
-	resp http.ResponseWriter,
-	req *http.Request,
+	_ *fasthttp.RequestCtx,
 ) wwr.ConnectionOptions {
 	return wwr.ConnectionOptions{}
 }

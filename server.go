@@ -1,13 +1,17 @@
 package webwire
 
 import (
-	"context"
+	"crypto/tls"
 	"fmt"
+	"io"
 	"log"
 	"net"
-	"net/http"
 	"net/url"
 	"sync"
+
+	"github.com/fasthttp/websocket"
+	"github.com/pkg/errors"
+	"github.com/valyala/fasthttp"
 )
 
 const protocolVersion = "1.5"
@@ -16,8 +20,9 @@ const protocolVersion = "1.5"
 // where headless means there's no HTTP server that's hosting it
 type server struct {
 	impl              ServerImplementation
-	httpServer        *http.Server
+	httpServer        *fasthttp.Server
 	listener          net.Listener
+	tlsConfig         *tls.Config
 	sessionManager    SessionManager
 	sessionKeyGen     SessionKeyGenerator
 	sessionInfoParser SessionInfoParser
@@ -37,16 +42,16 @@ type server struct {
 	sessionRegistry *sessionRegistry
 
 	// Internals
-	connUpgrader ConnUpgrader
-	warnLog      *log.Logger
-	errorLog     *log.Logger
+	upgrader websocket.FastHTTPUpgrader
+	warnLog  *log.Logger
+	errorLog *log.Logger
 }
 
 func (srv *server) shutdownHTTPServer() error {
 	if srv.httpServer == nil {
 		return nil
 	}
-	if err := srv.httpServer.Shutdown(context.Background()); err != nil {
+	if err := srv.httpServer.Shutdown(); err != nil {
 		return fmt.Errorf("Couldn't properly shutdown HTTP server: %s", err)
 	}
 	return nil
@@ -54,21 +59,19 @@ func (srv *server) shutdownHTTPServer() error {
 
 // Run implements the Server interface
 func (srv *server) Run() error {
-	if srv.httpServer.TLSConfig != nil {
-		// Launch HTTPS server
+	if srv.tlsConfig != nil {
 		if err := srv.httpServer.ServeTLS(
 			tcpKeepAliveListener{srv.listener.(*net.TCPListener)},
 			srv.certFilePath,
 			srv.keyFilePath,
-		); err != http.ErrServerClosed {
-			return fmt.Errorf("HTTPS Server failure: %s", err)
+		); err != io.EOF {
+			return errors.Wrap(err, "HTTPS server failure")
 		}
 	} else {
-		// Launch HTTP server
 		if err := srv.httpServer.Serve(
 			tcpKeepAliveListener{srv.listener.(*net.TCPListener)},
-		); err != http.ErrServerClosed {
-			return fmt.Errorf("HTTP Server failure: %s", err)
+		); err != io.EOF {
+			return errors.Wrap(err, "HTTP server failure")
 		}
 	}
 

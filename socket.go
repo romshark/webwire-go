@@ -2,7 +2,6 @@ package webwire
 
 import (
 	"net"
-	"net/http"
 	"net/url"
 	"time"
 )
@@ -49,10 +48,4 @@ type Socket interface {
 
 	// WritePing must send a ping-message with the given data appended
 	WritePing(data []byte, deadline time.Time) error
-}
-
-// ConnUpgrader defines the abstract interface
-// of an HTTP to WebSocket connection upgrader
-type ConnUpgrader interface {
-	Upgrade(resp http.ResponseWriter, req *http.Request) (Socket, error)
 }

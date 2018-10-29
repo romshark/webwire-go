@@ -27,19 +27,24 @@ func newDam() *dam {
 // await blocks the calling goroutine until the dam is flushed
 func (dam *dam) await(ctx context.Context, timeout time.Duration) error {
 	dam.lock.RLock()
-	defer dam.lock.RUnlock()
-	timer := time.NewTimer(timeout)
-	defer timer.Stop()
 	if timeout > 0 {
+		timer := time.NewTimer(timeout)
 		select {
 		case <-ctx.Done():
+			dam.lock.RUnlock()
+			timer.Stop()
 			return wwr.TranslateContextError(ctx.Err())
 		case err := <-dam.barrier:
+			dam.lock.RUnlock()
+			timer.Stop()
 			return err
 		case <-timer.C:
+			dam.lock.RUnlock()
+			timer.Stop()
 			return wwr.NewTimeoutErr(fmt.Errorf("timed out"))
 		}
 	} else {
+		dam.lock.RUnlock()
 		return <-dam.barrier
 	}
 }

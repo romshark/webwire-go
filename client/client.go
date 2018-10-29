@@ -127,35 +127,38 @@ func (clt *client) Request(
 	}
 
 	clt.apiLock.RLock()
-	defer clt.apiLock.RUnlock()
 
 	if err := clt.tryAutoconnect(ctx, clt.defaultReqTimeout); err != nil {
+		clt.apiLock.RUnlock()
 		return nil, err
 	}
 
-	return clt.sendRequest(
+	payload, err := clt.sendRequest(
 		ctx,
 		scanPayloadEncoding(payload),
 		name,
 		payload,
 		clt.defaultReqTimeout,
 	)
+	clt.apiLock.RUnlock()
+	return payload, err
 }
 
 // Signal sends a signal containing the given payload to the server
 func (clt *client) Signal(name string, payload webwire.Payload) error {
 	clt.apiLock.RLock()
-	defer clt.apiLock.RUnlock()
 
 	if err := clt.tryAutoconnect(
 		context.Background(),
 		clt.defaultReqTimeout,
 	); err != nil {
+		clt.apiLock.RUnlock()
 		return err
 	}
 
 	// Require either a name or a payload or both
 	if len(name) < 1 && (payload == nil || len(payload.Data()) < 1) {
+		clt.apiLock.RUnlock()
 		return webwire.NewProtocolErr(
 			fmt.Errorf("Invalid request, request message requires " +
 				"either a name, a payload or both but is missing both",
@@ -176,11 +179,13 @@ func (clt *client) Signal(name string, payload webwire.Payload) error {
 		encoding,
 		data,
 	)); err != nil {
+		clt.apiLock.RUnlock()
 		return err
 	}
 
 	clt.heartbeat.reset()
 
+	clt.apiLock.RUnlock()
 	return nil
 }
 
@@ -188,8 +193,8 @@ func (clt *client) Signal(name string, payload webwire.Payload) error {
 // session currently assigned to this client
 func (clt *client) Session() *webwire.Session {
 	clt.sessionLock.RLock()
-	defer clt.sessionLock.RUnlock()
 	if clt.session == nil {
+		clt.sessionLock.RUnlock()
 		return nil
 	}
 	clone := &webwire.Session{
@@ -199,6 +204,7 @@ func (clt *client) Session() *webwire.Session {
 	if clt.session.Info != nil {
 		clone.Info = clt.session.Info.Copy()
 	}
+	clt.sessionLock.RUnlock()
 	return clone
 }
 
@@ -224,11 +230,11 @@ func (clt *client) PendingRequests() int {
 // Fails if a session is currently already active
 func (clt *client) RestoreSession(sessionKey []byte) error {
 	clt.apiLock.Lock()
-	defer clt.apiLock.Unlock()
 
 	clt.sessionLock.RLock()
 	if clt.session != nil {
 		clt.sessionLock.RUnlock()
+		clt.apiLock.Unlock()
 		return fmt.Errorf(
 			"Can't restore session if another one is already active",
 		)
@@ -239,11 +245,13 @@ func (clt *client) RestoreSession(sessionKey []byte) error {
 		context.Background(),
 		clt.defaultReqTimeout,
 	); err != nil {
+		clt.apiLock.Unlock()
 		return err
 	}
 
 	restoredSession, err := clt.requestSessionRestoration(sessionKey)
 	if err != nil {
+		clt.apiLock.Unlock()
 		return err
 	}
 
@@ -251,6 +259,7 @@ func (clt *client) RestoreSession(sessionKey []byte) error {
 	clt.session = restoredSession
 	clt.sessionLock.Unlock()
 
+	clt.apiLock.Unlock()
 	return nil
 }
 
@@ -261,11 +270,11 @@ func (clt *client) RestoreSession(sessionKey []byte) error {
 // Does nothing if there's no active session
 func (clt *client) CloseSession() error {
 	clt.apiLock.Lock()
-	defer clt.apiLock.Unlock()
 
 	clt.sessionLock.RLock()
 	if clt.session == nil {
 		clt.sessionLock.RUnlock()
+		clt.apiLock.Unlock()
 		return nil
 	}
 	clt.sessionLock.RUnlock()
@@ -278,6 +287,7 @@ func (clt *client) CloseSession() error {
 			pld.Payload{},
 			clt.defaultReqTimeout,
 		); err != nil {
+			clt.apiLock.Unlock()
 			return err
 		}
 	}
@@ -287,6 +297,7 @@ func (clt *client) CloseSession() error {
 	clt.session = nil
 	clt.sessionLock.Unlock()
 
+	clt.apiLock.Unlock()
 	return nil
 }
 
@@ -294,7 +305,6 @@ func (clt *client) CloseSession() error {
 // A disabled client won't autoconnect until enabled again.
 func (clt *client) Close() {
 	clt.apiLock.Lock()
-	defer clt.apiLock.Unlock()
 
 	// Disable autoconnect and set status to disabled
 	if atomic.LoadInt32(&clt.autoconnect) != autoconnectDisabled {
@@ -303,6 +313,7 @@ func (clt *client) Close() {
 
 	if atomic.LoadInt32(&clt.status) != Connected {
 		atomic.StoreInt32(&clt.status, Disabled)
+		clt.apiLock.Unlock()
 		return
 	}
 	atomic.StoreInt32(&clt.status, Disabled)
@@ -313,4 +324,6 @@ func (clt *client) Close() {
 
 	// Wait for the reader goroutine to die before returning
 	<-clt.readerClosing
+
+	clt.apiLock.Unlock()
 }

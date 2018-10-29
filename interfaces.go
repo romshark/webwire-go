@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"net/url"
 	"time"
+
+	"github.com/valyala/fasthttp"
 )
 
 // HeadlessServer defines the interface of a headless webwire server instance
@@ -63,17 +65,14 @@ type Server interface {
 type ServerImplementation interface {
 	// OnOptions is invoked when the websocket endpoint is examined
 	// by the client using the HTTP OPTION method.
-	OnOptions(resp http.ResponseWriter)
+	OnOptions(ctx *fasthttp.RequestCtx)
 
 	// BeforeUpgrade is invoked right before the upgrade of an incoming HTTP
 	// connection request to a WebSocket connection and can be used to
 	// intercept, configure or prevent incoming connections. BeforeUpgrade must
 	// return the connection options to be applied or set options.Connection to
 	// wwr.Refuse to refuse the incoming connection
-	BeforeUpgrade(
-		resp http.ResponseWriter,
-		req *http.Request,
-	) ConnectionOptions
+	BeforeUpgrade(ctx *fasthttp.RequestCtx) ConnectionOptions
 
 	// OnClientConnected is invoked when a new client successfully established
 	// a connection to the server.

@@ -4,9 +4,11 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net"
-	"net/http"
 	"net/url"
 	"sync"
+
+	"github.com/fasthttp/websocket"
+	"github.com/valyala/fasthttp"
 )
 
 // NewServer creates a new headed WebWire server instance
@@ -15,7 +17,9 @@ func NewServer(
 	implementation ServerImplementation,
 	opts ServerOptions,
 ) (Server, error) {
-	opts.SetDefaults()
+	if err := opts.Prepare(); err != nil {
+		return nil, err
+	}
 
 	headlessInstance, err := NewHeadlessServer(implementation, opts)
 	if err != nil {
@@ -26,9 +30,13 @@ func NewServer(
 	srv.options = opts
 
 	// Initialize HTTP server
-	srv.httpServer = &http.Server{
-		Addr:    opts.Host,
-		Handler: srv,
+	srv.httpServer = &fasthttp.Server{
+		Handler:         srv.handleHttpRequest,
+		Name:            "webwire 1.5",
+		ReadBufferSize:  int(opts.ReadBufferSize),
+		WriteBufferSize: int(opts.WriteBufferSize),
+		ReadTimeout:     opts.ReadTimeout,
+		MaxConnsPerIP:   int(opts.MaxConnsPerIP),
 	}
 
 	// Determine final address
@@ -60,7 +68,9 @@ func NewServerSecure(
 	keyFilePath string,
 	TLSConfig *tls.Config,
 ) (Server, error) {
-	opts.SetDefaults()
+	if err := opts.Prepare(); err != nil {
+		return nil, err
+	}
 
 	if TLSConfig == nil {
 		TLSConfig = &tls.Config{}
@@ -75,12 +85,16 @@ func NewServerSecure(
 	srv.options = opts
 	srv.certFilePath = certFilePath
 	srv.keyFilePath = keyFilePath
+	srv.tlsConfig = TLSConfig
 
 	// Initialize HTTPS server
-	srv.httpServer = &http.Server{
-		Addr:      opts.Host,
-		Handler:   srv,
-		TLSConfig: TLSConfig,
+	srv.httpServer = &fasthttp.Server{
+		Handler:         srv.handleHttpRequest,
+		Name:            "webwire 1.5",
+		ReadBufferSize:  int(opts.ReadBufferSize),
+		WriteBufferSize: int(opts.WriteBufferSize),
+		ReadTimeout:     opts.ReadTimeout,
+		MaxConnsPerIP:   int(opts.MaxConnsPerIP),
 	}
 
 	// Determine final address
@@ -115,7 +129,9 @@ func NewHeadlessServer(
 		))
 	}
 
-	opts.SetDefaults()
+	if err := opts.Prepare(); err != nil {
+		return nil, err
+	}
 
 	sessionsEnabled := false
 	if opts.Sessions == Enabled {
@@ -141,8 +157,11 @@ func NewHeadlessServer(
 		sessionRegistry: newSessionRegistry(opts.MaxSessionConnections),
 
 		// Internals
-		connUpgrader: newConnUpgrader(),
-		warnLog:      opts.WarnLog,
-		errorLog:     opts.ErrorLog,
+		upgrader: websocket.FastHTTPUpgrader{
+			ReadBufferSize:  int(opts.ReadBufferSize),
+			WriteBufferSize: int(opts.WriteBufferSize),
+		},
+		warnLog:  opts.WarnLog,
+		errorLog: opts.ErrorLog,
 	}, nil
 }

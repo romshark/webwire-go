@@ -29,10 +29,10 @@ func newSessionRegistry(maxConns uint) *sessionRegistry {
 // the maximum number of concurrent connections
 func (asr *sessionRegistry) register(con *connection) error {
 	asr.lock.Lock()
-	defer asr.lock.Unlock()
 	if connSet, exists := asr.registry[con.session.Key]; exists {
 		// Ensure max connections isn't exceeded
 		if asr.maxConns > 0 && uint(len(connSet)+1) > asr.maxConns {
+			asr.lock.Unlock()
 			return fmt.Errorf(
 				"Max conns (%d) reached for session %s",
 				asr.maxConns,
@@ -42,12 +42,14 @@ func (asr *sessionRegistry) register(con *connection) error {
 		// Overwrite the current entry incrementing the number of connections
 		connSet[con] = struct{}{}
 		asr.registry[con.session.Key] = connSet
+		asr.lock.Unlock()
 		return nil
 	}
 	newList := map[*connection]struct{}{
 		con: {},
 	}
 	asr.registry[con.session.Key] = newList
+	asr.lock.Unlock()
 	return nil
 }
 
@@ -62,18 +64,21 @@ func (asr *sessionRegistry) deregister(conn *connection) int {
 	}
 
 	asr.lock.Lock()
-	defer asr.lock.Unlock()
 	if connSet, exists := asr.registry[conn.session.Key]; exists {
 		// If a single connection is left then remove the session
 		if len(connSet) < 2 {
 			delete(asr.registry, conn.session.Key)
+			asr.lock.Unlock()
 			return 0
 		}
 
 		// Find and remove the client from the connections list
 		delete(connSet, conn)
+		asr.lock.Unlock()
 		return len(connSet)
 	}
+
+	asr.lock.Unlock()
 	return -1
 }
 

@@ -5,12 +5,12 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 
 	wwr "github.com/qbeon/webwire-go"
+	"github.com/valyala/fasthttp"
 )
 
 // EchoServer implements the webwire.ServerImplementation interface
@@ -18,9 +18,9 @@ type EchoServer struct{}
 
 // OnOptions implements the webwire.ServerImplementation interface.
 // Sets HTTP access control headers to satisfy CORS
-func (srv *EchoServer) OnOptions(resp http.ResponseWriter) {
-	resp.Header().Set("Access-Control-Allow-Origin", "*")
-	resp.Header().Set("Access-Control-Allow-Methods", "WEBWIRE")
+func (srv *EchoServer) OnOptions(ctx *fasthttp.RequestCtx) {
+	ctx.Response.Header.Set("Access-Control-Allow-Origin", "*")
+	ctx.Response.Header.Set("Access-Control-Allow-Methods", "WEBWIRE")
 }
 
 // OnSignal implements the webwire.ServerImplementation interface
@@ -42,8 +42,7 @@ func (srv *EchoServer) OnClientDisconnected(client wwr.Connection) {}
 
 // BeforeUpgrade implements the webwire.ServerImplementation interface
 func (srv *EchoServer) BeforeUpgrade(
-	resp http.ResponseWriter,
-	req *http.Request,
+	_ *fasthttp.RequestCtx,
 ) wwr.ConnectionOptions {
 	return wwr.ConnectionOptions{}
 }

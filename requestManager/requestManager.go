@@ -49,21 +49,25 @@ func (req *Request) Identifier() RequestIdentifier {
 func (req *Request) AwaitReply(ctx context.Context) (webwire.Payload, error) {
 	// Start timeout timer
 	timeoutTimer := time.NewTimer(req.timeout)
-	defer timeoutTimer.Stop()
 
 	// Block until either deadline exceeded, canceled,
 	// timed out or reply received
 	select {
 	case <-ctx.Done():
 		req.manager.deregister(req.identifier)
+		timeoutTimer.Stop()
 		return nil, webwire.TranslateContextError(ctx.Err())
+
 	case <-timeoutTimer.C:
 		req.manager.deregister(req.identifier)
+		timeoutTimer.Stop()
 		return &webwire.EncodedPayload{},
 			webwire.NewTimeoutErr(fmt.Errorf("timed out"))
+
 	case reply := <-req.reply:
 		timeoutTimer.Stop()
 		if reply.Error != nil {
+			timeoutTimer.Stop()
 			return nil, reply.Error
 		}
 
@@ -71,9 +75,11 @@ func (req *Request) AwaitReply(ctx context.Context) (webwire.Payload, error) {
 		// to prevent invalid memory access attempts
 		// caused by forgetting to check for != nil
 		if reply.Reply == nil {
+			timeoutTimer.Stop()
 			return &webwire.EncodedPayload{}, nil
 		}
 
+		timeoutTimer.Stop()
 		return reply.Reply, nil
 	}
 }

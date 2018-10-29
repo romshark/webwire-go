@@ -8,7 +8,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/gorilla/websocket"
+	"github.com/fasthttp/websocket"
 	wwr "github.com/qbeon/webwire-go"
 )
 
@@ -67,7 +67,7 @@ func TestProtocolViolation(t *testing.T) {
 	func() {
 		msg := []byte{
 			message.MsgRequestBinary, // Message type identifier
-			0, 0, 0, 0, 0, 0, 0, 0,   // Request identifier
+			0, 0, 0, 0, 0, 0, 0, 0, // Request identifier
 			3,     // Name length flag
 			0x041, // Name
 		}
@@ -76,7 +76,7 @@ func TestProtocolViolation(t *testing.T) {
 		require.NoError(t, readErr)
 		require.Equal(t, []byte{
 			message.MsgReplyProtocolError, // Message type identifier
-			0, 0, 0, 0, 0, 0, 0, 0,        // Request identifier
+			0, 0, 0, 0, 0, 0, 0, 0, // Request identifier
 		}, response)
 	}()
 }
