@@ -29,7 +29,6 @@ func TestClientSignalDisconnectedErr(t *testing.T) {
 			Autoconnect: wwr.Disabled,
 		},
 		callbackPoweredClientHooks{},
-		nil, // No TLS configuration
 	)
 
 	// Try to send a signal and expect a DisconnectedErr error

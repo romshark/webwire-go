@@ -24,7 +24,7 @@ func (clt *client) requestSessionRestoration(sessionKey []byte) (
 			Encoding: webwire.EncodingBinary,
 			Data:     sessionKey,
 		},
-		clt.defaultReqTimeout,
+		clt.options.DefaultRequestTimeout,
 	)
 	if err != nil {
 		return nil, err
@@ -43,7 +43,7 @@ func (clt *client) requestSessionRestoration(sessionKey []byte) (
 	// Parse session info object
 	var decodedInfo webwire.SessionInfo
 	if encodedSessionObj.Info != nil {
-		decodedInfo = clt.sessionInfoParser(encodedSessionObj.Info)
+		decodedInfo = clt.options.SessionInfoParser(encodedSessionObj.Info)
 	}
 
 	return &webwire.Session{

@@ -61,7 +61,6 @@ func TestServerSideSessionClosureInexistent(t *testing.T) {
 					onSessionClosedHooksExecuted.Progress(1)
 				},
 			},
-			nil, // No TLS configuration
 		)
 		defer client.connection.Close()
 		clients[i] = client

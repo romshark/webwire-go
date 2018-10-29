@@ -37,7 +37,6 @@ func TestRequestEmpty(t *testing.T) {
 			DefaultRequestTimeout: 2 * time.Second,
 		},
 		callbackPoweredClientHooks{},
-		nil, // No TLS configuration
 	)
 
 	// Send request without a name and without a payload.

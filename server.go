@@ -30,6 +30,7 @@ type server struct {
 	// State
 	addr            url.URL
 	options         ServerOptions
+	configMsg       []byte
 	certFilePath    string
 	keyFilePath     string
 	shutdown        bool

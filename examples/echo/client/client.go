@@ -31,7 +31,6 @@ func NewEchoClient(serverAddr url.URL) (*EchoClient, error) {
 			DefaultRequestTimeout: 10 * time.Second,
 			ReconnectionInterval:  2 * time.Second,
 		},
-		nil, // No TLS configuration
 	)
 	if err != nil {
 		return nil, err

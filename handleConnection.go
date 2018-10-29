@@ -32,6 +32,20 @@ func (srv *server) handleConnection(conn *websocket.Conn) {
 		return nil
 	})
 
+	// Send server configuration message
+	if err := conn.WriteMessage(
+		websocket.BinaryMessage,
+		srv.configMsg,
+	); err != nil {
+		if err := conn.Close(); err != nil {
+			srv.errorLog.Printf(
+				"couldn't close connection after failed conf msg transmission: %s",
+				err,
+			)
+		}
+		return
+	}
+
 	sock := newFasthttpConnectedSocket(conn)
 
 	if err := conn.SetReadDeadline(

@@ -46,7 +46,6 @@ func TestSessionStatus(t *testing.T) {
 			DefaultRequestTimeout: 2 * time.Second,
 		},
 		callbackPoweredClientHooks{},
-		nil, // No TLS configuration
 	)
 
 	// Authenticate and create session
@@ -72,7 +71,6 @@ func TestSessionStatus(t *testing.T) {
 			DefaultRequestTimeout: 2 * time.Second,
 		},
 		callbackPoweredClientHooks{},
-		nil, // No TLS configuration
 	)
 
 	require.NoError(t, clientB.connection.RestoreSession(authReqReply.Data()))

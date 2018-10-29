@@ -46,7 +46,6 @@ func TestClientDisconnectedHook(t *testing.T) {
 			DefaultRequestTimeout: 2 * time.Second,
 		},
 		callbackPoweredClientHooks{},
-		nil, // No TLS configuration
 	)
 
 	// Connect to the server

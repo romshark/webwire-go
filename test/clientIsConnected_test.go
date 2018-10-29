@@ -23,7 +23,6 @@ func TestClientIsConnected(t *testing.T) {
 			Autoconnect:           wwr.Disabled,
 		},
 		callbackPoweredClientHooks{},
-		nil, // No TLS configuration
 	)
 
 	require.NotEqual(t,

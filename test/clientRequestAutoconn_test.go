@@ -36,7 +36,6 @@ func TestClientRequestAutoconn(t *testing.T) {
 			DefaultRequestTimeout: 2 * time.Second,
 		},
 		callbackPoweredClientHooks{},
-		nil, // No TLS configuration
 	)
 
 	// Send request and await reply

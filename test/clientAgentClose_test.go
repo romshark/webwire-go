@@ -64,7 +64,6 @@ func TestConnectionClose(t *testing.T) {
 			Autoconnect: wwr.Disabled,
 		},
 		callbackPoweredClientHooks{},
-		nil, // No TLS configuration
 	)
 
 	require.NoError(t, clientA.connection.Connect())
@@ -108,7 +107,6 @@ func TestConnectionClose(t *testing.T) {
 			Autoconnect: wwr.Disabled,
 		},
 		callbackPoweredClientHooks{},
-		nil, // No TLS configuration
 	)
 
 	if err := clientB.connection.Connect(); err != nil {

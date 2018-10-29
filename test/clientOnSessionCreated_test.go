@@ -50,7 +50,6 @@ func TestClientOnSessionCreated(t *testing.T) {
 				hookCalled.Progress(1)
 			},
 		},
-		nil, // No TLS configuration
 	)
 	defer client.connection.Close()
 

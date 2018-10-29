@@ -23,7 +23,6 @@ func TestClientRestSessDisconnNoAutoconn(t *testing.T) {
 			DefaultRequestTimeout: 50 * time.Millisecond,
 		},
 		callbackPoweredClientHooks{},
-		nil, // No TLS configuration
 	)
 
 	// Try to restore a session and expect a DisconnectedErr error

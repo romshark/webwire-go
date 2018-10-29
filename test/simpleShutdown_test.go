@@ -27,7 +27,6 @@ func TestSimpleShutdown(t *testing.T) {
 				Autoconnect: wwr.Disabled,
 			},
 			callbackPoweredClientHooks{},
-			nil, // No TLS configuration
 		)
 		require.NoError(t, client.connection.Connect())
 		defer client.connection.Close()

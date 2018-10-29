@@ -56,7 +56,6 @@ func TestActiveSessionRegistry(t *testing.T) {
 			DefaultRequestTimeout: time.Second * 2,
 		},
 		callbackPoweredClientHooks{},
-		nil, // No TLS configuration
 	)
 	defer client.connection.Close()
 

@@ -63,7 +63,6 @@ func TestClientOnSessionClosed(t *testing.T) {
 				hookCalled.Progress(1)
 			},
 		},
-		nil, // No TLS configuration
 	)
 
 	require.NoError(t, client.connection.Connect())

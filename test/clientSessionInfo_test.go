@@ -152,7 +152,6 @@ func TestClientSessionInfo(t *testing.T) {
 			SessionInfoParser:     testClientSessionInfoSessionInfoParser,
 		},
 		callbackPoweredClientHooks{},
-		nil, // No TLS configuration
 	)
 	defer client.connection.Close()
 

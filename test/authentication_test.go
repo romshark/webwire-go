@@ -156,7 +156,6 @@ func TestAuthentication(t *testing.T) {
 				onSessionCreatedHookExecuted.Progress(1)
 			},
 		},
-		nil, // No TLS configuration
 	)
 	defer client.connection.Close()
 

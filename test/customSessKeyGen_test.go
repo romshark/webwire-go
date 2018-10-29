@@ -60,7 +60,6 @@ func TestCustomSessKeyGen(t *testing.T) {
 			DefaultRequestTimeout: 2 * time.Second,
 		},
 		callbackPoweredClientHooks{},
-		nil, // No TLS configuration
 	)
 	defer client.connection.Close()
 

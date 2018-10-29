@@ -25,7 +25,7 @@ func (clt *client) backgroundReconnect() {
 				clt.connectingLock.Unlock()
 				return
 			case webwire.DisconnectedErr:
-				time.Sleep(clt.reconnInterval)
+				time.Sleep(clt.options.ReconnectionInterval)
 			default:
 				// Unexpected error
 				clt.backReconn.flush(err)

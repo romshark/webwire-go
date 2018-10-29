@@ -22,7 +22,6 @@ func TestClientRestSessDisconnTimeout(t *testing.T) {
 			DefaultRequestTimeout: 50 * time.Millisecond,
 		},
 		callbackPoweredClientHooks{},
-		nil, // No TLS configuration
 	)
 
 	// Send request and await reply

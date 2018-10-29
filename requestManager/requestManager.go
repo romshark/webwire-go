@@ -1,88 +1,13 @@
 package requestmanager
 
 import (
-	"context"
 	"encoding/binary"
-	"fmt"
 	"sync"
 	"time"
 
 	webwire "github.com/qbeon/webwire-go"
 	pld "github.com/qbeon/webwire-go/payload"
 )
-
-// RequestIdentifier represents the universally unique, minified
-// UUIDv4 identifier of a request.
-type RequestIdentifier = [8]byte
-
-// reply is used by the request manager to represent the results
-// of a request (both failed and succeeded)
-type reply struct {
-	Reply webwire.Payload
-	Error error
-}
-
-// Request represents a request created and tracked by the request manager
-type Request struct {
-	// manager references the RequestManager instance managing this request
-	manager *RequestManager
-
-	// identifier represents the unique identifier of this request
-	identifier RequestIdentifier
-
-	// timeout represents the configured timeout duration of this request
-	timeout time.Duration
-
-	// reply represents a channel for asynchronous reply handling
-	reply chan reply
-}
-
-// Identifier returns the assigned request identifier
-func (req *Request) Identifier() RequestIdentifier {
-	return req.identifier
-}
-
-// AwaitReply blocks the calling goroutine
-// until either the reply is fulfilled or failed, the request timed out
-// a user-defined deadline was exceeded or the request was prematurely canceled.
-// The timer is started when AwaitReply is called.
-func (req *Request) AwaitReply(ctx context.Context) (webwire.Payload, error) {
-	// Start timeout timer
-	timeoutTimer := time.NewTimer(req.timeout)
-
-	// Block until either deadline exceeded, canceled,
-	// timed out or reply received
-	select {
-	case <-ctx.Done():
-		req.manager.deregister(req.identifier)
-		timeoutTimer.Stop()
-		return nil, webwire.TranslateContextError(ctx.Err())
-
-	case <-timeoutTimer.C:
-		req.manager.deregister(req.identifier)
-		timeoutTimer.Stop()
-		return &webwire.EncodedPayload{},
-			webwire.NewTimeoutErr(fmt.Errorf("timed out"))
-
-	case reply := <-req.reply:
-		timeoutTimer.Stop()
-		if reply.Error != nil {
-			timeoutTimer.Stop()
-			return nil, reply.Error
-		}
-
-		// Don't return nil even if the reply is empty
-		// to prevent invalid memory access attempts
-		// caused by forgetting to check for != nil
-		if reply.Reply == nil {
-			timeoutTimer.Stop()
-			return &webwire.EncodedPayload{}, nil
-		}
-
-		timeoutTimer.Stop()
-		return reply.Reply, nil
-	}
-}
 
 // RequestManager manages and keeps track of outgoing pending requests
 type RequestManager struct {
@@ -149,6 +74,7 @@ func (manager *RequestManager) Fulfill(
 	manager.lock.RLock()
 	req, exists := manager.pending[identifier]
 	manager.lock.RUnlock()
+
 	if !exists {
 		return false
 	}
@@ -173,9 +99,11 @@ func (manager *RequestManager) Fail(
 	manager.lock.RLock()
 	req, exists := manager.pending[identifier]
 	manager.lock.RUnlock()
+
 	if !exists {
 		return false
 	}
+
 	req.reply <- reply{
 		Reply: nil,
 		Error: err,

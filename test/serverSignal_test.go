@@ -55,7 +55,6 @@ func TestServerSignal(t *testing.T) {
 				signalProcessed.Progress(1)
 			},
 		},
-		nil, // No TLS configuration
 	)
 	defer client.connection.Close()
 

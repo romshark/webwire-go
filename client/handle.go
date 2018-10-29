@@ -18,8 +18,8 @@ func (clt *client) handleSessionCreated(msgPayload pld.Payload) {
 
 	// parse attached session info
 	var parsedSessInfo webwire.SessionInfo
-	if encoded.Info != nil && clt.sessionInfoParser != nil {
-		parsedSessInfo = clt.sessionInfoParser(encoded.Info)
+	if encoded.Info != nil && clt.options.SessionInfoParser != nil {
+		parsedSessInfo = clt.options.SessionInfoParser(encoded.Info)
 	}
 
 	clt.sessionLock.Lock()

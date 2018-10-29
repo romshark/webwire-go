@@ -7,6 +7,8 @@ import (
 	"net/url"
 	"sync"
 
+	"github.com/qbeon/webwire-go/message"
+
 	"github.com/fasthttp/websocket"
 	"github.com/valyala/fasthttp"
 )
@@ -31,7 +33,7 @@ func NewServer(
 
 	// Initialize HTTP server
 	srv.httpServer = &fasthttp.Server{
-		Handler:         srv.handleHttpRequest,
+		Handler:         srv.handleAccept,
 		Name:            "webwire 1.5",
 		ReadBufferSize:  int(opts.ReadBufferSize),
 		WriteBufferSize: int(opts.WriteBufferSize),
@@ -89,7 +91,7 @@ func NewServerSecure(
 
 	// Initialize HTTPS server
 	srv.httpServer = &fasthttp.Server{
-		Handler:         srv.handleHttpRequest,
+		Handler:         srv.handleAccept,
 		Name:            "webwire 1.5",
 		ReadBufferSize:  int(opts.ReadBufferSize),
 		WriteBufferSize: int(opts.WriteBufferSize),
@@ -138,6 +140,15 @@ func NewHeadlessServer(
 		sessionsEnabled = true
 	}
 
+	configMsg, err := message.NewConfMessage(message.ServerConfiguration{
+		MajorProtocolVersion: 2,
+		MinorProtocolVersion: 0,
+		ReadTimeout:          opts.ReadTimeout,
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	return &server{
 		impl:              implementation,
 		sessionManager:    opts.SessionManager,
@@ -147,6 +158,7 @@ func NewHeadlessServer(
 		// State
 		addr:            url.URL{},
 		options:         opts,
+		configMsg:       configMsg,
 		shutdown:        false,
 		shutdownRdy:     make(chan bool),
 		currentOps:      0,

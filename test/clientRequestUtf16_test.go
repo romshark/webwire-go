@@ -51,7 +51,6 @@ func TestClientRequestUtf16(t *testing.T) {
 			DefaultRequestTimeout: 2 * time.Second,
 		},
 		callbackPoweredClientHooks{},
-		nil, // No TLS configuration
 	)
 
 	require.NoError(t, client.connection.Connect())

@@ -1,6 +1,10 @@
 package message
 
-import pld "github.com/qbeon/webwire-go/payload"
+import (
+	"time"
+
+	pld "github.com/qbeon/webwire-go/payload"
+)
 
 const (
 	// MsgMinLenSignal represents the minimum length
@@ -100,6 +104,16 @@ const (
 	// Session destruction notification message structure:
 	//  1. message type (1 byte)
 	MsgMinLenSessionClosed = int(1)
+
+	// MsgMinLenConf represents the minimum length
+	// of an endpoint metadata message.
+	//  1. message type (1 byte)
+	//  2. major protocol version (1 byte)
+	//  3. minor protocol version (1 byte)
+	//  4. read timeout in milliseconds (4 byte)
+	//  5. read buffer size in bytes (4 byte)
+	//  6. write buffer size in bytes (4 byte)
+	MsgMinLenConf = int(15)
 )
 
 const (
@@ -142,6 +156,10 @@ const (
 	// MsgSessionClosed is sent by the server
 	// to notify the client about the session destruction
 	MsgSessionClosed = byte(22)
+
+	// MsgConf is sent by the server right after the handshake and includes
+	// the server exposed configurations
+	MsgConf = byte(23)
 
 	// CLIENT
 
@@ -199,12 +217,24 @@ const (
 	MsgReplyUtf16 = byte(193)
 )
 
+// ServerConfiguration represents the MsgConf payload data
+type ServerConfiguration struct {
+	MajorProtocolVersion byte
+	MinorProtocolVersion byte
+	ReadTimeout          time.Duration
+	ReadBufferSize       uint32
+	WriteBufferSize      uint32
+}
+
 // Message represents a WebWire protocol message
 type Message struct {
 	Type       byte
 	Identifier [8]byte
 	Name       string
 	Payload    pld.Payload
+
+	// ServerConfiguration is only initialized for MsgConf type messages
+	ServerConfiguration ServerConfiguration
 }
 
 // RequiresReply returns true if a message of this type requires a reply,

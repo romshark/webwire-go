@@ -52,7 +52,6 @@ func TestDisabledSessions(t *testing.T) {
 				t.Errorf("OnSessionCreated was not expected to be called")
 			},
 		},
-		nil, // No TLS configuration
 	)
 	defer client.connection.Close()
 

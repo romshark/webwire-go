@@ -25,7 +25,6 @@ func TestClientReqDisconnNoAutoconn(t *testing.T) {
 			DefaultRequestTimeout: 50 * time.Millisecond,
 		},
 		callbackPoweredClientHooks{},
-		nil, // No TLS configuration
 	)
 
 	// Try to send a request and expect a DisconnectedErr error

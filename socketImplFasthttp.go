@@ -53,7 +53,6 @@ func (err fasthttpSockReadWrongMsgTypeErr) IsAbnormalCloseErr() bool {
 type fasthttpSocket struct {
 	connected bool
 	lock      sync.RWMutex
-	writeLock sync.Mutex
 	readLock  sync.Mutex
 	conn      *websocket.Conn
 	dialer    websocket.Dialer
@@ -69,7 +68,6 @@ func newFasthttpConnectedSocket(conn *websocket.Conn) Socket {
 	return &fasthttpSocket{
 		connected: connected,
 		lock:      sync.RWMutex{},
-		writeLock: sync.Mutex{},
 		readLock:  sync.Mutex{},
 		conn:      conn,
 	}
@@ -77,7 +75,10 @@ func newFasthttpConnectedSocket(conn *websocket.Conn) Socket {
 
 // NewFasthttpSocket creates a new disconnected fasthttp/websocket based socket
 // instance
-func NewFasthttpSocket(tlsConfig *tls.Config) Socket {
+func NewFasthttpSocket(
+	tlsConfig *tls.Config,
+	dialTimeout time.Duration,
+) Socket {
 	if tlsConfig == nil {
 		tlsConfig = &tls.Config{}
 	}
@@ -87,7 +88,7 @@ func NewFasthttpSocket(tlsConfig *tls.Config) Socket {
 		lock:      sync.RWMutex{},
 		dialer: websocket.Dialer{
 			Proxy:            http.ProxyFromEnvironment,
-			HandshakeTimeout: 45 * time.Second,
+			HandshakeTimeout: dialTimeout,
 			TLSClientConfig:  tlsConfig.Clone(),
 		},
 	}
@@ -113,18 +114,15 @@ func (sock *fasthttpSocket) Dial(serverAddr url.URL) (err error) {
 
 // Write implements the webwire.Socket interface
 func (sock *fasthttpSocket) Write(data []byte) error {
-	sock.lock.RLock()
+	sock.lock.Lock()
 	if !sock.connected {
-		sock.lock.RUnlock()
+		sock.lock.Unlock()
 		return DisconnectedErr{
 			Cause: fmt.Errorf("can't write to a socket"),
 		}
 	}
-	sock.lock.RUnlock()
-
-	sock.writeLock.Lock()
 	err := sock.conn.WriteMessage(websocket.BinaryMessage, data)
-	sock.writeLock.Unlock()
+	sock.lock.Unlock()
 	return err
 }
 
@@ -132,12 +130,13 @@ func (sock *fasthttpSocket) Write(data []byte) error {
 func (sock *fasthttpSocket) Read() ([]byte, SockReadErr) {
 	sock.readLock.Lock()
 	messageType, message, err := sock.conn.ReadMessage()
-	if messageType != websocket.BinaryMessage {
-		return nil, fasthttpSockReadWrongMsgTypeErr{messageType: messageType}
-	}
 	sock.readLock.Unlock()
+
 	if err != nil {
 		return nil, fasthttpSockReadErr{cause: err}
+	}
+	if messageType != websocket.BinaryMessage {
+		return nil, fasthttpSockReadWrongMsgTypeErr{messageType: messageType}
 	}
 	return message, nil
 }
@@ -195,8 +194,8 @@ func (sock *fasthttpSocket) OnPing(handler func(string) error) {
 
 // WritePing implements the webwire.Socket interface
 func (sock *fasthttpSocket) WritePing(data []byte, deadline time.Time) error {
-	sock.writeLock.Lock()
+	sock.lock.Lock()
 	err := sock.conn.WriteControl(websocket.PingMessage, data, deadline)
-	sock.writeLock.Unlock()
+	sock.lock.Unlock()
 	return err
 }

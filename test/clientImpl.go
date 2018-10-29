@@ -1,7 +1,6 @@
 package test
 
 import (
-	"crypto/tls"
 	"net/url"
 
 	wwr "github.com/qbeon/webwire-go"
@@ -24,9 +23,8 @@ type callbackPoweredClient struct {
 // newCallbackPoweredClient constructs and returns a new echo client instance
 func newCallbackPoweredClient(
 	serverAddr url.URL,
-	opts wwrclt.Options,
+	options wwrclt.Options,
 	hooks callbackPoweredClientHooks,
-	tlsConfig *tls.Config,
 ) *callbackPoweredClient {
 	newClt := &callbackPoweredClient{
 		nil,
@@ -34,7 +32,7 @@ func newCallbackPoweredClient(
 	}
 
 	// Initialize connection
-	conn, err := wwrclt.NewClient(serverAddr, newClt, opts, tlsConfig)
+	conn, err := wwrclt.NewClient(serverAddr, newClt, options)
 	if err != nil {
 		panic(err)
 	}

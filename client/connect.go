@@ -20,20 +20,9 @@ func (clt *client) connect() error {
 		return nil
 	}
 
-	endpointMeta, err := clt.verifyProtocolVersion()
+	// Dial and await approval
+	endpointMeta, err := clt.dial()
 	if err != nil {
-		clt.connectLock.Unlock()
-		return err
-	}
-
-	serverAddr := clt.serverAddr
-	if serverAddr.Scheme == "https" {
-		serverAddr.Scheme = "wss"
-	} else {
-		serverAddr.Scheme = "ws"
-	}
-
-	if err := clt.conn.Dial(serverAddr); err != nil {
 		clt.connectLock.Unlock()
 		return err
 	}

@@ -76,7 +76,6 @@ func TestMaxConcSessConn(t *testing.T) {
 				DefaultRequestTimeout: 2 * time.Second,
 			},
 			callbackPoweredClientHooks{},
-			nil, // No TLS configuration
 		)
 		clients[i] = client
 
@@ -99,7 +98,6 @@ func TestMaxConcSessConn(t *testing.T) {
 			DefaultRequestTimeout: 2 * time.Second,
 		},
 		callbackPoweredClientHooks{},
-		nil, // No TLS configuration
 	)
 
 	require.NoError(t, superfluousClient.connection.Connect())

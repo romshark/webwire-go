@@ -43,7 +43,6 @@ func TestRequestNameNoPayload(t *testing.T) {
 			DefaultRequestTimeout: 2 * time.Second,
 		},
 		callbackPoweredClientHooks{},
-		nil, // No TLS configuration
 	)
 
 	// Send a named binary request without a payload and await reply

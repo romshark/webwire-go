@@ -1,6 +1,7 @@
 package client
 
 import (
+	"crypto/tls"
 	"log"
 	"os"
 	"time"
@@ -12,6 +13,9 @@ import (
 type Options struct {
 	// SessionInfoParser defines the optional session info parser function
 	SessionInfoParser webwire.SessionInfoParser
+
+	// DialingTimeout defines the dialing timeout
+	DialingTimeout time.Duration
 
 	// DefaultRequestTimeout defines the default request timeout duration
 	// used by client.Request and client.RestoreSession
@@ -38,6 +42,9 @@ type Options struct {
 
 	// ErrorLog defines the error logging output target
 	ErrorLog *log.Logger
+
+	// TLSConfig defines optional TLS configurations
+	TLSConfig *tls.Config
 }
 
 // SetDefaults sets default values for undefined required options
@@ -72,5 +79,15 @@ func (opts *Options) SetDefaults() {
 			"WEBWIRE_CLT_ERR: ",
 			log.Ldate|log.Ltime|log.Lshortfile,
 		)
+	}
+
+	// Set default dialing timeout
+	if opts.DialingTimeout < 1 {
+		opts.DialingTimeout = 5 * time.Second
+	}
+
+	// Copy the TLS configuration if any
+	if opts.TLSConfig != nil {
+		opts.TLSConfig = opts.TLSConfig.Clone()
 	}
 }

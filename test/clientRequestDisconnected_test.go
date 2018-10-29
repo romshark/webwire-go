@@ -36,7 +36,6 @@ func TestClientRequestDisconnected(t *testing.T) {
 			Autoconnect:           wwrclt.Disabled,
 		},
 		callbackPoweredClientHooks{},
-		nil, // No TLS configuration
 	)
 
 	// Send request and await reply

@@ -7,9 +7,8 @@ import (
 )
 
 var methodNameOptions = []byte("OPTIONS")
-var methodNameWebwire = []byte("WEBWIRE")
 
-func (srv *server) handleHttpRequest(ctx *fasthttp.RequestCtx) {
+func (srv *server) handleAccept(ctx *fasthttp.RequestCtx) {
 	// Reject incoming connections during shutdown,
 	// pretend the server is temporarily unavailable
 	srv.opsLock.Lock()
@@ -23,9 +22,6 @@ func (srv *server) handleHttpRequest(ctx *fasthttp.RequestCtx) {
 	method := ctx.Method()
 	if bytes.Equal(method, methodNameOptions) {
 		srv.impl.OnOptions(ctx)
-		return
-	} else if bytes.Equal(method, methodNameWebwire) {
-		srv.handleMetadata(ctx)
 		return
 	}
 

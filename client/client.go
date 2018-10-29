@@ -2,14 +2,12 @@ package client
 
 import (
 	"context"
-	"crypto/tls"
 	"sync/atomic"
 
 	"fmt"
 	"log"
 	"net/url"
 	"sync"
-	"time"
 
 	webwire "github.com/qbeon/webwire-go"
 	msg "github.com/qbeon/webwire-go/message"
@@ -17,7 +15,7 @@ import (
 	reqman "github.com/qbeon/webwire-go/requestManager"
 )
 
-const supportedProtocolVersion = "1.5"
+const supportedProtocolVersion = "2.0"
 
 // Status represents the status of a client instance
 type Status = int32
@@ -49,26 +47,21 @@ const (
 
 // client represents an instance of one of the servers clients
 type client struct {
-	serverAddr        url.URL
-	tlsConfig         *tls.Config
-	impl              Implementation
-	sessionInfoParser webwire.SessionInfoParser
-	status            Status
-	defaultReqTimeout time.Duration
-	reconnInterval    time.Duration
-	autoconnect       autoconnectStatus
+	serverAddr  url.URL
+	options     Options
+	impl        Implementation
+	status      Status
+	autoconnect autoconnectStatus
 
 	sessionLock sync.RWMutex
 	session     *webwire.Session
 
-	// The API lock synchronizes concurrent access
-	// to the public client interface.
-	// Request, and Signal methods are locked with a shared lock
-	// because performing multiple requests and/or signals simultaneously
-	// is fine.
-	// The Connect, RestoreSession, CloseSession and Close methods
-	// are locked exclusively because they should temporarily block
-	// any other interaction with this client instance.
+	// The API lock synchronizes concurrent access to the public client
+	// interface. Request, and Signal methods are locked with a shared lock
+	// because performing multiple requests and/or signals simultaneously is
+	// fine. The Connect, RestoreSession, CloseSession and Close methods are
+	// locked exclusively because they should temporarily block any other
+	// interaction with this client instance.
 	apiLock sync.RWMutex
 
 	// backReconn is a dam that's flushed
@@ -126,9 +119,13 @@ func (clt *client) Request(
 		ctx = context.Background()
 	}
 
+	// Apply shared lock
 	clt.apiLock.RLock()
 
-	if err := clt.tryAutoconnect(ctx, clt.defaultReqTimeout); err != nil {
+	if err := clt.tryAutoconnect(
+		ctx,
+		clt.options.DefaultRequestTimeout,
+	); err != nil {
 		clt.apiLock.RUnlock()
 		return nil, err
 	}
@@ -138,7 +135,7 @@ func (clt *client) Request(
 		scanPayloadEncoding(payload),
 		name,
 		payload,
-		clt.defaultReqTimeout,
+		clt.options.DefaultRequestTimeout,
 	)
 	clt.apiLock.RUnlock()
 	return payload, err
@@ -146,11 +143,12 @@ func (clt *client) Request(
 
 // Signal sends a signal containing the given payload to the server
 func (clt *client) Signal(name string, payload webwire.Payload) error {
+	// Apply shared lock
 	clt.apiLock.RLock()
 
 	if err := clt.tryAutoconnect(
 		context.Background(),
-		clt.defaultReqTimeout,
+		clt.options.DefaultRequestTimeout,
 	); err != nil {
 		clt.apiLock.RUnlock()
 		return err
@@ -229,6 +227,7 @@ func (clt *client) PendingRequests() int {
 // RestoreSession tries to restore the previously opened session.
 // Fails if a session is currently already active
 func (clt *client) RestoreSession(sessionKey []byte) error {
+	// Apply exclusive lock
 	clt.apiLock.Lock()
 
 	clt.sessionLock.RLock()
@@ -243,7 +242,7 @@ func (clt *client) RestoreSession(sessionKey []byte) error {
 
 	if err := clt.tryAutoconnect(
 		context.Background(),
-		clt.defaultReqTimeout,
+		clt.options.DefaultRequestTimeout,
 	); err != nil {
 		clt.apiLock.Unlock()
 		return err
@@ -269,6 +268,7 @@ func (clt *client) RestoreSession(sessionKey []byte) error {
 // If the client is not connected then the synchronization is skipped.
 // Does nothing if there's no active session
 func (clt *client) CloseSession() error {
+	// Apply exclusive lock
 	clt.apiLock.Lock()
 
 	clt.sessionLock.RLock()
@@ -285,7 +285,7 @@ func (clt *client) CloseSession() error {
 			context.Background(),
 			msg.MsgCloseSession,
 			pld.Payload{},
-			clt.defaultReqTimeout,
+			clt.options.DefaultRequestTimeout,
 		); err != nil {
 			clt.apiLock.Unlock()
 			return err
@@ -304,6 +304,7 @@ func (clt *client) CloseSession() error {
 // Close gracefully closes the connection and disables the client.
 // A disabled client won't autoconnect until enabled again.
 func (clt *client) Close() {
+	// Apply exclusive lock
 	clt.apiLock.Lock()
 
 	// Disable autoconnect and set status to disabled

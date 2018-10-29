@@ -96,7 +96,6 @@ func TestClientInitiatedSessionDestruction(t *testing.T) {
 				sessionDestructionCallbackCalled.Progress(1)
 			},
 		},
-		nil, // No TLS configuration
 	)
 
 	/*****************************************************************\

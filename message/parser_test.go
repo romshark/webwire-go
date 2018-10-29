@@ -353,6 +353,33 @@ func TestMsgParseHeartbeat(t *testing.T) {
 	require.Equal(t, expected, actual)
 }
 
+// TestMsgParseConf tests parsing of server configuration messages
+func TestMsgParseConf(t *testing.T) {
+	srvConf := ServerConfiguration{
+		MajorProtocolVersion: 22,
+		MinorProtocolVersion: 33,
+		ReadTimeout:          11 * time.Second,
+		ReadBufferSize:       1024,
+		WriteBufferSize:      2048,
+	}
+
+	// Compose encoded message
+	encoded, err := NewConfMessage(srvConf)
+	require.NoError(t, err)
+
+	// Initialize expected message
+	expected := Message{
+		Type:                MsgConf,
+		ServerConfiguration: srvConf,
+	}
+
+	// Parse
+	actual := tryParseNoErr(t, encoded)
+
+	// Compare
+	require.Equal(t, expected, actual)
+}
+
 // TestMsgParseUnknownMessageType tests parsing of messages
 // with unknown message type
 func TestMsgParseUnknownMessageType(t *testing.T) {

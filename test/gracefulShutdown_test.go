@@ -83,19 +83,16 @@ func TestGracefulShutdown(t *testing.T) {
 		serverAddr,
 		cltOpts,
 		callbackPoweredClientHooks{},
-		nil, // No TLS configuration
 	)
 	clientReq := newCallbackPoweredClient(
 		serverAddr,
 		cltOpts,
 		callbackPoweredClientHooks{},
-		nil, // No TLS configuration
 	)
 	clientLateReq := newCallbackPoweredClient(
 		serverAddr,
 		cltOpts,
 		callbackPoweredClientHooks{},
-		nil, // No TLS configuration
 	)
 
 	require.NoError(t, clientSig.connection.Connect())
@@ -109,7 +106,6 @@ func TestGracefulShutdown(t *testing.T) {
 			Autoconnect: wwr.Disabled,
 		},
 		callbackPoweredClientHooks{},
-		nil, // No TLS configuration
 	)
 
 	// Send signal and request in another parallel goroutine

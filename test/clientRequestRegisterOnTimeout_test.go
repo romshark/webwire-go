@@ -44,7 +44,6 @@ func TestClientRequestRegisterOnTimeout(t *testing.T) {
 			DefaultRequestTimeout: 2 * time.Second,
 		},
 		callbackPoweredClientHooks{},
-		nil, // No TLS configuration
 	)
 	connection = client.connection
 

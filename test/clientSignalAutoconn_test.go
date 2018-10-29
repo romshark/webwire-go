@@ -27,7 +27,6 @@ func TestClientSignalAutoconn(t *testing.T) {
 			DefaultRequestTimeout: 2 * time.Second,
 		},
 		callbackPoweredClientHooks{},
-		nil, // No TLS configuration
 	)
 
 	// Skip manual connection establishment and rely on autoconnect instead

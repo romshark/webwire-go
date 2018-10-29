@@ -49,7 +49,6 @@ func TestRefuseConnections(t *testing.T) {
 				Autoconnect:           wwr.Disabled,
 			},
 			callbackPoweredClientHooks{},
-			nil, // No TLS configuration
 		)
 		defer clt.connection.Close()
 		clients[i] = clt

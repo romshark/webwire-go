@@ -2,7 +2,6 @@ package client
 
 import (
 	"context"
-	"crypto/tls"
 	"fmt"
 	"net/url"
 	"sync"
@@ -16,8 +15,7 @@ import (
 func NewClient(
 	serverAddress url.URL,
 	implementation Implementation,
-	opts Options,
-	tlsConfig *tls.Config,
+	options Options,
 ) (Client, error) {
 	if implementation == nil {
 		return nil, fmt.Errorf(
@@ -31,43 +29,37 @@ func NewClient(
 	}
 
 	// Prepare configuration
-	opts.SetDefaults()
+	options.SetDefaults()
 
 	// Enable autoconnect by default
 	autoconnect := autoconnectStatus(autoconnectEnabled)
-	if opts.Autoconnect == webwire.Disabled {
+	if options.Autoconnect == webwire.Disabled {
 		autoconnect = autoconnectDisabled
 	}
 
-	if tlsConfig != nil {
-		tlsConfig = tlsConfig.Clone()
-	}
-
-	conn := webwire.NewFasthttpSocket(tlsConfig)
+	conn := webwire.NewFasthttpSocket(
+		options.TLSConfig,
+		options.DialingTimeout,
+	)
 
 	// Initialize new client
 	newClt := &client{
-		serverAddr:        serverAddress,
-		tlsConfig:         tlsConfig,
-		impl:              implementation,
-		sessionInfoParser: opts.SessionInfoParser,
-		status:            Disconnected,
-		defaultReqTimeout: opts.DefaultRequestTimeout,
-		reconnInterval:    opts.ReconnectionInterval,
-		autoconnect:       autoconnect,
-		sessionLock:       sync.RWMutex{},
-		session:           nil,
-		apiLock:           sync.RWMutex{},
-		backReconn:        newDam(),
-		connecting:        false,
-		connectingLock:    sync.RWMutex{},
-		connectLock:       sync.Mutex{},
-		conn:              conn,
-		readerClosing:     make(chan bool, 1),
-		heartbeat:         newHeartbeat(conn, opts.ErrorLog),
-		requestManager:    reqman.NewRequestManager(),
-		warningLog:        opts.WarnLog,
-		errorLog:          opts.ErrorLog,
+		serverAddr:     serverAddress,
+		options:        options,
+		impl:           implementation,
+		status:         Disconnected,
+		autoconnect:    autoconnect,
+		sessionLock:    sync.RWMutex{},
+		session:        nil,
+		apiLock:        sync.RWMutex{},
+		backReconn:     newDam(),
+		connecting:     false,
+		connectingLock: sync.RWMutex{},
+		connectLock:    sync.Mutex{},
+		conn:           conn,
+		readerClosing:  make(chan bool, 1),
+		heartbeat:      newHeartbeat(conn, options.ErrorLog),
+		requestManager: reqman.NewRequestManager(),
 	}
 
 	if autoconnect == autoconnectEnabled {

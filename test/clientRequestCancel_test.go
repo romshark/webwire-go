@@ -41,7 +41,6 @@ func TestClientRequestCancel(t *testing.T) {
 			DefaultRequestTimeout: 5 * time.Second,
 		},
 		callbackPoweredClientHooks{},
-		nil, // No TLS configuration
 	)
 
 	require.NoError(t, client.connection.Connect())

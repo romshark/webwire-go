@@ -74,7 +74,6 @@ func TestClientSessionRestoration(t *testing.T) {
 			DefaultRequestTimeout: 2 * time.Second,
 		},
 		callbackPoweredClientHooks{},
-		nil, // No TLS configuration
 	)
 
 	require.NoError(t, initialClient.connection.Connect())
@@ -108,7 +107,6 @@ func TestClientSessionRestoration(t *testing.T) {
 			DefaultRequestTimeout: 2 * time.Second,
 		},
 		callbackPoweredClientHooks{},
-		nil, // No TLS configuration
 	)
 
 	require.NoError(t, secondClient.connection.Connect())
