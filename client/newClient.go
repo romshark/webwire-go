@@ -29,7 +29,9 @@ func NewClient(
 	}
 
 	// Prepare configuration
-	options.SetDefaults()
+	if err := options.Prepare(); err != nil {
+		return nil, err
+	}
 
 	// Enable autoconnect by default
 	autoconnect := autoconnectStatus(autoconnectEnabled)

@@ -2,6 +2,7 @@ package client
 
 import (
 	"crypto/tls"
+	"fmt"
 	"log"
 	"os"
 	"time"
@@ -45,36 +46,43 @@ type Options struct {
 
 	// TLSConfig defines optional TLS configurations
 	TLSConfig *tls.Config
+
+	// ReadBufferSize defines the size of the inbound buffer in bytes
+	ReadBufferSize uint
+
+	// WriteBufferSize defines the size of the outbound buffer in bytes
+	WriteBufferSize uint
 }
 
-// SetDefaults sets default values for undefined required options
-func (opts *Options) SetDefaults() {
-	if opts.SessionInfoParser == nil {
-		opts.SessionInfoParser = webwire.GenericSessionInfoParser
+// Prepare validates the specified options and sets the default values for
+// unspecified options
+func (op *Options) Prepare() error {
+	if op.SessionInfoParser == nil {
+		op.SessionInfoParser = webwire.GenericSessionInfoParser
 	}
 
-	if opts.DefaultRequestTimeout < 1 {
-		opts.DefaultRequestTimeout = 60 * time.Second
+	if op.DefaultRequestTimeout < 1 {
+		op.DefaultRequestTimeout = 60 * time.Second
 	}
 
-	if opts.Autoconnect == webwire.OptionUnset {
-		opts.Autoconnect = webwire.Enabled
+	if op.Autoconnect == webwire.OptionUnset {
+		op.Autoconnect = webwire.Enabled
 	}
 
-	if opts.ReconnectionInterval < 1 {
-		opts.ReconnectionInterval = 2 * time.Second
+	if op.ReconnectionInterval < 1 {
+		op.ReconnectionInterval = 2 * time.Second
 	}
 
 	// Create default loggers to std-out/err when no loggers are specified
-	if opts.WarnLog == nil {
-		opts.WarnLog = log.New(
+	if op.WarnLog == nil {
+		op.WarnLog = log.New(
 			os.Stdout,
 			"WEBWIRE_CLT_WARN: ",
 			log.Ldate|log.Ltime|log.Lshortfile,
 		)
 	}
-	if opts.ErrorLog == nil {
-		opts.ErrorLog = log.New(
+	if op.ErrorLog == nil {
+		op.ErrorLog = log.New(
 			os.Stderr,
 			"WEBWIRE_CLT_ERR: ",
 			log.Ldate|log.Ltime|log.Lshortfile,
@@ -82,12 +90,37 @@ func (opts *Options) SetDefaults() {
 	}
 
 	// Set default dialing timeout
-	if opts.DialingTimeout < 1 {
-		opts.DialingTimeout = 5 * time.Second
+	if op.DialingTimeout < 1 {
+		op.DialingTimeout = 5 * time.Second
 	}
 
 	// Copy the TLS configuration if any
-	if opts.TLSConfig != nil {
-		opts.TLSConfig = opts.TLSConfig.Clone()
+	if op.TLSConfig != nil {
+		op.TLSConfig = op.TLSConfig.Clone()
 	}
+
+	// Verify buffer sizes
+	const minBufferSize = 16 * 1024
+
+	if op.ReadBufferSize == 0 {
+		op.ReadBufferSize = minBufferSize
+	} else if op.ReadBufferSize < minBufferSize {
+		return fmt.Errorf(
+			"read buffer size too small: %d bytes (min: %d bytes)",
+			op.ReadBufferSize,
+			minBufferSize,
+		)
+	}
+
+	if op.WriteBufferSize == 0 {
+		op.WriteBufferSize = minBufferSize
+	} else if op.WriteBufferSize < minBufferSize {
+		return fmt.Errorf(
+			"write buffer size too small: %d bytes (min: %d bytes)",
+			op.WriteBufferSize,
+			minBufferSize,
+		)
+	}
+
+	return nil
 }
