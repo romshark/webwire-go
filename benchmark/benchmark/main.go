@@ -35,18 +35,6 @@ var argMaxReqInterval = flag.Uint(
 	"max interval between each request in milliseconds",
 )
 
-// Min/Max payload size
-var argMinPayloadSize = flag.Uint64(
-	"min-pld-sz",
-	1024,
-	"request payload size in bytes",
-)
-var argMaxPayloadSize = flag.Uint64(
-	"max-pld-sz",
-	1024,
-	"request payload size in bytes",
-)
-
 // Max benchmark duration
 var argBenchDur = flag.Uint("dur", 0, "benchmark duration in seconds")
 

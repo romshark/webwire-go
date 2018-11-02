@@ -16,8 +16,6 @@ import (
 	reqman "github.com/qbeon/webwire-go/requestManager"
 )
 
-const supportedProtocolVersion = "2.0"
-
 // Status represents the status of a client instance
 type Status = int32
 

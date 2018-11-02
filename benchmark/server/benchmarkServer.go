@@ -9,9 +9,7 @@ import (
 )
 
 // BenchmarkServer implements the webwire.ServerImplementation interface
-type BenchmarkServer struct {
-	requestsProcessed int
-}
+type BenchmarkServer struct{}
 
 // OnOptions implements the webwire.ServerImplementation interface
 func (srv *BenchmarkServer) OnOptions(_ *fasthttp.RequestCtx) {}

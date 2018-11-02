@@ -15,8 +15,6 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
-const protocolVersion = "1.5"
-
 // server represents a headless WebWire server instance,
 // where headless means there's no HTTP server that's hosting it
 type server struct {
