@@ -86,7 +86,7 @@ func TestClientAutomaticSessionRestoration(t *testing.T) {
 	// Create a new session
 	_, err := client.connection.Request(
 		context.Background(),
-		"login",
+		[]byte("login"),
 		wwr.NewPayload(wwr.EncodingBinary, []byte("auth")),
 	)
 	require.NoError(t, err)
@@ -118,7 +118,7 @@ func TestClientAutomaticSessionRestoration(t *testing.T) {
 	// and the server authenticates the user
 	_, err = client.connection.Request(
 		context.Background(),
-		"verify",
+		[]byte("verify"),
 		wwr.NewPayload(wwr.EncodingBinary, []byte("is_restored?")),
 	)
 	require.NoError(t, err)

@@ -10,7 +10,7 @@ import (
 // and returns its binary representation
 func NewRequestMessage(
 	identifier [8]byte,
-	name string,
+	name []byte,
 	payloadEncoding pld.Encoding,
 	payloadData []byte,
 ) (msg []byte) {

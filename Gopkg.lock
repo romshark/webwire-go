@@ -2,12 +2,12 @@
 
 
 [[projects]]
-  digest = "1:a2c1d0e43bd3baaa071d1b9ed72c27d78169b2b269f71c105ac4ba34b1be4a39"
+  digest = "1:ffe9824d294da03b391f44e1ae8281281b4afc1bdaa9588c9097785e3af10cec"
   name = "github.com/davecgh/go-spew"
   packages = ["spew"]
   pruneopts = "UT"
-  revision = "346938d642f2ec3594ed81d874461961cd0faa76"
-  version = "v1.1.0"
+  revision = "8991bc29aa16c548c550c7ff78260e27b9ab7c73"
+  version = "v1.1.1"
 
 [[projects]]
   digest = "1:c0a566b3f376c6a2266930f91bba26b20ef1973940d0de2b361a05a964f299fe"
@@ -82,7 +82,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:9803a2106e4bee0b3bcc3d09e20fd23ccd98cceb1a904c36704aa98caf568848"
+  digest = "1:9eb359482bfc924955a901d1a3b702569c266892d8c88660c629b3e62832a1bf"
   name = "github.com/valyala/fasthttp"
   packages = [
     ".",
@@ -90,7 +90,7 @@
     "stackless",
   ]
   pruneopts = "UT"
-  revision = "1b3ac0ccc9a9a57dd7dd0876a12a0d8e27b06582"
+  revision = "192515395f6fe387bdbdc8105358f4d890413951"
 
 [[projects]]
   branch = "master"
@@ -98,7 +98,7 @@
   name = "golang.org/x/net"
   packages = ["context"]
   pruneopts = "UT"
-  revision = "c39426892332e1bb5ec0a434a079bf82f5d30c54"
+  revision = "c10e9556a7bc0e7c942242b606f0acf024ad5d6a"
 
 [[projects]]
   branch = "master"

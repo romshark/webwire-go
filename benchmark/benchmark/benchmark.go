@@ -127,6 +127,11 @@ func (bc *Benchmark) Start() {
 					payloadData,
 				))
 
+				// Determine the length of the payload and close the reply to
+				// release the buffer
+				payloadLength := len(reply.Data())
+				reply.Close()
+
 				// Compute elapsed time since request start
 				elapsed := time.Since(start)
 
@@ -150,7 +155,7 @@ func (bc *Benchmark) Start() {
 					interval,
 					elapsed,
 					len(payloadData),
-					len(reply.Data()),
+					payloadLength,
 				)
 			}
 

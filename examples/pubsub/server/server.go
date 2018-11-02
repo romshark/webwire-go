@@ -107,7 +107,7 @@ func (srv *PubSubServer) Broadcast() {
 		)
 
 		for client := range srv.connectedClients {
-			client.Signal("", wwr.NewPayload(wwr.EncodingBinary, []byte(msg)))
+			client.Signal(nil, wwr.NewPayload(wwr.EncodingBinary, []byte(msg)))
 		}
 		srv.mapLock.Unlock()
 	}

@@ -9,7 +9,7 @@ import (
 // NewSignalMessage composes a new named signal message
 // and returns its binary representation
 func NewSignalMessage(
-	name string,
+	name []byte,
 	payloadEncoding pld.Encoding,
 	payloadData []byte,
 ) (msg []byte) {
@@ -56,7 +56,7 @@ func NewSignalMessage(
 	msg[1] = byte(len(name))
 
 	// Write name
-	for i := 0; i < len(name); i++ {
+	for i := range name {
 		char := name[i]
 		if char < 32 || char > 126 {
 			panic(fmt.Errorf(

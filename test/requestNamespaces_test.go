@@ -17,12 +17,11 @@ import (
 func TestRequestNamespaces(t *testing.T) {
 	currentStep := 1
 
-	shortestPossibleName := "s"
-	buf := make([]rune, 255)
-	for i := 0; i < 255; i++ {
-		buf[i] = 'x'
+	shortestPossibleName := []byte("s")
+	longestPossibleName := make([]byte, 255)
+	for i := range longestPossibleName {
+		longestPossibleName[i] = 'x'
 	}
-	longestPossibleName := string(buf)
 
 	// Initialize server
 	server := setupServer(
@@ -36,7 +35,7 @@ func TestRequestNamespaces(t *testing.T) {
 				msgName := msg.Name()
 				switch currentStep {
 				case 1:
-					assert.Equal(t, "", msgName)
+					assert.Nil(t, msgName)
 				case 2:
 					assert.Equal(t, shortestPossibleName, msgName)
 				case 3:
@@ -65,7 +64,7 @@ func TestRequestNamespaces(t *testing.T) {
 	// Send unnamed request
 	_, err := client.connection.Request(
 		context.Background(),
-		"",
+		nil,
 		webwire.NewPayload(webwire.EncodingBinary, []byte("dummy")),
 	)
 	require.NoError(t, err)

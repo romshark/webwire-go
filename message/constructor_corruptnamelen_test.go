@@ -33,7 +33,7 @@ func TestMsgNewReqMsgUtf16CorruptPayload(t *testing.T) {
 	require.Panics(t, func() {
 		NewRequestMessage(
 			genRndMsgIdentifier(),
-			string(genRndName(1, 255)),
+			genRndName(1, 255),
 			pld.Utf16,
 			// Payload is corrupt, only 7 bytes long, not power 2
 			[]byte("invalid"),
@@ -47,7 +47,7 @@ func TestMsgNewReqMsgUtf16CorruptPayload(t *testing.T) {
 func TestMsgNewSigMsgUtf16CorruptPayload(t *testing.T) {
 	require.Panics(t, func() {
 		NewSignalMessage(
-			string(genRndName(1, 255)),
+			genRndName(1, 255),
 			pld.Utf16,
 			// Payload is corrupt, only 7 bytes long, not power 2
 			[]byte("invalid"),

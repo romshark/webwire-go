@@ -1,9 +1,9 @@
 {
     "duration": 10,
-    "max-connections": 500,
+    "max-connections": 10,
 	"max-reqs-per-connection": 1,
-	"min-payload-size": 10240000,
-	"max-payload-size": 10240000,
+	"min-payload-size": 1024,
+	"max-payload-size": 1024,
 	"req-timeo": 60000,
 	"min-req-interval": 0,
 	"max-req-interval": 0

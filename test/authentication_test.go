@@ -164,7 +164,7 @@ func TestAuthentication(t *testing.T) {
 	// Send authentication request and await reply
 	authReqReply, err := client.connection.Request(
 		context.Background(),
-		"login",
+		[]byte("login"),
 		expectedCredentials,
 	)
 	require.NoError(t, err)
@@ -184,7 +184,7 @@ func TestAuthentication(t *testing.T) {
 	// and await response
 	testReqReply, err := client.connection.Request(
 		context.Background(),
-		"test",
+		[]byte("test"),
 		expectedCredentials,
 	)
 	require.NoError(t, err)
@@ -194,7 +194,8 @@ func TestAuthentication(t *testing.T) {
 
 	// Send a test-signal to verify the session on the server
 	require.NoError(t, client.connection.Signal(
-		"test",
+		context.Background(),
+		[]byte("test"),
 		expectedCredentials,
 	))
 

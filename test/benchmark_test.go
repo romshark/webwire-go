@@ -46,7 +46,7 @@ func BenchmarkRequestC1_P1K(b *testing.B) {
 	b.ResetTimer()
 
 	for n := 0; n < b.N; n++ {
-		client.connection.Request(context.Background(), "", msg)
+		client.connection.Request(context.Background(), nil, msg)
 	}
 }
 
@@ -88,7 +88,7 @@ func BenchmarkRequestC1_P1M(b *testing.B) {
 	b.ResetTimer()
 
 	for n := 0; n < b.N; n++ {
-		client.connection.Request(context.Background(), "", msg)
+		client.connection.Request(context.Background(), nil, msg)
 	}
 }
 
@@ -102,7 +102,7 @@ func BenchmarkRequestC1_P1MBuffered(b *testing.B) {
 		payloadData,
 	)
 
-	const bufferSize uint = 2 * 1024 * 1024
+	const bufferSize uint32 = 2 * 1024 * 1024
 
 	// Initialize a webwire server
 	server := setupBenchmarkServer(
@@ -138,7 +138,7 @@ func BenchmarkRequestC1_P1MBuffered(b *testing.B) {
 	b.ResetTimer()
 
 	for n := 0; n < b.N; n++ {
-		client.connection.Request(context.Background(), "", msg)
+		client.connection.Request(context.Background(), nil, msg)
 	}
 }
 
@@ -188,7 +188,7 @@ func BenchmarkRequestC1K_P1K(b *testing.B) {
 		for _, c := range clients {
 			client := c
 			go func() {
-				client.connection.Request(context.Background(), "", msg)
+				client.connection.Request(context.Background(), nil, msg)
 			}()
 		}
 	}

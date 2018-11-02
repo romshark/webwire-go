@@ -1,6 +1,7 @@
 package test
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -32,10 +33,14 @@ func TestClientSignalDisconnectedErr(t *testing.T) {
 	)
 
 	// Try to send a signal and expect a DisconnectedErr error
-	err := client.connection.Signal("", wwr.NewPayload(
-		wwr.EncodingBinary,
-		[]byte("test"),
-	))
+	err := client.connection.Signal(
+		context.Background(),
+		nil,
+		wwr.NewPayload(
+			wwr.EncodingBinary,
+			[]byte("test"),
+		),
+	)
 	require.Error(t, err)
 	require.IsType(t, wwr.DisconnectedErr{}, err)
 }

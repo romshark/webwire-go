@@ -46,6 +46,9 @@ func (srv *BenchmarkServer) OnRequest(
 	_ wwr.Connection,
 	msg wwr.Message,
 ) (response wwr.Payload, err error) {
+	payloadData := msg.Payload().Data()
+	data := make([]byte, len(payloadData))
+	copy(data, payloadData)
 	// Reply to the request using the same data and encoding
-	return msg.Payload(), nil
+	return wwr.NewPayload(wwr.EncodingBinary, data), nil
 }

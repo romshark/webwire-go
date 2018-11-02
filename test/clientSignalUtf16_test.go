@@ -55,10 +55,14 @@ func TestClientSignalUtf16(t *testing.T) {
 	require.NoError(t, client.connection.Connect())
 
 	// Send signal
-	require.NoError(t, client.connection.Signal("", wwr.NewPayload(
-		wwr.EncodingUtf16,
-		[]byte{00, 115, 00, 97, 00, 109, 00, 112, 00, 108, 00, 101},
-	)))
+	require.NoError(t, client.connection.Signal(
+		context.Background(),
+		nil,
+		wwr.NewPayload(
+			wwr.EncodingUtf16,
+			[]byte{00, 115, 00, 97, 00, 109, 00, 112, 00, 108, 00, 101},
+		),
+	))
 
 	// Synchronize, await signal arrival
 	require.NoError(t, signalArrived.Wait(), "Signal wasn't processed")

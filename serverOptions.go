@@ -33,9 +33,16 @@ type ServerOptions struct {
 	ReadTimeout           time.Duration
 	WarnLog               *log.Logger
 	ErrorLog              *log.Logger
-	ReadBufferSize        uint
-	WriteBufferSize       uint
 	MaxConnsPerIP         uint
+
+	// ReadBufferSize defines the size of the inbound buffer in bytes
+	ReadBufferSize uint32
+
+	// WriteBufferSize defines the size of the outbound buffer in bytes
+	WriteBufferSize uint32
+
+	// MessageBufferSize defines the size of the message buffer
+	MessageBufferSize uint32
 }
 
 // Prepare verifies the specified options and sets the default values to
@@ -80,7 +87,7 @@ func (op *ServerOptions) Prepare() error {
 		)
 	}
 
-	const minBufferSize = 16 * 1024
+	const minBufferSize = 1024
 
 	// Verify buffer sizes
 	if op.ReadBufferSize == 0 {
@@ -100,6 +107,17 @@ func (op *ServerOptions) Prepare() error {
 			"write buffer size too small: %d bytes (min: %d bytes)",
 			op.WriteBufferSize,
 			minBufferSize,
+		)
+	}
+
+	// Verify the message buffer size
+	if op.MessageBufferSize == 0 {
+		op.MessageBufferSize = op.ReadBufferSize
+	} else if op.MessageBufferSize < op.ReadBufferSize {
+		return fmt.Errorf(
+			"message buffer size too small: %d bytes (min: %d bytes)",
+			op.MessageBufferSize,
+			op.ReadBufferSize,
 		)
 	}
 

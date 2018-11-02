@@ -85,7 +85,7 @@ func TestClientSessionRestoration(t *testing.T) {
 	// Create a new session
 	_, err := initialClient.connection.Request(
 		context.Background(),
-		"login",
+		[]byte("login"),
 		wwr.NewPayload(wwr.EncodingBinary, []byte("auth")),
 	)
 	require.NoError(t, err)
@@ -117,6 +117,7 @@ func TestClientSessionRestoration(t *testing.T) {
 	// Try to manually restore the session
 	// using the initial clients session key
 	require.NoError(t, secondClient.connection.RestoreSession(
+		context.Background(),
 		[]byte(createdSession.Key),
 	))
 

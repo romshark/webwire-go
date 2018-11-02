@@ -29,7 +29,7 @@ func (msg *Message) parseSignal(message []byte) error {
 
 	if nameLen > 0 {
 		// Take name into account
-		msg.Name = string(message[2:payloadOffset])
+		msg.Name = message[2:payloadOffset]
 		msg.Payload = pld.Payload{
 			Data: message[payloadOffset:],
 		}

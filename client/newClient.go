@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	webwire "github.com/qbeon/webwire-go"
+	"github.com/qbeon/webwire-go/msgbuf"
 	reqman "github.com/qbeon/webwire-go/requestManager"
 )
 
@@ -46,22 +47,23 @@ func NewClient(
 
 	// Initialize new client
 	newClt := &client{
-		serverAddr:     serverAddress,
-		options:        options,
-		impl:           implementation,
-		status:         Disconnected,
-		autoconnect:    autoconnect,
-		sessionLock:    sync.RWMutex{},
-		session:        nil,
-		apiLock:        sync.RWMutex{},
-		backReconn:     newDam(),
-		connecting:     false,
-		connectingLock: sync.RWMutex{},
-		connectLock:    sync.Mutex{},
-		conn:           conn,
-		readerClosing:  make(chan bool, 1),
-		heartbeat:      newHeartbeat(conn, options.ErrorLog),
-		requestManager: reqman.NewRequestManager(),
+		serverAddr:        serverAddress,
+		options:           options,
+		impl:              implementation,
+		status:            Disconnected,
+		autoconnect:       autoconnect,
+		sessionLock:       sync.RWMutex{},
+		session:           nil,
+		apiLock:           sync.RWMutex{},
+		backReconn:        newDam(),
+		connecting:        false,
+		connectingLock:    sync.RWMutex{},
+		connectLock:       sync.Mutex{},
+		conn:              conn,
+		readerClosing:     make(chan bool, 1),
+		heartbeat:         newHeartbeat(conn, options.ErrorLog),
+		requestManager:    reqman.NewRequestManager(),
+		messageBufferPool: msgbuf.NewSyncPool(options.MessageBufferSize, 0),
 	}
 
 	if autoconnect == autoconnectEnabled {
@@ -70,7 +72,7 @@ func NewClient(
 		// Call in another goroutine to prevent blocking
 		// the constructor function caller.
 		// Set timeout to zero, try indefinitely until connected
-		go newClt.tryAutoconnect(context.Background(), 0)
+		go newClt.tryAutoconnect(context.Background(), false)
 	}
 
 	return newClt, nil

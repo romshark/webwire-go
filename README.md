@@ -187,7 +187,10 @@ func OnRequest(
   _ wwr.Message,
 ) (wwr.Payload, error) {
   // Send a signal to the client before replying to the request
-  conn.Signal("", wwr.NewPayload(wwr.EncodingUtf8, []byte("ping!")))
+  conn.Signal(
+    nil, // No message name
+    wwr.NewPayload(wwr.EncodingUtf8, []byte("example")),
+  )
 
   // Reply nothing
   return nil, nil

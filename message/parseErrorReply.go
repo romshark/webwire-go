@@ -43,7 +43,7 @@ func (msg *Message) parseErrorReply(message []byte) error {
 	}
 
 	// Read UTF8 encoded error message into the payload
-	msg.Name = string(message[10 : 10+errCodeLen])
+	msg.Name = message[10 : 10+errCodeLen]
 	msg.Payload = pld.Payload{
 		Encoding: pld.Utf8,
 		Data:     message[errMessageOffset:],

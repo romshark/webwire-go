@@ -51,7 +51,7 @@ func TestClientConcurrentRequest(t *testing.T) {
 		defer finished.Progress(1)
 		_, err := client.connection.Request(
 			context.Background(),
-			"sample",
+			[]byte("sample"),
 			wwr.NewPayload(wwr.EncodingBinary, []byte("samplepayload")),
 		)
 		assert.NoError(t, err)

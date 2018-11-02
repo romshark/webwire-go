@@ -38,11 +38,18 @@ func TestProtocolViolation(t *testing.T) {
 		require.NoError(t, err)
 		defer conn.Close()
 
+		// Ignore the server configuration push-message
+		conn.SetReadDeadline(time.Now().Add(defaultReadTimeout))
+		_, _, err = conn.ReadMessage()
+		require.NoError(t, err)
+
+		// Write the message
 		writeErr = conn.WriteMessage(websocket.BinaryMessage, message)
 		if writeErr != nil {
 			return nil, writeErr, nil
 		}
 
+		// Await the response
 		conn.SetReadDeadline(time.Now().Add(defaultReadTimeout))
 		_, response, readErr = conn.ReadMessage()
 		if readErr != nil {
@@ -67,7 +74,7 @@ func TestProtocolViolation(t *testing.T) {
 	func() {
 		msg := []byte{
 			message.MsgRequestBinary, // Message type identifier
-			0, 0, 0, 0, 0, 0, 0, 0, // Request identifier
+			0, 0, 0, 0, 0, 0, 0, 0,   // Request identifier
 			3,     // Name length flag
 			0x041, // Name
 		}
@@ -76,7 +83,7 @@ func TestProtocolViolation(t *testing.T) {
 		require.NoError(t, readErr)
 		require.Equal(t, []byte{
 			message.MsgReplyProtocolError, // Message type identifier
-			0, 0, 0, 0, 0, 0, 0, 0, // Request identifier
+			0, 0, 0, 0, 0, 0, 0, 0,        // Request identifier
 		}, response)
 	}()
 }

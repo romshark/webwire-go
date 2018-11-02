@@ -1,6 +1,7 @@
 package test
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -31,7 +32,8 @@ func TestClientSignalAutoconn(t *testing.T) {
 
 	// Skip manual connection establishment and rely on autoconnect instead
 	require.NoError(t, client.connection.Signal(
-		"",
+		context.Background(),
+		nil,
 		wwr.NewPayload(wwr.EncodingBinary, []byte("testdata")),
 	))
 }

@@ -55,7 +55,7 @@ func (msg *Message) parseRequestUtf16(message []byte) error {
 		}
 
 		// Take name into account
-		msg.Name = string(message[10 : 10+nameLen])
+		msg.Name = message[10 : 10+nameLen]
 
 		// Read payload if any
 		if len(message) > minRequiredMsgSize {

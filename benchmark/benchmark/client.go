@@ -25,6 +25,7 @@ func NewClient(serverAddr url.URL, defaultReqTimeo time.Duration) *Client {
 		wwrclt.Options{
 			// Default timeout for timed requests
 			DefaultRequestTimeout: defaultReqTimeo,
+			MessageBufferSize:     1024 * 1024 * 1024,
 		},
 	)
 	if err != nil {
@@ -46,11 +47,11 @@ func (cl *Client) OnSessionClosed() {}
 func (cl *Client) OnSessionCreated(_ *wwr.Session) {}
 
 // OnSignal implements the wwrclt.Implementation interface
-func (cl *Client) OnSignal(_ wwr.Message) {}
+func (cl *Client) OnSignal(_ []byte, _ wwr.Payload) {}
 
 // Request sends a request to the server and blocks until the reply is received
 func (cl *Client) Request(payload wwr.Payload) (wwr.Payload, error) {
-	return cl.clt.Request(context.Background(), "", payload)
+	return cl.clt.Request(context.Background(), nil, payload)
 }
 
 // Close closes the client

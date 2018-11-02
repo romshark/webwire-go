@@ -16,8 +16,7 @@ func (msg *Message) parseConf(message []byte) error {
 		MinorProtocolVersion: message[2:3][0],
 		ReadTimeout: time.Duration(binary.LittleEndian.Uint32(message[3:7])) *
 			time.Millisecond,
-		ReadBufferSize:  binary.LittleEndian.Uint32(message[7:11]),
-		WriteBufferSize: binary.LittleEndian.Uint32(message[11:15]),
+		MessageBufferSize: binary.LittleEndian.Uint32(message[7:11]),
 	}
 	return nil
 }

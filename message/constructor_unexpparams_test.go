@@ -19,7 +19,7 @@ func TestMsgNewReqMsgNoNameNoPayload(t *testing.T) {
 		func() {
 			NewRequestMessage(
 				genRndMsgIdentifier(),
-				"",
+				nil,
 				pld.Binary,
 				nil,
 			)
@@ -42,7 +42,7 @@ func TestMsgNewReqMsgNameTooLong(t *testing.T) {
 		func() {
 			NewRequestMessage(
 				genRndMsgIdentifier(),
-				string(nameBuf),
+				nameBuf,
 				0,
 				nil,
 			)
@@ -63,7 +63,7 @@ func TestMsgNewReqMsgInvalidCharsetBelowAscii32(t *testing.T) {
 		func() {
 			NewRequestMessage(
 				genRndMsgIdentifier(),
-				string(invalidNameBytes),
+				invalidNameBytes,
 				0,
 				nil,
 			)
@@ -84,7 +84,7 @@ func TestMsgNewReqMsgInvalidCharsetAboveAscii126(t *testing.T) {
 		func() {
 			NewRequestMessage(
 				genRndMsgIdentifier(),
-				string(invalidNameBytes),
+				invalidNameBytes,
 				0,
 				nil,
 			)
@@ -103,7 +103,7 @@ func TestMsgNewSigMsgNameTooLong(t *testing.T) {
 
 	require.Panics(t,
 		func() {
-			NewSignalMessage(string(nameBuf), 0, nil)
+			NewSignalMessage(nameBuf, 0, nil)
 		},
 		"Expected panic after passing a too long signal name",
 	)
@@ -119,7 +119,7 @@ func TestMsgNewSigMsgInvalidCharsetBelowAscii32(t *testing.T) {
 
 	require.Panics(t,
 		func() {
-			NewSignalMessage(string(invalidNameBytes), 0, nil)
+			NewSignalMessage(invalidNameBytes, 0, nil)
 		},
 		"Expected panic after passing an invalid name character set",
 	)
@@ -135,7 +135,7 @@ func TestMsgNewSigMsgInvalidCharsetAboveAscii126(t *testing.T) {
 
 	require.Panics(t,
 		func() {
-			NewSignalMessage(string(invalidNameBytes), 0, nil)
+			NewSignalMessage(invalidNameBytes, 0, nil)
 		},
 		"Expected panic after passing an invalid name character set",
 	)

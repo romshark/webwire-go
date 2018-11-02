@@ -8,7 +8,7 @@ import (
 
 // NewConfMessage composes a server configuration message
 func NewConfMessage(conf ServerConfiguration) ([]byte, error) {
-	msg := make([]byte, 15)
+	msg := make([]byte, 11)
 
 	msg[0] = byte(MsgConf)
 	msg[1] = byte(conf.MajorProtocolVersion)
@@ -28,8 +28,7 @@ func NewConfMessage(conf ServerConfiguration) ([]byte, error) {
 	}
 
 	binary.LittleEndian.PutUint32(msg[3:7], uint32(readTimeoutMs))
-	binary.LittleEndian.PutUint32(msg[7:11], conf.ReadBufferSize)
-	binary.LittleEndian.PutUint32(msg[11:15], conf.WriteBufferSize)
+	binary.LittleEndian.PutUint32(msg[7:11], conf.MessageBufferSize)
 
 	return msg, nil
 }

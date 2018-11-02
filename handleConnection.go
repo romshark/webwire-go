@@ -7,7 +7,11 @@ import (
 	"github.com/fasthttp/websocket"
 )
 
-func (srv *server) handleConnection(conn *websocket.Conn) {
+func (srv *server) handleConnection(
+	connectionOptions ConnectionOptions,
+	userAgent []byte,
+	conn *websocket.Conn,
+) {
 	conn.SetPongHandler(func(appData string) error {
 		if err := conn.SetReadDeadline(
 			time.Now().Add(srv.options.ReadTimeout),
@@ -59,13 +63,9 @@ func (srv *server) handleConnection(conn *websocket.Conn) {
 	// Register connected client
 	connection := newConnection(
 		sock,
-		//req.Header.Get("User-Agent"),
-		"Test User Agent",
+		userAgent,
 		srv,
-		//connectionOptions,
-		ConnectionOptions{
-			ConcurrencyLimit: 0,
-		},
+		connectionOptions,
 	)
 
 	srv.connectionsLock.Lock()
@@ -76,9 +76,20 @@ func (srv *server) handleConnection(conn *websocket.Conn) {
 	srv.impl.OnClientConnected(connection)
 
 	for {
+		// Get a message buffer
+		buf := srv.messageBufferPool.Get()
+
+		if !connection.IsActive() {
+			buf.Close()
+			connection.Close()
+			srv.impl.OnClientDisconnected(connection)
+			break
+		}
+
 		// Await message
-		message, err := sock.Read()
-		if err != nil {
+		if err := sock.Read(buf); err != nil {
+			buf.Close()
+
 			if err.IsAbnormalCloseErr() {
 				srv.warnLog.Printf("abnormal closure error: %s", err)
 			}
@@ -89,6 +100,7 @@ func (srv *server) handleConnection(conn *websocket.Conn) {
 		}
 
 		// Parse & handle the message
-		srv.handleMessage(connection, message)
+		srv.handleMessage(connection, buf)
+		buf.Close()
 	}
 }

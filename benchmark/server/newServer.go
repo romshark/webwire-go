@@ -38,11 +38,13 @@ func newServer(settings settings) (server wwr.Server, err error) {
 		server, err = wwr.NewServerSecure(
 			&BenchmarkServer{},
 			wwr.ServerOptions{
-				Host:           settings.HostAddress,
-				WarnLog:        warnLog,
-				ErrorLog:       errorLog,
-				ReadTimeout:    settings.ReadTimeout,
-				ReadBufferSize: 11240000,
+				Host:              settings.HostAddress,
+				WarnLog:           warnLog,
+				ErrorLog:          errorLog,
+				ReadTimeout:       settings.ReadTimeout,
+				ReadBufferSize:    1024 * 8,
+				WriteBufferSize:   1024 * 8,
+				MessageBufferSize: 1024 * 16,
 			},
 			settings.CertFilePath,
 			settings.PrivateKeyFilePath,
@@ -56,11 +58,11 @@ func newServer(settings settings) (server wwr.Server, err error) {
 		server, err = wwr.NewServer(
 			&BenchmarkServer{},
 			wwr.ServerOptions{
-				Host:           settings.HostAddress,
-				WarnLog:        warnLog,
-				ErrorLog:       errorLog,
-				ReadTimeout:    settings.ReadTimeout,
-				ReadBufferSize: 11240000,
+				Host:              settings.HostAddress,
+				WarnLog:           warnLog,
+				ErrorLog:          errorLog,
+				ReadTimeout:       settings.ReadTimeout,
+				MessageBufferSize: 1024 * 16,
 			},
 		)
 		if err != nil {

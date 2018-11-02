@@ -57,7 +57,7 @@ func TestClientRequestRegisterOnReply(t *testing.T) {
 	// Send request and await reply
 	_, err := client.connection.Request(
 		context.Background(),
-		"",
+		nil,
 		wwr.NewPayload(wwr.EncodingBinary, []byte("t")),
 	)
 	require.NoError(t, err)

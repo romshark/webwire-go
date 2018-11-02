@@ -25,7 +25,7 @@ func TestConnectionClose(t *testing.T) {
 				conn wwr.Connection,
 				msg wwr.Message,
 			) (wwr.Payload, error) {
-				switch msg.Name() {
+				switch string(msg.Name()) {
 				case "closeA":
 					fallthrough
 				case "closeB":
@@ -71,7 +71,7 @@ func TestConnectionClose(t *testing.T) {
 	// Authenticate and create session
 	authReqReply, err := clientA.connection.Request(
 		context.Background(),
-		"login",
+		[]byte("login"),
 		wwr.NewPayload(wwr.EncodingBinary, []byte("bla")),
 	)
 	require.NoError(t, err)
@@ -113,7 +113,10 @@ func TestConnectionClose(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	require.NoError(t, clientB.connection.RestoreSession(authReqReply.Data()))
+	require.NoError(t, clientB.connection.RestoreSession(
+		context.Background(),
+		authReqReply.Data(),
+	))
 
 	// Check status, expect 1 session, 2 connections
 	require.Equal(t,
@@ -134,7 +137,7 @@ func TestConnectionClose(t *testing.T) {
 	// Close first connection
 	_, err = clientA.connection.Request(
 		context.Background(),
-		"closeA",
+		[]byte("closeA"),
 		wwr.NewPayload(wwr.EncodingBinary, []byte("a")),
 	)
 	require.NoError(t, err)
@@ -146,7 +149,7 @@ func TestConnectionClose(t *testing.T) {
 	// Test connectivity
 	_, err = clientA.connection.Request(
 		context.Background(),
-		"testA",
+		[]byte("testA"),
 		wwr.NewPayload(wwr.EncodingBinary, []byte("testA")),
 	)
 	require.IsType(t, wwr.DisconnectedErr{}, err)
@@ -170,7 +173,7 @@ func TestConnectionClose(t *testing.T) {
 	// Close second connection
 	_, err = clientB.connection.Request(
 		context.Background(),
-		"closeB",
+		[]byte("closeB"),
 		wwr.NewPayload(wwr.EncodingBinary, []byte("b")),
 	)
 	require.NoError(t, err)
@@ -182,7 +185,7 @@ func TestConnectionClose(t *testing.T) {
 	// Test connectivity
 	_, err = clientB.connection.Request(
 		context.Background(),
-		"testB",
+		[]byte("testB"),
 		wwr.NewPayload(wwr.EncodingBinary, []byte("testB")),
 	)
 	require.IsType(t, wwr.DisconnectedErr{}, err)

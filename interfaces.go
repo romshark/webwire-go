@@ -131,7 +131,7 @@ type Connection interface {
 	Info() ClientInfo
 
 	// Signal sends a named signal containing the given payload to the client
-	Signal(name string, payload Payload) error
+	Signal(name []byte, payload Payload) error
 
 	// CreateSession creates a new session for this connection and
 	// automatically synchronizes the new session to the remote client.
@@ -287,6 +287,9 @@ type Payload interface {
 
 	// Utf8 returns a UTF8 representation of the payload data
 	Utf8() (string, error)
+
+	// Closes the payload releasing the underlying buffer
+	Close()
 }
 
 // Message represents a WebWire protocol message
@@ -298,8 +301,11 @@ type Message interface {
 	Identifier() [8]byte
 
 	// Name returns the name of the message
-	Name() string
+	Name() []byte
 
 	// Payload returns the message payload
 	Payload() Payload
+
+	// Close closes the message payload releasing the underlying buffer
+	Close()
 }

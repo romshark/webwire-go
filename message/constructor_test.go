@@ -74,7 +74,7 @@ func TestMsgNewReqMsgBinary(t *testing.T) {
 
 	actual := NewRequestMessage(
 		id,
-		string(name),
+		name,
 		payload.Encoding,
 		payload.Data,
 	)
@@ -106,7 +106,7 @@ func TestMsgNewReqMsgUtf8(t *testing.T) {
 
 	actual := NewRequestMessage(
 		id,
-		string(name),
+		name,
 		payload.Encoding,
 		payload.Data,
 	)
@@ -141,7 +141,7 @@ func TestMsgNewReqMsgUtf16(t *testing.T) {
 
 	actual := NewRequestMessage(
 		id,
-		string(name),
+		name,
 		payload.Encoding,
 		payload.Data,
 	)
@@ -172,7 +172,12 @@ func TestMsgNewReqMsgUtf16OddNameLen(t *testing.T) {
 	// Add payload
 	expected = append(expected, payload.Data...)
 
-	actual := NewRequestMessage(id, "odd", payload.Encoding, payload.Data)
+	actual := NewRequestMessage(
+		id,
+		[]byte("odd"),
+		payload.Encoding,
+		payload.Data,
+	)
 
 	require.Equal(t, expected, actual)
 }
@@ -278,7 +283,7 @@ func TestMsgNewSigMsgBinary(t *testing.T) {
 	expected = append(expected, payload.Data...)
 
 	actual := NewSignalMessage(
-		string(name),
+		name,
 		payload.Encoding,
 		payload.Data,
 	)
@@ -305,7 +310,7 @@ func TestMsgNewSigMsgUtf8(t *testing.T) {
 	expected = append(expected, payload.Data...)
 
 	actual := NewSignalMessage(
-		string(name),
+		name,
 		payload.Encoding,
 		payload.Data,
 	)
@@ -336,7 +341,7 @@ func TestMsgNewSigMsgUtf16(t *testing.T) {
 	expected = append(expected, payload.Data...)
 
 	actual := NewSignalMessage(
-		string(name),
+		name,
 		payload.Encoding,
 		payload.Data,
 	)
@@ -365,7 +370,7 @@ func TestMsgNewSigMsgUtf16OddNameLen(t *testing.T) {
 	expected = append(expected, payload.Data...)
 
 	actual := NewSignalMessage(
-		"odd",
+		[]byte("odd"),
 		payload.Encoding,
 		payload.Data,
 	)

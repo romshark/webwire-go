@@ -65,13 +65,13 @@ func (clt *PubSubClient) OnSessionClosed() {}
 func (clt *PubSubClient) OnSessionCreated(_ *wwr.Session) {}
 
 // OnSignal implements the wwrclt.Implementation interface
-func (clt *PubSubClient) OnSignal(message wwr.Message) {
+func (clt *PubSubClient) OnSignal(_ []byte, payload wwr.Payload) {
 	clt.counter++
 	log.Printf(
 		"Signal %d of %d received: %s",
 		clt.counter,
 		clt.target,
-		string(message.Payload().Data()),
+		string(payload.Data()),
 	)
 	clt.targetReached.Done()
 }

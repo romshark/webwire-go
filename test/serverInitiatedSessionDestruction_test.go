@@ -124,7 +124,7 @@ func TestServerInitiatedSessionDestruction(t *testing.T) {
 	// Send authentication request
 	authReqReply, err := client.connection.Request(
 		context.Background(),
-		"login",
+		[]byte("login"),
 		expectedCredentials,
 	)
 	require.NoError(t, err)
@@ -132,13 +132,8 @@ func TestServerInitiatedSessionDestruction(t *testing.T) {
 	createdSession = client.connection.Session()
 
 	// Verify reply
-	require.Equal(t,
-		wwr.NewPayload(
-			wwr.EncodingBinary,
-			[]byte(createdSession.Key),
-		),
-		authReqReply,
-	)
+	require.Equal(t, wwr.EncodingBinary, authReqReply.Encoding())
+	require.Equal(t, []byte(createdSession.Key), authReqReply.Data())
 
 	// Wait for the client-side session creation callback to be executed
 	require.NoError(t,
@@ -148,7 +143,7 @@ func TestServerInitiatedSessionDestruction(t *testing.T) {
 
 	// Ensure the session was locally created
 	require.NotEqual(t,
-		"",
+		nil,
 		client.connection.Session(),
 		"Expected session on client-side",
 	)
@@ -161,7 +156,7 @@ func TestServerInitiatedSessionDestruction(t *testing.T) {
 	// Send a test-request to verify the session creation on the server
 	_, err = client.connection.Request(
 		context.Background(),
-		"",
+		nil,
 		wwr.NewPayload(
 			wwr.EncodingBinary,
 			[]byte(client.connection.Session().Key),
@@ -177,7 +172,7 @@ func TestServerInitiatedSessionDestruction(t *testing.T) {
 	// Request session destruction
 	_, err = client.connection.Request(
 		context.Background(),
-		"",
+		nil,
 		placeholderMessage,
 	)
 	require.NoError(t, err)
@@ -202,7 +197,7 @@ func TestServerInitiatedSessionDestruction(t *testing.T) {
 	// Send a test-request to verify the session was destroyed on the server
 	_, err = client.connection.Request(
 		context.Background(),
-		"",
+		nil,
 		placeholderMessage,
 	)
 	require.NoError(t, err)

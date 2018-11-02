@@ -7,9 +7,9 @@ import (
 	"net/url"
 	"sync"
 
-	"github.com/qbeon/webwire-go/message"
-
 	"github.com/fasthttp/websocket"
+	"github.com/qbeon/webwire-go/message"
+	"github.com/qbeon/webwire-go/msgbuf"
 	"github.com/valyala/fasthttp"
 )
 
@@ -18,6 +18,7 @@ import (
 func NewServer(
 	implementation ServerImplementation,
 	opts ServerOptions,
+
 ) (Server, error) {
 	if err := opts.Prepare(); err != nil {
 		return nil, err
@@ -144,6 +145,7 @@ func NewHeadlessServer(
 		MajorProtocolVersion: 2,
 		MinorProtocolVersion: 0,
 		ReadTimeout:          opts.ReadTimeout,
+		MessageBufferSize:    opts.MessageBufferSize,
 	})
 	if err != nil {
 		return nil, err
@@ -156,17 +158,18 @@ func NewHeadlessServer(
 		sessionInfoParser: opts.SessionInfoParser,
 
 		// State
-		addr:            url.URL{},
-		options:         opts,
-		configMsg:       configMsg,
-		shutdown:        false,
-		shutdownRdy:     make(chan bool),
-		currentOps:      0,
-		opsLock:         &sync.Mutex{},
-		connections:     make([]*connection, 0),
-		connectionsLock: &sync.Mutex{},
-		sessionsEnabled: sessionsEnabled,
-		sessionRegistry: newSessionRegistry(opts.MaxSessionConnections),
+		addr:              url.URL{},
+		options:           opts,
+		configMsg:         configMsg,
+		shutdown:          false,
+		shutdownRdy:       make(chan bool),
+		currentOps:        0,
+		opsLock:           &sync.Mutex{},
+		connections:       make([]*connection, 0),
+		connectionsLock:   &sync.Mutex{},
+		sessionsEnabled:   sessionsEnabled,
+		sessionRegistry:   newSessionRegistry(opts.MaxSessionConnections),
+		messageBufferPool: msgbuf.NewSyncPool(opts.MessageBufferSize, 0),
 
 		// Internals
 		upgrader: websocket.FastHTTPUpgrader{

@@ -12,7 +12,7 @@ import (
 func (clt *client) sendRequest(
 	ctx context.Context,
 	messageType byte,
-	name string,
+	name []byte,
 	payload webwire.Payload,
 	timeout time.Duration,
 ) (webwire.Payload, error) {
@@ -23,14 +23,6 @@ func (clt *client) sendRequest(
 				"either a name, a payload or both but is missing both",
 			),
 		)
-	}
-
-	// Return an error if the request was already prematurely canceled
-	// or already exceeded the user-defined deadline for its completion
-	select {
-	case <-ctx.Done():
-		return nil, webwire.TranslateContextError(ctx.Err())
-	default:
 	}
 
 	payloadEncoding := webwire.EncodingBinary
@@ -49,6 +41,16 @@ func (clt *client) sendRequest(
 		payloadEncoding,
 		payloadData,
 	)
+
+	// Return an error if the request was already prematurely canceled
+	// or already exceeded the user-defined deadline for its completion
+	select {
+	case <-ctx.Done():
+		err := webwire.TranslateContextError(ctx.Err())
+		clt.requestManager.Fail(reqIdentifier, err)
+		return nil, err
+	default:
+	}
 
 	// Send request
 	if err := clt.conn.Write(msg); err != nil {

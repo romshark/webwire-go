@@ -74,8 +74,9 @@ func (asr *sessionRegistry) deregister(conn *connection) int {
 
 		// Find and remove the client from the connections list
 		delete(connSet, conn)
+		connSetLen := len(connSet)
 		asr.lock.Unlock()
-		return len(connSet)
+		return connSetLen
 	}
 
 	asr.lock.Unlock()

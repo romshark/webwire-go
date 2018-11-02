@@ -53,7 +53,7 @@ func TestClientRequestUtf8(t *testing.T) {
 	// Send request and await reply
 	reply, err := client.connection.Request(
 		context.Background(),
-		"",
+		nil,
 		expectedRequestPayload,
 	)
 	require.NoError(t, err)

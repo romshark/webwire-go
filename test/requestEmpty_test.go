@@ -41,7 +41,7 @@ func TestRequestEmpty(t *testing.T) {
 
 	// Send request without a name and without a payload.
 	// Expect a protocol error in return not sending the invalid request off
-	_, err := client.connection.Request(context.Background(), "", nil)
+	_, err := client.connection.Request(context.Background(), nil, nil)
 	require.Error(t, err)
 	require.IsType(t, wwr.ProtocolErr{}, err)
 }

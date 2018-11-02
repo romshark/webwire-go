@@ -26,7 +26,7 @@ import (
 func TestGracefulShutdown(t *testing.T) {
 	expectedReqReply := []byte("i_finished")
 	handlerExecutionDuration := 100 * time.Millisecond
-	maxTestDuration := handlerExecutionDuration * 2
+	maxTestDuration := handlerExecutionDuration * 4
 	firstReqAndSigSent := tmdwg.NewTimedWaitGroup(2, maxTestDuration)
 	serverShuttingDown := tmdwg.NewTimedWaitGroup(1, maxTestDuration)
 	handlersFinished := tmdwg.NewTimedWaitGroup(2, maxTestDuration)
@@ -44,7 +44,7 @@ func TestGracefulShutdown(t *testing.T) {
 				_ wwr.Connection,
 				msg wwr.Message,
 			) {
-				if msg.Name() == "1" {
+				if string(msg.Name()) == "1" {
 					firstReqAndSigSent.Progress(1)
 				}
 				// Sleep after the first signal was marked as done
@@ -56,7 +56,7 @@ func TestGracefulShutdown(t *testing.T) {
 				_ wwr.Connection,
 				msg wwr.Message,
 			) (wwr.Payload, error) {
-				if msg.Name() == "1" {
+				if string(msg.Name()) == "1" {
 					firstReqAndSigSent.Progress(1)
 				}
 				time.Sleep(handlerExecutionDuration)
@@ -113,14 +113,15 @@ func TestGracefulShutdown(t *testing.T) {
 	go func() {
 		// (SIGNAL)
 		assert.NoError(t, clientSig.connection.Signal(
-			"1",
+			context.Background(),
+			[]byte("1"),
 			wwr.NewPayload(wwr.EncodingBinary, []byte("test")),
 		))
 
 		// (REQUEST)
 		rep, err := clientReq.connection.Request(
 			context.Background(),
-			"1",
+			[]byte("1"),
 			wwr.NewPayload(wwr.EncodingBinary, []byte("test")),
 		)
 		assert.NoError(t, err)
@@ -167,7 +168,7 @@ func TestGracefulShutdown(t *testing.T) {
 		// Verify request rejection during shutdown (LATE REQ)
 		_, lateReqErr := clientLateReq.connection.Request(
 			context.Background(),
-			"",
+			nil,
 			wwr.NewPayload(wwr.EncodingBinary, []byte("test")),
 		)
 		switch err := lateReqErr.(type) {

@@ -60,11 +60,14 @@ func TestDisabledSessions(t *testing.T) {
 	// Send authentication request and await reply
 	_, err := client.connection.Request(
 		context.Background(),
-		"login",
+		[]byte("login"),
 		wwr.NewPayload(wwr.EncodingBinary, []byte("testdata")),
 	)
 	require.NoError(t, err)
 
-	sessRestErr := client.connection.RestoreSession([]byte("testkey"))
+	sessRestErr := client.connection.RestoreSession(
+		context.Background(),
+		[]byte("testkey"),
+	)
 	assert.IsType(t, wwr.SessionsDisabledErr{}, sessRestErr)
 }

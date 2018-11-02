@@ -46,7 +46,7 @@ func TestRequiresReplyRequestBinary(t *testing.T) {
 	msg := &Message{}
 	_, err := msg.Parse(NewRequestMessage(
 		genRndMsgIdentifier(),
-		"samplename",
+		[]byte("samplename"),
 		pld.Binary,
 		[]byte("random payload data"),
 	))
@@ -64,7 +64,7 @@ func TestRequiresReplyRequestUtf8(t *testing.T) {
 	msg := &Message{}
 	_, err := msg.Parse(NewRequestMessage(
 		genRndMsgIdentifier(),
-		"samplename",
+		[]byte("samplename"),
 		pld.Utf8,
 		[]byte("random payload data"),
 	))
@@ -82,7 +82,7 @@ func TestRequiresReplyRequestUtf16(t *testing.T) {
 	msg := &Message{}
 	_, err := msg.Parse(NewRequestMessage(
 		genRndMsgIdentifier(),
-		"samplename",
+		[]byte("samplename"),
 		pld.Utf16,
 		[]byte{'r', 0, 'a', 0, 'n', 0, 'd', 0, 'o', 0, 'm', 0},
 	))

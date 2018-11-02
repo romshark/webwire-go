@@ -11,6 +11,7 @@ import (
 
 	webwire "github.com/qbeon/webwire-go"
 	msg "github.com/qbeon/webwire-go/message"
+	"github.com/qbeon/webwire-go/msgbuf"
 	pld "github.com/qbeon/webwire-go/payload"
 	reqman "github.com/qbeon/webwire-go/requestManager"
 )
@@ -77,8 +78,9 @@ type client struct {
 	conn          webwire.Socket
 	readerClosing chan bool
 
-	heartbeat      heartbeat
-	requestManager reqman.RequestManager
+	heartbeat         heartbeat
+	requestManager    reqman.RequestManager
+	messageBufferPool msgbuf.Pool
 
 	// Loggers
 	warningLog *log.Logger
@@ -112,7 +114,7 @@ func (clt *client) Connect() error {
 // Returns an error if the request failed for some reason
 func (clt *client) Request(
 	ctx context.Context,
-	name string,
+	name []byte,
 	payload webwire.Payload,
 ) (webwire.Payload, error) {
 	if ctx == nil {
@@ -122,11 +124,20 @@ func (clt *client) Request(
 	// Apply shared lock
 	clt.apiLock.RLock()
 
-	if err := clt.tryAutoconnect(
-		ctx,
-		clt.options.DefaultRequestTimeout,
-	); err != nil {
+	// Set default deadline if no deadline is yet specified
+	closeCtx := func() {}
+	_, deadlineIsSet := ctx.Deadline()
+	if !deadlineIsSet {
+		ctx, closeCtx = context.WithTimeout(
+			ctx,
+			clt.options.DefaultRequestTimeout,
+		)
+	}
+
+	if err := clt.tryAutoconnect(ctx, deadlineIsSet); err != nil {
 		clt.apiLock.RUnlock()
+
+		closeCtx()
 		return nil, err
 	}
 
@@ -138,25 +149,42 @@ func (clt *client) Request(
 		clt.options.DefaultRequestTimeout,
 	)
 	clt.apiLock.RUnlock()
+
+	closeCtx()
 	return payload, err
 }
 
 // Signal sends a signal containing the given payload to the server
-func (clt *client) Signal(name string, payload webwire.Payload) error {
+func (clt *client) Signal(
+	ctx context.Context,
+	name []byte,
+	payload webwire.Payload,
+) error {
 	// Apply shared lock
 	clt.apiLock.RLock()
 
-	if err := clt.tryAutoconnect(
-		context.Background(),
-		clt.options.DefaultRequestTimeout,
-	); err != nil {
+	// Set default deadline if no deadline is yet specified
+	closeCtx := func() {}
+	_, deadlineIsSet := ctx.Deadline()
+	if !deadlineIsSet {
+		ctx, closeCtx = context.WithTimeout(
+			ctx,
+			clt.options.DefaultRequestTimeout,
+		)
+	}
+
+	if err := clt.tryAutoconnect(ctx, deadlineIsSet); err != nil {
 		clt.apiLock.RUnlock()
+
+		closeCtx()
 		return err
 	}
 
 	// Require either a name or a payload or both
 	if len(name) < 1 && (payload == nil || len(payload.Data()) < 1) {
 		clt.apiLock.RUnlock()
+
+		closeCtx()
 		return webwire.NewProtocolErr(
 			fmt.Errorf("Invalid request, request message requires " +
 				"either a name, a payload or both but is missing both",
@@ -178,12 +206,16 @@ func (clt *client) Signal(name string, payload webwire.Payload) error {
 		data,
 	)); err != nil {
 		clt.apiLock.RUnlock()
+
+		closeCtx()
 		return err
 	}
 
 	clt.heartbeat.reset()
 
 	clt.apiLock.RUnlock()
+
+	closeCtx()
 	return nil
 }
 
@@ -226,7 +258,10 @@ func (clt *client) PendingRequests() int {
 
 // RestoreSession tries to restore the previously opened session.
 // Fails if a session is currently already active
-func (clt *client) RestoreSession(sessionKey []byte) error {
+func (clt *client) RestoreSession(
+	ctx context.Context,
+	sessionKey []byte,
+) error {
 	// Apply exclusive lock
 	clt.apiLock.Lock()
 
@@ -240,17 +275,26 @@ func (clt *client) RestoreSession(sessionKey []byte) error {
 	}
 	clt.sessionLock.RUnlock()
 
-	if err := clt.tryAutoconnect(
-		context.Background(),
-		clt.options.DefaultRequestTimeout,
-	); err != nil {
+	// Set default deadline if no deadline is yet specified
+	closeCtx := func() {}
+	_, deadlineIsSet := ctx.Deadline()
+	if !deadlineIsSet {
+		ctx, closeCtx = context.WithTimeout(
+			ctx,
+			clt.options.DefaultRequestTimeout,
+		)
+	}
+
+	if err := clt.tryAutoconnect(ctx, deadlineIsSet); err != nil {
 		clt.apiLock.Unlock()
+		closeCtx()
 		return err
 	}
 
 	restoredSession, err := clt.requestSessionRestoration(sessionKey)
 	if err != nil {
 		clt.apiLock.Unlock()
+		closeCtx()
 		return err
 	}
 
@@ -259,6 +303,7 @@ func (clt *client) RestoreSession(sessionKey []byte) error {
 	clt.sessionLock.Unlock()
 
 	clt.apiLock.Unlock()
+	closeCtx()
 	return nil
 }
 

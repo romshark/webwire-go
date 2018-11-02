@@ -11,7 +11,7 @@ type callbackPoweredClientHooks struct {
 	OnSessionCreated func(*wwr.Session)
 	OnSessionClosed  func()
 	OnDisconnected   func()
-	OnSignal         func(wwr.Message)
+	OnSignal         func(name []byte, payload wwr.Payload)
 }
 
 // callbackPoweredClient implements the wwrclt.Implementation interface
@@ -64,8 +64,8 @@ func (clt *callbackPoweredClient) OnDisconnected() {
 }
 
 // OnSignal implements the wwrclt.Implementation interface
-func (clt *callbackPoweredClient) OnSignal(message wwr.Message) {
+func (clt *callbackPoweredClient) OnSignal(name []byte, payload wwr.Payload) {
 	if clt.hooks.OnSignal != nil {
-		clt.hooks.OnSignal(message)
+		clt.hooks.OnSignal(name, payload)
 	}
 }

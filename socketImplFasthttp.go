@@ -3,6 +3,8 @@ package webwire
 import (
 	"crypto/tls"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"net/url"
@@ -10,6 +12,7 @@ import (
 	"time"
 
 	"github.com/fasthttp/websocket"
+	"github.com/qbeon/webwire-go/msgbuf"
 )
 
 // fasthttpSockReadErr represents an implementation of the SockReadErr
@@ -26,7 +29,7 @@ func (err fasthttpSockReadErr) Error() string {
 // IsAbnormalCloseErr implements the SockReadErr interface
 func (err fasthttpSockReadErr) IsAbnormalCloseErr() bool {
 	return websocket.IsUnexpectedCloseError(
-		err,
+		err.cause,
 		websocket.CloseGoingAway,
 		websocket.CloseAbnormalClosure,
 	)
@@ -100,13 +103,16 @@ func (sock *fasthttpSocket) Dial(serverAddr url.URL) (err error) {
 	if sock.connected {
 		sock.conn.Close()
 		sock.conn = nil
+		sock.connected = false
 	}
 
-	sock.conn, _, err = sock.dialer.Dial(serverAddr.String(), nil)
+	connection, _, err := sock.dialer.Dial(serverAddr.String(), nil)
 	if err != nil {
+		sock.connected = false
 		sock.lock.Unlock()
 		return NewDisconnectedErr(fmt.Errorf("dial failure: %s", err))
 	}
+	sock.conn = connection
 	sock.connected = true
 	sock.lock.Unlock()
 	return nil
@@ -118,7 +124,7 @@ func (sock *fasthttpSocket) Write(data []byte) error {
 	if !sock.connected {
 		sock.lock.Unlock()
 		return DisconnectedErr{
-			Cause: fmt.Errorf("can't write to a socket"),
+			Cause: fmt.Errorf("can't write to a closed socket"),
 		}
 	}
 	err := sock.conn.WriteMessage(websocket.BinaryMessage, data)
@@ -127,18 +133,26 @@ func (sock *fasthttpSocket) Write(data []byte) error {
 }
 
 // Read implements the webwire.Socket interface
-func (sock *fasthttpSocket) Read() ([]byte, SockReadErr) {
+func (sock *fasthttpSocket) Read(buf *msgbuf.MessageBuffer) SockReadErr {
 	sock.readLock.Lock()
-	messageType, message, err := sock.conn.ReadMessage()
+	messageType, reader, err := sock.conn.NextReader()
 	sock.readLock.Unlock()
-
 	if err != nil {
-		return nil, fasthttpSockReadErr{cause: err}
+		return fasthttpSockReadErr{cause: err}
 	}
+
+	// Discard message in case of unexpected message types
 	if messageType != websocket.BinaryMessage {
-		return nil, fasthttpSockReadWrongMsgTypeErr{messageType: messageType}
+		io.Copy(ioutil.Discard, reader)
+		return fasthttpSockReadWrongMsgTypeErr{messageType: messageType}
 	}
-	return message, nil
+
+	// Try to read the socket into the buffer
+	if err := buf.Read(reader); err != nil {
+		return fasthttpSockReadErr{cause: err}
+	}
+
+	return nil
 }
 
 // IsConnected implements the webwire.Socket interface

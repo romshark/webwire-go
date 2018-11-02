@@ -52,7 +52,11 @@ func TestClientSignal(t *testing.T) {
 	require.NoError(t, client.connection.Connect())
 
 	// Send signal
-	require.NoError(t, client.connection.Signal("", expectedSignalPayload))
+	require.NoError(t, client.connection.Signal(
+		context.Background(),
+		nil,
+		expectedSignalPayload,
+	))
 
 	// Synchronize, await signal arrival
 	require.NoError(t, signalArrived.Wait(), "Signal wasn't processed")

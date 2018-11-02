@@ -25,7 +25,7 @@ func TestRequestNameNoPayload(t *testing.T) {
 			) (webwire.Payload, error) {
 				// Expect a named request
 				msgName := msg.Name()
-				assert.Equal(t, "n", msgName)
+				assert.Equal(t, []byte("n"), msgName)
 
 				// Expect no payload to arrive
 				assert.Len(t, msg.Payload().Data(), 0)
@@ -48,7 +48,7 @@ func TestRequestNameNoPayload(t *testing.T) {
 	// Send a named binary request without a payload and await reply
 	_, err := client.connection.Request(
 		context.Background(),
-		"n",
+		[]byte("n"),
 		webwire.NewPayload(webwire.EncodingBinary, nil),
 	)
 	require.NoError(t, err)
@@ -56,7 +56,7 @@ func TestRequestNameNoPayload(t *testing.T) {
 	// Send a UTF16 encoded named binary request without a payload
 	_, err = client.connection.Request(
 		context.Background(),
-		"n",
+		[]byte("n"),
 		webwire.NewPayload(webwire.EncodingUtf16, nil),
 	)
 	require.NoError(t, err)

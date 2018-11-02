@@ -12,7 +12,7 @@
 
 [[constraint]]
   name = "github.com/valyala/fasthttp"
-  branch="master"
+  branch = "master"
 
 [[constraint]]
   name = "github.com/fasthttp/websocket"

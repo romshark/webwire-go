@@ -1,6 +1,7 @@
 package test
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -31,7 +32,10 @@ func TestClientRestSessAutoconn(t *testing.T) {
 	)
 
 	// Skip manual connection establishment and rely on autoconnect instead
-	err := client.connection.RestoreSession([]byte("inexistent_key"))
+	err := client.connection.RestoreSession(
+		context.Background(),
+		[]byte("inexistent_key"),
+	)
 	require.Error(t, err)
 	require.IsType(t, wwr.SessNotFoundErr{}, err)
 }

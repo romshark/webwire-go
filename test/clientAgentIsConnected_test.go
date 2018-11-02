@@ -52,10 +52,13 @@ func TestClientConnIsConnected(t *testing.T) {
 				)
 
 				// Try to send a signal to a inactive client and expect an error
-				sigErr := clientConn.Signal("", wwr.NewPayload(
-					wwr.EncodingBinary,
-					[]byte("testdata"),
-				))
+				sigErr := clientConn.Signal(
+					nil,
+					wwr.NewPayload(
+						wwr.EncodingBinary,
+						[]byte("testdata"),
+					),
+				)
 				assert.IsType(t, wwr.DisconnectedErr{}, sigErr)
 
 				clientDisconnected.Progress(1)

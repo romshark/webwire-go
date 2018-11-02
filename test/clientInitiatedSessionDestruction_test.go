@@ -106,7 +106,7 @@ func TestClientInitiatedSessionDestruction(t *testing.T) {
 	// Send authentication request
 	authReqReply, err := client.connection.Request(
 		context.Background(),
-		"login",
+		[]byte("login"),
 		expectedCredentials,
 	)
 	require.NoError(t, err)
@@ -139,7 +139,7 @@ func TestClientInitiatedSessionDestruction(t *testing.T) {
 	// Send a test-request to verify the session creation on the server
 	_, err = client.connection.Request(
 		context.Background(),
-		"verify-session-created",
+		[]byte("verify-session-created"),
 		wwr.NewPayload(
 			wwr.EncodingBinary,
 			[]byte(client.connection.Session().Key),
@@ -175,7 +175,7 @@ func TestClientInitiatedSessionDestruction(t *testing.T) {
 	// Send a test-request to verify the session was destroyed on the server
 	_, err = client.connection.Request(
 		context.Background(),
-		"test-request",
+		[]byte("test-request"),
 		placeholderMessage,
 	)
 	require.NoError(t, err)

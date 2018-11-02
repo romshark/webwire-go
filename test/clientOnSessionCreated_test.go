@@ -58,7 +58,7 @@ func TestClientOnSessionCreated(t *testing.T) {
 	// Send authentication request and await reply
 	_, err := client.connection.Request(
 		context.Background(),
-		"login",
+		[]byte("login"),
 		wwr.NewPayload(wwr.EncodingBinary, []byte("credentials")),
 	)
 	require.NoError(t, err)

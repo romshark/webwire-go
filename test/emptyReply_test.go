@@ -43,7 +43,7 @@ func TestEmptyReply(t *testing.T) {
 	// Send request and await reply
 	reply, err := client.connection.Request(
 		context.Background(),
-		"",
+		nil,
 		wwr.NewPayload(wwr.EncodingBinary, []byte("test")),
 	)
 	require.NoError(t, err)

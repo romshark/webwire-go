@@ -1,6 +1,7 @@
 package test
 
 import (
+	"context"
 	"net/url"
 	"testing"
 	"time"
@@ -25,7 +26,10 @@ func TestClientRestSessDisconnTimeout(t *testing.T) {
 	)
 
 	// Send request and await reply
-	err := client.connection.RestoreSession([]byte("inexistent_key"))
+	err := client.connection.RestoreSession(
+		context.Background(),
+		[]byte("inexistent_key"),
+	)
 	require.Error(t, err)
 	require.IsType(t, wwr.TimeoutErr{}, err)
 	require.True(t, wwr.IsTimeoutErr(err))

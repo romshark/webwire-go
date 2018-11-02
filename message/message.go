@@ -3,6 +3,7 @@ package message
 import (
 	"time"
 
+	"github.com/qbeon/webwire-go/msgbuf"
 	pld "github.com/qbeon/webwire-go/payload"
 )
 
@@ -111,9 +112,8 @@ const (
 	//  2. major protocol version (1 byte)
 	//  3. minor protocol version (1 byte)
 	//  4. read timeout in milliseconds (4 byte)
-	//  5. read buffer size in bytes (4 byte)
-	//  6. write buffer size in bytes (4 byte)
-	MsgMinLenConf = int(15)
+	//  5. message buffer size in bytes (4 byte)
+	MsgMinLenConf = int(11)
 )
 
 const (
@@ -222,15 +222,17 @@ type ServerConfiguration struct {
 	MajorProtocolVersion byte
 	MinorProtocolVersion byte
 	ReadTimeout          time.Duration
-	ReadBufferSize       uint32
-	WriteBufferSize      uint32
+	MessageBufferSize    uint32
 }
 
 // Message represents a WebWire protocol message
 type Message struct {
+	// Buffer references the underlying buffer
+	Buffer *msgbuf.MessageBuffer
+
 	Type       byte
 	Identifier [8]byte
-	Name       string
+	Name       []byte
 	Payload    pld.Payload
 
 	// ServerConfiguration is only initialized for MsgConf type messages

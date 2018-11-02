@@ -1,6 +1,7 @@
 package test
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -35,6 +36,7 @@ func TestRestoreInexistentSession(t *testing.T) {
 	// Try to restore the session and expect it to fail
 	// due to the session being inexistent
 	sessionRestorationError := client.connection.RestoreSession(
+		context.Background(),
 		[]byte("lalala"),
 	)
 	require.Error(t, sessionRestorationError)

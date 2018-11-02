@@ -61,7 +61,7 @@ func TestClientRequestRegisterOnTimeout(t *testing.T) {
 	defer cancel()
 	_, reqErr := client.connection.Request(
 		contextWithDeadline,
-		"",
+		nil,
 		wwr.NewPayload(wwr.EncodingBinary, []byte("t")),
 	)
 	require.Error(t, reqErr)

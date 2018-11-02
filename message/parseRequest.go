@@ -34,7 +34,7 @@ func (msg *Message) parseRequest(message []byte) error {
 		}
 
 		// Take name into account
-		msg.Name = string(message[10 : 10+nameLen])
+		msg.Name = message[10 : 10+nameLen]
 
 		// Read payload if any
 		if len(message) > MsgMinLenRequest+nameLen-1 {

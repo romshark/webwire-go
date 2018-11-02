@@ -1,6 +1,7 @@
 package client
 
 import (
+	"errors"
 	"fmt"
 	"sync/atomic"
 	"time"
@@ -36,50 +37,79 @@ func (clt *client) dial() (message.ServerConfiguration, error) {
 			result <- dialResult{err: err}
 			return
 		}
-		// Close the connection if the dial succeeded after the timeout
+
+		// Abort if timed out
 		if atomic.LoadUint32(&abortAwait) > 0 {
 			clt.conn.Close()
 			return
 		}
-		clt.conn.SetReadDeadline(deadline)
-		rawMsg, err := clt.conn.Read()
-		if err != nil {
-			result <- dialResult{err: fmt.Errorf("read err: %s", err.Error())}
+
+		// Get a message buffer from the pool
+		buf := clt.messageBufferPool.Get()
+
+		// Abort if timed out
+		if atomic.LoadUint32(&abortAwait) > 0 {
+			clt.conn.Close()
+			buf.Close()
 			return
 		}
-		var msg message.Message
-		parsedMessageType, parseErr := msg.Parse(rawMsg)
+
+		// Await the server configuration handshake response
+		clt.conn.SetReadDeadline(deadline)
+		if err := clt.conn.Read(buf); err != nil {
+			result <- dialResult{err: fmt.Errorf("read err: %s", err.Error())}
+			buf.Close()
+			return
+		}
+
+		// Abort if timed out
+		if atomic.LoadUint32(&abortAwait) > 0 {
+			clt.conn.Close()
+			buf.Close()
+			return
+		}
+
+		msg := &message.Message{}
+
+		// Parse the first incoming message
+		parsedMessageType, parseErr := msg.Parse(buf.Data())
 		if !parsedMessageType {
-			result <- dialResult{err: fmt.Errorf(
+			result <- dialResult{err: errors.New(
 				"unexpected message (unknown type)",
 			)}
+			buf.Close()
 			return
 		}
 		if parseErr != nil {
-			result <- dialResult{err: fmt.Errorf("message parser failed")}
+			result <- dialResult{err: errors.New("message parser failed")}
+			buf.Close()
 			return
 		}
 		if msg.Type != message.MsgConf {
 			result <- dialResult{err: fmt.Errorf(
-				"unexpected message type: %d",
+				"unexpected message type: %d (expected server config message)",
 				msg.Type,
 			)}
+			buf.Close()
 			return
 		}
-		if !verifyProtocolVersion(
+
+		// Verify the protocol version
+		if err := verifyProtocolVersion(
 			msg.ServerConfiguration.MajorProtocolVersion,
 			msg.ServerConfiguration.MinorProtocolVersion,
-		) {
-			result <- dialResult{err: fmt.Errorf(
-				"unexpected message type: %d",
-				msg.Type,
-			)}
+		); err != nil {
+			result <- dialResult{err: err}
+			buf.Close()
 			return
 		}
+
+		// Finish successful dial
 		clt.conn.SetReadDeadline(time.Time{})
 		result <- dialResult{
 			serverConfiguration: msg.ServerConfiguration,
 		}
+		buf.Close()
 	}()
 
 	select {

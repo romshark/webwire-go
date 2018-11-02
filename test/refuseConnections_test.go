@@ -60,7 +60,7 @@ func TestRefuseConnections(t *testing.T) {
 	// Try sending requests
 	for i := 0; i < numClients; i++ {
 		clt := clients[i]
-		_, err := clt.connection.Request(context.Background(), "q", nil)
+		_, err := clt.connection.Request(context.Background(), []byte("q"), nil)
 		require.Error(t, err)
 		require.IsType(t, wwr.DisconnectedErr{}, err)
 	}

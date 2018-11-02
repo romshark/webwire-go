@@ -28,7 +28,7 @@ func TestServerSignal(t *testing.T) {
 			onClientConnected: func(conn wwr.Connection) {
 				// Send signal
 				assert.NoError(t, conn.Signal(
-					"",
+					nil,
 					expectedSignalPayload,
 				))
 			},
@@ -43,12 +43,12 @@ func TestServerSignal(t *testing.T) {
 			DefaultRequestTimeout: 2 * time.Second,
 		},
 		callbackPoweredClientHooks{
-			OnSignal: func(signalMessage wwr.Message) {
+			OnSignal: func(name []byte, payload wwr.Payload) {
 				// Verify server signal payload
 				comparePayload(
 					t,
 					expectedSignalPayload,
-					signalMessage.Payload(),
+					payload,
 				)
 
 				// Synchronize, unlock main goroutine to pass the test case

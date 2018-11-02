@@ -47,7 +47,7 @@ func TestClientRequestInternalError(t *testing.T) {
 	// Send request and await reply
 	reply, reqErr := client.connection.Request(
 		context.Background(),
-		"",
+		nil,
 		wwr.NewPayload(wwr.EncodingUtf8, []byte("dummydata")),
 	)
 

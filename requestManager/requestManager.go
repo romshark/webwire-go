@@ -6,7 +6,6 @@ import (
 	"time"
 
 	webwire "github.com/qbeon/webwire-go"
-	pld "github.com/qbeon/webwire-go/payload"
 )
 
 // RequestManager manages and keeps track of outgoing pending requests
@@ -69,7 +68,7 @@ func (manager *RequestManager) deregister(identifier RequestIdentifier) {
 // otherwise returns false
 func (manager *RequestManager) Fulfill(
 	identifier RequestIdentifier,
-	payload pld.Payload,
+	payload *webwire.BufferedEncodedPayload,
 ) bool {
 	manager.lock.RLock()
 	req, exists := manager.pending[identifier]
@@ -80,9 +79,7 @@ func (manager *RequestManager) Fulfill(
 	}
 
 	req.reply <- reply{
-		Reply: &webwire.EncodedPayload{
-			Payload: payload,
-		},
+		Reply: payload,
 		Error: nil,
 	}
 	manager.deregister(identifier)

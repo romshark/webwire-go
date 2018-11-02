@@ -73,7 +73,11 @@ func TestServerSideSessionClosureInexistent(t *testing.T) {
 
 	// Authenticate first client to get the session key
 	firstClient := clients[0]
-	_, err := firstClient.connection.Request(context.Background(), "auth", nil)
+	_, err := firstClient.connection.Request(
+		context.Background(),
+		[]byte("auth"),
+		nil,
+	)
 	require.NoError(t, err)
 
 	// Extract session key
@@ -84,7 +88,10 @@ func TestServerSideSessionClosureInexistent(t *testing.T) {
 	// Apply the session to other remaining clients
 	for i := 1; i < len(clients); i++ {
 		clt := clients[i]
-		require.NoError(t, clt.connection.RestoreSession([]byte(sessionKey)))
+		require.NoError(t, clt.connection.RestoreSession(
+			context.Background(),
+			[]byte(sessionKey),
+		))
 	}
 
 	// Ensure all clients are logged into 1 session

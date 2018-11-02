@@ -27,7 +27,7 @@ func TestMsgParseCloseSessReq(t *testing.T) {
 	expected := Message{
 		Type:       MsgCloseSession,
 		Identifier: id,
-		Name:       "",
+		Name:       nil,
 		Payload: pld.Payload{
 			Encoding: pld.Binary,
 			Data:     nil,
@@ -60,7 +60,7 @@ func TestMsgParseRestrSessReq(t *testing.T) {
 	expected := Message{
 		Type:       MsgRestoreSession,
 		Identifier: id,
-		Name:       "",
+		Name:       nil,
 		Payload: pld.Payload{
 			Encoding: pld.Binary,
 			Data:     []byte(sessionKey),
@@ -86,7 +86,7 @@ func TestMsgParseRequestBinary(t *testing.T) {
 	expected := Message{
 		Type:       MsgRequestBinary,
 		Identifier: id,
-		Name:       string(name),
+		Name:       name,
 		Payload:    payload,
 	}
 
@@ -109,7 +109,7 @@ func TestMsgParseRequestUtf8(t *testing.T) {
 	expected := Message{
 		Type:       MsgRequestUtf8,
 		Identifier: id,
-		Name:       string(name),
+		Name:       name,
 		Payload:    payload,
 	}
 
@@ -131,7 +131,7 @@ func TestMsgParseRequestUtf16(t *testing.T) {
 	expected := Message{
 		Type:       MsgRequestUtf16,
 		Identifier: id,
-		Name:       string(name),
+		Name:       name,
 		Payload:    payload,
 	}
 
@@ -153,7 +153,7 @@ func TestMsgParseReplyBinary(t *testing.T) {
 	expected := Message{
 		Type:       MsgReplyBinary,
 		Identifier: id,
-		Name:       "",
+		Name:       nil,
 		Payload:    payload,
 	}
 
@@ -175,7 +175,7 @@ func TestMsgParseReplyUtf8(t *testing.T) {
 	expected := Message{
 		Type:       MsgReplyUtf8,
 		Identifier: id,
-		Name:       "",
+		Name:       nil,
 		Payload:    payload,
 	}
 
@@ -196,7 +196,7 @@ func TestMsgParseReplyUtf16(t *testing.T) {
 	expected := Message{
 		Type:       MsgReplyUtf16,
 		Identifier: id,
-		Name:       "",
+		Name:       nil,
 		Payload:    payload,
 	}
 
@@ -218,7 +218,7 @@ func TestMsgParseSignalBinary(t *testing.T) {
 	// Initialize expected message
 	expected := Message{
 		Type:    MsgSignalBinary,
-		Name:    string(name),
+		Name:    name,
 		Payload: payload,
 	}
 
@@ -240,7 +240,7 @@ func TestMsgParseSignalUtf8(t *testing.T) {
 	// Initialize expected message
 	expected := Message{
 		Type:    MsgSignalUtf8,
-		Name:    string(name),
+		Name:    name,
 		Payload: payload,
 	}
 
@@ -262,7 +262,7 @@ func TestMsgParseSignalUtf16(t *testing.T) {
 	expected := Message{
 		Type:       MsgSignalUtf16,
 		Identifier: [8]byte{0, 0, 0, 0, 0, 0, 0, 0},
-		Name:       string(name),
+		Name:       name,
 		Payload:    payload,
 	}
 
@@ -303,7 +303,7 @@ func TestMsgParseSessCreatedSig(t *testing.T) {
 	expected := Message{
 		Type:       MsgSessionCreated,
 		Identifier: [8]byte{0, 0, 0, 0, 0, 0, 0, 0},
-		Name:       "",
+		Name:       nil,
 		Payload:    payload,
 	}
 
@@ -324,7 +324,7 @@ func TestMsgParseSessClosedSig(t *testing.T) {
 	expected := Message{
 		Type:       MsgSessionClosed,
 		Identifier: [8]byte{0, 0, 0, 0, 0, 0, 0, 0},
-		Name:       "",
+		Name:       nil,
 		Payload:    pld.Payload{},
 	}
 
@@ -359,8 +359,7 @@ func TestMsgParseConf(t *testing.T) {
 		MajorProtocolVersion: 22,
 		MinorProtocolVersion: 33,
 		ReadTimeout:          11 * time.Second,
-		ReadBufferSize:       1024,
-		WriteBufferSize:      2048,
+		MessageBufferSize:    8192,
 	}
 
 	// Compose encoded message

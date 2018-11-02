@@ -34,7 +34,7 @@ func TestRequestNoNameOnlyPayload(t *testing.T) {
 			) (wwr.Payload, error) {
 				// Expect a named request
 				msgName := msg.Name()
-				assert.Equal(t, "", msgName)
+				assert.Nil(t, msgName)
 
 				msgPayload := msg.Payload()
 				if msgPayload.Encoding() == wwr.EncodingUtf16 {
@@ -61,7 +61,7 @@ func TestRequestNoNameOnlyPayload(t *testing.T) {
 	// Send an unnamed binary request with a payload and await reply
 	_, err := client.connection.Request(
 		context.Background(),
-		"",
+		nil,
 		expectedRequestPayload,
 	)
 	require.NoError(t, err)
@@ -69,7 +69,7 @@ func TestRequestNoNameOnlyPayload(t *testing.T) {
 	// Send an unnamed UTF16 encoded binary request with a payload
 	_, err = client.connection.Request(
 		context.Background(),
-		"",
+		nil,
 		expectedRequestPayloadUtf16,
 	)
 	require.NoError(t, err)

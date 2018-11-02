@@ -30,12 +30,16 @@ type Client interface {
 	// nil contexts are also supported
 	Request(
 		ctx context.Context,
-		name string,
+		name []byte,
 		payload webwire.Payload,
 	) (webwire.Payload, error)
 
 	// Signal sends a signal containing the given payload to the server
-	Signal(name string, payload webwire.Payload) error
+	Signal(
+		ctx context.Context,
+		name []byte,
+		payload webwire.Payload,
+	) error
 
 	// Session returns an exact copy of the session object,
 	// otherwise returns nil if there's currently no session
@@ -50,7 +54,10 @@ type Client interface {
 
 	// RestoreSession tries to restore the previously opened session.
 	// Fails if a session is currently already active
-	RestoreSession(sessionKey []byte) error
+	RestoreSession(
+		ctx context.Context,
+		sessionKey []byte,
+	) error
 
 	// CloseSession disables the currently active session
 	// and acknowledges the server if connected.
@@ -71,7 +78,7 @@ type Implementation interface {
 	OnDisconnected()
 
 	// OnSignal is invoked when the client receives a signal from the server
-	OnSignal(message webwire.Message)
+	OnSignal(name []byte, payload webwire.Payload)
 
 	// OnSessionCreated is invoked when the client was assigned a new session
 	OnSessionCreated(*webwire.Session)

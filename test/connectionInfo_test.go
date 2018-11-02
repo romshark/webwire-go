@@ -8,12 +8,15 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	tmdwg "github.com/qbeon/tmdwg-go"
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
 )
 
 // TestConnectionInfo tests the connection.Info method
 func TestConnectionInfo(t *testing.T) {
+	handlerFinished := tmdwg.NewTimedWaitGroup(1, 1*time.Second)
+
 	// Initialize server
 	server := setupServer(
 		t,
@@ -26,21 +29,20 @@ func TestConnectionInfo(t *testing.T) {
 					info.ConnectionTime,
 					1*time.Second,
 				)
-				assert.Equal(t, "Go-http-client/1.1", info.UserAgent)
+				assert.Equal(t, []byte("Go-http-client/1.1"), info.UserAgent)
 				assert.NotNil(t, info.RemoteAddr)
+				handlerFinished.Progress(1)
 			},
 		},
 		wwr.ServerOptions{},
 	)
 
 	// Initialize client
-	client := newCallbackPoweredClient(
+	newCallbackPoweredClient(
 		server.AddressURL(),
-		wwrclt.Options{
-			DefaultRequestTimeout: 2 * time.Second,
-		},
+		wwrclt.Options{},
 		callbackPoweredClientHooks{},
 	)
 
-	require.NoError(t, client.connection.Connect())
+	require.NoError(t, handlerFinished.Wait())
 }

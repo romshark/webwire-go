@@ -1,6 +1,7 @@
 package test
 
 import (
+	"context"
 	"net/url"
 	"testing"
 	"time"
@@ -26,7 +27,10 @@ func TestClientRestSessDisconnNoAutoconn(t *testing.T) {
 	)
 
 	// Try to restore a session and expect a DisconnectedErr error
-	err := client.connection.RestoreSession([]byte("inexistent_key"))
+	err := client.connection.RestoreSession(
+		context.Background(),
+		[]byte("inexistent_key"),
+	)
 	require.Error(t, err)
 	require.IsType(t, wwr.DisconnectedErr{}, err)
 }

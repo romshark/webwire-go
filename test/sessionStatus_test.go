@@ -51,7 +51,7 @@ func TestSessionStatus(t *testing.T) {
 	// Authenticate and create session
 	authReqReply, err := clientA.connection.Request(
 		context.Background(),
-		"login",
+		[]byte("login"),
 		wwr.NewPayload(wwr.EncodingBinary, []byte("bla")),
 	)
 	require.NoError(t, err)
@@ -73,7 +73,10 @@ func TestSessionStatus(t *testing.T) {
 		callbackPoweredClientHooks{},
 	)
 
-	require.NoError(t, clientB.connection.RestoreSession(authReqReply.Data()))
+	require.NoError(t, clientB.connection.RestoreSession(
+		context.Background(),
+		authReqReply.Data(),
+	))
 
 	// Check status, expect 1 session with 2 connections
 	require.Equal(t, 1, server.ActiveSessionsNum())

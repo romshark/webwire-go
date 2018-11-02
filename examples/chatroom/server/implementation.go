@@ -48,7 +48,7 @@ func (srv *ChatRoomServer) broadcastMessage(name string, msg string) {
 	log.Printf("Broadcast message to %d clients", len(srv.connected))
 	for client := range srv.connected {
 		// Send message as signal
-		if err := client.Signal("", wwr.NewPayload(
+		if err := client.Signal(nil, wwr.NewPayload(
 			wwr.EncodingUtf8,
 			encoded,
 		)); err != nil {
@@ -206,7 +206,7 @@ func (srv *ChatRoomServer) OnRequest(
 	client wwr.Connection,
 	message wwr.Message,
 ) (response wwr.Payload, err error) {
-	switch message.Name() {
+	switch string(message.Name()) {
 	case "auth":
 		return srv.handleAuth(ctx, client, message)
 	case "msg":

@@ -90,7 +90,7 @@ func TestClientOfflineSessionClosure(t *testing.T) {
 	// Create a new session
 	_, err := client.connection.Request(
 		context.Background(),
-		"login",
+		[]byte("login"),
 		wwr.NewPayload(wwr.EncodingBinary, []byte("auth")),
 	)
 	require.NoError(t, err)
@@ -129,7 +129,7 @@ func TestClientOfflineSessionClosure(t *testing.T) {
 	// Ensure the client is anonymous
 	_, err = client.connection.Request(
 		context.Background(),
-		"verify-restored",
+		[]byte("verify-restored"),
 		wwr.NewPayload(wwr.EncodingBinary, []byte("is_restored?")),
 	)
 	require.NoError(t, err)

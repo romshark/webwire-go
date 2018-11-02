@@ -1,6 +1,7 @@
 package test
 
 import (
+	"context"
 	"sync"
 	"testing"
 	"time"
@@ -85,6 +86,7 @@ func TestMaxConcSessConn(t *testing.T) {
 		if i > 0 {
 			sessionKeyLock.RLock()
 			assert.NoError(t, client.connection.RestoreSession(
+				context.Background(),
 				[]byte(sessionKey),
 			))
 			sessionKeyLock.RUnlock()
@@ -106,6 +108,7 @@ func TestMaxConcSessConn(t *testing.T) {
 	// due to reached limit
 	sessionKeyLock.RLock()
 	sessionRestorationError := superfluousClient.connection.RestoreSession(
+		context.Background(),
 		[]byte(sessionKey),
 	)
 	require.Error(t, sessionRestorationError)

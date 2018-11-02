@@ -58,7 +58,7 @@ func TestClientRequestUtf16(t *testing.T) {
 	// Send request and await reply
 	reply, err := client.connection.Request(
 		context.Background(),
-		"",
+		nil,
 		wwr.NewPayload(
 			wwr.EncodingUtf16,
 			[]byte{00, 115, 00, 97, 00, 109, 00, 112, 00, 108, 00, 101},

@@ -26,7 +26,7 @@ func TestActiveSessionRegistry(t *testing.T) {
 				msg wwr.Message,
 			) (wwr.Payload, error) {
 				// Close session on logout
-				if msg.Name() == "logout" {
+				if string(msg.Name()) == "logout" {
 					assert.NoError(t, conn.CloseSession())
 					return nil, nil
 				}
@@ -64,7 +64,7 @@ func TestActiveSessionRegistry(t *testing.T) {
 	// Send authentication request
 	_, err := client.connection.Request(
 		context.Background(),
-		"login",
+		[]byte("login"),
 		wwr.NewPayload(wwr.EncodingUtf8, []byte("nothing")),
 	)
 	require.NoError(t, err)
@@ -78,7 +78,7 @@ func TestActiveSessionRegistry(t *testing.T) {
 	// Send logout request
 	_, err = client.connection.Request(
 		context.Background(),
-		"logout",
+		[]byte("logout"),
 		wwr.NewPayload(wwr.EncodingUtf8, []byte("nothing")),
 	)
 	require.NoError(t, err)

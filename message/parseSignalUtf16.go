@@ -45,7 +45,7 @@ func (msg *Message) parseSignalUtf16(message []byte) error {
 
 	if nameLen > 0 {
 		// Take name into account
-		msg.Name = string(message[2 : 2+nameLen])
+		msg.Name = message[2 : 2+nameLen]
 		msg.Payload = pld.Payload{
 			Data: message[payloadOffset:],
 		}

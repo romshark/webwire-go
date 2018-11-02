@@ -2,7 +2,7 @@ package requestmanager
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"time"
 
 	webwire "github.com/qbeon/webwire-go"
@@ -61,23 +61,13 @@ func (req *Request) AwaitReply(ctx context.Context) (webwire.Payload, error) {
 	case <-timeoutTimer.C:
 		timeoutTimer.Stop()
 		req.manager.deregister(req.identifier)
-		return &webwire.EncodedPayload{}, webwire.NewTimeoutErr(
-			fmt.Errorf("timed out"),
-		)
+		return nil, webwire.NewTimeoutErr(errors.New("timed out"))
 
 	case reply := <-req.reply:
 		timeoutTimer.Stop()
 		if reply.Error != nil {
 			return nil, reply.Error
 		}
-
-		// Don't return nil even if the reply is empty
-		// to prevent invalid memory access attempts
-		// caused by forgetting to check for != nil
-		if reply.Reply == nil {
-			return &webwire.EncodedPayload{}, nil
-		}
-
 		return reply.Reply, nil
 	}
 }

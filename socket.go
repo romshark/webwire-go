@@ -4,6 +4,8 @@ import (
 	"net"
 	"net/url"
 	"time"
+
+	"github.com/qbeon/webwire-go/msgbuf"
 )
 
 // SockReadErr defines the interface of a webwire.Socket.Read error
@@ -26,7 +28,7 @@ type Socket interface {
 
 	// Read must block the calling goroutine and await an incoming message.
 	// When a message arrives or an error occurs Read must return
-	Read() ([]byte, SockReadErr)
+	Read(*msgbuf.MessageBuffer) SockReadErr
 
 	// IsConnected must return true if the given socket
 	// maintains an open connection or otherwise return false

@@ -14,7 +14,7 @@ import (
 // ClientInfo represents basic information about a client connection
 type ClientInfo struct {
 	ConnectionTime time.Time
-	UserAgent      string
+	UserAgent      []byte
 	RemoteAddr     net.Addr
 }
 
@@ -52,7 +52,7 @@ type connection struct {
 // newConnection creates and returns a new client connection instance
 func newConnection(
 	socket Socket,
-	userAgent string,
+	userAgent []byte,
 	srv *server,
 	options ConnectionOptions,
 ) *connection {
@@ -144,7 +144,7 @@ func (con *connection) Info() ClientInfo {
 }
 
 // Signal implements the Connection interface
-func (con *connection) Signal(name string, payload Payload) error {
+func (con *connection) Signal(name []byte, payload Payload) error {
 	return con.sock.Write(msg.NewSignalMessage(
 		name,
 		payload.Encoding(),

@@ -23,7 +23,7 @@ func (clt *ChatroomClient) Authenticate(login, password string) {
 
 	_, reqErr := clt.connection.Request(
 		context.Background(),
-		"auth",
+		[]byte("auth"),
 		webwire.NewPayload(webwire.EncodingBinary, encodedCreds),
 	)
 	switch err := reqErr.(type) {

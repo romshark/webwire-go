@@ -43,8 +43,11 @@ func (clt *client) connect() error {
 			}
 		}()
 		for {
-			message, err := clt.conn.Read()
-			if err != nil {
+			// Get a message buffer from the pool
+			buf := clt.messageBufferPool.Get()
+
+			if err := clt.conn.Read(buf); err != nil {
+				buf.Close()
 				if err.IsAbnormalCloseErr() {
 					// Error while reading message
 					clt.errorLog.Print("Abnormal closure error:", err)
@@ -65,7 +68,7 @@ func (clt *client) connect() error {
 					go func() {
 						if err := clt.tryAutoconnect(
 							context.Background(),
-							0,
+							false,
 						); err != nil {
 							clt.errorLog.Printf(
 								"Auto-reconnect failed "+
@@ -78,8 +81,9 @@ func (clt *client) connect() error {
 				}
 				return
 			}
+
 			// Try to handle the message
-			if err := clt.handleMessage(message); err != nil {
+			if err := clt.handleMessage(buf); err != nil {
 				clt.warningLog.Print("Failed handling message:", err)
 			}
 		}

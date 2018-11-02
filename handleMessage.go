@@ -4,14 +4,18 @@ import (
 	"context"
 	"time"
 
-	msg "github.com/qbeon/webwire-go/message"
+	"github.com/qbeon/webwire-go/message"
+	"github.com/qbeon/webwire-go/msgbuf"
 )
 
-// handleMessage handles incoming messages
-func (srv *server) handleMessage(con *connection, message []byte) {
+// handleMessage parses and handles incoming messages
+func (srv *server) handleMessage(con *connection, buf *msgbuf.MessageBuffer) {
+	defer buf.Close()
+
+	msg := &message.Message{}
+
 	// Parse message
-	var parsedMessage msg.Message
-	msgTypeParsed, parserErr := parsedMessage.Parse(message)
+	msgTypeParsed, parserErr := msg.Parse(buf.Data())
 	if !msgTypeParsed {
 		// Couldn't determine message type, drop message
 		return
@@ -21,11 +25,11 @@ func (srv *server) handleMessage(con *connection, message []byte) {
 
 		// Respond with an error but don't break the connection
 		// because protocol errors are not critical errors
-		srv.failMsg(con, &parsedMessage, ProtocolErr{})
+		srv.failMsg(con, msg, ProtocolErr{})
 		return
 	}
 
-	// Reset read deadline on valid message
+	// Reset the read deadline on valid message
 	if err := con.sock.SetReadDeadline(
 		time.Now().Add(srv.options.ReadTimeout),
 	); err != nil {
@@ -37,36 +41,36 @@ func (srv *server) handleMessage(con *connection, message []byte) {
 	//
 	// TODO: probably this check should include any message type that's not
 	// handled by handleMessage to avoid registering a handler
-	if parsedMessage.Type == msg.MsgHeartbeat {
+	if msg.Type == message.MsgHeartbeat {
 		return
 	}
 
 	// Deregister the handler only if a handler was registered
-	if srv.registerHandler(con, &parsedMessage) {
+	if srv.registerHandler(con, msg) {
 		// This defer is necessary to ensure the handler is deregistered even in
 		// such situations when one of the handlers panics
 		defer srv.deregisterHandler(con)
 	}
 
-	switch parsedMessage.Type {
-	case msg.MsgSignalBinary:
+	switch msg.Type {
+	case message.MsgSignalBinary:
 		fallthrough
-	case msg.MsgSignalUtf8:
+	case message.MsgSignalUtf8:
 		fallthrough
-	case msg.MsgSignalUtf16:
-		srv.handleSignal(con, &parsedMessage)
+	case message.MsgSignalUtf16:
+		srv.handleSignal(con, msg)
 
-	case msg.MsgRequestBinary:
+	case message.MsgRequestBinary:
 		fallthrough
-	case msg.MsgRequestUtf8:
+	case message.MsgRequestUtf8:
 		fallthrough
-	case msg.MsgRequestUtf16:
-		srv.handleRequest(con, &parsedMessage)
+	case message.MsgRequestUtf16:
+		srv.handleRequest(con, msg)
 
-	case msg.MsgRestoreSession:
-		srv.handleSessionRestore(con, &parsedMessage)
-	case msg.MsgCloseSession:
-		srv.handleSessionClosure(con, &parsedMessage)
+	case message.MsgRestoreSession:
+		srv.handleSessionRestore(con, msg)
+	case message.MsgCloseSession:
+		srv.handleSessionClosure(con, msg)
 	}
 }
 
@@ -76,7 +80,7 @@ func (srv *server) handleMessage(con *connection, message []byte) {
 // and frees only when a handler slot is freed for this handler to be executed
 func (srv *server) registerHandler(
 	con *connection,
-	message *msg.Message,
+	message *message.Message,
 ) bool {
 	failMsg := false
 
@@ -130,14 +134,14 @@ func (srv *server) deregisterHandler(con *connection) {
 // fulfillMsg fulfills the message sending the reply
 func (srv *server) fulfillMsg(
 	con *connection,
-	message *msg.Message,
+	msg *message.Message,
 	replyPayloadEncoding PayloadEncoding,
 	replyPayloadData []byte,
 ) {
 	// Send reply
 	if err := con.sock.Write(
-		msg.NewReplyMessage(
-			message.Identifier,
+		message.NewReplyMessage(
+			msg.Identifier,
 			replyPayloadEncoding,
 			replyPayloadData,
 		),
@@ -149,53 +153,53 @@ func (srv *server) fulfillMsg(
 // failMsg fails the message returning an error reply
 func (srv *server) failMsg(
 	con *connection,
-	message *msg.Message,
+	msg *message.Message,
 	reqErr error,
 ) {
 	// Don't send any failure reply if the type of the message
 	// doesn't expect any response
-	if !message.RequiresReply() {
+	if !msg.RequiresReply() {
 		return
 	}
 
 	var replyMsg []byte
 	switch err := reqErr.(type) {
 	case ReqErr:
-		replyMsg = msg.NewErrorReplyMessage(
-			message.Identifier,
+		replyMsg = message.NewErrorReplyMessage(
+			msg.Identifier,
 			err.Code,
 			err.Message,
 		)
 	case *ReqErr:
-		replyMsg = msg.NewErrorReplyMessage(
-			message.Identifier,
+		replyMsg = message.NewErrorReplyMessage(
+			msg.Identifier,
 			err.Code,
 			err.Message,
 		)
 	case MaxSessConnsReachedErr:
-		replyMsg = msg.NewSpecialRequestReplyMessage(
-			msg.MsgMaxSessConnsReached,
-			message.Identifier,
+		replyMsg = message.NewSpecialRequestReplyMessage(
+			message.MsgMaxSessConnsReached,
+			msg.Identifier,
 		)
 	case SessNotFoundErr:
-		replyMsg = msg.NewSpecialRequestReplyMessage(
-			msg.MsgSessionNotFound,
-			message.Identifier,
+		replyMsg = message.NewSpecialRequestReplyMessage(
+			message.MsgSessionNotFound,
+			msg.Identifier,
 		)
 	case SessionsDisabledErr:
-		replyMsg = msg.NewSpecialRequestReplyMessage(
-			msg.MsgSessionsDisabled,
-			message.Identifier,
+		replyMsg = message.NewSpecialRequestReplyMessage(
+			message.MsgSessionsDisabled,
+			msg.Identifier,
 		)
 	case ProtocolErr:
-		replyMsg = msg.NewSpecialRequestReplyMessage(
-			msg.MsgReplyProtocolError,
-			message.Identifier,
+		replyMsg = message.NewSpecialRequestReplyMessage(
+			message.MsgReplyProtocolError,
+			msg.Identifier,
 		)
 	default:
-		replyMsg = msg.NewSpecialRequestReplyMessage(
-			msg.MsgInternalError,
-			message.Identifier,
+		replyMsg = message.NewSpecialRequestReplyMessage(
+			message.MsgInternalError,
+			msg.Identifier,
 		)
 	}
 
@@ -206,10 +210,10 @@ func (srv *server) failMsg(
 }
 
 // failMsgShutdown sends request failure reply due to current server shutdown
-func (srv *server) failMsgShutdown(con *connection, message *msg.Message) {
-	if err := con.sock.Write(msg.NewSpecialRequestReplyMessage(
-		msg.MsgReplyShutdown,
-		message.Identifier,
+func (srv *server) failMsgShutdown(con *connection, msg *message.Message) {
+	if err := con.sock.Write(message.NewSpecialRequestReplyMessage(
+		message.MsgReplyShutdown,
+		msg.Identifier,
 	)); err != nil {
 		srv.errorLog.Println("Writing failed:", err)
 	}

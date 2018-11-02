@@ -50,7 +50,8 @@ func TestClientConcurrentSignal(t *testing.T) {
 	sendSignal := func() {
 		defer finished.Progress(1)
 		assert.NoError(t, client.connection.Signal(
-			"sample",
+			context.Background(),
+			[]byte("sample"),
 			wwr.NewPayload(wwr.EncodingBinary, []byte("samplepayload")),
 		))
 	}

@@ -50,7 +50,11 @@ func TestClientRequestCancel(t *testing.T) {
 
 	// Send request and await reply
 	go func() {
-		reply, err := client.connection.Request(cancelableCtx, "test", nil)
+		reply, err := client.connection.Request(
+			cancelableCtx,
+			[]byte("test"),
+			nil,
+		)
 		assert.Error(t, err, "Expected a canceled-error")
 		assert.Nil(t, reply)
 		assert.IsType(t, wwr.CanceledErr{}, err)
