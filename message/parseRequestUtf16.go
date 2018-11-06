@@ -1,31 +1,34 @@
 package message
 
 import (
+	"errors"
 	"fmt"
 
 	pld "github.com/qbeon/webwire-go/payload"
 )
 
 // parseRequestUtf16 parses MsgRequestUtf16 messages
-func (msg *Message) parseRequestUtf16(message []byte) error {
-	if len(message) < MsgMinLenRequestUtf16 {
-		return fmt.Errorf("Invalid request message, too short")
+func (msg *Message) parseRequestUtf16() error {
+	if msg.MsgBuffer.len < MsgMinLenRequestUtf16 {
+		return errors.New("invalid request message, too short")
 	}
 
-	if len(message)%2 != 0 {
-		return fmt.Errorf(
-			"Unaligned UTF16 encoded request message " +
+	if msg.MsgBuffer.len%2 != 0 {
+		return errors.New(
+			"unaligned UTF16 encoded request message " +
 				"(probably missing header padding)",
 		)
 	}
 
+	dat := msg.MsgBuffer.Data()
+
 	// Read identifier
 	var id [8]byte
-	copy(id[:], message[1:9])
-	msg.Identifier = id
+	copy(id[:], dat[1:9])
+	msg.MsgIdentifier = id
 
 	// Read name length
-	nameLen := int(byte(message[9:10][0]))
+	nameLen := int(byte(dat[9:10][0]))
 
 	// Determine minimum required message length.
 	// There's at least a 10 byte header and a 2 byte payload expected
@@ -38,7 +41,7 @@ func (msg *Message) parseRequestUtf16(message []byte) error {
 	// A header padding byte is only expected, when there's a payload
 	// beyond the name. It's not required if there's just the header and a name
 	payloadOffset := 10 + nameLen
-	if len(message) > payloadOffset && nameLen%2 != 0 {
+	if msg.MsgBuffer.len > payloadOffset && nameLen%2 != 0 {
 		minRequiredMsgSize++
 		payloadOffset++
 	}
@@ -47,26 +50,26 @@ func (msg *Message) parseRequestUtf16(message []byte) error {
 	// by inconsistent flags. This could happen if the specified name length
 	// doesn't correspond to the actual name length
 	if nameLen > 0 {
-		if len(message) < minRequiredMsgSize {
+		if msg.MsgBuffer.len < minRequiredMsgSize {
 			return fmt.Errorf(
-				"Invalid request message, too short for full name (%d)",
+				"invalid request message, too short for full name (%d)",
 				nameLen,
 			)
 		}
 
 		// Take name into account
-		msg.Name = message[10 : 10+nameLen]
+		msg.MsgName = dat[10 : 10+nameLen]
 
 		// Read payload if any
-		if len(message) > minRequiredMsgSize {
-			msg.Payload = pld.Payload{
-				Data: message[payloadOffset:],
+		if msg.MsgBuffer.len > minRequiredMsgSize {
+			msg.MsgPayload = pld.Payload{
+				Data: dat[payloadOffset:],
 			}
 		}
 	} else {
 		// No name present, just payload
-		msg.Payload = pld.Payload{
-			Data: message[10:],
+		msg.MsgPayload = pld.Payload{
+			Data: dat[10:],
 		}
 	}
 

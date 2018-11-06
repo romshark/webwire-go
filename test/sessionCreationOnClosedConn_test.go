@@ -4,12 +4,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-
-	"github.com/stretchr/testify/require"
-
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestSessionCreationOnClosedConn tests the creation of a session
@@ -25,7 +23,7 @@ func TestSessionCreationOnClosedConn(t *testing.T) {
 				assert.Error(t, err)
 				assert.IsType(t, wwr.DisconnectedErr{}, err)
 			},
-			onClientDisconnected: func(conn wwr.Connection) {
+			onClientDisconnected: func(conn wwr.Connection, _ error) {
 				err := conn.CreateSession(nil)
 				assert.Error(t, err)
 				assert.IsType(t, wwr.DisconnectedErr{}, err)

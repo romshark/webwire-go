@@ -33,7 +33,7 @@ func NewChatRoomServer() *ChatRoomServer {
 
 // broadcastMessage sends a message on behalf of the given user
 // to all connected clients
-func (srv *ChatRoomServer) broadcastMessage(name string, msg string) {
+func (srv *ChatRoomServer) broadcastMessage(name string, msg []byte) {
 	// Marshal message
 	encoded, err := json.Marshal(shared.ChatMessage{
 		User: name,
@@ -48,10 +48,10 @@ func (srv *ChatRoomServer) broadcastMessage(name string, msg string) {
 	log.Printf("Broadcast message to %d clients", len(srv.connected))
 	for client := range srv.connected {
 		// Send message as signal
-		if err := client.Signal(nil, wwr.NewPayload(
-			wwr.EncodingUtf8,
-			encoded,
-		)); err != nil {
+		if err := client.Signal(nil, wwr.Payload{
+			Encoding: wwr.EncodingUtf8,
+			Data:     encoded,
+		}); err != nil {
 			log.Printf(
 				"WARNING: failed sending signal to client %s : %s",
 				client.Info().RemoteAddr,
@@ -75,10 +75,9 @@ func (srv *ChatRoomServer) handleAuth(
 	client wwr.Connection,
 	message wwr.Message,
 ) (wwr.Payload, error) {
-	payload := message.Payload()
-	credentialsText, err := payload.Utf8()
+	credentialsText, err := message.PayloadUtf8()
 	if err != nil {
-		return nil, wwr.ReqErr{
+		return wwr.Payload{}, wwr.ReqErr{
 			Code:    "DECODING_FAILURE",
 			Message: fmt.Sprintf("Failed decoding message: %s", err),
 		}
@@ -92,13 +91,13 @@ func (srv *ChatRoomServer) handleAuth(
 		[]byte(credentialsText),
 		&credentials,
 	); err != nil {
-		return nil, fmt.Errorf("Failed parsing credentials: %s", err)
+		return wwr.Payload{}, fmt.Errorf("Failed parsing credentials: %s", err)
 	}
 
 	// Verify username
 	password, userExists := userAccounts[credentials.Name]
 	if !userExists {
-		return nil, wwr.ReqErr{
+		return wwr.Payload{}, wwr.ReqErr{
 			Code:    "INEXISTENT_USER",
 			Message: fmt.Sprintf("No such user: '%s'", credentials.Name),
 		}
@@ -106,7 +105,7 @@ func (srv *ChatRoomServer) handleAuth(
 
 	// Verify password
 	if password != credentials.Password {
-		return nil, wwr.ReqErr{
+		return wwr.Payload{}, wwr.ReqErr{
 			Code:    "WRONG_PASSWORD",
 			Message: "Provided password is wrong",
 		}
@@ -116,7 +115,7 @@ func (srv *ChatRoomServer) handleAuth(
 	if err := client.CreateSession(&shared.SessionInfo{
 		Username: credentials.Name,
 	}); err != nil {
-		return nil, fmt.Errorf("Couldn't create session: %s", err)
+		return wwr.Payload{}, fmt.Errorf("Couldn't create session: %s", err)
 	}
 
 	log.Printf(
@@ -126,10 +125,10 @@ func (srv *ChatRoomServer) handleAuth(
 	)
 
 	// Reply to the request, use default binary encoding
-	return wwr.NewPayload(
-		wwr.EncodingBinary,
-		[]byte(client.SessionKey()),
-	), nil
+	return wwr.Payload{
+		Encoding: wwr.EncodingBinary,
+		Data:     []byte(client.SessionKey()),
+	}, nil
 }
 
 /****************************************************************\
@@ -141,8 +140,7 @@ func (srv *ChatRoomServer) handleMessage(
 	client wwr.Connection,
 	message wwr.Message,
 ) (wwr.Payload, error) {
-	payload := message.Payload()
-	msgStr, err := payload.Utf8()
+	msgStr, err := message.PayloadUtf8()
 	if err != nil {
 		log.Printf(
 			"Received invalid message from %s, "+
@@ -150,15 +148,15 @@ func (srv *ChatRoomServer) handleMessage(
 			client.Info().RemoteAddr,
 			err,
 		)
-		return nil, nil
+		return wwr.Payload{}, nil
 	}
 
 	log.Printf(
 		"Received message from %s: '%s' (%d, %s)",
 		client.Info().RemoteAddr,
 		msgStr,
-		len(payload.Data()),
-		payload.Encoding().String(),
+		len(msgStr),
+		message.PayloadEncoding().String(),
 	)
 
 	name := "Anonymous"
@@ -169,7 +167,7 @@ func (srv *ChatRoomServer) handleMessage(
 
 	srv.broadcastMessage(name, msgStr)
 
-	return nil, nil
+	return wwr.Payload{}, nil
 }
 
 /****************************************************************\
@@ -212,7 +210,7 @@ func (srv *ChatRoomServer) OnRequest(
 	case "msg":
 		return srv.handleMessage(ctx, client, message)
 	}
-	return nil, wwr.ReqErr{
+	return wwr.Payload{}, wwr.ReqErr{
 		Code:    "BAD_REQUEST",
 		Message: fmt.Sprintf("Unsupported request name: %s", message.Name()),
 	}
@@ -234,8 +232,15 @@ func (srv *ChatRoomServer) OnClientConnected(newClient wwr.Connection) {
 
 // OnClientDisconnected implements the webwire.ServerImplementation interface.
 // Deregisters gone clients
-func (srv *ChatRoomServer) OnClientDisconnected(client wwr.Connection) {
-	log.Printf("Client %s disconnected", client.Info().RemoteAddr)
+func (srv *ChatRoomServer) OnClientDisconnected(
+	client wwr.Connection,
+	reason error,
+) {
+	log.Printf(
+		"Client %s disconnected, reason: %s",
+		client.Info().RemoteAddr,
+		reason,
+	)
 	srv.lock.Lock()
 	delete(srv.connected, client)
 	srv.lock.Unlock()

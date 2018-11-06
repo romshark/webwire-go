@@ -5,12 +5,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-
-	"github.com/stretchr/testify/require"
-
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type testClientSessionInfoStruct struct {
@@ -138,7 +136,7 @@ func TestClientSessionInfo(t *testing.T) {
 					},
 				})
 				assert.NoError(t, err)
-				return nil, err
+				return wwr.Payload{}, err
 			},
 		},
 		wwr.ServerOptions{},
@@ -161,7 +159,7 @@ func TestClientSessionInfo(t *testing.T) {
 	_, err := client.connection.Request(
 		context.Background(),
 		[]byte("login"),
-		wwr.NewPayload(wwr.EncodingBinary, []byte("credentials")),
+		wwr.Payload{Data: []byte("credentials")},
 	)
 	require.NoError(t, err)
 

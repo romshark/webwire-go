@@ -4,12 +4,10 @@ import (
 	"context"
 	"testing"
 
-	"github.com/stretchr/testify/require"
-
-	"github.com/stretchr/testify/assert"
-
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestClientAutomaticSessionRestoration verifies automatic session restoration
@@ -32,13 +30,13 @@ func TestClientAutomaticSessionRestoration(t *testing.T) {
 				if currentStep == 2 {
 					// Expect the session to have been automatically restored
 					compareSessions(t, createdSession, conn.Session())
-					return nil, nil
+					return wwr.Payload{}, nil
 				}
 
 				// Try to create a new session
 				err := conn.CreateSession(nil)
 				assert.NoError(t, err)
-				return nil, err
+				return wwr.Payload{}, err
 			},
 		},
 		wwr.ServerOptions{
@@ -87,7 +85,10 @@ func TestClientAutomaticSessionRestoration(t *testing.T) {
 	_, err := client.connection.Request(
 		context.Background(),
 		[]byte("login"),
-		wwr.NewPayload(wwr.EncodingBinary, []byte("auth")),
+		wwr.Payload{
+			Encoding: wwr.EncodingBinary,
+			Data:     []byte("auth"),
+		},
 	)
 	require.NoError(t, err)
 
@@ -119,7 +120,10 @@ func TestClientAutomaticSessionRestoration(t *testing.T) {
 	_, err = client.connection.Request(
 		context.Background(),
 		[]byte("verify"),
-		wwr.NewPayload(wwr.EncodingBinary, []byte("is_restored?")),
+		wwr.Payload{
+			Encoding: wwr.EncodingBinary,
+			Data:     []byte("is_restored?"),
+		},
 	)
 	require.NoError(t, err)
 }

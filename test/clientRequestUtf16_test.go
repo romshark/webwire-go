@@ -5,23 +5,17 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
-
-	"github.com/stretchr/testify/assert"
-
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestClientRequestUtf16 tests requests with UTF16 encoded payloads
 func TestClientRequestUtf16(t *testing.T) {
-	testPayload := wwr.NewPayload(
-		wwr.EncodingUtf16,
-		[]byte{00, 115, 00, 97, 00, 109, 00, 112, 00, 108, 00, 101},
-	)
-	verifyPayload := func(payload wwr.Payload) {
-		assert.Equal(t, wwr.EncodingUtf16, payload.Encoding())
-		assert.Equal(t, testPayload.Data(), payload.Data())
+	testPayload := wwr.Payload{
+		Encoding: wwr.EncodingUtf16,
+		Data:     []byte{00, 115, 00, 97, 00, 109, 00, 112, 00, 108, 00, 101},
 	}
 
 	// Initialize webwire server given only the request
@@ -33,12 +27,16 @@ func TestClientRequestUtf16(t *testing.T) {
 				_ wwr.Connection,
 				msg wwr.Message,
 			) (wwr.Payload, error) {
-				verifyPayload(msg.Payload())
+				assert.Equal(t, wwr.EncodingUtf16, msg.PayloadEncoding())
+				assert.Equal(t, testPayload.Data, msg.Payload())
 
-				return wwr.NewPayload(
-					wwr.EncodingUtf16,
-					[]byte{00, 115, 00, 97, 00, 109, 00, 112, 00, 108, 00, 101},
-				), nil
+				return wwr.Payload{
+					Encoding: wwr.EncodingUtf16,
+					Data: []byte{
+						00, 115, 00, 97, 00, 109,
+						00, 112, 00, 108, 00, 101,
+					},
+				}, nil
 			},
 		},
 		wwr.ServerOptions{},
@@ -59,13 +57,18 @@ func TestClientRequestUtf16(t *testing.T) {
 	reply, err := client.connection.Request(
 		context.Background(),
 		nil,
-		wwr.NewPayload(
-			wwr.EncodingUtf16,
-			[]byte{00, 115, 00, 97, 00, 109, 00, 112, 00, 108, 00, 101},
-		),
+		wwr.Payload{
+			Encoding: wwr.EncodingUtf16,
+			Data: []byte{
+				00, 115, 00, 97, 00, 109,
+				00, 112, 00, 108, 00, 101,
+			},
+		},
 	)
 	require.NoError(t, err)
 
 	// Verify reply
-	verifyPayload(reply)
+	assert.Equal(t, wwr.EncodingUtf16, reply.PayloadEncoding())
+	assert.Equal(t, testPayload.Data, reply.Payload())
+	reply.Close()
 }

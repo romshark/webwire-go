@@ -18,11 +18,7 @@ func (srv *server) handleSignal(con *connection, msg *message.Message) {
 	srv.currentOps++
 	srv.opsLock.Unlock()
 
-	srv.impl.OnSignal(
-		context.Background(),
-		con,
-		newMessageWrapper(msg),
-	)
+	srv.impl.OnSignal(context.Background(), con, msg)
 
 	// Mark signal as done and shutdown the server
 	// if scheduled and no ops are left

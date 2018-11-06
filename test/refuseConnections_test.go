@@ -5,11 +5,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
-	"github.com/valyala/fasthttp"
-
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
+	"github.com/stretchr/testify/require"
+	"github.com/valyala/fasthttp"
 )
 
 // TestRefuseConnections tests refusal of connection before their upgrade to a
@@ -34,7 +33,7 @@ func TestRefuseConnections(t *testing.T) {
 			) (wwr.Payload, error) {
 				// Expect the following request to not even arrive
 				t.Error("Not expected but reached")
-				return nil, nil
+				return wwr.Payload{}, nil
 			},
 		},
 		wwr.ServerOptions{},
@@ -60,7 +59,11 @@ func TestRefuseConnections(t *testing.T) {
 	// Try sending requests
 	for i := 0; i < numClients; i++ {
 		clt := clients[i]
-		_, err := clt.connection.Request(context.Background(), []byte("q"), nil)
+		_, err := clt.connection.Request(
+			context.Background(),
+			[]byte("q"),
+			wwr.Payload{},
+		)
 		require.Error(t, err)
 		require.IsType(t, wwr.DisconnectedErr{}, err)
 	}

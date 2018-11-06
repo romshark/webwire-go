@@ -6,11 +6,9 @@ import (
 	"time"
 
 	"github.com/qbeon/tmdwg-go"
-
-	"github.com/stretchr/testify/require"
-
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
+	"github.com/stretchr/testify/require"
 )
 
 // TestServerMessageBufferOverflow tests sending messages to the server that are
@@ -28,10 +26,7 @@ func TestServerMessageBufferOverflow(t *testing.T) {
 
 	// Generate a malicious payload that exceeds the message buffer size by 1
 	// byte
-	maliciousPayload := wwr.NewPayload(
-		wwr.EncodingBinary,
-		make([]byte, maxPayloadSize+1),
-	)
+	maliciousPayload := wwr.Payload{Data: make([]byte, maxPayloadSize+1)}
 
 	// Initialize webwire server given only the request
 	server := setupServer(
@@ -44,11 +39,11 @@ func TestServerMessageBufferOverflow(t *testing.T) {
 			) (wwr.Payload, error) {
 				if string(msg.Name()) == "nooverfl" {
 					correctRequestTriggeredHandler.Progress(1)
-					return nil, nil
+					return wwr.Payload{}, nil
 				}
 
 				requestHandleCalled.Progress(1)
-				return nil, nil
+				return wwr.Payload{}, nil
 			},
 		},
 		wwr.ServerOptions{
@@ -90,13 +85,10 @@ func TestServerMessageBufferOverflow(t *testing.T) {
 	replyCorrect, errCorrect := client.connection.Request(
 		context.Background(),
 		[]byte("nooverfl"),
-		wwr.NewPayload(
-			wwr.EncodingBinary,
-			make([]byte, maxPayloadSize),
-		),
+		wwr.Payload{Data: make([]byte, maxPayloadSize)},
 	)
 	require.NotNil(t, replyCorrect)
-	require.Nil(t, replyCorrect.Data())
+	require.Nil(t, replyCorrect.Payload())
 	require.NoError(t, errCorrect)
 	replyCorrect.Close()
 

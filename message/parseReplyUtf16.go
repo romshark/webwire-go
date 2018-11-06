@@ -1,40 +1,43 @@
 package message
 
 import (
-	"fmt"
+	"errors"
 
 	pld "github.com/qbeon/webwire-go/payload"
 )
 
-func (msg *Message) parseReplyUtf16(message []byte) error {
-	if len(message) < MsgMinLenReplyUtf16 {
-		return fmt.Errorf("Invalid UTF16 reply message, too short")
+func (msg *Message) parseReplyUtf16() error {
+	if msg.MsgBuffer.len < MsgMinLenReplyUtf16 {
+		return errors.New("invalid UTF16 reply message, too short")
 	}
 
-	if len(message)%2 != 0 {
-		return fmt.Errorf(
-			"Unaligned UTF16 encoded reply message " +
+	if msg.MsgBuffer.len%2 != 0 {
+		return errors.New(
+			"unaligned UTF16 encoded reply message " +
 				"(probably missing header padding)",
 		)
 	}
 
+	dat := msg.MsgBuffer.Data()
+
 	// Read identifier
 	var id [8]byte
-	copy(id[:], message[1:9])
-	msg.Identifier = id
+	copy(id[:], dat[1:9])
+	msg.MsgIdentifier = id
 
 	// Skip payload if there's none
-	if len(message) == MsgMinLenReplyUtf16 {
-		msg.Payload = pld.Payload{
+	if msg.MsgBuffer.len == MsgMinLenReplyUtf16 {
+		msg.MsgPayload = pld.Payload{
 			Encoding: pld.Utf16,
 		}
 		return nil
 	}
 
 	// Read payload
-	msg.Payload = pld.Payload{
+	msg.MsgPayload = pld.Payload{
 		// Take header padding byte into account
-		Data: message[10:],
+		Data: dat[10:],
 	}
+
 	return nil
 }

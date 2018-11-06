@@ -1,4 +1,4 @@
-package msgbuf
+package message
 
 import (
 	"sync"
@@ -6,29 +6,27 @@ import (
 
 // SyncPool represents a thread-safe messageBuffer pool
 type SyncPool struct {
-	maxMsgSize uint32
+	bufferSize uint32
 	pool       *sync.Pool
 }
 
 // NewSyncPool initializes a new sync.Pool based message buffer pool instance
-func NewSyncPool(maxMsgSize, prealloc uint32) *SyncPool {
+func NewSyncPool(bufferSize, prealloc uint32) *SyncPool {
 	pool := &sync.Pool{}
 	pool.New = func() interface{} {
-		msgBuf := &MessageBuffer{
-			buf: make([]byte, maxMsgSize),
+		msg := NewMessage(bufferSize)
+		msg.onClose = func() {
+			pool.Put(msg)
 		}
-		msgBuf.onClose = func() {
-			pool.Put(msgBuf)
-		}
-		return msgBuf
+		return msg
 	}
 	return &SyncPool{
-		maxMsgSize: maxMsgSize,
+		bufferSize: bufferSize,
 		pool:       pool,
 	}
 }
 
 // Get implements the Pool interface
-func (mbp *SyncPool) Get() *MessageBuffer {
-	return mbp.pool.Get().(*MessageBuffer)
+func (mbp *SyncPool) Get() *Message {
+	return mbp.pool.Get().(*Message)
 }

@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	webwire "github.com/qbeon/webwire-go"
+	"github.com/qbeon/webwire-go/message"
 )
 
 // RequestManager manages and keeps track of outgoing pending requests
@@ -43,7 +43,7 @@ func (manager *RequestManager) Create(timeout time.Duration) *Request {
 		manager,
 		identifier,
 		timeout,
-		make(chan reply),
+		make(chan genericReply),
 	}
 
 	// Register the newly created request
@@ -66,23 +66,19 @@ func (manager *RequestManager) deregister(identifier RequestIdentifier) {
 // with the provided reply payload.
 // Returns true if a pending request was fulfilled and deregistered,
 // otherwise returns false
-func (manager *RequestManager) Fulfill(
-	identifier RequestIdentifier,
-	payload *webwire.BufferedEncodedPayload,
-) bool {
+func (manager *RequestManager) Fulfill(msg *message.Message) bool {
 	manager.lock.RLock()
-	req, exists := manager.pending[identifier]
+	req, exists := manager.pending[msg.MsgIdentifier]
 	manager.lock.RUnlock()
 
 	if !exists {
 		return false
 	}
 
-	req.reply <- reply{
-		Reply: payload,
-		Error: nil,
+	manager.deregister(msg.MsgIdentifier)
+	req.reply <- genericReply{
+		ReplyMsg: msg,
 	}
-	manager.deregister(identifier)
 	return true
 }
 
@@ -101,11 +97,10 @@ func (manager *RequestManager) Fail(
 		return false
 	}
 
-	req.reply <- reply{
-		Reply: nil,
+	manager.deregister(identifier)
+	req.reply <- genericReply{
 		Error: err,
 	}
-	manager.deregister(identifier)
 	return true
 }
 

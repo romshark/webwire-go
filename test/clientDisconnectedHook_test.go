@@ -5,12 +5,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
 	tmdwg "github.com/qbeon/tmdwg-go"
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestClientDisconnectedHook verifies the server is calling the
@@ -29,7 +28,7 @@ func TestClientDisconnectedHook(t *testing.T) {
 				clientConn = conn
 				connectedClientLock.Unlock()
 			},
-			onClientDisconnected: func(conn wwr.Connection) {
+			onClientDisconnected: func(conn wwr.Connection, _ error) {
 				connectedClientLock.Lock()
 				assert.Equal(t, clientConn, conn)
 				connectedClientLock.Unlock()

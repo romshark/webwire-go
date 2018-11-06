@@ -122,15 +122,10 @@ func (bc *Benchmark) Start() {
 				}
 
 				// Send request and await reply
-				reply, err := c.Request(wwr.NewPayload(
-					wwr.EncodingBinary,
-					payloadData,
-				))
-
-				// Determine the length of the payload and close the reply to
-				// release the buffer
-				payloadLength := len(reply.Data())
-				reply.Close()
+				reply, err := c.Request(wwr.Payload{
+					Encoding: wwr.EncodingBinary,
+					Data:     payloadData,
+				})
 
 				// Compute elapsed time since request start
 				elapsed := time.Since(start)
@@ -149,6 +144,11 @@ func (bc *Benchmark) Start() {
 						err,
 					))
 				}
+
+				// Determine the length of the payload and close the reply to
+				// release the buffer
+				payloadLength := len(reply.Payload())
+				reply.Close()
 
 				// Update stats
 				bc.stats.RecordRequest(

@@ -5,13 +5,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-
-	"github.com/stretchr/testify/require"
-
 	tmdwg "github.com/qbeon/tmdwg-go"
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestClientOnSessionClosed tests the OnSessionClosed hook of the client
@@ -32,7 +30,7 @@ func TestClientOnSessionClosed(t *testing.T) {
 				err := conn.CreateSession(nil)
 				assert.NoError(t, err)
 				if err != nil {
-					return nil, err
+					return wwr.Payload{}, err
 				}
 
 				go func() {
@@ -46,7 +44,7 @@ func TestClientOnSessionClosed(t *testing.T) {
 					assert.NoError(t, conn.CloseSession())
 				}()
 
-				return nil, nil
+				return wwr.Payload{}, nil
 			},
 		},
 		wwr.ServerOptions{},
@@ -71,7 +69,10 @@ func TestClientOnSessionClosed(t *testing.T) {
 	_, err := client.connection.Request(
 		context.Background(),
 		[]byte("login"),
-		wwr.NewPayload(wwr.EncodingBinary, []byte("credentials")),
+		wwr.Payload{
+			Encoding: wwr.EncodingBinary,
+			Data:     []byte("credentials"),
+		},
 	)
 	require.NoError(t, err)
 	authenticated.Progress(1)

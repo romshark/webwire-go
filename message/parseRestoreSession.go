@@ -1,27 +1,29 @@
 package message
 
 import (
-	"fmt"
+	"errors"
 
 	pld "github.com/qbeon/webwire-go/payload"
 )
 
 // parseRestoreSession parses MsgRestoreSession messages
-func (msg *Message) parseRestoreSession(message []byte) error {
-	if len(message) < MsgMinLenRestoreSession {
-		return fmt.Errorf(
-			"Invalid session restoration request message, too short",
+func (msg *Message) parseRestoreSession() error {
+	if msg.MsgBuffer.len < MsgMinLenRestoreSession {
+		return errors.New(
+			"invalid session restoration request message, too short",
 		)
 	}
 
+	dat := msg.MsgBuffer.Data()
+
 	// Read identifier
 	var id [8]byte
-	copy(id[:], message[1:9])
-	msg.Identifier = id
+	copy(id[:], dat[1:9])
+	msg.MsgIdentifier = id
 
 	// Read payload
-	msg.Payload = pld.Payload{
-		Data: message[9:],
+	msg.MsgPayload = pld.Payload{
+		Data: dat[9:],
 	}
 	return nil
 }

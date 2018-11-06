@@ -5,12 +5,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
-
-	"github.com/stretchr/testify/assert"
-
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestClientRequestRegisterOnReply verifies the request register of the client
@@ -32,7 +30,7 @@ func TestClientRequestRegisterOnReply(t *testing.T) {
 
 				// Wait until the request times out
 				time.Sleep(300 * time.Millisecond)
-				return nil, nil
+				return wwr.Payload{}, nil
 			},
 		},
 		wwr.ServerOptions{},
@@ -58,7 +56,7 @@ func TestClientRequestRegisterOnReply(t *testing.T) {
 	_, err := client.connection.Request(
 		context.Background(),
 		nil,
-		wwr.NewPayload(wwr.EncodingBinary, []byte("t")),
+		wwr.Payload{Data: []byte("t")},
 	)
 	require.NoError(t, err)
 

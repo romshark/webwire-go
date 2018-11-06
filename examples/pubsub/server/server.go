@@ -55,7 +55,7 @@ func (srv *PubSubServer) OnRequest(
 	_ wwr.Connection,
 	_ wwr.Message,
 ) (response wwr.Payload, err error) {
-	return nil, wwr.ReqErr{
+	return wwr.Payload{}, wwr.ReqErr{
 		Code:    "REQ_NOT_SUPPORTED",
 		Message: "Requests are not supported on this server",
 	}
@@ -78,7 +78,10 @@ func (srv *PubSubServer) OnClientConnected(client wwr.Connection) {
 
 // OnClientDisconnected implements the webwire.ServerImplementation interface
 // Deregisters a gone client
-func (srv *PubSubServer) OnClientDisconnected(client wwr.Connection) {
+func (srv *PubSubServer) OnClientDisconnected(
+	client wwr.Connection,
+	_ error,
+) {
 	srv.mapLock.Lock()
 	delete(srv.connectedClients, client)
 	srv.mapLock.Unlock()
@@ -107,7 +110,10 @@ func (srv *PubSubServer) Broadcast() {
 		)
 
 		for client := range srv.connectedClients {
-			client.Signal(nil, wwr.NewPayload(wwr.EncodingBinary, []byte(msg)))
+			client.Signal(nil, wwr.Payload{
+				Encoding: wwr.EncodingBinary,
+				Data:     []byte(msg),
+			})
 		}
 		srv.mapLock.Unlock()
 	}

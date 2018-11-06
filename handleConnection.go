@@ -7,6 +7,26 @@ import (
 	"github.com/fasthttp/websocket"
 )
 
+func (srv *server) writeConfMessage(sock Socket) error {
+	writer, err := sock.GetWriter()
+	if err != nil {
+		return fmt.Errorf(
+			"couldn't get writer for configuration message: %s",
+			err,
+		)
+	}
+
+	if _, err := writer.Write(srv.configMsg); err != nil {
+		return fmt.Errorf("couldn't write configuration message: %s", err)
+	}
+
+	if err := writer.Close(); err != nil {
+		return fmt.Errorf("couldn't close writer: %s", err)
+	}
+
+	return nil
+}
+
 func (srv *server) handleConnection(
 	connectionOptions ConnectionOptions,
 	userAgent []byte,
@@ -36,21 +56,16 @@ func (srv *server) handleConnection(
 		return nil
 	})
 
+	sock := newFasthttpConnectedSocket(conn)
+
 	// Send server configuration message
-	if err := conn.WriteMessage(
-		websocket.BinaryMessage,
-		srv.configMsg,
-	); err != nil {
-		if err := conn.Close(); err != nil {
-			srv.errorLog.Printf(
-				"couldn't close connection after failed conf msg transmission: %s",
-				err,
-			)
+	if err := srv.writeConfMessage(sock); err != nil {
+		srv.errorLog.Println("couldn't write config message: ", err)
+		if closeErr := sock.Close(); closeErr != nil {
+			srv.errorLog.Println("couldn't close socket: ", closeErr)
 		}
 		return
 	}
-
-	sock := newFasthttpConnectedSocket(conn)
 
 	if err := conn.SetReadDeadline(
 		time.Now().Add(srv.options.ReadTimeout),
@@ -59,7 +74,6 @@ func (srv *server) handleConnection(
 		return
 	}
 
-	// TODO: use correct user agent string and connection options
 	// Register connected client
 	connection := newConnection(
 		sock,
@@ -77,30 +91,32 @@ func (srv *server) handleConnection(
 
 	for {
 		// Get a message buffer
-		buf := srv.messageBufferPool.Get()
+		msg := srv.messagePool.Get()
 
 		if !connection.IsActive() {
-			buf.Close()
+			msg.Close()
 			connection.Close()
-			srv.impl.OnClientDisconnected(connection)
+			srv.impl.OnClientDisconnected(connection, nil)
 			break
 		}
 
 		// Await message
-		if err := sock.Read(buf); err != nil {
-			buf.Close()
+		if err := sock.Read(msg); err != nil {
+			msg.Close()
 
 			if err.IsAbnormalCloseErr() {
 				srv.warnLog.Printf("abnormal closure error: %s", err)
 			}
 
 			connection.Close()
-			srv.impl.OnClientDisconnected(connection)
+			srv.impl.OnClientDisconnected(connection, err)
 			break
 		}
 
 		// Parse & handle the message
-		srv.handleMessage(connection, buf)
-		buf.Close()
+		if err := srv.handleMessage(connection, msg); err != nil {
+			srv.errorLog.Print("message handler failed: ", err)
+		}
+		msg.Close()
 	}
 }

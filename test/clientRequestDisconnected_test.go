@@ -5,10 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
-
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
+	"github.com/stretchr/testify/require"
 )
 
 // TestClientRequestDisconnected tests sending requests on disconnected clients
@@ -22,7 +21,7 @@ func TestClientRequestDisconnected(t *testing.T) {
 				_ wwr.Connection,
 				_ wwr.Message,
 			) (wwr.Payload, error) {
-				return nil, nil
+				return wwr.Payload{}, nil
 			},
 		},
 		wwr.ServerOptions{},
@@ -39,10 +38,11 @@ func TestClientRequestDisconnected(t *testing.T) {
 	)
 
 	// Send request and await reply
-	_, err := client.connection.Request(
+	reply, err := client.connection.Request(
 		context.Background(),
 		nil,
-		wwr.NewPayload(wwr.EncodingBinary, []byte("testdata")),
+		wwr.Payload{Data: []byte("testdata")},
 	)
 	require.NoError(t, err)
+	reply.Close()
 }

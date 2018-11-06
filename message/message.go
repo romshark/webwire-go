@@ -3,7 +3,6 @@ package message
 import (
 	"time"
 
-	"github.com/qbeon/webwire-go/msgbuf"
 	pld "github.com/qbeon/webwire-go/payload"
 )
 
@@ -145,10 +144,6 @@ const (
 	// if sessions are disabled for the target server
 	MsgSessionsDisabled = byte(5)
 
-	// MsgReplyProtocolError is sent by the server in response to an invalid
-	// message violating the protocol
-	MsgReplyProtocolError = byte(6)
-
 	// MsgSessionCreated is sent by the server
 	// to notify the client about the session creation
 	MsgSessionCreated = byte(21)
@@ -225,24 +220,24 @@ type ServerConfiguration struct {
 	MessageBufferSize    uint32
 }
 
-// Message represents a WebWire protocol message
+// Message represents a non-thread-safe WebWire protocol message
 type Message struct {
-	// Buffer references the underlying buffer
-	Buffer *msgbuf.MessageBuffer
-
-	Type       byte
-	Identifier [8]byte
-	Name       []byte
-	Payload    pld.Payload
+	MsgBuffer     Buffer
+	MsgType       byte
+	MsgIdentifier [8]byte
+	MsgName       []byte
+	MsgPayload    pld.Payload
 
 	// ServerConfiguration is only initialized for MsgConf type messages
 	ServerConfiguration ServerConfiguration
+
+	onClose func()
 }
 
 // RequiresReply returns true if a message of this type requires a reply,
 // otherwise returns false.
 func (msg *Message) RequiresReply() bool {
-	switch msg.Type {
+	switch msg.MsgType {
 	case MsgCloseSession:
 		fallthrough
 	case MsgRestoreSession:
@@ -255,4 +250,61 @@ func (msg *Message) RequiresReply() bool {
 		return true
 	}
 	return false
+}
+
+// Identifier implements the Message interface
+func (msg *Message) Identifier() [8]byte {
+	if msg.MsgBuffer.IsEmpty() {
+		panic("read after close")
+	}
+	return msg.MsgIdentifier
+}
+
+// Name implements the Message interface
+func (msg *Message) Name() []byte {
+	if msg.MsgBuffer.IsEmpty() {
+		panic("read after close")
+	}
+	return msg.MsgName
+}
+
+// PayloadEncoding implements the Message interface
+func (msg *Message) PayloadEncoding() pld.Encoding {
+	if msg.MsgBuffer.IsEmpty() {
+		panic("read after close")
+	}
+	return msg.MsgPayload.Encoding
+}
+
+// Payload implements the Message interface
+func (msg *Message) Payload() []byte {
+	if msg.MsgBuffer.IsEmpty() {
+		panic("read after close")
+	}
+	return msg.MsgPayload.Data
+}
+
+// PayloadUtf8 implements the Message interface
+func (msg *Message) PayloadUtf8() ([]byte, error) {
+	if msg.MsgBuffer.IsEmpty() {
+		panic("read after close")
+	}
+	return msg.MsgPayload.Utf8()
+}
+
+// Close implements the Message interface
+func (msg *Message) Close() {
+	if msg.MsgBuffer.IsEmpty() {
+		return
+	}
+
+	msg.MsgBuffer.Close()
+	msg.MsgType = 0
+	msg.MsgIdentifier = [8]byte{0, 0, 0, 0, 0, 0, 0, 0}
+	msg.MsgName = nil
+	msg.MsgPayload = pld.Payload{}
+	msg.ServerConfiguration = ServerConfiguration{}
+
+	// Call closure callback
+	msg.onClose()
 }

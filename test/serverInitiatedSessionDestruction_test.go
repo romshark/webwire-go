@@ -5,11 +5,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-
 	tmdwg "github.com/qbeon/tmdwg-go"
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -22,14 +21,14 @@ func TestServerInitiatedSessionDestruction(t *testing.T) {
 		1*time.Second,
 	)
 	var createdSession *wwr.Session
-	expectedCredentials := wwr.NewPayload(
-		wwr.EncodingUtf8,
-		[]byte("secret_credentials"),
-	)
-	placeholderMessage := wwr.NewPayload(
-		wwr.EncodingBinary,
-		[]byte("nothinginteresting"),
-	)
+	expectedCredentials := wwr.Payload{
+		Encoding: wwr.EncodingUtf8,
+		Data:     []byte("secret_credentials"),
+	}
+	placeholderMessage := wwr.Payload{
+		Encoding: wwr.EncodingBinary,
+		Data:     []byte("nothinginteresting"),
+	}
 	currentStep := 1
 
 	// Initialize webwire server
@@ -45,8 +44,8 @@ func TestServerInitiatedSessionDestruction(t *testing.T) {
 				if currentStep == 2 {
 					session := conn.Session()
 					compareSessions(t, createdSession, session)
-					assert.Equal(t, session.Key, string(msg.Payload().Data()))
-					return nil, nil
+					assert.Equal(t, session.Key, string(msg.Payload()))
+					return wwr.Payload{}, nil
 				}
 
 				// on step 3 - close session and verify its destruction
@@ -64,7 +63,7 @@ func TestServerInitiatedSessionDestruction(t *testing.T) {
 						"Expected the session to be destroyed",
 					)
 
-					return nil, nil
+					return wwr.Payload{}, nil
 				}
 
 				// On step 4 - verify session destruction
@@ -73,21 +72,18 @@ func TestServerInitiatedSessionDestruction(t *testing.T) {
 						conn.Session(),
 						"Expected the session to be destroyed, got: %v",
 					)
-					return nil, nil
+					return wwr.Payload{}, nil
 				}
 
 				// On step 1 - authenticate and create a new session
 				err := conn.CreateSession(nil)
 				assert.NoError(t, err)
 				if err != nil {
-					return nil, err
+					return wwr.Payload{}, err
 				}
 
 				// Return the key of the newly created session
-				return wwr.NewPayload(
-					wwr.EncodingBinary,
-					[]byte(conn.SessionKey()),
-				), nil
+				return wwr.Payload{Data: []byte(conn.SessionKey())}, nil
 			},
 		},
 		wwr.ServerOptions{},
@@ -132,8 +128,9 @@ func TestServerInitiatedSessionDestruction(t *testing.T) {
 	createdSession = client.connection.Session()
 
 	// Verify reply
-	require.Equal(t, wwr.EncodingBinary, authReqReply.Encoding())
-	require.Equal(t, []byte(createdSession.Key), authReqReply.Data())
+	require.Equal(t, wwr.EncodingBinary, authReqReply.PayloadEncoding())
+	require.Equal(t, []byte(createdSession.Key), authReqReply.Payload())
+	authReqReply.Close()
 
 	// Wait for the client-side session creation callback to be executed
 	require.NoError(t,
@@ -157,10 +154,7 @@ func TestServerInitiatedSessionDestruction(t *testing.T) {
 	_, err = client.connection.Request(
 		context.Background(),
 		nil,
-		wwr.NewPayload(
-			wwr.EncodingBinary,
-			[]byte(client.connection.Session().Key),
-		),
+		wwr.Payload{Data: []byte(client.connection.Session().Key)},
 	)
 	require.NoError(t, err)
 

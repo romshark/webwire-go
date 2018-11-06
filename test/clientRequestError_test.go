@@ -5,10 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
-
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
+	"github.com/stretchr/testify/require"
 )
 
 // TestClientRequestError tests server-side request errors properly
@@ -29,7 +28,7 @@ func TestClientRequestError(t *testing.T) {
 				_ wwr.Message,
 			) (wwr.Payload, error) {
 				// Fail the request by returning an error
-				return nil, expectedReplyError
+				return wwr.Payload{}, expectedReplyError
 			},
 		},
 		wwr.ServerOptions{},
@@ -50,10 +49,10 @@ func TestClientRequestError(t *testing.T) {
 	reply, err := client.connection.Request(
 		context.Background(),
 		nil,
-		wwr.NewPayload(
-			wwr.EncodingUtf8,
-			[]byte("webwire_test_REQUEST_payload"),
-		),
+		wwr.Payload{
+			Encoding: wwr.EncodingUtf8,
+			Data:     []byte("webwire_test_REQUEST_payload"),
+		},
 	)
 
 	// Verify returned error

@@ -5,11 +5,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
-
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestClientRequestRegisterOnTimeout verifies the request register
@@ -31,7 +30,7 @@ func TestClientRequestRegisterOnTimeout(t *testing.T) {
 
 				// Wait until the request times out
 				time.Sleep(300 * time.Millisecond)
-				return nil, nil
+				return wwr.Payload{}, nil
 			},
 		},
 		wwr.ServerOptions{},
@@ -62,7 +61,7 @@ func TestClientRequestRegisterOnTimeout(t *testing.T) {
 	_, reqErr := client.connection.Request(
 		contextWithDeadline,
 		nil,
-		wwr.NewPayload(wwr.EncodingBinary, []byte("t")),
+		wwr.Payload{Data: []byte("t")},
 	)
 	require.Error(t, reqErr)
 	require.IsType(t, wwr.DeadlineExceededErr{}, reqErr)

@@ -6,10 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
-
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
+	"github.com/stretchr/testify/require"
 )
 
 // TestClientReqDisconnNoAutoconn tests disconnected error
@@ -31,7 +30,7 @@ func TestClientReqDisconnNoAutoconn(t *testing.T) {
 	_, err := client.connection.Request(
 		context.Background(),
 		nil,
-		wwr.NewPayload(wwr.EncodingBinary, []byte("testdata")),
+		wwr.Payload{Data: []byte("testdata")},
 	)
 	require.Error(t, err)
 	require.IsType(t, wwr.DisconnectedErr{}, err)

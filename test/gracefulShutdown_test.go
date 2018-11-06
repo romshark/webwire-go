@@ -5,11 +5,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-
 	tmdwg "github.com/qbeon/tmdwg-go"
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -60,10 +59,7 @@ func TestGracefulShutdown(t *testing.T) {
 					firstReqAndSigSent.Progress(1)
 				}
 				time.Sleep(handlerExecutionDuration)
-				return wwr.NewPayload(
-					wwr.EncodingBinary,
-					expectedReqReply,
-				), nil
+				return wwr.Payload{Data: expectedReqReply}, nil
 			},
 		},
 		wwr.ServerOptions{},
@@ -115,18 +111,19 @@ func TestGracefulShutdown(t *testing.T) {
 		assert.NoError(t, clientSig.connection.Signal(
 			context.Background(),
 			[]byte("1"),
-			wwr.NewPayload(wwr.EncodingBinary, []byte("test")),
+			wwr.Payload{Data: []byte("test")},
 		))
 
 		// (REQUEST)
 		rep, err := clientReq.connection.Request(
 			context.Background(),
 			[]byte("1"),
-			wwr.NewPayload(wwr.EncodingBinary, []byte("test")),
+			wwr.Payload{Data: []byte("test")},
 		)
 		assert.NoError(t, err)
-		assert.Equal(t, string(rep.Data()), string(expectedReqReply))
+		assert.Equal(t, string(rep.Payload()), string(expectedReqReply))
 		handlersFinished.Progress(1)
+		rep.Close()
 	}()
 
 	// Request server shutdown in another parallel goroutine
@@ -169,7 +166,7 @@ func TestGracefulShutdown(t *testing.T) {
 		_, lateReqErr := clientLateReq.connection.Request(
 			context.Background(),
 			nil,
-			wwr.NewPayload(wwr.EncodingBinary, []byte("test")),
+			wwr.Payload{Data: []byte("test")},
 		)
 		switch err := lateReqErr.(type) {
 		case wwr.ReqSrvShutdownErr:

@@ -78,7 +78,10 @@ MAINLOOP:
 				reply, err := clt.connection.Request(
 					context.Background(),
 					[]byte("msg"),
-					webwire.NewPayload(webwire.EncodingBinary, []byte(input)),
+					webwire.Payload{
+						Encoding: webwire.EncodingBinary,
+						Data:     []byte(input),
+					},
 				)
 				if err != nil {
 					log.Printf("WARNING: Couldn't send message: %s", err)

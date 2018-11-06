@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/url"
 	"os"
+	"runtime/pprof"
 	"runtime/trace"
 )
 
@@ -38,25 +39,69 @@ var argMaxReqInterval = flag.Uint(
 // Max benchmark duration
 var argBenchDur = flag.Uint("dur", 0, "benchmark duration in seconds")
 
-var argEnableTrace = flag.Bool("trace", false, "enable runtime trace")
+var argTracePath = flag.String("trace", "", "path to trace output file")
+var argMemProfPath = flag.String("memprof", "", "path to memory profile file")
+var argCPUProfPath = flag.String("cpuprof", "", "path to CPU profile file")
+
+func writeMemoryProfile() {
+	if *argMemProfPath == "" {
+		return
+	}
+
+	file, err := os.Create(*argMemProfPath)
+	if err != nil {
+		panic(err)
+	}
+	if err := pprof.WriteHeapProfile(file); err != nil {
+		log.Fatal(err)
+	}
+	if err := file.Close(); err != nil {
+		panic(err)
+	}
+}
+
+func startCPUProfile() func() {
+	if *argCPUProfPath == "" {
+		return func() {}
+	}
+	file, err := os.Create(*argCPUProfPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err := pprof.StartCPUProfile(file); err != nil {
+		log.Fatal(err)
+	}
+	return func() {
+		pprof.StopCPUProfile()
+		if err := file.Close(); err != nil {
+			panic(err)
+		}
+	}
+}
+
+func startTracer() func() {
+	// Start tracer if enabled
+	if *argTracePath == "" {
+		return func() {}
+	}
+	file, err := os.Create(*argTracePath)
+	if err != nil {
+		panic(err)
+	}
+
+	if err := trace.Start(file); err != nil {
+		panic(err)
+	}
+	return func() {
+		trace.Stop()
+		if err := file.Close(); err != nil {
+			panic(err)
+		}
+	}
+}
 
 func main() {
 	parseCliArgs()
-
-	// Start tracer if enabled
-	if *argEnableTrace {
-		f, err := os.Create("bench-trace.out")
-		if err != nil {
-			panic(err)
-		}
-		defer f.Close()
-
-		err = trace.Start(f)
-		if err != nil {
-			panic(err)
-		}
-		defer trace.Stop()
-	}
 
 	// Load options
 	optionsRaw, err := ioutil.ReadFile("options.json")
@@ -79,6 +124,12 @@ func main() {
 		},
 		options,
 	)
+
+	defer startTracer()()
+	defer startCPUProfile()()
+
 	bench.Start()
 	bench.PrintStats()
+
+	writeMemoryProfile()
 }

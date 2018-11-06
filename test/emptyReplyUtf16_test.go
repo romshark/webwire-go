@@ -5,10 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
-
 	wwr "github.com/qbeon/webwire-go"
 	webwireClient "github.com/qbeon/webwire-go/client"
+	"github.com/stretchr/testify/require"
 )
 
 // TestEmptyReplyUtf16 verifies empty UTF16 encoded reply acceptance
@@ -23,7 +22,10 @@ func TestEmptyReplyUtf16(t *testing.T) {
 				_ wwr.Message,
 			) (wwr.Payload, error) {
 				// Return empty reply
-				return wwr.NewPayload(wwr.EncodingUtf16, nil), nil
+				return wwr.Payload{
+					Encoding: wwr.EncodingUtf16,
+					Data:     nil,
+				}, nil
 			},
 		},
 		wwr.ServerOptions{},
@@ -44,11 +46,12 @@ func TestEmptyReplyUtf16(t *testing.T) {
 	reply, err := client.connection.Request(
 		context.Background(),
 		nil,
-		wwr.NewPayload(wwr.EncodingBinary, []byte("test")),
+		wwr.Payload{Data: []byte("test")},
 	)
 	require.NoError(t, err)
 
 	// Verify reply is empty
-	require.Equal(t, wwr.EncodingUtf16, reply.Encoding())
-	require.Len(t, reply.Data(), 0)
+	require.Equal(t, wwr.EncodingUtf16, reply.PayloadEncoding())
+	require.Len(t, reply.Payload(), 0)
+	reply.Close()
 }

@@ -44,10 +44,10 @@ func (clt *client) connect() error {
 		}()
 		for {
 			// Get a message buffer from the pool
-			buf := clt.messageBufferPool.Get()
+			msg := clt.messagePool.Get()
 
-			if err := clt.conn.Read(buf); err != nil {
-				buf.Close()
+			if err := clt.conn.Read(msg); err != nil {
+				msg.Close()
 				if err.IsAbnormalCloseErr() {
 					// Error while reading message
 					clt.errorLog.Print("Abnormal closure error:", err)
@@ -83,8 +83,8 @@ func (clt *client) connect() error {
 			}
 
 			// Try to handle the message
-			if err := clt.handleMessage(buf); err != nil {
-				clt.warningLog.Print("Failed handling message:", err)
+			if err := clt.handleMessage(msg); err != nil {
+				clt.errorLog.Print("message handler failed:", err)
 			}
 		}
 	}()

@@ -5,13 +5,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-
-	"github.com/stretchr/testify/require"
-
 	"github.com/qbeon/tmdwg-go"
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestClientRequestCancel tests canceling of fired requests
@@ -28,7 +26,7 @@ func TestClientRequestCancel(t *testing.T) {
 				msg wwr.Message,
 			) (wwr.Payload, error) {
 				time.Sleep(2 * time.Second)
-				return nil, nil
+				return wwr.Payload{}, nil
 			},
 		},
 		wwr.ServerOptions{},
@@ -53,7 +51,7 @@ func TestClientRequestCancel(t *testing.T) {
 		reply, err := client.connection.Request(
 			cancelableCtx,
 			[]byte("test"),
-			nil,
+			wwr.Payload{},
 		)
 		assert.Error(t, err, "Expected a canceled-error")
 		assert.Nil(t, reply)

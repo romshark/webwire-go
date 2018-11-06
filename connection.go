@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	msg "github.com/qbeon/webwire-go/message"
+	"github.com/qbeon/webwire-go/message"
 	"golang.org/x/sync/semaphore"
 )
 
@@ -144,12 +144,19 @@ func (con *connection) Info() ClientInfo {
 }
 
 // Signal implements the Connection interface
-func (con *connection) Signal(name []byte, payload Payload) error {
-	return con.sock.Write(msg.NewSignalMessage(
+func (con *connection) Signal(name []byte, payload Payload) (err error) {
+	writer, err := con.sock.GetWriter()
+	if err != nil {
+		return err
+	}
+
+	return message.WriteMsgSignal(
+		writer,
 		name,
-		payload.Encoding(),
-		payload.Data(),
-	))
+		payload.Encoding,
+		payload.Data,
+		true,
+	)
 }
 
 // CreateSession implements the Connection interface
@@ -213,7 +220,7 @@ func (con *connection) notifySessionCreated(newSession *Session) error {
 		}
 	}
 
-	encoded, err := json.Marshal(JSONEncodedSession{
+	encodedSessionInfo, err := json.Marshal(JSONEncodedSession{
 		newSession.Key,
 		newSession.Creation,
 		newSession.LastLookup,
@@ -224,24 +231,23 @@ func (con *connection) notifySessionCreated(newSession *Session) error {
 	}
 
 	// Notify client about the session creation
-	message := make([]byte, 1+len(encoded))
-	message[0] = msg.MsgSessionCreated
-
-	for i := 0; i < len(encoded); i++ {
-		message[1+i] = encoded[i]
+	writer, err := con.sock.GetWriter()
+	if err != nil {
+		return err
 	}
-	return con.sock.Write(message)
+	return message.WriteMsgSessionCreated(
+		writer,
+		encodedSessionInfo,
+	)
 }
 
+// notifySessionClosed notifies the client about the session destruction
 func (con *connection) notifySessionClosed() error {
-	// Notify client about the session destruction
-	if err := con.sock.Write([]byte{msg.MsgSessionClosed}); err != nil {
-		return fmt.Errorf(
-			"Couldn't notify client about the session destruction: %s",
-			err,
-		)
+	writer, err := con.sock.GetWriter()
+	if err != nil {
+		return err
 	}
-	return nil
+	return message.WriteMsgSessionClosed(writer)
 }
 
 // CloseSession implements the Connection interface

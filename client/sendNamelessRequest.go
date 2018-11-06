@@ -5,7 +5,7 @@ import (
 	"time"
 
 	webwire "github.com/qbeon/webwire-go"
-	msg "github.com/qbeon/webwire-go/message"
+	"github.com/qbeon/webwire-go/message"
 	pld "github.com/qbeon/webwire-go/payload"
 )
 
@@ -14,19 +14,22 @@ func (clt *client) sendNamelessRequest(
 	messageType byte,
 	payload pld.Payload,
 	timeout time.Duration,
-) (webwire.Payload, error) {
+) (webwire.Reply, error) {
 	request := clt.requestManager.Create(timeout)
 	reqIdentifier := request.Identifier()
 
-	msg := msg.NewNamelessRequestMessage(
+	writer, err := clt.conn.GetWriter()
+	if err != nil {
+		return nil, err
+	}
+
+	if err := message.WriteMsgNamelessRequest(
+		writer,
 		messageType,
 		reqIdentifier,
 		payload.Data,
-	)
-
-	// Send request
-	if err := clt.conn.Write(msg); err != nil {
-		return nil, webwire.NewReqTransErr(err)
+	); err != nil {
+		return nil, err
 	}
 
 	clt.heartbeat.reset()

@@ -38,7 +38,7 @@ func (srv *EchoServer) OnClientConnected(client wwr.Connection) {}
 
 // OnClientDisconnected implements the webwire.ServerImplementation interface
 // Does nothing, not needed in this example
-func (srv *EchoServer) OnClientDisconnected(client wwr.Connection) {}
+func (srv *EchoServer) OnClientDisconnected(_ wwr.Connection, _ error) {}
 
 // BeforeUpgrade implements the webwire.ServerImplementation interface
 func (srv *EchoServer) BeforeUpgrade(
@@ -57,7 +57,10 @@ func (srv *EchoServer) OnRequest(
 	log.Printf("Replied to client: %s", client.Info().RemoteAddr)
 
 	// Reply to the request using the same data and encoding
-	return message.Payload(), nil
+	return wwr.Payload{
+		Encoding: message.PayloadEncoding(),
+		Data:     message.Payload(),
+	}, nil
 }
 
 var serverAddr = flag.String("addr", ":8081", "server address")

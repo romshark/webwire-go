@@ -51,18 +51,18 @@ func (clt *EchoClient) OnSessionClosed() {}
 func (clt *EchoClient) OnSessionCreated(_ *wwr.Session) {}
 
 // OnSignal implements the wwrclt.Implementation interface
-func (clt *EchoClient) OnSignal(_ []byte, _ wwr.Payload) {}
+func (clt *EchoClient) OnSignal(_ wwr.Message) {}
 
 // Request sends a message to the server and returns the reply.
 // panics if the request fails for whatever reason
 func (clt *EchoClient) Request(message string) []byte {
 	// Define a payload to be sent to the server, use default binary encoding
-	payload := wwr.NewPayload(wwr.EncodingBinary, []byte(message))
+	payload := wwr.Payload{Data: []byte(message)}
 
 	log.Printf(
 		"Sent request:   '%s' (%d)",
-		string(payload.Data()),
-		len(payload.Data()),
+		string(payload.Data),
+		len(payload.Data),
 	)
 
 	// Send request and await reply
@@ -72,7 +72,7 @@ func (clt *EchoClient) Request(message string) []byte {
 	}
 
 	// Copy the reply payload
-	pld := reply.Data()
+	pld := reply.Payload()
 	data := make([]byte, len(pld))
 	copy(data, pld)
 

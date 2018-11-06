@@ -113,14 +113,15 @@ Clients can initiate multiple simultaneous requests and receive replies asynchro
 // Send a request to the server,
 // this will block the goroutine until either a reply is received
 // or the default timeout triggers (if there is one)
-reply, err := client.Request(nil, "", wwr.NewPayload(
+reply, err := client.Request(nil, nil, wwr.NewPayload(
   wwr.EncodingBinary,
   []byte("sudo rm -rf /"),
 ))
 if err != nil {
   // Oh oh, request failed for some reason!
 }
-reply // Here we go!
+defer reply.Close()
+reply.PayloadUtf8() // Here we go!
  ```
 
 Requests will respect cancelable contexts and provided deadlines
@@ -133,7 +134,7 @@ defer cancelTimed()
 
 // Send a cancelable request to the server with a 1 second deadline
 // will block the goroutine for 1 second at max
-reply, err := client.Request(timedCtx, "", wwr.Payload(
+reply, err := client.Request(timedCtx, nil, wwr.Payload(
   wwr.EncodingUtf8,
   []byte("hurry up!"),
 ))
@@ -149,6 +150,7 @@ switch err.(type) {
     // within the specified default request timeout duration
   case nil:
     // Replied successfully
+    defer reply.Close()
 }
 
 // ... or check for a timeout error the easier way:

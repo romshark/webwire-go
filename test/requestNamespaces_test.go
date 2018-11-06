@@ -5,12 +5,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-
-	"github.com/stretchr/testify/require"
-
 	webwire "github.com/qbeon/webwire-go"
 	webwireClient "github.com/qbeon/webwire-go/client"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestRequestNamespaces tests correct handling of namespaced requests
@@ -41,7 +39,7 @@ func TestRequestNamespaces(t *testing.T) {
 				case 3:
 					assert.Equal(t, longestPossibleName, msgName)
 				}
-				return nil, nil
+				return webwire.Payload{}, nil
 			},
 		},
 		webwire.ServerOptions{},
@@ -65,7 +63,7 @@ func TestRequestNamespaces(t *testing.T) {
 	_, err := client.connection.Request(
 		context.Background(),
 		nil,
-		webwire.NewPayload(webwire.EncodingBinary, []byte("dummy")),
+		webwire.Payload{Data: []byte("dummy")},
 	)
 	require.NoError(t, err)
 
@@ -77,7 +75,7 @@ func TestRequestNamespaces(t *testing.T) {
 	_, err = client.connection.Request(
 		context.Background(),
 		shortestPossibleName,
-		webwire.NewPayload(webwire.EncodingBinary, []byte("dummy")),
+		webwire.Payload{Data: []byte("dummy")},
 	)
 	require.NoError(t, err)
 
@@ -89,7 +87,7 @@ func TestRequestNamespaces(t *testing.T) {
 	_, err = client.connection.Request(
 		context.Background(),
 		longestPossibleName,
-		webwire.NewPayload(webwire.EncodingBinary, []byte("dummy")),
+		webwire.Payload{Data: []byte("dummy")},
 	)
 	require.NoError(t, err)
 }

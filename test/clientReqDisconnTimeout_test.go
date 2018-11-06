@@ -6,10 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
-
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
+	"github.com/stretchr/testify/require"
 )
 
 // TestClientReqDisconnTimeout tests request timeout
@@ -26,12 +25,13 @@ func TestClientReqDisconnTimeout(t *testing.T) {
 	)
 
 	// Send request and await reply
-	_, err := client.connection.Request(
+	reply, err := client.connection.Request(
 		context.Background(),
 		nil,
-		wwr.NewPayload(wwr.EncodingBinary, []byte("testdata")),
+		wwr.Payload{Data: []byte("testdata")},
 	)
 	require.Error(t, err)
+	require.Nil(t, reply)
 	require.IsType(t, wwr.TimeoutErr{}, err)
 	require.True(t, wwr.IsTimeoutErr(err))
 	require.False(t, wwr.IsCanceledErr(err))

@@ -6,7 +6,7 @@ import (
 	"time"
 
 	webwire "github.com/qbeon/webwire-go"
-	msg "github.com/qbeon/webwire-go/message"
+	"github.com/qbeon/webwire-go/message"
 )
 
 func (clt *client) sendRequest(
@@ -15,9 +15,9 @@ func (clt *client) sendRequest(
 	name []byte,
 	payload webwire.Payload,
 	timeout time.Duration,
-) (webwire.Payload, error) {
+) (webwire.Reply, error) {
 	// Require either a name or a payload or both
-	if len(name) < 1 && (payload == nil || len(payload.Data()) < 1) {
+	if len(name) < 1 && len(payload.Data) < 1 {
 		return nil, webwire.NewProtocolErr(
 			fmt.Errorf("Invalid request, request message requires " +
 				"either a name, a payload or both but is missing both",
@@ -25,35 +25,25 @@ func (clt *client) sendRequest(
 		)
 	}
 
-	payloadEncoding := webwire.EncodingBinary
-	var payloadData []byte
-	if payload != nil {
-		payloadEncoding = payload.Encoding()
-		payloadData = payload.Data()
+	// Register a new request
+	request := clt.requestManager.Create(timeout)
+	reqIdentifier := request.Identifier()
+
+	writer, err := clt.conn.GetWriter()
+	if err != nil {
+		return nil, err
 	}
 
 	// Compose a message and register it
-	request := clt.requestManager.Create(timeout)
-	reqIdentifier := request.Identifier()
-	msg := msg.NewRequestMessage(
+	if err := message.WriteMsgRequest(
+		writer,
 		reqIdentifier,
 		name,
-		payloadEncoding,
-		payloadData,
-	)
-
-	// Return an error if the request was already prematurely canceled
-	// or already exceeded the user-defined deadline for its completion
-	select {
-	case <-ctx.Done():
-		err := webwire.TranslateContextError(ctx.Err())
+		payload.Encoding,
+		payload.Data,
+		true,
+	); err != nil {
 		clt.requestManager.Fail(reqIdentifier, err)
-		return nil, err
-	default:
-	}
-
-	// Send request
-	if err := clt.conn.Write(msg); err != nil {
 		return nil, webwire.NewReqTransErr(err)
 	}
 

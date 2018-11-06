@@ -36,10 +36,7 @@ func TestClientSignalDisconnectedErr(t *testing.T) {
 	err := client.connection.Signal(
 		context.Background(),
 		nil,
-		wwr.NewPayload(
-			wwr.EncodingBinary,
-			[]byte("test"),
-		),
+		wwr.Payload{Data: []byte("test")},
 	)
 	require.Error(t, err)
 	require.IsType(t, wwr.DisconnectedErr{}, err)

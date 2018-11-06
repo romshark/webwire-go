@@ -26,7 +26,11 @@ func (srv *BenchmarkServer) OnSignal(
 func (srv *BenchmarkServer) OnClientConnected(conn wwr.Connection) {}
 
 // OnClientDisconnected implements the webwire.ServerImplementation interface
-func (srv *BenchmarkServer) OnClientDisconnected(conn wwr.Connection) {}
+func (srv *BenchmarkServer) OnClientDisconnected(
+	conn wwr.Connection,
+	reason error,
+) {
+}
 
 // BeforeUpgrade implements the webwire.ServerImplementation interface
 func (srv *BenchmarkServer) BeforeUpgrade(
@@ -44,9 +48,9 @@ func (srv *BenchmarkServer) OnRequest(
 	_ wwr.Connection,
 	msg wwr.Message,
 ) (response wwr.Payload, err error) {
-	payloadData := msg.Payload().Data()
-	data := make([]byte, len(payloadData))
-	copy(data, payloadData)
 	// Reply to the request using the same data and encoding
-	return wwr.NewPayload(wwr.EncodingBinary, data), nil
+	return wwr.Payload{
+		Encoding: msg.PayloadEncoding(),
+		Data:     msg.Payload(),
+	}, nil
 }

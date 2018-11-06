@@ -5,13 +5,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-
-	"github.com/stretchr/testify/require"
-
 	tmdwg "github.com/qbeon/tmdwg-go"
 	webwire "github.com/qbeon/webwire-go"
 	webwireClient "github.com/qbeon/webwire-go/client"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestSignalNamespaces tests correct handling of namespaced signals
@@ -71,10 +69,7 @@ func TestSignalNamespaces(t *testing.T) {
 	require.NoError(t, client.connection.Signal(
 		context.Background(),
 		nil, // No name
-		webwire.NewPayload(
-			webwire.EncodingBinary,
-			[]byte("dummy"),
-		),
+		webwire.Payload{Data: []byte("dummy")},
 	))
 	require.NoError(t,
 		unnamedSignalArrived.Wait(),
@@ -90,7 +85,7 @@ func TestSignalNamespaces(t *testing.T) {
 	require.NoError(t, client.connection.Signal(
 		context.Background(),
 		shortestPossibleName,
-		webwire.NewPayload(webwire.EncodingBinary, []byte("dummy")),
+		webwire.Payload{Data: []byte("dummy")},
 	))
 	require.NoError(t,
 		shortestNameSignalArrived.Wait(),
@@ -106,7 +101,7 @@ func TestSignalNamespaces(t *testing.T) {
 	require.NoError(t, client.connection.Signal(
 		context.Background(),
 		longestPossibleName,
-		webwire.NewPayload(webwire.EncodingBinary, []byte("dummy")),
+		webwire.Payload{Data: []byte("dummy")},
 	))
 	require.NoError(t,
 		longestNameSignalArrived.Wait(),

@@ -25,7 +25,7 @@ func setupBenchmarkServer(
 		implementation.onClientConnected = func(_ wwr.Connection) {}
 	}
 	if implementation.onClientDisconnected == nil {
-		implementation.onClientDisconnected = func(_ wwr.Connection) {}
+		implementation.onClientDisconnected = func(_ wwr.Connection, _ error) {}
 	}
 	if implementation.onSignal == nil {
 		implementation.onSignal = func(
@@ -41,7 +41,7 @@ func setupBenchmarkServer(
 			_ wwr.Connection,
 			_ wwr.Message,
 		) (response wwr.Payload, err error) {
-			return nil, nil
+			return wwr.Payload{}, nil
 		}
 	}
 

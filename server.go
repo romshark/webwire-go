@@ -11,7 +11,7 @@ import (
 
 	"github.com/fasthttp/websocket"
 	"github.com/pkg/errors"
-	"github.com/qbeon/webwire-go/msgbuf"
+	"github.com/qbeon/webwire-go/message"
 	"github.com/valyala/fasthttp"
 )
 
@@ -27,20 +27,20 @@ type server struct {
 	sessionInfoParser SessionInfoParser
 
 	// State
-	addr              url.URL
-	options           ServerOptions
-	configMsg         []byte
-	certFilePath      string
-	keyFilePath       string
-	shutdown          bool
-	shutdownRdy       chan bool
-	currentOps        uint32
-	opsLock           *sync.Mutex
-	connectionsLock   *sync.Mutex
-	connections       []*connection
-	sessionsEnabled   bool
-	sessionRegistry   *sessionRegistry
-	messageBufferPool msgbuf.Pool
+	addr            url.URL
+	options         ServerOptions
+	configMsg       []byte
+	certFilePath    string
+	keyFilePath     string
+	shutdown        bool
+	shutdownRdy     chan bool
+	currentOps      uint32
+	opsLock         *sync.Mutex
+	connectionsLock *sync.Mutex
+	connections     []*connection
+	sessionsEnabled bool
+	sessionRegistry *sessionRegistry
+	messagePool     message.Pool
 
 	// Internals
 	upgrader websocket.FastHTTPUpgrader

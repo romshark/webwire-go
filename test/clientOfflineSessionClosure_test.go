@@ -5,11 +5,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestClientOfflineSessionClosure tests offline session closure
@@ -34,13 +33,13 @@ func TestClientOfflineSessionClosure(t *testing.T) {
 						conn.HasSession(),
 						"Expected client to be anonymous",
 					)
-					return nil, nil
+					return wwr.Payload{}, nil
 				}
 
 				// Try to create a new session
 				err := conn.CreateSession(nil)
 				assert.NoError(t, err)
-				return nil, err
+				return wwr.Payload{}, err
 			},
 		},
 		wwr.ServerOptions{
@@ -88,12 +87,16 @@ func TestClientOfflineSessionClosure(t *testing.T) {
 	\*****************************************************************/
 
 	// Create a new session
-	_, err := client.connection.Request(
+	reply, err := client.connection.Request(
 		context.Background(),
 		[]byte("login"),
-		wwr.NewPayload(wwr.EncodingBinary, []byte("auth")),
+		wwr.Payload{
+			Encoding: wwr.EncodingBinary,
+			Data:     []byte("auth"),
+		},
 	)
 	require.NoError(t, err)
+	reply.Close()
 
 	createdSession = client.connection.Session()
 
@@ -127,10 +130,14 @@ func TestClientOfflineSessionClosure(t *testing.T) {
 	require.NoError(t, client.connection.Connect())
 
 	// Ensure the client is anonymous
-	_, err = client.connection.Request(
+	reply, err = client.connection.Request(
 		context.Background(),
 		[]byte("verify-restored"),
-		wwr.NewPayload(wwr.EncodingBinary, []byte("is_restored?")),
+		wwr.Payload{
+			Encoding: wwr.EncodingBinary,
+			Data:     []byte("is_restored?"),
+		},
 	)
 	require.NoError(t, err)
+	reply.Close()
 }

@@ -6,12 +6,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
-
-	"github.com/stretchr/testify/assert"
-
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestConnectionClose tests closing a client connection on the server-side
@@ -30,23 +28,23 @@ func TestConnectionClose(t *testing.T) {
 					fallthrough
 				case "closeB":
 					conn.Close()
-					return nil, nil
+					return wwr.Payload{}, nil
 				case "login":
 					// Try to create a new session
 					err := conn.CreateSession(nil)
 					assert.NoError(t, err)
 					if err != nil {
-						return nil, err
+						return wwr.Payload{}, err
 					}
 
 					// Return the key of the newly created session
 					// (use default binary encoding)
-					return wwr.NewPayload(
-						wwr.EncodingBinary,
-						[]byte(conn.SessionKey()),
-					), nil
+					return wwr.Payload{Data: []byte(conn.SessionKey())}, nil
 				}
-				return nil, fmt.Errorf("Invalid request %s", msg.Name())
+				return wwr.Payload{}, fmt.Errorf(
+					"Invalid request %s",
+					msg.Name(),
+				)
 			},
 		},
 		wwr.ServerOptions{},
@@ -72,13 +70,13 @@ func TestConnectionClose(t *testing.T) {
 	authReqReply, err := clientA.connection.Request(
 		context.Background(),
 		[]byte("login"),
-		wwr.NewPayload(wwr.EncodingBinary, []byte("bla")),
+		wwr.Payload{Data: []byte("bla")},
 	)
 	require.NoError(t, err)
 
 	session := clientA.connection.Session()
 	require.Equal(t,
-		session.Key, string(authReqReply.Data()),
+		session.Key, string(authReqReply.Payload()),
 		"Unexpected session key",
 	)
 
@@ -115,7 +113,7 @@ func TestConnectionClose(t *testing.T) {
 
 	require.NoError(t, clientB.connection.RestoreSession(
 		context.Background(),
-		authReqReply.Data(),
+		authReqReply.Payload(),
 	))
 
 	// Check status, expect 1 session, 2 connections
@@ -138,7 +136,7 @@ func TestConnectionClose(t *testing.T) {
 	_, err = clientA.connection.Request(
 		context.Background(),
 		[]byte("closeA"),
-		wwr.NewPayload(wwr.EncodingBinary, []byte("a")),
+		wwr.Payload{Data: []byte("a")},
 	)
 	require.NoError(t, err)
 
@@ -150,7 +148,7 @@ func TestConnectionClose(t *testing.T) {
 	_, err = clientA.connection.Request(
 		context.Background(),
 		[]byte("testA"),
-		wwr.NewPayload(wwr.EncodingBinary, []byte("testA")),
+		wwr.Payload{Data: []byte("testA")},
 	)
 	require.IsType(t, wwr.DisconnectedErr{}, err)
 
@@ -174,7 +172,7 @@ func TestConnectionClose(t *testing.T) {
 	_, err = clientB.connection.Request(
 		context.Background(),
 		[]byte("closeB"),
-		wwr.NewPayload(wwr.EncodingBinary, []byte("b")),
+		wwr.Payload{Data: []byte("b")},
 	)
 	require.NoError(t, err)
 
@@ -186,7 +184,7 @@ func TestConnectionClose(t *testing.T) {
 	_, err = clientB.connection.Request(
 		context.Background(),
 		[]byte("testB"),
-		wwr.NewPayload(wwr.EncodingBinary, []byte("testB")),
+		wwr.Payload{Data: []byte("testB")},
 	)
 	require.IsType(t, wwr.DisconnectedErr{}, err)
 

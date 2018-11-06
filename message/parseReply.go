@@ -1,30 +1,32 @@
 package message
 
 import (
-	"fmt"
+	"errors"
 
 	pld "github.com/qbeon/webwire-go/payload"
 )
 
 // parseReply parses MsgReplyBinary and MsgReplyUtf8 messages
-func (msg *Message) parseReply(message []byte) error {
-	if len(message) < MsgMinLenReply {
-		return fmt.Errorf("Invalid reply message, too short")
+func (msg *Message) parseReply() error {
+	if msg.MsgBuffer.len < MsgMinLenReply {
+		return errors.New("invalid reply message, too short")
 	}
+
+	dat := msg.MsgBuffer.Data()
 
 	// Read identifier
 	var id [8]byte
-	copy(id[:], message[1:9])
-	msg.Identifier = id
+	copy(id[:], dat[1:9])
+	msg.MsgIdentifier = id
 
 	// Skip payload if there's none
-	if len(message) == MsgMinLenReply {
+	if msg.MsgBuffer.len == MsgMinLenReply {
 		return nil
 	}
 
 	// Read payload
-	msg.Payload = pld.Payload{
-		Data: message[9:],
+	msg.MsgPayload = pld.Payload{
+		Data: dat[9:],
 	}
 	return nil
 }

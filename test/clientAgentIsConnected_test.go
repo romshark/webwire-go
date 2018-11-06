@@ -4,12 +4,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
-
 	tmdwg "github.com/qbeon/tmdwg-go"
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestClientConnIsConnected tests the IsActive method of a connection
@@ -45,7 +44,7 @@ func TestClientConnIsConnected(t *testing.T) {
 					testerGoroutineFinished.Progress(1)
 				}()
 			},
-			onClientDisconnected: func(_ wwr.Connection) {
+			onClientDisconnected: func(_ wwr.Connection, _ error) {
 				assert.False(t,
 					clientConn.IsActive(),
 					"Expected connection to be inactive",
@@ -54,10 +53,10 @@ func TestClientConnIsConnected(t *testing.T) {
 				// Try to send a signal to a inactive client and expect an error
 				sigErr := clientConn.Signal(
 					nil,
-					wwr.NewPayload(
-						wwr.EncodingBinary,
-						[]byte("testdata"),
-					),
+					wwr.Payload{
+						Encoding: wwr.EncodingBinary,
+						Data:     []byte("testdata"),
+					},
 				)
 				assert.IsType(t, wwr.DisconnectedErr{}, sigErr)
 

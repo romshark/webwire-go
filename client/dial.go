@@ -1,7 +1,6 @@
 package client
 
 import (
-	"errors"
 	"fmt"
 	"sync/atomic"
 	"time"
@@ -45,52 +44,47 @@ func (clt *client) dial() (message.ServerConfiguration, error) {
 		}
 
 		// Get a message buffer from the pool
-		buf := clt.messageBufferPool.Get()
+		msg := clt.messagePool.Get()
 
 		// Abort if timed out
 		if atomic.LoadUint32(&abortAwait) > 0 {
 			clt.conn.Close()
-			buf.Close()
+			msg.Close()
 			return
 		}
 
 		// Await the server configuration handshake response
-		clt.conn.SetReadDeadline(deadline)
-		if err := clt.conn.Read(buf); err != nil {
+		if err := clt.conn.SetReadDeadline(deadline); err != nil {
+			result <- dialResult{err: fmt.Errorf(
+				"couldn't set read deadline: %s",
+				err,
+			)}
+			msg.Close()
+			clt.conn.Close()
+			return
+		}
+
+		if err := clt.conn.Read(msg); err != nil {
 			result <- dialResult{err: fmt.Errorf("read err: %s", err.Error())}
-			buf.Close()
+			clt.conn.Close()
+			msg.Close()
 			return
 		}
 
 		// Abort if timed out
 		if atomic.LoadUint32(&abortAwait) > 0 {
 			clt.conn.Close()
-			buf.Close()
+			msg.Close()
 			return
 		}
 
-		msg := &message.Message{}
-
-		// Parse the first incoming message
-		parsedMessageType, parseErr := msg.Parse(buf.Data())
-		if !parsedMessageType {
-			result <- dialResult{err: errors.New(
-				"unexpected message (unknown type)",
-			)}
-			buf.Close()
-			return
-		}
-		if parseErr != nil {
-			result <- dialResult{err: errors.New("message parser failed")}
-			buf.Close()
-			return
-		}
-		if msg.Type != message.MsgConf {
+		if msg.MsgType != message.MsgConf {
 			result <- dialResult{err: fmt.Errorf(
 				"unexpected message type: %d (expected server config message)",
-				msg.Type,
+				msg.MsgType,
 			)}
-			buf.Close()
+			clt.conn.Close()
+			msg.Close()
 			return
 		}
 
@@ -100,16 +94,18 @@ func (clt *client) dial() (message.ServerConfiguration, error) {
 			msg.ServerConfiguration.MinorProtocolVersion,
 		); err != nil {
 			result <- dialResult{err: err}
-			buf.Close()
+			msg.Close()
 			return
 		}
 
 		// Finish successful dial
-		clt.conn.SetReadDeadline(time.Time{})
+		if err := clt.conn.SetReadDeadline(time.Time{}); err != nil {
+			clt.errorLog.Print("couldn't set read deadline after dial: ", err)
+		}
 		result <- dialResult{
 			serverConfiguration: msg.ServerConfiguration,
 		}
-		buf.Close()
+		msg.Close()
 	}()
 
 	select {

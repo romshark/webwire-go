@@ -5,11 +5,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
-
 	webwire "github.com/qbeon/webwire-go"
 	webwireClient "github.com/qbeon/webwire-go/client"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestRequestNameNoPayload tests named requests without a payload
@@ -28,9 +27,9 @@ func TestRequestNameNoPayload(t *testing.T) {
 				assert.Equal(t, []byte("n"), msgName)
 
 				// Expect no payload to arrive
-				assert.Len(t, msg.Payload().Data(), 0)
+				assert.Len(t, msg.Payload(), 0)
 
-				return nil, nil
+				return webwire.Payload{}, nil
 			},
 		},
 		webwire.ServerOptions{},
@@ -49,7 +48,10 @@ func TestRequestNameNoPayload(t *testing.T) {
 	_, err := client.connection.Request(
 		context.Background(),
 		[]byte("n"),
-		webwire.NewPayload(webwire.EncodingBinary, nil),
+		webwire.Payload{
+			Encoding: webwire.EncodingBinary,
+			Data:     nil,
+		},
 	)
 	require.NoError(t, err)
 
@@ -57,7 +59,10 @@ func TestRequestNameNoPayload(t *testing.T) {
 	_, err = client.connection.Request(
 		context.Background(),
 		[]byte("n"),
-		webwire.NewPayload(webwire.EncodingUtf16, nil),
+		webwire.Payload{
+			Encoding: webwire.EncodingUtf16,
+			Data:     nil,
+		},
 	)
 	require.NoError(t, err)
 }

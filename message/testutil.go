@@ -14,14 +14,37 @@ func init() {
 	rand.Seed(time.Now().UnixNano())
 }
 
-func tryParse(t *testing.T, encoded []byte) (Message, error) {
-	var parsedMsg Message
-	typeDetermined, err := parsedMsg.Parse(encoded)
-	require.True(t, typeDetermined, "Couldn't determine message type")
-	return parsedMsg, err
+// testWriter is an io.WriteCloser implementation for testing purposes
+type testWriter struct {
+	closed bool
+	buf    []byte
 }
 
-func tryParseNoErr(t *testing.T, encoded []byte) Message {
+// Write implements the io.WriteCloser interface
+func (tw *testWriter) Write(p []byte) (int, error) {
+	if tw.buf == nil {
+		tw.buf = make([]byte, len(p))
+		copy(tw.buf, p)
+	} else {
+		tw.buf = append(tw.buf, p...)
+	}
+	return len(p), nil
+}
+
+// Close implements the io.WriteCloser interface
+func (tw *testWriter) Close() error {
+	tw.closed = true
+	return nil
+}
+
+func tryParse(t *testing.T, encoded []byte) (*Message, error) {
+	msg := NewMessage(uint32(len(encoded)))
+	typeDetermined, err := msg.ReadBytes(encoded)
+	require.True(t, typeDetermined, "Couldn't determine message type")
+	return msg, err
+}
+
+func tryParseNoErr(t *testing.T, encoded []byte) *Message {
 	msg, err := tryParse(t, encoded)
 	require.NoError(t, err)
 	return msg

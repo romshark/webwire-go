@@ -5,13 +5,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
-
-	"github.com/stretchr/testify/assert"
-
 	tmdwg "github.com/qbeon/tmdwg-go"
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type testAuthenticationSessInfo struct {
@@ -75,14 +73,14 @@ func TestAuthentication(t *testing.T) {
 		UserIdent:  "clientidentifiergoeshere",
 		SomeNumber: 12345,
 	}
-	expectedCredentials := wwr.NewPayload(
-		wwr.EncodingUtf8,
-		[]byte("secret_credentials"),
-	)
-	expectedConfirmation := wwr.NewPayload(
-		wwr.EncodingUtf8,
-		[]byte("session_is_correct"),
-	)
+	expectedCredentials := wwr.Payload{
+		Encoding: wwr.EncodingUtf8,
+		Data:     []byte("secret_credentials"),
+	}
+	expectedConfirmation := wwr.Payload{
+		Encoding: wwr.EncodingUtf8,
+		Data:     []byte("session_is_correct"),
+	}
 	currentStep := 1
 
 	// Initialize webwire server
@@ -116,7 +114,7 @@ func TestAuthentication(t *testing.T) {
 				err := conn.CreateSession(sessionInfo)
 				assert.NoError(t, err)
 				if err != nil {
-					return nil, err
+					return wwr.Payload{}, err
 				}
 
 				// Authentication step is passed
@@ -124,10 +122,7 @@ func TestAuthentication(t *testing.T) {
 
 				// Return the key of the newly created session
 				// (use default binary encoding)
-				return wwr.NewPayload(
-					wwr.EncodingBinary,
-					[]byte(conn.SessionKey()),
-				), nil
+				return wwr.Payload{Data: []byte(conn.SessionKey())}, nil
 			},
 		},
 		wwr.ServerOptions{},
@@ -172,13 +167,9 @@ func TestAuthentication(t *testing.T) {
 	createdSession = client.connection.Session()
 
 	// Verify reply
-	comparePayload(t,
-		wwr.NewPayload(
-			wwr.EncodingBinary,
-			[]byte(createdSession.Key),
-		),
-		authReqReply,
-	)
+	require.Equal(t, wwr.EncodingBinary, authReqReply.PayloadEncoding())
+	require.Equal(t, []byte(createdSession.Key), authReqReply.Payload())
+	authReqReply.Close()
 
 	// Send a test-request to verify the session on the server
 	// and await response
@@ -190,7 +181,16 @@ func TestAuthentication(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify reply
-	comparePayload(t, expectedConfirmation, testReqReply)
+	require.Equal(
+		t,
+		expectedConfirmation.Encoding,
+		testReqReply.PayloadEncoding(),
+	)
+	require.Equal(
+		t,
+		expectedConfirmation.Data,
+		testReqReply.Payload(),
+	)
 
 	// Send a test-signal to verify the session on the server
 	require.NoError(t, client.connection.Signal(

@@ -2,57 +2,55 @@ package webwire
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/qbeon/webwire-go/message"
-	"github.com/qbeon/webwire-go/msgbuf"
 )
 
 // handleMessage parses and handles incoming messages
-func (srv *server) handleMessage(con *connection, buf *msgbuf.MessageBuffer) {
-	defer buf.Close()
-
-	msg := &message.Message{}
-
-	// Parse message
-	msgTypeParsed, parserErr := msg.Parse(buf.Data())
-	if !msgTypeParsed {
-		// Couldn't determine message type, drop message
-		return
-	} else if parserErr != nil {
-		// Couldn't parse message, protocol error
-		srv.warnLog.Println("Parser error:", parserErr)
-
-		// Respond with an error but don't break the connection
-		// because protocol errors are not critical errors
-		srv.failMsg(con, msg, ProtocolErr{})
-		return
-	}
-
+func (srv *server) handleMessage(
+	con *connection,
+	msg *message.Message,
+) (err error) {
 	// Reset the read deadline on valid message
 	if err := con.sock.SetReadDeadline(
 		time.Now().Add(srv.options.ReadTimeout),
 	); err != nil {
 		srv.errorLog.Printf("couldn't set read deadline: %s", err)
-		return
+		return nil
 	}
 
 	// Don't register a task handler for heartbeat messages
 	//
 	// TODO: probably this check should include any message type that's not
 	// handled by handleMessage to avoid registering a handler
-	if msg.Type == message.MsgHeartbeat {
-		return
+	if msg.MsgType == message.MsgHeartbeat {
+		return nil
 	}
 
 	// Deregister the handler only if a handler was registered
+	deregister := false
 	if srv.registerHandler(con, msg) {
-		// This defer is necessary to ensure the handler is deregistered even in
-		// such situations when one of the handlers panics
-		defer srv.deregisterHandler(con)
+		deregister = true
 	}
+	// Recover user-space panics to avoid leaking memory through unreleased
+	// message buffer
+	defer func() {
+		if recvErr := recover(); recvErr != nil {
+			r, ok := recvErr.(error)
+			if !ok {
+				err = fmt.Errorf("unexpected panic: %v", recvErr)
+			} else {
+				err = r
+			}
+		}
+		if deregister {
+			srv.deregisterHandler(con)
+		}
+	}()
 
-	switch msg.Type {
+	switch msg.MsgType {
 	case message.MsgSignalBinary:
 		fallthrough
 	case message.MsgSignalUtf8:
@@ -72,6 +70,8 @@ func (srv *server) handleMessage(con *connection, buf *msgbuf.MessageBuffer) {
 	case message.MsgCloseSession:
 		srv.handleSessionClosure(con, msg)
 	}
+
+	return nil
 }
 
 // registerHandler increments the number of currently executed handlers
@@ -80,7 +80,7 @@ func (srv *server) handleMessage(con *connection, buf *msgbuf.MessageBuffer) {
 // and frees only when a handler slot is freed for this handler to be executed
 func (srv *server) registerHandler(
 	con *connection,
-	message *message.Message,
+	msg *message.Message,
 ) bool {
 	failMsg := false
 
@@ -103,9 +103,9 @@ func (srv *server) registerHandler(
 	}
 	srv.opsLock.Unlock()
 
-	if failMsg && message.RequiresReply() {
+	if failMsg && msg.RequiresReply() {
 		// Don't process the message, fail it
-		srv.failMsgShutdown(con, message)
+		srv.failMsgShutdown(con, msg)
 		return false
 	}
 
@@ -135,18 +135,29 @@ func (srv *server) deregisterHandler(con *connection) {
 func (srv *server) fulfillMsg(
 	con *connection,
 	msg *message.Message,
-	replyPayloadEncoding PayloadEncoding,
-	replyPayloadData []byte,
+	replyPayload Payload,
 ) {
-	// Send reply
-	if err := con.sock.Write(
-		message.NewReplyMessage(
-			msg.Identifier,
-			replyPayloadEncoding,
-			replyPayloadData,
-		),
+	writer, err := con.sock.GetWriter()
+	if err != nil {
+		srv.errorLog.Printf(
+			"couldn't get writer for connection %p: %s",
+			con,
+			err,
+		)
+		return
+	}
+
+	if err := message.WriteMsgReply(
+		writer,
+		msg.MsgIdentifier,
+		replyPayload.Encoding,
+		replyPayload.Data,
 	); err != nil {
-		srv.errorLog.Println("Writing failed:", err)
+		srv.errorLog.Printf(
+			"couldn't write reply message for connection %p: %s",
+			con,
+			err,
+		)
 	}
 }
 
@@ -162,59 +173,107 @@ func (srv *server) failMsg(
 		return
 	}
 
-	var replyMsg []byte
-	switch err := reqErr.(type) {
-	case ReqErr:
-		replyMsg = message.NewErrorReplyMessage(
-			msg.Identifier,
-			err.Code,
-			err.Message,
+	writer, err := con.sock.GetWriter()
+	if err != nil {
+		srv.errorLog.Printf(
+			"couldn't get writer for connection %p: %s",
+			con,
+			err,
 		)
-	case *ReqErr:
-		replyMsg = message.NewErrorReplyMessage(
-			msg.Identifier,
-			err.Code,
-			err.Message,
-		)
-	case MaxSessConnsReachedErr:
-		replyMsg = message.NewSpecialRequestReplyMessage(
-			message.MsgMaxSessConnsReached,
-			msg.Identifier,
-		)
-	case SessNotFoundErr:
-		replyMsg = message.NewSpecialRequestReplyMessage(
-			message.MsgSessionNotFound,
-			msg.Identifier,
-		)
-	case SessionsDisabledErr:
-		replyMsg = message.NewSpecialRequestReplyMessage(
-			message.MsgSessionsDisabled,
-			msg.Identifier,
-		)
-	case ProtocolErr:
-		replyMsg = message.NewSpecialRequestReplyMessage(
-			message.MsgReplyProtocolError,
-			msg.Identifier,
-		)
-	default:
-		replyMsg = message.NewSpecialRequestReplyMessage(
-			message.MsgInternalError,
-			msg.Identifier,
-		)
+		return
 	}
 
-	// Send request failure notification
-	if err := con.sock.Write(replyMsg); err != nil {
-		srv.errorLog.Println("Writing failed:", err)
+	switch err := reqErr.(type) {
+	case ReqErr:
+		if err := message.WriteMsgErrorReply(
+			writer,
+			msg.MsgIdentifier,
+			[]byte(err.Code),
+			[]byte(err.Message),
+			true,
+		); err != nil {
+			srv.errorLog.Println("couldn't write error reply message: ", err)
+			return
+		}
+	case *ReqErr:
+		if err := message.WriteMsgErrorReply(
+			writer,
+			msg.MsgIdentifier,
+			[]byte(err.Code),
+			[]byte(err.Message),
+			true,
+		); err != nil {
+			srv.errorLog.Println("couldn't write error reply message: ", err)
+			return
+		}
+	case MaxSessConnsReachedErr:
+		if err := message.WriteMsgSpecialRequestReply(
+			writer,
+			message.MsgMaxSessConnsReached,
+			msg.MsgIdentifier,
+		); err != nil {
+			srv.errorLog.Println(
+				"couldn't write max sessions reached message: ",
+				err,
+			)
+			return
+		}
+	case SessNotFoundErr:
+		if err := message.WriteMsgSpecialRequestReply(
+			writer,
+			message.MsgSessionNotFound,
+			msg.MsgIdentifier,
+		); err != nil {
+			srv.errorLog.Println(
+				"couldn't write session not found message: ",
+				err,
+			)
+			return
+		}
+	case SessionsDisabledErr:
+		if err := message.WriteMsgSpecialRequestReply(
+			writer,
+			message.MsgSessionsDisabled,
+			msg.MsgIdentifier,
+		); err != nil {
+			srv.errorLog.Println(
+				"couldn't write sessions disabled message: ",
+				err,
+			)
+			return
+		}
+	default:
+		if err := message.WriteMsgSpecialRequestReply(
+			writer,
+			message.MsgInternalError,
+			msg.MsgIdentifier,
+		); err != nil {
+			srv.errorLog.Println(
+				"couldn't write internal error message: ",
+				err,
+			)
+			return
+		}
 	}
 }
 
 // failMsgShutdown sends request failure reply due to current server shutdown
 func (srv *server) failMsgShutdown(con *connection, msg *message.Message) {
-	if err := con.sock.Write(message.NewSpecialRequestReplyMessage(
+	writer, err := con.sock.GetWriter()
+	if err != nil {
+		srv.errorLog.Printf(
+			"couldn't get writer for connection %p: %s",
+			con,
+			err,
+		)
+	}
+
+	if err := message.WriteMsgSpecialRequestReply(
+		writer,
 		message.MsgReplyShutdown,
-		msg.Identifier,
-	)); err != nil {
-		srv.errorLog.Println("Writing failed:", err)
+		msg.MsgIdentifier,
+	); err != nil {
+		srv.errorLog.Println("failed writing shutdown reply message: ", err)
+		return
 	}
 }

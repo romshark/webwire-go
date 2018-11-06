@@ -6,10 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
-
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
+	"github.com/stretchr/testify/require"
 )
 
 // TestClientRequestInternalError tests returning of non-ReqErr errors
@@ -25,7 +24,7 @@ func TestClientRequestInternalError(t *testing.T) {
 				_ wwr.Message,
 			) (wwr.Payload, error) {
 				// Fail the request by returning a non-ReqErr error
-				return nil, fmt.Errorf(
+				return wwr.Payload{}, fmt.Errorf(
 					"don't worry, this internal error is expected",
 				)
 			},
@@ -48,7 +47,10 @@ func TestClientRequestInternalError(t *testing.T) {
 	reply, reqErr := client.connection.Request(
 		context.Background(),
 		nil,
-		wwr.NewPayload(wwr.EncodingUtf8, []byte("dummydata")),
+		wwr.Payload{
+			Encoding: wwr.EncodingUtf8,
+			Data:     []byte("dummydata"),
+		},
 	)
 
 	// Verify returned error

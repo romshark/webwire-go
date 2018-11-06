@@ -1,11 +1,12 @@
 package webwire
 
 import (
+	"io"
 	"net"
 	"net/url"
 	"time"
 
-	"github.com/qbeon/webwire-go/msgbuf"
+	"github.com/qbeon/webwire-go/message"
 )
 
 // SockReadErr defines the interface of a webwire.Socket.Read error
@@ -22,13 +23,13 @@ type Socket interface {
 	// Dial must connect the socket to the specified server
 	Dial(serverAddr url.URL) error
 
-	// Write must send the given data to the other side of the socket
-	// while protecting the connection from concurrent writes
-	Write(data []byte) error
+	// GetWriter returns a writer for the next message to send. The writer's
+	// Close method flushes the complete message to the network
+	GetWriter() (io.WriteCloser, error)
 
 	// Read must block the calling goroutine and await an incoming message.
 	// When a message arrives or an error occurs Read must return
-	Read(*msgbuf.MessageBuffer) SockReadErr
+	Read(*message.Message) SockReadErr
 
 	// IsConnected must return true if the given socket
 	// maintains an open connection or otherwise return false

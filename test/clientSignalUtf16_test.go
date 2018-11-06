@@ -5,23 +5,18 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-
 	tmdwg "github.com/qbeon/tmdwg-go"
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 // TestClientSignalUtf16 tests client-side signals with UTF16 encoded payloads
 func TestClientSignalUtf16(t *testing.T) {
-	testPayload := wwr.NewPayload(
-		wwr.EncodingUtf16,
-		[]byte{00, 115, 00, 97, 00, 109, 00, 112, 00, 108, 00, 101},
-	)
-	verifyPayload := func(payload wwr.Payload) {
-		assert.Equal(t, wwr.EncodingUtf16, payload.Encoding())
-		assert.Equal(t, testPayload.Data(), payload.Data())
+	testPayload := wwr.Payload{
+		Encoding: wwr.EncodingUtf16,
+		Data:     []byte{00, 115, 00, 97, 00, 109, 00, 112, 00, 108, 00, 101},
 	}
 	signalArrived := tmdwg.NewTimedWaitGroup(1, 1*time.Second)
 
@@ -34,7 +29,8 @@ func TestClientSignalUtf16(t *testing.T) {
 				_ wwr.Connection,
 				msg wwr.Message,
 			) {
-				verifyPayload(msg.Payload())
+				assert.Equal(t, wwr.EncodingUtf16, msg.PayloadEncoding())
+				assert.Equal(t, testPayload.Data, msg.Payload())
 
 				// Synchronize, notify signal arrival
 				signalArrived.Progress(1)
@@ -58,10 +54,13 @@ func TestClientSignalUtf16(t *testing.T) {
 	require.NoError(t, client.connection.Signal(
 		context.Background(),
 		nil,
-		wwr.NewPayload(
-			wwr.EncodingUtf16,
-			[]byte{00, 115, 00, 97, 00, 109, 00, 112, 00, 108, 00, 101},
-		),
+		wwr.Payload{
+			Encoding: wwr.EncodingUtf16,
+			Data: []byte{
+				00, 115, 00, 97, 00, 109,
+				00, 112, 00, 108, 00, 101,
+			},
+		},
 	))
 
 	// Synchronize, await signal arrival

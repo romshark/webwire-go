@@ -28,7 +28,6 @@ func listenOsSignals(server wwr.Server) {
 }
 
 var argHostAddr = flag.String("addr", "localhost:8081", "server host address")
-var argEnableTrace = flag.Bool("trace", false, "enable runtime trace")
 var argEnableHTTPS = flag.Bool("https", false, "enable TLS")
 var argCertFilePath = flag.String(
 	"tls_cert",
@@ -41,25 +40,71 @@ var argPrivateKeyFilePath = flag.String(
 	"path to the TLS private-key file",
 )
 var argReadTimeout = flag.Uint64("rtimeo", 10, "read timeout in seconds")
+var argTracePath = flag.String("trace", "", "path to trace output file")
+var argMemProfPath = flag.String("memprof", "", "path to memory profile file")
+var argCPUProfPath = flag.String("cpuprof", "", "path to CPU profile file")
+
+func writeMemoryProfile() {
+	if *argCPUProfPath == "" {
+		return
+	}
+
+	file, err := os.Create(*argMemProfPath)
+	if err != nil {
+		panic(err)
+	}
+	if err := pprof.WriteHeapProfile(file); err != nil {
+		log.Fatal(err)
+	}
+	if err := file.Close(); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func startCPUProfile() func() {
+	if *argCPUProfPath == "" {
+		return func() {}
+	}
+	file, err := os.Create(*argCPUProfPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err := pprof.StartCPUProfile(file); err != nil {
+		log.Fatal(err)
+	}
+	return func() {
+		pprof.StopCPUProfile()
+		if err := file.Close(); err != nil {
+			log.Fatal(err)
+		}
+	}
+}
+
+func startTracer() func() {
+	// Start tracer if enabled
+	if *argTracePath == "" {
+		return func() {}
+	}
+	file, err := os.Create(*argTracePath)
+	if err != nil {
+		panic(err)
+	}
+
+	if err := trace.Start(file); err != nil {
+		panic(err)
+	}
+	return func() {
+		trace.Stop()
+		file.Close()
+	}
+}
 
 func main() {
 	// Parse command line arguments
 	flag.Parse()
 
-	// Start tracer if enabled
-	if *argEnableTrace {
-		f, err := os.Create("server-trace.out")
-		if err != nil {
-			panic(err)
-		}
-		defer f.Close()
-
-		err = trace.Start(f)
-		if err != nil {
-			panic(err)
-		}
-		defer trace.Stop()
-	}
+	defer startCPUProfile()()
+	defer startTracer()()
 
 	server, err := newServer(settings{
 		HostAddress:        *argHostAddr,
@@ -82,10 +127,5 @@ func main() {
 		panic(fmt.Errorf("WebWire server failed: %s", err))
 	}
 
-	profileFile, err := os.Create("./benchmark.profile")
-	if err != nil {
-		panic(err)
-	}
-	defer profileFile.Close()
-	pprof.WriteHeapProfile(profileFile)
+	writeMemoryProfile()
 }

@@ -19,20 +19,20 @@ func (clt *ChatroomClient) OnSessionCreated(newSession *webwire.Session) {
 // OnSignal implements the webwireClient.Implementation interface.
 // it's invoked when the client receives a signal from the server
 // containing a chatroom message
-func (clt *ChatroomClient) OnSignal(_ []byte, payload webwire.Payload) {
-	var msg shared.ChatMessage
+func (clt *ChatroomClient) OnSignal(msg webwire.Message) {
+	var chatMsg shared.ChatMessage
 
 	// Interpret the message as UTF8 encoded JSON
-	jsonString, err := payload.Utf8()
+	jsonString, err := msg.PayloadUtf8()
 	if err != nil {
 		log.Printf("Couldn't decode incoming message: %s\n", err)
 	}
 
-	if err := json.Unmarshal([]byte(jsonString), &msg); err != nil {
+	if err := json.Unmarshal([]byte(jsonString), &chatMsg); err != nil {
 		panic(fmt.Errorf("Failed parsing chat message: %s", err))
 	}
 
-	log.Printf("%s: %s\n", msg.User, msg.Msg)
+	log.Printf("%s: %s\n", chatMsg.User, chatMsg.Msg)
 }
 
 // OnDisconnected implements the wwrclt.Implementation interface

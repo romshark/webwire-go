@@ -23,15 +23,12 @@ func TestSessionStatus(t *testing.T) {
 			) (wwr.Payload, error) {
 				// Try to create a new session
 				if err := conn.CreateSession(nil); err != nil {
-					return nil, err
+					return wwr.Payload{}, err
 				}
 
 				// Return the key of the newly created session
 				// (use default binary encoding)
-				return wwr.NewPayload(
-					wwr.EncodingBinary,
-					[]byte(conn.SessionKey()),
-				), nil
+				return wwr.Payload{Data: []byte(conn.SessionKey())}, nil
 			},
 		},
 		wwr.ServerOptions{},
@@ -52,12 +49,12 @@ func TestSessionStatus(t *testing.T) {
 	authReqReply, err := clientA.connection.Request(
 		context.Background(),
 		[]byte("login"),
-		wwr.NewPayload(wwr.EncodingBinary, []byte("bla")),
+		wwr.Payload{Data: []byte("bla")},
 	)
 	require.NoError(t, err)
 
 	session := clientA.connection.Session()
-	require.Equal(t, session.Key, string(authReqReply.Data()))
+	require.Equal(t, session.Key, string(authReqReply.Payload()))
 
 	// Check status, expect 1 session with 1 connection
 	require.Equal(t, 1, server.ActiveSessionsNum())
@@ -75,7 +72,7 @@ func TestSessionStatus(t *testing.T) {
 
 	require.NoError(t, clientB.connection.RestoreSession(
 		context.Background(),
-		authReqReply.Data(),
+		authReqReply.Payload(),
 	))
 
 	// Check status, expect 1 session with 2 connections

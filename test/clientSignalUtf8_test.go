@@ -5,19 +5,18 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
-
 	tmdwg "github.com/qbeon/tmdwg-go"
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
+	"github.com/stretchr/testify/require"
 )
 
 // TestClientSignal tests client-side signals with UTF8 encoded payloads
 func TestClientSignal(t *testing.T) {
-	expectedSignalPayload := wwr.NewPayload(
-		wwr.EncodingUtf8,
-		[]byte("webwire_test_SIGNAL_payload"),
-	)
+	expectedSignalPayload := wwr.Payload{
+		Encoding: wwr.EncodingUtf8,
+		Data:     []byte("webwire_test_SIGNAL_payload"),
+	}
 	signalArrived := tmdwg.NewTimedWaitGroup(1, 1*time.Second)
 
 	// Initialize webwire server given only the signal handler
@@ -29,9 +28,17 @@ func TestClientSignal(t *testing.T) {
 				_ wwr.Connection,
 				msg wwr.Message,
 			) {
-
 				// Verify signal payload
-				comparePayload(t, expectedSignalPayload, msg.Payload())
+				require.Equal(
+					t,
+					expectedSignalPayload.Encoding,
+					msg.PayloadEncoding(),
+				)
+				require.Equal(
+					t,
+					expectedSignalPayload.Data,
+					msg.Payload(),
+				)
 
 				// Synchronize, notify signal arrival
 				signalArrived.Progress(1)

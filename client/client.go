@@ -1,18 +1,14 @@
 package client
 
 import (
-	"context"
 	"sync/atomic"
 
-	"fmt"
 	"log"
 	"net/url"
 	"sync"
 
 	webwire "github.com/qbeon/webwire-go"
-	msg "github.com/qbeon/webwire-go/message"
-	"github.com/qbeon/webwire-go/msgbuf"
-	pld "github.com/qbeon/webwire-go/payload"
+	"github.com/qbeon/webwire-go/message"
 	reqman "github.com/qbeon/webwire-go/requestManager"
 )
 
@@ -76,9 +72,9 @@ type client struct {
 	conn          webwire.Socket
 	readerClosing chan bool
 
-	heartbeat         heartbeat
-	requestManager    reqman.RequestManager
-	messageBufferPool msgbuf.Pool
+	heartbeat      heartbeat
+	requestManager reqman.RequestManager
+	messagePool    message.Pool
 
 	// Loggers
 	warningLog *log.Logger
@@ -104,117 +100,6 @@ func (clt *client) Connect() error {
 		atomic.StoreInt32(&clt.autoconnect, autoconnectEnabled)
 	}
 	return clt.connect()
-}
-
-// Request sends a request containing the given payload to the server
-// and asynchronously returns the servers response
-// blocking the calling goroutine.
-// Returns an error if the request failed for some reason
-func (clt *client) Request(
-	ctx context.Context,
-	name []byte,
-	payload webwire.Payload,
-) (webwire.Payload, error) {
-	if ctx == nil {
-		ctx = context.Background()
-	}
-
-	// Apply shared lock
-	clt.apiLock.RLock()
-
-	// Set default deadline if no deadline is yet specified
-	closeCtx := func() {}
-	_, deadlineIsSet := ctx.Deadline()
-	if !deadlineIsSet {
-		ctx, closeCtx = context.WithTimeout(
-			ctx,
-			clt.options.DefaultRequestTimeout,
-		)
-	}
-
-	if err := clt.tryAutoconnect(ctx, deadlineIsSet); err != nil {
-		clt.apiLock.RUnlock()
-
-		closeCtx()
-		return nil, err
-	}
-
-	payload, err := clt.sendRequest(
-		ctx,
-		scanPayloadEncoding(payload),
-		name,
-		payload,
-		clt.options.DefaultRequestTimeout,
-	)
-	clt.apiLock.RUnlock()
-
-	closeCtx()
-	return payload, err
-}
-
-// Signal sends a signal containing the given payload to the server
-func (clt *client) Signal(
-	ctx context.Context,
-	name []byte,
-	payload webwire.Payload,
-) error {
-	// Apply shared lock
-	clt.apiLock.RLock()
-
-	// Set default deadline if no deadline is yet specified
-	closeCtx := func() {}
-	_, deadlineIsSet := ctx.Deadline()
-	if !deadlineIsSet {
-		ctx, closeCtx = context.WithTimeout(
-			ctx,
-			clt.options.DefaultRequestTimeout,
-		)
-	}
-
-	if err := clt.tryAutoconnect(ctx, deadlineIsSet); err != nil {
-		clt.apiLock.RUnlock()
-
-		closeCtx()
-		return err
-	}
-
-	// Require either a name or a payload or both
-	if len(name) < 1 && (payload == nil || len(payload.Data()) < 1) {
-		clt.apiLock.RUnlock()
-
-		closeCtx()
-		return webwire.NewProtocolErr(
-			fmt.Errorf("Invalid request, request message requires " +
-				"either a name, a payload or both but is missing both",
-			),
-		)
-	}
-
-	// Initialize payload encoding & data
-	var encoding webwire.PayloadEncoding
-	var data []byte
-	if payload != nil {
-		encoding = payload.Encoding()
-		data = payload.Data()
-	}
-
-	if err := clt.conn.Write(msg.NewSignalMessage(
-		name,
-		encoding,
-		data,
-	)); err != nil {
-		clt.apiLock.RUnlock()
-
-		closeCtx()
-		return err
-	}
-
-	clt.heartbeat.reset()
-
-	clt.apiLock.RUnlock()
-
-	closeCtx()
-	return nil
 }
 
 // Session returns an exact copy of the session object or nil if there's no
@@ -252,96 +137,6 @@ func (clt *client) SessionInfo(fieldName string) interface{} {
 // PendingRequests returns the number of currently pending requests
 func (clt *client) PendingRequests() int {
 	return clt.requestManager.PendingRequests()
-}
-
-// RestoreSession tries to restore the previously opened session.
-// Fails if a session is currently already active
-func (clt *client) RestoreSession(
-	ctx context.Context,
-	sessionKey []byte,
-) error {
-	// Apply exclusive lock
-	clt.apiLock.Lock()
-
-	clt.sessionLock.RLock()
-	if clt.session != nil {
-		clt.sessionLock.RUnlock()
-		clt.apiLock.Unlock()
-		return fmt.Errorf(
-			"Can't restore session if another one is already active",
-		)
-	}
-	clt.sessionLock.RUnlock()
-
-	// Set default deadline if no deadline is yet specified
-	closeCtx := func() {}
-	_, deadlineIsSet := ctx.Deadline()
-	if !deadlineIsSet {
-		ctx, closeCtx = context.WithTimeout(
-			ctx,
-			clt.options.DefaultRequestTimeout,
-		)
-	}
-
-	if err := clt.tryAutoconnect(ctx, deadlineIsSet); err != nil {
-		clt.apiLock.Unlock()
-		closeCtx()
-		return err
-	}
-
-	restoredSession, err := clt.requestSessionRestoration(sessionKey)
-	if err != nil {
-		clt.apiLock.Unlock()
-		closeCtx()
-		return err
-	}
-
-	clt.sessionLock.Lock()
-	clt.session = restoredSession
-	clt.sessionLock.Unlock()
-
-	clt.apiLock.Unlock()
-	closeCtx()
-	return nil
-}
-
-// CloseSession disables the currently active session
-// and acknowledges the server if connected.
-// The session will be destroyed if this is it's last connection remaining.
-// If the client is not connected then the synchronization is skipped.
-// Does nothing if there's no active session
-func (clt *client) CloseSession() error {
-	// Apply exclusive lock
-	clt.apiLock.Lock()
-
-	clt.sessionLock.RLock()
-	if clt.session == nil {
-		clt.sessionLock.RUnlock()
-		clt.apiLock.Unlock()
-		return nil
-	}
-	clt.sessionLock.RUnlock()
-
-	// Synchronize session closure to the server if connected
-	if atomic.LoadInt32(&clt.status) == Connected {
-		if _, err := clt.sendNamelessRequest(
-			context.Background(),
-			msg.MsgCloseSession,
-			pld.Payload{},
-			clt.options.DefaultRequestTimeout,
-		); err != nil {
-			clt.apiLock.Unlock()
-			return err
-		}
-	}
-
-	// Reset session locally after destroying it on the server
-	clt.sessionLock.Lock()
-	clt.session = nil
-	clt.sessionLock.Unlock()
-
-	clt.apiLock.Unlock()
-	return nil
 }
 
 // Close gracefully closes the connection and disables the client.

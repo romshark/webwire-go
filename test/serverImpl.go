@@ -11,7 +11,7 @@ import (
 type serverImpl struct {
 	beforeUpgrade        func(ctx *fasthttp.RequestCtx) wwr.ConnectionOptions
 	onClientConnected    func(connection wwr.Connection)
-	onClientDisconnected func(connection wwr.Connection)
+	onClientDisconnected func(connection wwr.Connection, reason error)
 	onSignal             func(
 		ctx context.Context,
 		connection wwr.Connection,
@@ -43,8 +43,8 @@ func (srv *serverImpl) OnClientConnected(conn wwr.Connection) {
 }
 
 // OnClientDisconnected implements the webwire.ServerImplementation interface
-func (srv *serverImpl) OnClientDisconnected(conn wwr.Connection) {
-	srv.onClientDisconnected(conn)
+func (srv *serverImpl) OnClientDisconnected(conn wwr.Connection, reason error) {
+	srv.onClientDisconnected(conn, reason)
 }
 
 // OnSignal implements the webwire.ServerImplementation interface

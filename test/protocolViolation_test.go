@@ -4,12 +4,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/qbeon/webwire-go/message"
-
-	"github.com/stretchr/testify/require"
-
 	"github.com/fasthttp/websocket"
 	wwr "github.com/qbeon/webwire-go"
+	"github.com/qbeon/webwire-go/message"
+	"github.com/stretchr/testify/require"
 )
 
 // TestProtocolViolation tests sending messages that violate the protocol
@@ -80,10 +78,7 @@ func TestProtocolViolation(t *testing.T) {
 		}
 		response, writeErr, readErr := setupAndSend(msg)
 		require.NoError(t, writeErr)
-		require.NoError(t, readErr)
-		require.Equal(t, []byte{
-			message.MsgReplyProtocolError, // Message type identifier
-			0, 0, 0, 0, 0, 0, 0, 0,        // Request identifier
-		}, response)
+		require.Error(t, readErr)
+		require.Nil(t, response)
 	}()
 }

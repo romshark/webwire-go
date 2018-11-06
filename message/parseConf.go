@@ -2,21 +2,22 @@ package message
 
 import (
 	"encoding/binary"
-	"fmt"
+	"errors"
 	"time"
 )
 
 // parseConf parses MsgConf messages
-func (msg *Message) parseConf(message []byte) error {
-	if len(message) < MsgMinLenConf {
-		return fmt.Errorf("invalid msg length, too short")
+func (msg *Message) parseConf() error {
+	if msg.MsgBuffer.len < MsgMinLenConf {
+		return errors.New("invalid msg length, too short")
 	}
 	msg.ServerConfiguration = ServerConfiguration{
-		MajorProtocolVersion: message[1:2][0],
-		MinorProtocolVersion: message[2:3][0],
-		ReadTimeout: time.Duration(binary.LittleEndian.Uint32(message[3:7])) *
-			time.Millisecond,
-		MessageBufferSize: binary.LittleEndian.Uint32(message[7:11]),
+		MajorProtocolVersion: msg.MsgBuffer.buf[1:2][0],
+		MinorProtocolVersion: msg.MsgBuffer.buf[2:3][0],
+		ReadTimeout: time.Duration(
+			binary.LittleEndian.Uint32(msg.MsgBuffer.buf[3:7]),
+		) * time.Millisecond,
+		MessageBufferSize: binary.LittleEndian.Uint32(msg.MsgBuffer.buf[7:11]),
 	}
 	return nil
 }

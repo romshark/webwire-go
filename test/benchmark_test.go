@@ -13,10 +13,10 @@ import (
 func BenchmarkRequestC1_P1K(b *testing.B) {
 	// Preallocate the payload
 	payloadData := make([]byte, 1024)
-	msg := wwr.NewPayload(
-		wwr.EncodingUtf8,
-		payloadData,
-	)
+	msg := wwr.Payload{
+		Encoding: wwr.EncodingUtf8,
+		Data:     payloadData,
+	}
 
 	// Initialize a webwire server
 	server := setupBenchmarkServer(
@@ -26,16 +26,23 @@ func BenchmarkRequestC1_P1K(b *testing.B) {
 				conn wwr.Connection,
 				msg wwr.Message,
 			) (wwr.Payload, error) {
-				return msg.Payload(), nil
+				return wwr.Payload{
+					Encoding: msg.PayloadEncoding(),
+					Data:     msg.Payload(),
+				}, nil
 			},
 		},
-		wwr.ServerOptions{},
+		wwr.ServerOptions{
+			MessageBufferSize: 2048,
+		},
 	)
 
 	// Initialize client
 	client := newCallbackPoweredClient(
 		server.AddressURL(),
-		wwrclt.Options{},
+		wwrclt.Options{
+			MessageBufferSize: 2048,
+		},
 		callbackPoweredClientHooks{},
 	)
 
@@ -46,7 +53,11 @@ func BenchmarkRequestC1_P1K(b *testing.B) {
 	b.ResetTimer()
 
 	for n := 0; n < b.N; n++ {
-		client.connection.Request(context.Background(), nil, msg)
+		reply, err := client.connection.Request(context.Background(), nil, msg)
+		if err != nil {
+			panic(err)
+		}
+		reply.Close()
 	}
 }
 
@@ -54,11 +65,11 @@ func BenchmarkRequestC1_P1K(b *testing.B) {
 // connection
 func BenchmarkRequestC1_P1M(b *testing.B) {
 	// Preallocate the payload
-	payloadData := make([]byte, 1024*1024*1024)
-	msg := wwr.NewPayload(
-		wwr.EncodingUtf8,
-		payloadData,
-	)
+	payloadData := make([]byte, 1024*1024)
+	msg := wwr.Payload{
+		Encoding: wwr.EncodingUtf8,
+		Data:     payloadData,
+	}
 
 	// Initialize a webwire server
 	server := setupBenchmarkServer(
@@ -68,16 +79,27 @@ func BenchmarkRequestC1_P1M(b *testing.B) {
 				conn wwr.Connection,
 				msg wwr.Message,
 			) (wwr.Payload, error) {
-				return msg.Payload(), nil
+				return wwr.Payload{
+					Encoding: msg.PayloadEncoding(),
+					Data:     msg.Payload(),
+				}, nil
 			},
 		},
-		wwr.ServerOptions{},
+		wwr.ServerOptions{
+			ReadBufferSize:    1024,
+			WriteBufferSize:   1024,
+			MessageBufferSize: 1024*1024 + 1024,
+		},
 	)
 
 	// Initialize client
 	client := newCallbackPoweredClient(
 		server.AddressURL(),
-		wwrclt.Options{},
+		wwrclt.Options{
+			ReadBufferSize:    1024,
+			WriteBufferSize:   1024,
+			MessageBufferSize: 1024*1024 + 1024,
+		},
 		callbackPoweredClientHooks{},
 	)
 
@@ -88,7 +110,11 @@ func BenchmarkRequestC1_P1M(b *testing.B) {
 	b.ResetTimer()
 
 	for n := 0; n < b.N; n++ {
-		client.connection.Request(context.Background(), nil, msg)
+		reply, err := client.connection.Request(context.Background(), nil, msg)
+		if err != nil {
+			panic(err)
+		}
+		reply.Close()
 	}
 }
 
@@ -97,10 +123,10 @@ func BenchmarkRequestC1_P1M(b *testing.B) {
 func BenchmarkRequestC1_P1MBuffered(b *testing.B) {
 	// Preallocate the payload
 	payloadData := make([]byte, 1024*1024)
-	msg := wwr.NewPayload(
-		wwr.EncodingUtf8,
-		payloadData,
-	)
+	msg := wwr.Payload{
+		Encoding: wwr.EncodingUtf8,
+		Data:     payloadData,
+	}
 
 	const bufferSize uint32 = 2 * 1024 * 1024
 
@@ -112,12 +138,16 @@ func BenchmarkRequestC1_P1MBuffered(b *testing.B) {
 				conn wwr.Connection,
 				msg wwr.Message,
 			) (wwr.Payload, error) {
-				return msg.Payload(), nil
+				return wwr.Payload{
+					Encoding: msg.PayloadEncoding(),
+					Data:     msg.Payload(),
+				}, nil
 			},
 		},
 		wwr.ServerOptions{
-			WriteBufferSize: bufferSize,
-			ReadBufferSize:  bufferSize,
+			WriteBufferSize:   bufferSize,
+			ReadBufferSize:    bufferSize,
+			MessageBufferSize: bufferSize,
 		},
 	)
 
@@ -125,8 +155,9 @@ func BenchmarkRequestC1_P1MBuffered(b *testing.B) {
 	client := newCallbackPoweredClient(
 		server.AddressURL(),
 		wwrclt.Options{
-			WriteBufferSize: bufferSize,
-			ReadBufferSize:  bufferSize,
+			WriteBufferSize:   bufferSize,
+			ReadBufferSize:    bufferSize,
+			MessageBufferSize: bufferSize,
 		},
 		callbackPoweredClientHooks{},
 	)
@@ -138,7 +169,11 @@ func BenchmarkRequestC1_P1MBuffered(b *testing.B) {
 	b.ResetTimer()
 
 	for n := 0; n < b.N; n++ {
-		client.connection.Request(context.Background(), nil, msg)
+		reply, err := client.connection.Request(context.Background(), nil, msg)
+		if err != nil {
+			panic(err)
+		}
+		reply.Close()
 	}
 }
 
@@ -149,10 +184,10 @@ func BenchmarkRequestC1K_P1K(b *testing.B) {
 
 	// Preallocate the payload
 	payloadData := make([]byte, 1024)
-	msg := wwr.NewPayload(
-		wwr.EncodingUtf8,
-		payloadData,
-	)
+	msg := wwr.Payload{
+		Encoding: wwr.EncodingUtf8,
+		Data:     payloadData,
+	}
 
 	// Initialize a webwire server
 	server := setupBenchmarkServer(
@@ -162,10 +197,15 @@ func BenchmarkRequestC1K_P1K(b *testing.B) {
 				conn wwr.Connection,
 				msg wwr.Message,
 			) (wwr.Payload, error) {
-				return msg.Payload(), nil
+				return wwr.Payload{
+					Encoding: msg.PayloadEncoding(),
+					Data:     msg.Payload(),
+				}, nil
 			},
 		},
-		wwr.ServerOptions{},
+		wwr.ServerOptions{
+			MessageBufferSize: 2048,
+		},
 	)
 
 	// Initialize client
@@ -173,7 +213,9 @@ func BenchmarkRequestC1K_P1K(b *testing.B) {
 	for i := 0; i < concurrentConnections; i++ {
 		client := newCallbackPoweredClient(
 			server.AddressURL(),
-			wwrclt.Options{},
+			wwrclt.Options{
+				MessageBufferSize: 2048,
+			},
 			callbackPoweredClientHooks{},
 		)
 		clients[i] = client
@@ -188,7 +230,11 @@ func BenchmarkRequestC1K_P1K(b *testing.B) {
 		for _, c := range clients {
 			client := c
 			go func() {
-				client.connection.Request(context.Background(), nil, msg)
+				reply, err := client.connection.Request(context.Background(), nil, msg)
+				if err != nil {
+					panic(err)
+				}
+				reply.Close()
 			}()
 		}
 	}

@@ -5,13 +5,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
-
-	"github.com/stretchr/testify/assert"
-
 	tmdwg "github.com/qbeon/tmdwg-go"
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestClientOnSessionCreated tests the OnSessionCreated hook of the client
@@ -32,7 +30,7 @@ func TestClientOnSessionCreated(t *testing.T) {
 				// Try to create a new session
 				err := conn.CreateSession(nil)
 				assert.NoError(t, err)
-				return nil, err
+				return wwr.Payload{}, err
 			},
 		},
 		wwr.ServerOptions{},
@@ -56,12 +54,16 @@ func TestClientOnSessionCreated(t *testing.T) {
 	require.NoError(t, client.connection.Connect())
 
 	// Send authentication request and await reply
-	_, err := client.connection.Request(
+	reply, err := client.connection.Request(
 		context.Background(),
 		[]byte("login"),
-		wwr.NewPayload(wwr.EncodingBinary, []byte("credentials")),
+		wwr.Payload{
+			Encoding: wwr.EncodingBinary,
+			Data:     []byte("credentials"),
+		},
 	)
 	require.NoError(t, err)
+	reply.Close()
 
 	createdSession = client.connection.Session()
 

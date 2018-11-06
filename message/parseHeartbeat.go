@@ -3,9 +3,12 @@ package message
 import "fmt"
 
 // parseHeartbeat parses heartbeat messages
-func (msg *Message) parseHeartbeat(message []byte) error {
-	if len(message) != 1 {
-		return fmt.Errorf("Invalid heartbeat message (len: %d)", len(message))
+func (msg *Message) parseHeartbeat() error {
+	if msg.MsgBuffer.len != 1 {
+		return fmt.Errorf(
+			"invalid heartbeat message (len: %d)",
+			msg.MsgBuffer.len,
+		)
 	}
 	return nil
 }

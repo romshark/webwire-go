@@ -14,10 +14,10 @@ type Payload struct {
 }
 
 // Utf8 returns a UTF8 representation of the payload data
-func (pld *Payload) Utf8() (string, error) {
+func (pld *Payload) Utf8() ([]byte, error) {
 	if pld.Encoding == Utf16 {
 		if len(pld.Data)%2 != 0 {
-			return "", fmt.Errorf(
+			return nil, fmt.Errorf(
 				"Cannot convert invalid UTF16 payload data to UTF8",
 			)
 		}
@@ -30,9 +30,9 @@ func (pld *Payload) Utf8() (string, error) {
 			rnSize := utf8.EncodeRune(utf8buf, rn[0])
 			utf8str.Write(utf8buf[:rnSize])
 		}
-		return utf8str.String(), nil
+		return utf8str.Bytes(), nil
 	}
 
 	// Binary and UTF8 encoded payloads should pass through untouched
-	return string(pld.Data), nil
+	return pld.Data, nil
 }

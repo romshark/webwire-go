@@ -5,13 +5,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
-
-	"github.com/stretchr/testify/assert"
-
 	tmdwg "github.com/qbeon/tmdwg-go"
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestServerSideSessionClosureInexistent tests server-side closing of
@@ -39,7 +37,7 @@ func TestServerSideSessionClosureInexistent(t *testing.T) {
 			) (wwr.Payload, error) {
 				err := conn.CreateSession(nil)
 				assert.NoError(t, err)
-				return nil, err
+				return wwr.Payload{}, err
 			},
 		},
 		wwr.ServerOptions{
@@ -73,12 +71,13 @@ func TestServerSideSessionClosureInexistent(t *testing.T) {
 
 	// Authenticate first client to get the session key
 	firstClient := clients[0]
-	_, err := firstClient.connection.Request(
+	reply, err := firstClient.connection.Request(
 		context.Background(),
 		[]byte("auth"),
-		nil,
+		wwr.Payload{},
 	)
 	require.NoError(t, err)
+	reply.Close()
 
 	// Extract session key
 	createdSession = firstClient.connection.Session()

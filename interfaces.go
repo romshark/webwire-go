@@ -89,7 +89,7 @@ type ServerImplementation interface {
 	//
 	// This hook will be invoked by the goroutine serving
 	// the calling client before it's suspended
-	OnClientDisconnected(client Connection)
+	OnClientDisconnected(client Connection, reason error)
 
 	// OnSignal is invoked when the webwire server receives
 	// a signal from a client.
@@ -117,7 +117,10 @@ type ServerImplementation interface {
 		ctx context.Context,
 		client Connection,
 		message Message,
-	) (response Payload, err error)
+	) (
+		payload Payload,
+		err error,
+	)
 }
 
 // Connection represents a connected client
@@ -277,35 +280,44 @@ type SessionInfo interface {
 // from the data given
 type SessionInfoParser func(map[string]interface{}) SessionInfo
 
-// Payload represents a WebWire message payload
-type Payload interface {
-	// Encoding returns the payload encoding type
-	Encoding() PayloadEncoding
-
-	// Data returns the raw payload data
-	Data() []byte
-
-	// Utf8 returns a UTF8 representation of the payload data
-	Utf8() (string, error)
-
-	// Closes the payload releasing the underlying buffer
-	Close()
-}
-
-// Message represents a WebWire protocol message
+// Message represents a WebWire message
+//
+// Message is not thread-safe and must not be used concurrently from within
+// multiple goroutines
 type Message interface {
-	// MessageType returns the type of the message
-	MessageType() byte
-
 	// Identifier returns the message identifier
 	Identifier() [8]byte
 
 	// Name returns the name of the message
 	Name() []byte
 
-	// Payload returns the message payload
-	Payload() Payload
+	// PayloadEncoding returns the payload encoding type
+	PayloadEncoding() PayloadEncoding
 
-	// Close closes the message payload releasing the underlying buffer
+	// Payload returns the message payload in binary format
+	Payload() []byte
+
+	// PayloadUtf8 returns the message payload in textual UTF8 format
+	PayloadUtf8() ([]byte, error)
+
+	// Close closes the message releasing the underlying buffer
+	Close()
+}
+
+// Reply defines a webwire request reply message
+//
+// Reply is not thread-safe and must not be used concurrently from within
+// multiple goroutines
+type Reply interface {
+	// PayloadEncoding returns the payload encoding type
+	PayloadEncoding() PayloadEncoding
+
+	// Payload returns the message payload in binary format
+	Payload() []byte
+
+	// PayloadUtf8 returns the message payload in textual UTF8 format
+	PayloadUtf8() ([]byte, error)
+
+	// Close closes the reply message releasing the underlying buffer
 	Close()
 }

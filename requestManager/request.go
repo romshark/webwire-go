@@ -6,20 +6,20 @@ import (
 	"time"
 
 	webwire "github.com/qbeon/webwire-go"
+	"github.com/qbeon/webwire-go/message"
 )
 
 // TODO: The request identifier should remain a uint64 until it's converted into
 // the byte array for transmission, this would slightly increase performance
 
-// RequestIdentifier represents the universally unique, minified
-// UUIDv4 identifier of a request.
+// RequestIdentifier represents the identifier of a request.
 type RequestIdentifier = [8]byte
 
-// reply is used by the request manager to represent the results
-// of a request (both failed and succeeded)
-type reply struct {
-	Reply webwire.Payload
-	Error error
+// genericReply is used by the request manager to represent the results of a
+// request that either failed or succeeded
+type genericReply struct {
+	ReplyMsg *message.Message
+	Error    error
 }
 
 // Request represents a request created and tracked by the request manager
@@ -34,7 +34,7 @@ type Request struct {
 	timeout time.Duration
 
 	// reply represents a channel for asynchronous reply handling
-	reply chan reply
+	reply chan genericReply
 }
 
 // Identifier returns the assigned request identifier
@@ -46,7 +46,7 @@ func (req *Request) Identifier() RequestIdentifier {
 // until either the reply is fulfilled or failed, the request timed out
 // a user-defined deadline was exceeded or the request was prematurely canceled.
 // The timer is started when AwaitReply is called.
-func (req *Request) AwaitReply(ctx context.Context) (webwire.Payload, error) {
+func (req *Request) AwaitReply(ctx context.Context) (webwire.Reply, error) {
 	// Start timeout timer
 	timeoutTimer := time.NewTimer(req.timeout)
 
@@ -63,11 +63,11 @@ func (req *Request) AwaitReply(ctx context.Context) (webwire.Payload, error) {
 		req.manager.deregister(req.identifier)
 		return nil, webwire.NewTimeoutErr(errors.New("timed out"))
 
-	case reply := <-req.reply:
+	case rp := <-req.reply:
 		timeoutTimer.Stop()
-		if reply.Error != nil {
-			return nil, reply.Error
+		if rp.Error != nil {
+			return nil, rp.Error
 		}
-		return reply.Reply, nil
+		return &reply{msg: rp.ReplyMsg}, nil
 	}
 }

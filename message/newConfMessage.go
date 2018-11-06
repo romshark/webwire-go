@@ -6,13 +6,14 @@ import (
 	"time"
 )
 
-// NewConfMessage composes a server configuration message
+// NewConfMessage composes a server configuration message and writes it to the
+// given buffer
 func NewConfMessage(conf ServerConfiguration) ([]byte, error) {
-	msg := make([]byte, 11)
+	buf := make([]byte, 11)
 
-	msg[0] = byte(MsgConf)
-	msg[1] = byte(conf.MajorProtocolVersion)
-	msg[2] = byte(conf.MinorProtocolVersion)
+	buf[0] = byte(MsgConf)
+	buf[1] = byte(conf.MajorProtocolVersion)
+	buf[2] = byte(conf.MinorProtocolVersion)
 
 	readTimeoutMs := conf.ReadTimeout / time.Millisecond
 	if readTimeoutMs > 4294967295 {
@@ -27,8 +28,8 @@ func NewConfMessage(conf ServerConfiguration) ([]byte, error) {
 		)
 	}
 
-	binary.LittleEndian.PutUint32(msg[3:7], uint32(readTimeoutMs))
-	binary.LittleEndian.PutUint32(msg[7:11], conf.MessageBufferSize)
+	binary.LittleEndian.PutUint32(buf[3:7], uint32(readTimeoutMs))
+	binary.LittleEndian.PutUint32(buf[7:11], conf.MessageBufferSize)
 
-	return msg, nil
+	return buf, nil
 }

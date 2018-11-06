@@ -5,11 +5,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-
 	tmdwg "github.com/qbeon/tmdwg-go"
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -29,7 +28,7 @@ func TestClientConcurrentRequest(t *testing.T) {
 				_ wwr.Message,
 			) (wwr.Payload, error) {
 				finished.Progress(1)
-				return nil, nil
+				return wwr.Payload{}, nil
 			},
 		},
 		wwr.ServerOptions{},
@@ -52,7 +51,10 @@ func TestClientConcurrentRequest(t *testing.T) {
 		_, err := client.connection.Request(
 			context.Background(),
 			[]byte("sample"),
-			wwr.NewPayload(wwr.EncodingBinary, []byte("samplepayload")),
+			wwr.Payload{
+				Encoding: wwr.EncodingBinary,
+				Data:     []byte("samplepayload"),
+			},
 		)
 		assert.NoError(t, err)
 	}

@@ -5,10 +5,9 @@ import (
 	"fmt"
 	"testing"
 
+	wwr "github.com/qbeon/webwire-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/valyala/fasthttp"
-
-	wwr "github.com/qbeon/webwire-go"
 )
 
 // setupServer helps setting up and launching the server
@@ -32,7 +31,7 @@ func setupServer(
 		impl.onClientConnected = func(_ wwr.Connection) {}
 	}
 	if impl.onClientDisconnected == nil {
-		impl.onClientDisconnected = func(_ wwr.Connection) {}
+		impl.onClientDisconnected = func(_ wwr.Connection, _ error) {}
 	}
 	if impl.onSignal == nil {
 		impl.onSignal = func(
@@ -48,7 +47,7 @@ func setupServer(
 			_ wwr.Connection,
 			_ wwr.Message,
 		) (response wwr.Payload, err error) {
-			return nil, nil
+			return wwr.Payload{}, nil
 		}
 	}
 
@@ -77,11 +76,6 @@ func setupServer(
 
 	// Return reference to the server and the address its bound to
 	return server
-}
-
-func comparePayload(t *testing.T, expected, actual wwr.Payload) {
-	assert.Equal(t, expected.Encoding(), actual.Encoding())
-	assert.Equal(t, expected.Data(), actual.Data())
 }
 
 func compareSessions(t *testing.T, expected, actual *wwr.Session) {

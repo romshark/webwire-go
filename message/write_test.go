@@ -11,8 +11,8 @@ import (
 	Constructors
 \****************************************************************/
 
-// TestMsgNewNamelessReqMsg tests NewNamelessRequestMessage
-func TestMsgNewNamelessReqMsg(t *testing.T) {
+// TestWriteMsgNamelessReq tests WriteMsgNamelessRequest
+func TestWriteMsgNamelessReq(t *testing.T) {
 	id := genRndMsgIdentifier()
 	// sessionKey := generateSessionKey()
 	sessionKey := "somesamplesessionkey"
@@ -25,17 +25,19 @@ func TestMsgNewNamelessReqMsg(t *testing.T) {
 	// Add session key to payload
 	expected = append(expected, []byte(sessionKey)...)
 
-	actual := NewNamelessRequestMessage(
+	writer := &testWriter{}
+	require.NoError(t, WriteMsgNamelessRequest(
+		writer,
 		MsgRestoreSession,
 		id,
 		[]byte(sessionKey),
-	)
-
-	require.Equal(t, expected, actual)
+	))
+	require.Equal(t, expected, writer.buf)
+	require.True(t, writer.closed)
 }
 
-// TestMsgNewEmptyReqMsg tests NewEmptyRequestMessage
-func TestMsgNewEmptyReqMsg(t *testing.T) {
+// TestWriteMsgEmptyReq tests WriteMsgEmptyRequest
+func TestWriteMsgEmptyReq(t *testing.T) {
 	id := genRndMsgIdentifier()
 
 	// Compose encoded message
@@ -44,14 +46,19 @@ func TestMsgNewEmptyReqMsg(t *testing.T) {
 	// Add identifier
 	expected = append(expected, id[:]...)
 
-	actual := NewEmptyRequestMessage(MsgCloseSession, id)
-
-	require.Equal(t, expected, actual)
+	writer := &testWriter{}
+	require.NoError(t, WriteMsgEmptyRequest(
+		writer,
+		MsgCloseSession,
+		id,
+	))
+	require.Equal(t, expected, writer.buf)
+	require.True(t, writer.closed)
 }
 
-// TestMsgNewReqMsgBinary tests NewRequestMessage
+// TestWriteMsgReqBinary tests WriteMsgRequest
 // using default binary payload encoding
-func TestMsgNewReqMsgBinary(t *testing.T) {
+func TestWriteMsgReqBinary(t *testing.T) {
 	id := genRndMsgIdentifier()
 	name := genRndName(1, 255)
 	payload := pld.Payload{
@@ -72,18 +79,21 @@ func TestMsgNewReqMsgBinary(t *testing.T) {
 	// (skip header padding byte, not necessary in case of binary encoding)
 	expected = append(expected, payload.Data...)
 
-	actual := NewRequestMessage(
+	writer := &testWriter{}
+	require.NoError(t, WriteMsgRequest(
+		writer,
 		id,
 		name,
 		payload.Encoding,
 		payload.Data,
-	)
-
-	require.Equal(t, expected, actual)
+		true,
+	))
+	require.Equal(t, expected, writer.buf)
+	require.True(t, writer.closed)
 }
 
-// TestMsgNewReqMsgUtf8 tests NewRequestMessage using UTF8 payload encoding
-func TestMsgNewReqMsgUtf8(t *testing.T) {
+// TestWriteMsgReqUtf8 tests WriteMsgRequest using UTF8 payload encoding
+func TestWriteMsgReqUtf8(t *testing.T) {
 	id := genRndMsgIdentifier()
 	name := genRndName(1, 255)
 	payload := pld.Payload{
@@ -104,18 +114,21 @@ func TestMsgNewReqMsgUtf8(t *testing.T) {
 	// (skip header padding byte, not necessary in case of UTF8 encoding)
 	expected = append(expected, payload.Data...)
 
-	actual := NewRequestMessage(
+	writer := &testWriter{}
+	require.NoError(t, WriteMsgRequest(
+		writer,
 		id,
 		name,
 		payload.Encoding,
 		payload.Data,
-	)
-
-	require.Equal(t, expected, actual)
+		true,
+	))
+	require.Equal(t, expected, writer.buf)
+	require.True(t, writer.closed)
 }
 
-// TestMsgNewReqMsgUtf16 tests NewRequestMessage using UTF8 payload encoding
-func TestMsgNewReqMsgUtf16(t *testing.T) {
+// TestWriteMsgReqUtf16 tests WriteMsgRequest using UTF8 payload encoding
+func TestWriteMsgReqUtf16(t *testing.T) {
 	id := genRndMsgIdentifier()
 	name := genRndName(1, 255)
 	payload := pld.Payload{
@@ -139,19 +152,22 @@ func TestMsgNewReqMsgUtf16(t *testing.T) {
 	// Add payload
 	expected = append(expected, payload.Data...)
 
-	actual := NewRequestMessage(
+	writer := &testWriter{}
+	require.NoError(t, WriteMsgRequest(
+		writer,
 		id,
 		name,
 		payload.Encoding,
 		payload.Data,
-	)
-
-	require.Equal(t, expected, actual)
+		true,
+	))
+	require.Equal(t, expected, writer.buf)
+	require.True(t, writer.closed)
 }
 
-// TestMsgNewReqMsgUtf16OddNameLen tests NewRequestMessage using
+// TestWriteMsgReqUtf16OddNameLen tests WriteMsgRequest using
 // UTF16 payload encoding and a name of odd length
-func TestMsgNewReqMsgUtf16OddNameLen(t *testing.T) {
+func TestWriteMsgReqUtf16OddNameLen(t *testing.T) {
 	id := genRndMsgIdentifier()
 	payload := pld.Payload{
 		Encoding: pld.Utf16,
@@ -172,19 +188,22 @@ func TestMsgNewReqMsgUtf16OddNameLen(t *testing.T) {
 	// Add payload
 	expected = append(expected, payload.Data...)
 
-	actual := NewRequestMessage(
+	writer := &testWriter{}
+	require.NoError(t, WriteMsgRequest(
+		writer,
 		id,
 		[]byte("odd"),
 		payload.Encoding,
 		payload.Data,
-	)
-
-	require.Equal(t, expected, actual)
+		true,
+	))
+	require.Equal(t, expected, writer.buf)
+	require.True(t, writer.closed)
 }
 
-// TestMsgNewReplyMsgBinary tests NewReplyMessage
+// TestWriteMsgReplyBinary tests WriteMsgReply
 // using default binary payload encoding
-func TestMsgNewReplyMsgBinary(t *testing.T) {
+func TestWriteMsgReplyBinary(t *testing.T) {
 	id := genRndMsgIdentifier()
 	payload := pld.Payload{
 		Encoding: pld.Binary,
@@ -200,17 +219,19 @@ func TestMsgNewReplyMsgBinary(t *testing.T) {
 	// Add payload
 	expected = append(expected, payload.Data...)
 
-	actual := NewReplyMessage(
+	writer := &testWriter{}
+	require.NoError(t, WriteMsgReply(
+		writer,
 		id,
 		payload.Encoding,
 		payload.Data,
-	)
-
-	require.Equal(t, expected, actual)
+	))
+	require.Equal(t, expected, writer.buf)
+	require.True(t, writer.closed)
 }
 
-// TestMsgNewReplyMsgUtf8 tests NewReplyMessage using UTF8 payload encoding
-func TestMsgNewReplyMsgUtf8(t *testing.T) {
+// TestWriteMsgReplyUtf8 tests WriteMsgReply using UTF8 payload encoding
+func TestWriteMsgReplyUtf8(t *testing.T) {
 	id := genRndMsgIdentifier()
 	payload := pld.Payload{
 		Encoding: pld.Utf8,
@@ -226,17 +247,19 @@ func TestMsgNewReplyMsgUtf8(t *testing.T) {
 	// Add payload
 	expected = append(expected, payload.Data...)
 
-	actual := NewReplyMessage(
+	writer := &testWriter{}
+	require.NoError(t, WriteMsgReply(
+		writer,
 		id,
 		payload.Encoding,
 		payload.Data,
-	)
-
-	require.Equal(t, expected, actual)
+	))
+	require.Equal(t, expected, writer.buf)
+	require.True(t, writer.closed)
 }
 
-// TestMsgNewReplyMsgUtf16 tests NewReplyMessage using UTF16 payload encoding
-func TestMsgNewReplyMsgUtf16(t *testing.T) {
+// TestWriteMsgReplyUtf16 tests WriteMsgReply using UTF16 payload encoding
+func TestWriteMsgReplyUtf16(t *testing.T) {
 	id := genRndMsgIdentifier()
 	payload := pld.Payload{
 		Encoding: pld.Utf16,
@@ -254,18 +277,20 @@ func TestMsgNewReplyMsgUtf16(t *testing.T) {
 	// Add payload
 	expected = append(expected, payload.Data...)
 
-	actual := NewReplyMessage(
+	writer := &testWriter{}
+	require.NoError(t, WriteMsgReply(
+		writer,
 		id,
 		payload.Encoding,
 		payload.Data,
-	)
-
-	require.Equal(t, expected, actual)
+	))
+	require.Equal(t, expected, writer.buf)
+	require.True(t, writer.closed)
 }
 
-// TestMsgNewSigMsgBinary tests NewSignalMessage
+// TestWriteMsgSigBinary tests WriteMsgSignal
 // using the default binary encoding
-func TestMsgNewSigMsgBinary(t *testing.T) {
+func TestWriteMsgSigBinary(t *testing.T) {
 	name := genRndName(1, 255)
 	payload := pld.Payload{
 		Encoding: pld.Binary,
@@ -282,17 +307,20 @@ func TestMsgNewSigMsgBinary(t *testing.T) {
 	// Add payload (skip header padding byte in case of binary encoding)
 	expected = append(expected, payload.Data...)
 
-	actual := NewSignalMessage(
+	writer := &testWriter{}
+	require.NoError(t, WriteMsgSignal(
+		writer,
 		name,
 		payload.Encoding,
 		payload.Data,
-	)
-
-	require.Equal(t, expected, actual)
+		true,
+	))
+	require.Equal(t, expected, writer.buf)
+	require.True(t, writer.closed)
 }
 
-// TestMsgNewSigMsgUtf8 tests NewSignalMessage using UTF8 encoding
-func TestMsgNewSigMsgUtf8(t *testing.T) {
+// TestWriteMsgSigUtf8 tests WriteMsgSignal using UTF8 encoding
+func TestWriteMsgSigUtf8(t *testing.T) {
 	name := genRndName(1, 255)
 	payload := pld.Payload{
 		Encoding: pld.Utf8,
@@ -309,17 +337,20 @@ func TestMsgNewSigMsgUtf8(t *testing.T) {
 	// Add payload (skip header padding byte in case of UTF8 encoding)
 	expected = append(expected, payload.Data...)
 
-	actual := NewSignalMessage(
+	writer := &testWriter{}
+	require.NoError(t, WriteMsgSignal(
+		writer,
 		name,
 		payload.Encoding,
 		payload.Data,
-	)
-
-	require.Equal(t, expected, actual)
+		true,
+	))
+	require.Equal(t, expected, writer.buf)
+	require.True(t, writer.closed)
 }
 
-// TestMsgNewSigMsgUtf16 tests NewSignalMessage using UTF16 encoding
-func TestMsgNewSigMsgUtf16(t *testing.T) {
+// TestWriteMsgSigUtf16 tests WriteMsgSignal using UTF16 encoding
+func TestWriteMsgSigUtf16(t *testing.T) {
 	name := genRndName(1, 255)
 	payload := pld.Payload{
 		Encoding: pld.Utf16,
@@ -340,18 +371,21 @@ func TestMsgNewSigMsgUtf16(t *testing.T) {
 	// Add payload
 	expected = append(expected, payload.Data...)
 
-	actual := NewSignalMessage(
+	writer := &testWriter{}
+	require.NoError(t, WriteMsgSignal(
+		writer,
 		name,
 		payload.Encoding,
 		payload.Data,
-	)
-
-	require.Equal(t, expected, actual)
+		true,
+	))
+	require.Equal(t, expected, writer.buf)
+	require.True(t, writer.closed)
 }
 
-// TestMsgNewSigMsgUtf16OddNameLen tests NewSignalMessage using UTF16 encoding
-// and a name of odd length to ensure a header padding byte is used
-func TestMsgNewSigMsgUtf16OddNameLen(t *testing.T) {
+// TestWriteMsgSigUtf16OddNameLen tests WriteMsgSignal using UTF16 encoding and
+// a name of odd length to ensure a header padding byte is used
+func TestWriteMsgSigUtf16OddNameLen(t *testing.T) {
 	payload := pld.Payload{
 		Encoding: pld.Utf16,
 		Data:     []byte{'r', 0, 'a', 0, 'n', 0, 'd', 0, 'o', 0, 'm', 0},
@@ -369,11 +403,53 @@ func TestMsgNewSigMsgUtf16OddNameLen(t *testing.T) {
 	// Add payload
 	expected = append(expected, payload.Data...)
 
-	actual := NewSignalMessage(
+	writer := &testWriter{}
+	require.NoError(t, WriteMsgSignal(
+		writer,
 		[]byte("odd"),
 		payload.Encoding,
 		payload.Data,
-	)
+		true,
+	))
+	require.Equal(t, expected, writer.buf)
+	require.True(t, writer.closed)
+}
 
-	require.Equal(t, expected, actual)
+// TestWriteMsgSessionCreated tests WriteMsgSessionCreated
+func TestWriteMsgSessionCreated(t *testing.T) {
+	// Compose encoded message
+	// Write type flag
+	expected := []byte{MsgSessionCreated}
+	// Write session info payload
+	expected = append(expected, []byte("session info")...)
+
+	writer := &testWriter{}
+	require.NoError(t, WriteMsgSessionCreated(
+		writer,
+		[]byte("session info"),
+	))
+	require.Equal(t, expected, writer.buf)
+	require.True(t, writer.closed)
+}
+
+// TestWriteMsgSessionClosed tests WriteMsgSessionClosed
+func TestWriteMsgSessionClosed(t *testing.T) {
+	// Compose expected message
+	expected := []byte{MsgSessionClosed}
+
+	writer := &testWriter{}
+	require.NoError(t, WriteMsgSessionClosed(writer))
+	require.Equal(t, expected, writer.buf)
+	require.True(t, writer.closed)
+}
+
+// TestWriteMsgHeartbeat tests WriteMsgHeartbeat
+func TestWriteMsgHeartbeat(t *testing.T) {
+	// Compose expected message
+	expected := []byte{MsgHeartbeat}
+
+	writer := &testWriter{}
+	require.NoError(t, WriteMsgHeartbeat(writer))
+	require.Equal(t, expected, writer.buf)
+	require.True(t, writer.closed)
 }

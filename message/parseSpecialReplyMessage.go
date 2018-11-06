@@ -1,19 +1,19 @@
 package message
 
-import "fmt"
+import "errors"
 
 // parseSpecialReplyMessage parses the following message types:
 // MsgReplyShutdown, MsgInternalError, MsgSessionNotFound,
-// MsgMaxSessConnsReached, MsgSessionsDisabled, MsgReplyProtocolError
-func (msg *Message) parseSpecialReplyMessage(message []byte) error {
-	if len(message) < 9 {
-		return fmt.Errorf("Invalid special reply message, too short")
+// MsgMaxSessConnsReached, MsgSessionsDisabled
+func (msg *Message) parseSpecialReplyMessage() error {
+	if msg.MsgBuffer.len < 9 {
+		return errors.New("invalid special reply message, too short")
 	}
 
 	// Read identifier
 	var id [8]byte
-	copy(id[:], message[1:9])
-	msg.Identifier = id
+	copy(id[:], msg.MsgBuffer.buf[1:9])
+	msg.MsgIdentifier = id
 
 	return nil
 }

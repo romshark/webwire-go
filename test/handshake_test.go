@@ -4,12 +4,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/qbeon/webwire-go/message"
-
-	"github.com/stretchr/testify/require"
-
 	"github.com/fasthttp/websocket"
 	wwr "github.com/qbeon/webwire-go"
+	"github.com/qbeon/webwire-go/message"
+	"github.com/stretchr/testify/require"
 )
 
 // TestHandshake tests the connection establishment handshake testing the server
@@ -28,7 +26,7 @@ func TestHandshake(t *testing.T) {
 		},
 	)
 
-	readTimeout := 2 * time.Second
+	readTimeout := 5 * time.Second
 
 	// Setup a regular websocket connection
 	serverAddr := server.AddressURL()
@@ -40,21 +38,23 @@ func TestHandshake(t *testing.T) {
 
 	conn, _, err := websocket.DefaultDialer.Dial(serverAddr.String(), nil)
 	require.NoError(t, err)
+	require.NotNil(t, conn)
 	defer conn.Close()
 
 	// Await the server configuration push message
-	conn.SetReadDeadline(time.Now().Add(readTimeout))
-	_, msgData, readErr := conn.ReadMessage()
-	require.NoError(t, readErr)
-	require.NotNil(t, msgData)
+	require.NoError(t, conn.SetReadDeadline(time.Now().Add(readTimeout)))
 
-	// Parse server config message
-	msg := &message.Message{}
-	parsedMessageType, err := msg.Parse(msgData)
-	require.True(t, parsedMessageType)
+	messageType, reader, err := conn.NextReader()
 	require.NoError(t, err)
-	require.Equal(t, [8]byte{0, 0, 0, 0, 0, 0, 0, 0}, msg.Identifier)
-	require.Nil(t, msg.Name)
+	require.Equal(t, websocket.BinaryMessage, messageType)
+
+	msg := message.NewMessage(messageBufferSize)
+	parsedMessageType, readErr := msg.Read(reader)
+	require.NoError(t, readErr)
+	require.True(t, parsedMessageType)
+
+	require.Equal(t, [8]byte{0, 0, 0, 0, 0, 0, 0, 0}, msg.MsgIdentifier)
+	require.Nil(t, msg.MsgName)
 	require.Equal(t, message.ServerConfiguration{
 		MajorProtocolVersion: 2,
 		MinorProtocolVersion: 0,

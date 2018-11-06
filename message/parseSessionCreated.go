@@ -1,21 +1,24 @@
 package message
 
 import (
-	"fmt"
+	"errors"
 
 	pld "github.com/qbeon/webwire-go/payload"
 )
 
 // parseSessionCreated parses MsgSessionCreated messages
-func (msg *Message) parseSessionCreated(message []byte) error {
-	if len(message) < MsgMinLenSessionCreated {
-		return fmt.Errorf(
-			"Invalid session creation notification message, too short",
+func (msg *Message) parseSessionCreated() error {
+	if msg.MsgBuffer.len < MsgMinLenSessionCreated {
+		return errors.New(
+			"invalid session creation notification message, too short",
 		)
 	}
 
-	msg.Payload = pld.Payload{
-		Data: message[1:],
+	dat := msg.MsgBuffer.Data()
+
+	msg.MsgPayload = pld.Payload{
+		Data: dat[1:],
 	}
+
 	return nil
 }

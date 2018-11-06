@@ -1,12 +1,12 @@
 package message
 
-import "fmt"
+import "errors"
 
 // parseSessionClosed parses MsgSessionClosed messages
-func (msg *Message) parseSessionClosed(message []byte) error {
-	if len(message) != MsgMinLenSessionClosed {
-		return fmt.Errorf(
-			"Invalid session closure notification message, too short",
+func (msg *Message) parseSessionClosed() error {
+	if msg.MsgBuffer.len != MsgMinLenSessionClosed {
+		return errors.New(
+			"invalid session closure notification message, too short",
 		)
 	}
 	return nil

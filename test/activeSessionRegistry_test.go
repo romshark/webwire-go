@@ -5,12 +5,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
-
-	"github.com/stretchr/testify/assert"
-
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestActiveSessionRegistry verifies that the session registry
@@ -28,22 +26,22 @@ func TestActiveSessionRegistry(t *testing.T) {
 				// Close session on logout
 				if string(msg.Name()) == "logout" {
 					assert.NoError(t, conn.CloseSession())
-					return nil, nil
+					return wwr.Payload{}, nil
 				}
 
 				// Try to create a new session
 				err := conn.CreateSession(nil)
 				assert.NoError(t, err)
 				if err != nil {
-					return nil, err
+					return wwr.Payload{}, err
 				}
 
 				// Return the key of the newly created session
 				// (use default binary encoding)
-				return wwr.NewPayload(
-					wwr.EncodingBinary,
-					[]byte(conn.SessionKey()),
-				), nil
+				return wwr.Payload{
+					Encoding: wwr.EncodingBinary,
+					Data:     []byte(conn.SessionKey()),
+				}, nil
 			},
 		},
 		wwr.ServerOptions{},
@@ -62,12 +60,16 @@ func TestActiveSessionRegistry(t *testing.T) {
 	require.NoError(t, client.connection.Connect())
 
 	// Send authentication request
-	_, err := client.connection.Request(
+	reply, err := client.connection.Request(
 		context.Background(),
 		[]byte("login"),
-		wwr.NewPayload(wwr.EncodingUtf8, []byte("nothing")),
+		wwr.Payload{
+			Encoding: wwr.EncodingUtf8,
+			Data:     []byte("nothing"),
+		},
 	)
 	require.NoError(t, err)
+	reply.Close()
 
 	activeSessionNumberBefore := server.ActiveSessionsNum()
 	require.Equal(t,
@@ -76,12 +78,16 @@ func TestActiveSessionRegistry(t *testing.T) {
 	)
 
 	// Send logout request
-	_, err = client.connection.Request(
+	reply, err = client.connection.Request(
 		context.Background(),
 		[]byte("logout"),
-		wwr.NewPayload(wwr.EncodingUtf8, []byte("nothing")),
+		wwr.Payload{
+			Encoding: wwr.EncodingUtf8,
+			Data:     []byte("nothing"),
+		},
 	)
 	require.NoError(t, err)
+	reply.Close()
 
 	activeSessionNumberAfter := server.ActiveSessionsNum()
 	require.Equal(t,

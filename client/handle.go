@@ -2,10 +2,9 @@ package client
 
 import (
 	"encoding/json"
-	"errors"
+	"fmt"
 
 	"github.com/qbeon/webwire-go/message"
-	"github.com/qbeon/webwire-go/msgbuf"
 
 	webwire "github.com/qbeon/webwire-go"
 	pld "github.com/qbeon/webwire-go/payload"
@@ -64,106 +63,88 @@ func (clt *client) handleSessionsDisabled(reqIdent [8]byte) {
 	clt.requestManager.Fail(reqIdent, webwire.SessionsDisabledErr{})
 }
 
-func (clt *client) handleReply(msg *message.Message) {
-	clt.requestManager.Fulfill(
-		msg.Identifier,
-		&webwire.BufferedEncodedPayload{
-			Buffer:  msg.Buffer,
-			Payload: msg.Payload,
-			Closed:  false,
-		},
-	)
-}
-
 // handleMessage handles incoming messages
-func (clt *client) handleMessage(buf *msgbuf.MessageBuffer) error {
-	msg := &message.Message{
-		Buffer: buf,
-	}
+func (clt *client) handleMessage(msg *message.Message) (err error) {
+	// Recover user-space panics to avoid leaking memory through unreleased
+	// message buffer
+	defer func() {
+		if recvErr := recover(); recvErr != nil {
+			r, ok := recvErr.(error)
+			if !ok {
+				err = fmt.Errorf("unexpected panic: %v", recvErr)
+			} else {
+				err = r
+			}
+		}
+	}()
 
-	// Parse the message from the reader into the buffer
-	typeDetermined, err := msg.Parse(buf.Data())
-	if !typeDetermined {
-		// Release the buffer before returning the error
-		buf.Close()
-		return errors.New("couldn't determine message type")
-	} else if err != nil {
-		// Release the buffer before returning the error
-		buf.Close()
-		return err
-	}
-
-	switch msg.Type {
+	switch msg.MsgType {
 	case message.MsgReplyBinary:
-		clt.handleReply(msg)
+		clt.requestManager.Fulfill(msg)
 		// Don't release the buffer, make the user responsible for releasing it
 	case message.MsgReplyUtf8:
-		clt.handleReply(msg)
+		clt.requestManager.Fulfill(msg)
 		// Don't release the buffer, make the user responsible for releasing it
 	case message.MsgReplyUtf16:
-		clt.handleReply(msg)
+		clt.requestManager.Fulfill(msg)
 		// Don't release the buffer, make the user responsible for releasing it
 
 	case message.MsgReplyShutdown:
-		clt.handleReplyShutdown(msg.Identifier)
+		clt.handleReplyShutdown(msg.MsgIdentifier)
 		// Release the buffer
-		buf.Close()
+		msg.Close()
 	case message.MsgSessionNotFound:
-		clt.handleSessionNotFound(msg.Identifier)
+		clt.handleSessionNotFound(msg.MsgIdentifier)
 		// Release the buffer
-		buf.Close()
+		msg.Close()
 	case message.MsgMaxSessConnsReached:
-		clt.handleMaxSessConnsReached(msg.Identifier)
+		clt.handleMaxSessConnsReached(msg.MsgIdentifier)
 		// Release the buffer
-		buf.Close()
+		msg.Close()
 	case message.MsgSessionsDisabled:
-		clt.handleSessionsDisabled(msg.Identifier)
+		clt.handleSessionsDisabled(msg.MsgIdentifier)
 		// Release the buffer
-		buf.Close()
+		msg.Close()
 	case message.MsgErrorReply:
 		// The message name contains the error code in case of
 		// error reply messages, while the UTF8 encoded error message is
 		// contained in the message payload
-		clt.requestManager.Fail(msg.Identifier, webwire.ReqErr{
-			Code:    string(msg.Name),
-			Message: string(msg.Payload.Data),
+		clt.requestManager.Fail(msg.MsgIdentifier, webwire.ReqErr{
+			Code:    string(msg.MsgName),
+			Message: string(msg.MsgPayload.Data),
 		})
 		// Release the buffer
-		buf.Close()
+		msg.Close()
 	case message.MsgInternalError:
-		clt.handleInternalError(msg.Identifier)
+		clt.handleInternalError(msg.MsgIdentifier)
 		// Release the buffer
-		buf.Close()
+		msg.Close()
 
 	case message.MsgSignalBinary:
 		fallthrough
 	case message.MsgSignalUtf8:
 		fallthrough
 	case message.MsgSignalUtf16:
-		clt.impl.OnSignal(msg.Name, &webwire.BufferedEncodedPayload{
-			Buffer:  msg.Buffer,
-			Payload: msg.Payload,
-			Closed:  false,
-		})
-		// Realease the buffer af the OnSignal user-space hook is executed
+		clt.impl.OnSignal(msg)
+		// Realease the buffer after the OnSignal user-space hook is executed
 		// because it's referenced there through the payload
-		buf.Close()
+		msg.Close()
 
 	case message.MsgSessionCreated:
-		clt.handleSessionCreated(msg.Payload)
+		clt.handleSessionCreated(msg.MsgPayload)
 		// Release the buffer after the OnSessionCreated user-space hook is
 		// executed because it's referenced there through the payload
-		buf.Close()
+		msg.Close()
 	case message.MsgSessionClosed:
 		// Release the buffer before calling the OnSessionClosed user-space hook
-		buf.Close()
+		msg.Close()
 		clt.handleSessionClosed()
 	default:
 		// Release the buffer
-		buf.Close()
+		msg.Close()
 		clt.warningLog.Printf(
 			"Strange message type received: '%d'\n",
-			msg.Type,
+			msg.MsgType,
 		)
 	}
 	return nil
