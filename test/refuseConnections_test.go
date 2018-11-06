@@ -7,6 +7,7 @@ import (
 
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
+	wwrfasthttp "github.com/qbeon/webwire-go/transport/fasthttp"
 	"github.com/stretchr/testify/require"
 	"github.com/valyala/fasthttp"
 )
@@ -20,12 +21,6 @@ func TestRefuseConnections(t *testing.T) {
 	server := setupServer(
 		t,
 		&serverImpl{
-			beforeUpgrade: func(
-				_ *fasthttp.RequestCtx,
-			) wwr.ConnectionOptions {
-				// Refuse all incoming connections
-				return wwr.ConnectionOptions{Connection: wwr.Refuse}
-			},
 			onRequest: func(
 				_ context.Context,
 				_ wwr.Connection,
@@ -36,13 +31,22 @@ func TestRefuseConnections(t *testing.T) {
 				return wwr.Payload{}, nil
 			},
 		},
-		wwr.ServerOptions{},
+		wwr.ServerOptions{
+			Transport: &wwrfasthttp.Transport{
+				BeforeUpgrade: func(
+					_ *fasthttp.RequestCtx,
+				) wwr.ConnectionOptions {
+					// Refuse all incoming connections
+					return wwr.ConnectionOptions{Connection: wwr.Refuse}
+				},
+			},
+		},
 	)
 
 	clients := make([]*callbackPoweredClient, numClients)
 	for i := 0; i < numClients; i++ {
 		clt := newCallbackPoweredClient(
-			server.AddressURL(),
+			server.Address(),
 			wwrclt.Options{
 				DefaultRequestTimeout: 2 * time.Second,
 				Autoconnect:           wwr.Disabled,

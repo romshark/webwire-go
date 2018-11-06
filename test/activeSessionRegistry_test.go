@@ -49,7 +49,7 @@ func TestActiveSessionRegistry(t *testing.T) {
 
 	// Initialize client
 	client := newCallbackPoweredClient(
-		server.AddressURL(),
+		server.Address(),
 		wwrclt.Options{
 			DefaultRequestTimeout: time.Second * 2,
 		},

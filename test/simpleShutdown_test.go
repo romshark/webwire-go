@@ -22,7 +22,7 @@ func TestSimpleShutdown(t *testing.T) {
 	clients := make([]*callbackPoweredClient, connectedClientsNum)
 	for i := 0; i < connectedClientsNum; i++ {
 		client := newCallbackPoweredClient(
-			server.AddressURL(),
+			server.Address(),
 			wwrclt.Options{
 				Autoconnect: wwr.Disabled,
 			},

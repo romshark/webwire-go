@@ -23,7 +23,7 @@ func TestClientRestSessAutoconn(t *testing.T) {
 
 	// Initialize client
 	client := newCallbackPoweredClient(
-		server.AddressURL(),
+		server.Address(),
 		wwrclt.Options{
 			DefaultRequestTimeout: 100 * time.Millisecond,
 		},
@@ -36,5 +36,5 @@ func TestClientRestSessAutoconn(t *testing.T) {
 		[]byte("inexistent_key"),
 	)
 	require.Error(t, err)
-	require.IsType(t, wwr.SessNotFoundErr{}, err)
+	require.IsType(t, wwr.SessionNotFoundErr{}, err)
 }

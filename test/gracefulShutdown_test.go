@@ -65,7 +65,7 @@ func TestGracefulShutdown(t *testing.T) {
 		wwr.ServerOptions{},
 	)
 
-	serverAddr := server.AddressURL()
+	serverAddr := server.Address()
 
 	// Initialize different clients for the signal,
 	// the request and the late request and conn
@@ -169,9 +169,9 @@ func TestGracefulShutdown(t *testing.T) {
 			wwr.Payload{Data: []byte("test")},
 		)
 		switch err := lateReqErr.(type) {
-		case wwr.ReqSrvShutdownErr:
+		case wwr.ServerShutdownErr:
 			break
-		case wwr.ReqErr:
+		case wwr.RequestErr:
 			t.Errorf("Expected special server shutdown error, "+
 				"got regular request error: %s",
 				err,

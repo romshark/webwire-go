@@ -4,7 +4,7 @@ import (
 	"context"
 	"sync"
 
-	webwire "github.com/qbeon/webwire-go"
+	"github.com/qbeon/webwire-go/wwrerr"
 )
 
 // dam represents a "goroutine dam" that accumulates goroutines blocking them
@@ -39,7 +39,7 @@ func (dam *dam) await(
 			return ctx.Err()
 		}
 		// Or return a default timeout if the deadline was set automatically
-		return webwire.TimeoutErr{}
+		return wwrerr.TimeoutErr{}
 	case <-trigger:
 		dam.lock.RLock()
 		err := dam.err

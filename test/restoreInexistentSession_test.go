@@ -23,7 +23,7 @@ func TestRestoreInexistentSession(t *testing.T) {
 
 	// Ensure that the last superfluous client is rejected
 	client := newCallbackPoweredClient(
-		server.AddressURL(),
+		server.Address(),
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
@@ -39,5 +39,5 @@ func TestRestoreInexistentSession(t *testing.T) {
 		[]byte("lalala"),
 	)
 	require.Error(t, sessionRestorationError)
-	require.IsType(t, wwr.SessNotFoundErr{}, sessionRestorationError)
+	require.IsType(t, wwr.SessionNotFoundErr{}, sessionRestorationError)
 }

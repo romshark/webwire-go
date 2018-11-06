@@ -49,7 +49,7 @@ func TestServerSideSessionClosureInexistent(t *testing.T) {
 	clients := make([]*callbackPoweredClient, simultaneousClients)
 	for i := 0; i < simultaneousClients; i++ {
 		client := newCallbackPoweredClient(
-			server.AddressURL(),
+			server.Address(),
 			wwrclt.Options{
 				DefaultRequestTimeout: 2 * time.Second,
 				Autoconnect:           wwr.Disabled,

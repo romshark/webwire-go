@@ -1,4 +1,4 @@
-package webwire
+package fasthttp
 
 import (
 	"net"

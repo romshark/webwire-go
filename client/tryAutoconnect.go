@@ -4,7 +4,7 @@ import (
 	"context"
 	"sync/atomic"
 
-	webwire "github.com/qbeon/webwire-go"
+	"github.com/qbeon/webwire-go/wwrerr"
 )
 
 // tryAutoconnect tries to connect to the server. If autoconnect is enabled it
@@ -24,7 +24,7 @@ func (clt *client) tryAutoconnect(
 	} else if atomic.LoadInt32(&clt.autoconnect) != autoconnectEnabled {
 		// Don't try to auto-connect if it's either temporarily deactivated
 		// or completely disabled
-		return webwire.DisconnectedErr{}
+		return wwrerr.DisconnectedErr{}
 	}
 
 	// Start the reconnector goroutine if not already started.

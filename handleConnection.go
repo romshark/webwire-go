@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/fasthttp/websocket"
+	"github.com/qbeon/webwire-go/transport"
 )
 
-func (srv *server) writeConfMessage(sock Socket) error {
+func (srv *server) writeConfMessage(sock transport.Socket) error {
 	writer, err := sock.GetWriter()
 	if err != nil {
 		return fmt.Errorf(
@@ -30,34 +30,8 @@ func (srv *server) writeConfMessage(sock Socket) error {
 func (srv *server) handleConnection(
 	connectionOptions ConnectionOptions,
 	userAgent []byte,
-	conn *websocket.Conn,
+	sock transport.Socket,
 ) {
-	conn.SetPongHandler(func(appData string) error {
-		if err := conn.SetReadDeadline(
-			time.Now().Add(srv.options.ReadTimeout),
-		); err != nil {
-			return fmt.Errorf(
-				"couldn't set read deadline in Pong handler: %s",
-				err,
-			)
-		}
-		return nil
-	})
-
-	conn.SetPingHandler(func(appData string) error {
-		if err := conn.SetReadDeadline(
-			time.Now().Add(srv.options.ReadTimeout),
-		); err != nil {
-			return fmt.Errorf(
-				"couldn't set read deadline in Ping handler: %s",
-				err,
-			)
-		}
-		return nil
-	})
-
-	sock := newFasthttpConnectedSocket(conn)
-
 	// Send server configuration message
 	if err := srv.writeConfMessage(sock); err != nil {
 		srv.errorLog.Println("couldn't write config message: ", err)
@@ -67,7 +41,7 @@ func (srv *server) handleConnection(
 		return
 	}
 
-	if err := conn.SetReadDeadline(
+	if err := sock.SetReadDeadline(
 		time.Now().Add(srv.options.ReadTimeout),
 	); err != nil {
 		srv.errorLog.Printf("couldn't set read deadline: %s", err)

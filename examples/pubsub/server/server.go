@@ -12,7 +12,6 @@ import (
 	"time"
 
 	wwr "github.com/qbeon/webwire-go"
-	"github.com/valyala/fasthttp"
 )
 
 // PubSubServer implements the webwire.ServerImplementation interface
@@ -32,13 +31,6 @@ func NewPubSubServer() *PubSubServer {
 	}
 }
 
-// OnOptions implements the webwire.ServerImplementation interface.
-// Sets HTTP access control headers to satisfy CORS
-func (srv *PubSubServer) OnOptions(ctx *fasthttp.RequestCtx) {
-	ctx.Response.Header.Set("Access-Control-Allow-Origin", "*")
-	ctx.Response.Header.Set("Access-Control-Allow-Methods", "WEBWIRE")
-}
-
 // OnSignal implements the webwire.ServerImplementation interface
 // Does nothing, not needed in this example
 func (srv *PubSubServer) OnSignal(
@@ -55,17 +47,10 @@ func (srv *PubSubServer) OnRequest(
 	_ wwr.Connection,
 	_ wwr.Message,
 ) (response wwr.Payload, err error) {
-	return wwr.Payload{}, wwr.ReqErr{
+	return wwr.Payload{}, wwr.RequestErr{
 		Code:    "REQ_NOT_SUPPORTED",
 		Message: "Requests are not supported on this server",
 	}
-}
-
-// BeforeUpgrade implements the webwire.ServerImplementation interface
-func (srv *PubSubServer) BeforeUpgrade(
-	_ *fasthttp.RequestCtx,
-) wwr.ConnectionOptions {
-	return wwr.ConnectionOptions{}
 }
 
 // OnClientConnected implements the webwire.ServerImplementation interface.
@@ -159,7 +144,8 @@ func main() {
 		log.Println("Server gracefully terminated")
 	}()
 
-	log.Printf("Listening on %s", server.Address())
+	addr := server.Address()
+	log.Printf("Listening on %s", addr.String())
 
 	// Launch server
 	if err := server.Run(); err != nil {

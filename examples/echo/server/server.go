@@ -10,18 +10,10 @@ import (
 	"syscall"
 
 	wwr "github.com/qbeon/webwire-go"
-	"github.com/valyala/fasthttp"
 )
 
 // EchoServer implements the webwire.ServerImplementation interface
 type EchoServer struct{}
-
-// OnOptions implements the webwire.ServerImplementation interface.
-// Sets HTTP access control headers to satisfy CORS
-func (srv *EchoServer) OnOptions(ctx *fasthttp.RequestCtx) {
-	ctx.Response.Header.Set("Access-Control-Allow-Origin", "*")
-	ctx.Response.Header.Set("Access-Control-Allow-Methods", "WEBWIRE")
-}
 
 // OnSignal implements the webwire.ServerImplementation interface
 // Does nothing, not needed in this example
@@ -39,13 +31,6 @@ func (srv *EchoServer) OnClientConnected(client wwr.Connection) {}
 // OnClientDisconnected implements the webwire.ServerImplementation interface
 // Does nothing, not needed in this example
 func (srv *EchoServer) OnClientDisconnected(_ wwr.Connection, _ error) {}
-
-// BeforeUpgrade implements the webwire.ServerImplementation interface
-func (srv *EchoServer) BeforeUpgrade(
-	_ *fasthttp.RequestCtx,
-) wwr.ConnectionOptions {
-	return wwr.ConnectionOptions{}
-}
 
 // OnRequest implements the webwire.ServerImplementation interface.
 // Returns the received message back to the client
@@ -93,7 +78,8 @@ func main() {
 	}()
 
 	// Launch echo server
-	log.Printf("Listening on %s", server.Address())
+	addr := server.Address()
+	log.Printf("Listening on %s", addr.String())
 	if err := server.Run(); err != nil {
 		panic(fmt.Errorf("WebWire server failed: %s", err))
 	}

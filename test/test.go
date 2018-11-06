@@ -7,7 +7,6 @@ import (
 
 	wwr "github.com/qbeon/webwire-go"
 	"github.com/stretchr/testify/assert"
-	"github.com/valyala/fasthttp"
 )
 
 // setupServer helps setting up and launching the server
@@ -19,14 +18,6 @@ func setupServer(
 	opts wwr.ServerOptions,
 ) wwr.Server {
 	// Setup headed server on arbitrary port
-
-	if impl.beforeUpgrade == nil {
-		impl.beforeUpgrade = func(
-			_ *fasthttp.RequestCtx,
-		) wwr.ConnectionOptions {
-			return wwr.ConnectionOptions{}
-		}
-	}
 	if impl.onClientConnected == nil {
 		impl.onClientConnected = func(_ wwr.Connection) {}
 	}
@@ -70,7 +61,7 @@ func setupServer(
 	// Run server in a separate goroutine
 	go func() {
 		if err := server.Run(); err != nil {
-			panic(fmt.Errorf("Server failed: %s", err))
+			panic(fmt.Errorf("server failed: %s", err))
 		}
 	}()
 

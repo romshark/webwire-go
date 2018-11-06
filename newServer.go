@@ -1,134 +1,23 @@
 package webwire
 
 import (
-	"crypto/tls"
 	"fmt"
-	"net"
 	"net/url"
 	"sync"
 
-	"github.com/fasthttp/websocket"
 	"github.com/qbeon/webwire-go/message"
-	"github.com/valyala/fasthttp"
 )
 
-// NewServer creates a new headed WebWire server instance
-// with a built-in HTTP server hosting it
+// NewServer creates a new WebWire server instance which uses a
+// fasthttp/websocket transport by default
 func NewServer(
 	implementation ServerImplementation,
 	opts ServerOptions,
-
-) (Server, error) {
-	if err := opts.Prepare(); err != nil {
-		return nil, err
-	}
-
-	headlessInstance, err := NewHeadlessServer(implementation, opts)
-	if err != nil {
-		return nil, err
-	}
-
-	srv := headlessInstance.(*server)
-	srv.options = opts
-
-	// Initialize HTTP server
-	srv.httpServer = &fasthttp.Server{
-		Handler:         srv.handleAccept,
-		Name:            "webwire 1.5",
-		ReadBufferSize:  int(opts.ReadBufferSize),
-		WriteBufferSize: int(opts.WriteBufferSize),
-		ReadTimeout:     opts.ReadTimeout,
-		MaxConnsPerIP:   int(opts.MaxConnsPerIP),
-	}
-
-	// Determine final address
-	if opts.Host == "" {
-		opts.Host = ":http"
-	}
-
-	// Initialize TCP/IP listener
-	srv.listener, err = net.Listen("tcp", opts.Host)
-	if err != nil {
-		return nil, fmt.Errorf("Failed setting up TCP/IP listener: %s", err)
-	}
-
-	srv.addr = url.URL{
-		Scheme: "http",
-		Host:   srv.listener.Addr().String(),
-		Path:   "/",
-	}
-
-	return srv, nil
-}
-
-// NewServerSecure creates a new headed WebWire server instance
-// with a built-in HTTPS server hosting it
-func NewServerSecure(
-	implementation ServerImplementation,
-	opts ServerOptions,
-	certFilePath,
-	keyFilePath string,
-	TLSConfig *tls.Config,
-) (Server, error) {
-	if err := opts.Prepare(); err != nil {
-		return nil, err
-	}
-
-	if TLSConfig == nil {
-		TLSConfig = &tls.Config{}
-	}
-
-	headlessInstance, err := NewHeadlessServer(implementation, opts)
-	if err != nil {
-		return nil, err
-	}
-
-	srv := headlessInstance.(*server)
-	srv.options = opts
-	srv.certFilePath = certFilePath
-	srv.keyFilePath = keyFilePath
-	srv.tlsConfig = TLSConfig
-
-	// Initialize HTTPS server
-	srv.httpServer = &fasthttp.Server{
-		Handler:         srv.handleAccept,
-		Name:            "webwire 1.5",
-		ReadBufferSize:  int(opts.ReadBufferSize),
-		WriteBufferSize: int(opts.WriteBufferSize),
-		ReadTimeout:     opts.ReadTimeout,
-		MaxConnsPerIP:   int(opts.MaxConnsPerIP),
-	}
-
-	// Determine final address
-	if opts.Host == "" {
-		opts.Host = ":http"
-	}
-
-	// Initialize TCP/IP listener
-	srv.listener, err = net.Listen("tcp", opts.Host)
-	if err != nil {
-		return nil, fmt.Errorf("Failed setting up TCP/IP listener: %s", err)
-	}
-
-	srv.addr = url.URL{
-		Scheme: "https",
-		Host:   srv.listener.Addr().String(),
-		Path:   "/",
-	}
-
-	return srv, nil
-}
-
-// NewHeadlessServer creates a new headless WebWire server instance
-// which relies on an external HTTP server to host it
-func NewHeadlessServer(
-	implementation ServerImplementation,
-	opts ServerOptions,
-) (instance HeadlessServer, err error) {
+) (instance Server, err error) {
 	if implementation == nil {
-		panic(fmt.Errorf(
-			"server instance requires an implementation, got nil",
-		))
+		return nil, fmt.Errorf(
+			"a webwire server instance requires an implementation, got nil",
+		)
 	}
 
 	if err := opts.Prepare(); err != nil {
@@ -140,6 +29,7 @@ func NewHeadlessServer(
 		sessionsEnabled = true
 	}
 
+	// Prepare the configuration push message for the webwire accept handshake
 	configMsg, err := message.NewConfMessage(
 		message.ServerConfiguration{
 			MajorProtocolVersion: 2,
@@ -149,35 +39,44 @@ func NewHeadlessServer(
 		},
 	)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf(
+			"couldn't initialize server configuration-push message: %s",
+			err,
+		)
 	}
 
-	return &server{
+	// Initialize the webwire server
+	srv := &server{
 		impl:              implementation,
 		sessionManager:    opts.SessionManager,
 		sessionKeyGen:     opts.SessionKeyGenerator,
 		sessionInfoParser: opts.SessionInfoParser,
+		addr:              url.URL{},
+		options:           opts,
+		configMsg:         configMsg,
+		shutdown:          false,
+		shutdownRdy:       make(chan bool),
+		currentOps:        0,
+		opsLock:           &sync.Mutex{},
+		connections:       make([]*connection, 0),
+		connectionsLock:   &sync.Mutex{},
+		sessionsEnabled:   sessionsEnabled,
+		sessionRegistry:   newSessionRegistry(opts.MaxSessionConnections),
+		messagePool:       message.NewSyncPool(opts.MessageBufferSize, 1024),
+		warnLog:           opts.WarnLog,
+		errorLog:          opts.ErrorLog,
+	}
 
-		// State
-		addr:            url.URL{},
-		options:         opts,
-		configMsg:       configMsg,
-		shutdown:        false,
-		shutdownRdy:     make(chan bool),
-		currentOps:      0,
-		opsLock:         &sync.Mutex{},
-		connections:     make([]*connection, 0),
-		connectionsLock: &sync.Mutex{},
-		sessionsEnabled: sessionsEnabled,
-		sessionRegistry: newSessionRegistry(opts.MaxSessionConnections),
-		messagePool:     message.NewSyncPool(opts.MessageBufferSize, 0),
+	// Initialize the transport layer
+	if err := opts.Transport.Initialize(
+		opts.Host,
+		opts.ReadTimeout,
+		opts.MessageBufferSize,
+		srv.isShuttingDown,
+		srv.handleConnection,
+	); err != nil {
+		return nil, fmt.Errorf("couldn't initialize transport layer: %s", err)
+	}
 
-		// Internals
-		upgrader: websocket.FastHTTPUpgrader{
-			ReadBufferSize:  int(opts.ReadBufferSize),
-			WriteBufferSize: int(opts.WriteBufferSize),
-		},
-		warnLog:  opts.WarnLog,
-		errorLog: opts.ErrorLog,
-	}, nil
+	return srv, nil
 }

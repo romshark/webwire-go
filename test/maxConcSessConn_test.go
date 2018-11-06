@@ -69,7 +69,7 @@ func TestMaxConcSessConn(t *testing.T) {
 	clients := make([]*callbackPoweredClient, concurrentConns)
 	for i := uint(0); i < concurrentConns; i++ {
 		client := newCallbackPoweredClient(
-			server.AddressURL(),
+			server.Address(),
 			wwrclt.Options{
 				DefaultRequestTimeout: 2 * time.Second,
 			},
@@ -92,7 +92,7 @@ func TestMaxConcSessConn(t *testing.T) {
 
 	// Ensure that the last superfluous client is rejected
 	superfluousClient := newCallbackPoweredClient(
-		server.AddressURL(),
+		server.Address(),
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},

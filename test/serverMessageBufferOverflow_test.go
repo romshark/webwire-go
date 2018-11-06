@@ -47,15 +47,13 @@ func TestServerMessageBufferOverflow(t *testing.T) {
 			},
 		},
 		wwr.ServerOptions{
-			ReadBufferSize:    messageBufferSize / 2,
-			WriteBufferSize:   messageBufferSize / 2,
 			MessageBufferSize: messageBufferSize,
 		},
 	)
 
 	// Initialize client
 	client := newCallbackPoweredClient(
-		server.AddressURL(),
+		server.Address(),
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 			// Use bigger buffers on the client

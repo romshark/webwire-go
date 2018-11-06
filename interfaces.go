@@ -2,18 +2,27 @@ package webwire
 
 import (
 	"context"
-	"net/http"
 	"net/url"
 	"time"
 
-	"github.com/valyala/fasthttp"
+	"github.com/qbeon/webwire-go/connopt"
 )
+
+// ConnectionAcceptance defines whether a connection is to be accepted
+type ConnectionAcceptance = connopt.ConnectionAcceptance
+
+// Accept instructs the server to accept the incoming connection
+const Accept = connopt.Accept
+
+// Refuse instructs the server to refuse the incoming connection
+const Refuse = connopt.Refuse
+
+// ConnectionOptions represents the options applied to an individual connection
+// during accept
+type ConnectionOptions = connopt.ConnectionOptions
 
 // HeadlessServer defines the interface of a headless webwire server instance
 type HeadlessServer interface {
-	// ServeHTTP implements the HTTP handler interface
-	ServeHTTP(resp http.ResponseWriter, req *http.Request)
-
 	// Shutdown appoints a server shutdown and blocks the calling goroutine
 	// until the server is gracefully stopped awaiting all currently processed
 	// signal and request handlers to return.
@@ -51,11 +60,8 @@ type Server interface {
 	// or crashes returning an error
 	Run() error
 
-	// Address returns the address the webwire server is listening on
-	Address() string
-
-	// AddressURL returns the URL address the webwire server is listening on
-	AddressURL() url.URL
+	// Address returns the URL address the webwire server is listening on
+	Address() url.URL
 
 	HeadlessServer
 }
@@ -63,17 +69,6 @@ type Server interface {
 // ServerImplementation defines the interface
 // of a webwire server implementation
 type ServerImplementation interface {
-	// OnOptions is invoked when the websocket endpoint is examined
-	// by the client using the HTTP OPTION method.
-	OnOptions(ctx *fasthttp.RequestCtx)
-
-	// BeforeUpgrade is invoked right before the upgrade of an incoming HTTP
-	// connection request to a WebSocket connection and can be used to
-	// intercept, configure or prevent incoming connections. BeforeUpgrade must
-	// return the connection options to be applied or set options.Connection to
-	// wwr.Refuse to refuse the incoming connection
-	BeforeUpgrade(ctx *fasthttp.RequestCtx) ConnectionOptions
-
 	// OnClientConnected is invoked when a new client successfully established
 	// a connection to the server.
 	//
@@ -207,14 +202,13 @@ type SessionManager interface {
 	OnSessionCreated(client Connection) error
 
 	// OnSessionLookup is invoked when the server is looking for a specific
-	// session given its key.
-	// If the session wasn't found `nil` must be returned without an error,
-	// otherwise if the session was found then a SessionLookupResult instance
-	// created by wwr.NewSessionLookupResult must be returned with the required
-	// parameters set.
+	// session given its key. If the session wasn't found then nil will be
+	// returned without an error, otherwise if the session was found then a
+	// SessionLookupResult instance created by wwr.NewSessionLookupResult will
+	// be returned with the required parameters set.
 	//
-	// If an error (that's not a webwire.SessNotFoundErr) is returned then
-	// it'll be logged and the session restoration will fail.
+	// If an error (that's not a webwire.SessNotFoundErr) is returned then it'll
+	// be logged and the session restoration will fail.
 	//
 	// This hook will be invoked by the goroutine serving the associated client
 	// and will block any other interactions with this client while executing
@@ -224,14 +218,13 @@ type SessionManager interface {
 	OnSessionLookup(key string) (result SessionLookupResult, err error)
 
 	// OnSessionClosed is invoked when the session associated with the given key
-	// is closed (thus destroyed) either by the server or the client.
-	// A closed session must be permanently deleted and must not be discoverable
-	// in the OnSessionLookup hook any longer.
-	// If an error is returned then the it is logged.
+	// is closed (thus destroyed) either by the server or the client. A closed
+	// session is permanently deleted and becomes undiscoverable in the
+	// OnSessionLookup hook. If an error is returned then the it is logged.
 	//
 	// This hook is invoked by either a goroutine calling the method
-	// connection.CloseSession(), or the goroutine serving the associated client,
-	// in the case of which it will block any other interactions with
+	// connection.CloseSession(), or the goroutine serving the associated
+	// client, in the case of which it will block any other interactions with
 	// this client while executing
 	OnSessionClosed(sessionKey string) error
 }
@@ -252,20 +245,20 @@ type SessionKeyGenerator interface {
 // It defines a set of important methods that must be implemented carefully
 // in order to avoid race conditions
 type SessionInfo interface {
-	// Fields must return the exact names of all fields
-	// of the session info object. This getter method must be idempotent,
-	// which means that it must always return the same list of names
+	// Fields returns the exact names of all fields of the session info object.
+	// This getter method is idempotent, which means that it always returns the
+	// same list of names
 	Fields() []string
 
-	// Value must return an exact deep copy of the value of a session info
-	// object field identified by the given field name.
+	// Value returns an exact deep copy of the value of a session info object
+	// field identified by the given field name.
 	//
-	// Note that returning a shallow copy (such as shallow copies of
-	// maps or slices for example) could lead to potentially dangerous
-	// race conditions and undefined behavior
+	// Note that returning a shallow copy (such as shallow copies of maps or
+	// slices for example) could lead to potentially dangerous race conditions
+	// and undefined behavior
 	Value(fieldName string) interface{}
 
-	// Copy must return an exact deep copy of the entire session info object.
+	// Copy returns an exact deep copy of the entire session info object.
 	//
 	// Note that returning a shallow copy (such as shallow copies of
 	// maps or slices for example) could lead to potentially dangerous
@@ -273,11 +266,11 @@ type SessionInfo interface {
 	Copy() SessionInfo
 }
 
-// SessionInfoParser represents the type of a session info parser function.
-// The session info parser is invoked during the parsing of a newly assigned
-// session on the client, as well as during the parsing of a saved serialized
-// session. It must return a webwire.SessionInfo compliant object constructed
-// from the data given
+// SessionInfoParser represents the type of a session info parser function. The
+// session info parser is invoked during the parsing of a newly assigned session
+// on the client, as well as during the parsing of a saved serialized session.
+// It returns a webwire.SessionInfo compliant object constructed from the data
+// given
 type SessionInfoParser func(map[string]interface{}) SessionInfo
 
 // Message represents a WebWire message

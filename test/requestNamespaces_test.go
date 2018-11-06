@@ -47,7 +47,7 @@ func TestRequestNamespaces(t *testing.T) {
 
 	// Initialize client
 	client := newCallbackPoweredClient(
-		server.AddressURL(),
+		server.Address(),
 		webwireClient.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},

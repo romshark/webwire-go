@@ -70,7 +70,7 @@ func TestClientAutomaticSessionRestoration(t *testing.T) {
 
 	// Initialize client
 	client := newCallbackPoweredClient(
-		server.AddressURL(),
+		server.Address(),
 		wwrclt.Options{},
 		callbackPoweredClientHooks{},
 	)

@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	wwr "github.com/qbeon/webwire-go"
-	"github.com/valyala/fasthttp"
 )
 
 // setupBenchmarkServer helps setting up and launching the benchmark server
@@ -14,13 +13,6 @@ func setupBenchmarkServer(
 	implementation *serverImpl,
 	options wwr.ServerOptions,
 ) wwr.Server {
-	if implementation.beforeUpgrade == nil {
-		implementation.beforeUpgrade = func(
-			_ *fasthttp.RequestCtx,
-		) wwr.ConnectionOptions {
-			return wwr.ConnectionOptions{}
-		}
-	}
 	if implementation.onClientConnected == nil {
 		implementation.onClientConnected = func(_ wwr.Connection) {}
 	}

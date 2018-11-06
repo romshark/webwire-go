@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"github.com/qbeon/webwire-go/message"
+	"github.com/qbeon/webwire-go/transport"
+	"github.com/qbeon/webwire-go/wwrerr"
 	"golang.org/x/sync/semaphore"
 )
 
@@ -37,7 +39,7 @@ type connection struct {
 	srv *server
 
 	// sock references the connection's socket
-	sock Socket
+	sock transport.Socket
 
 	// sessionLock protects the session field from concurrent access
 	sessionLock sync.RWMutex
@@ -51,7 +53,7 @@ type connection struct {
 
 // newConnection creates and returns a new client connection instance
 func newConnection(
-	socket Socket,
+	socket transport.Socket,
 	userAgent []byte,
 	srv *server,
 	options ConnectionOptions,
@@ -162,11 +164,11 @@ func (con *connection) Signal(name []byte, payload Payload) (err error) {
 // CreateSession implements the Connection interface
 func (con *connection) CreateSession(attachment SessionInfo) error {
 	if !con.srv.sessionsEnabled {
-		return SessionsDisabledErr{}
+		return wwrerr.SessionsDisabledErr{}
 	}
 
 	if !con.sock.IsConnected() {
-		return DisconnectedErr{
+		return wwrerr.DisconnectedErr{
 			Cause: fmt.Errorf(
 				"Can't create session on disconnected connection",
 			),
@@ -253,7 +255,7 @@ func (con *connection) notifySessionClosed() error {
 // CloseSession implements the Connection interface
 func (con *connection) CloseSession() error {
 	if !con.srv.sessionsEnabled {
-		return SessionsDisabledErr{}
+		return wwrerr.SessionsDisabledErr{}
 	}
 
 	con.sessionLock.Lock()

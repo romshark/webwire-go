@@ -1,4 +1,4 @@
-package webwire
+package wwrerr
 
 import (
 	"context"
@@ -8,9 +8,9 @@ import (
 // TranslateContextError translates context errors to webwire error types
 func TranslateContextError(err error) error {
 	if err == context.DeadlineExceeded {
-		return NewDeadlineExceededErr(err)
+		return DeadlineExceededErr{Cause: err}
 	} else if err == context.Canceled {
-		return NewCanceledErr(err)
+		return CanceledErr{Cause: err}
 	}
-	return fmt.Errorf("Unexpected context error: %s", err)
+	return fmt.Errorf("unexpected context error: %s", err)
 }

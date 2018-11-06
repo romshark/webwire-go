@@ -33,9 +33,9 @@ func (clt *ChatroomClient) Authenticate(login, password string) {
 	switch err := reqErr.(type) {
 	case nil:
 		break
-	case webwire.ReqErr:
+	case webwire.RequestErr:
 		log.Printf("Authentication failed: %s : %s", err.Code, err.Message)
-	case webwire.ReqSrvShutdownErr:
+	case webwire.ServerShutdownErr:
 		log.Print("Authentication failed, server is currently being shut down")
 	default:
 		log.Print("Authentication failed, unknown error")

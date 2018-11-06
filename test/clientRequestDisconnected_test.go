@@ -29,7 +29,7 @@ func TestClientRequestDisconnected(t *testing.T) {
 
 	// Initialize client and skip manual connection establishment
 	client := newCallbackPoweredClient(
-		server.AddressURL(),
+		server.Address(),
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 			Autoconnect:           wwrclt.Disabled,

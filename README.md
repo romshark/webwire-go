@@ -302,8 +302,6 @@ All exported interfaces provided by both the server and the client are thread sa
 Various hooks provide the ability to asynchronously react to different kinds of events and control the behavior of both the client and the server.
 
 #### Server-side Hooks
-- OnOptions
-- BeforeUpgrade
 - OnClientConnected
 - OnClientDisconnected
 - OnSignal
@@ -345,14 +343,30 @@ The [official JavaScript library](https://github.com/qbeon/webwire-js) enables s
 Webwire can be hosted by a [TLS](https://en.wikipedia.org/wiki/Transport_Layer_Security) protected HTTPS server to prevent [man-in-the-middle attacks](https://en.wikipedia.org/wiki/Man-in-the-middle_attack) as well as to verify the identity of the server. Setting up a TLS protected server is easy:
 ```go
 // Setup a secure webwire server instance
-server, err := wwr.NewServerSecure(
+server, err := wwr.NewSecure(
 	serverImplementation,
 	wwr.ServerOptions{
-		Host: "localhost:443",
+    Host: "localhost:443",
+    // Use a TLS protected transport layer
+    Transport: &wwrfasthttp.Transport{
+			TLS: &wwrfasthttp.TLS{
+        // Provide key and certificate
+				CertFilePath:       "path/to/certificate.crt",
+        PrivateKeyFilePath: "path/to/private.key",
+        // Specify TLS configs
+        Config: &tls.Config{
+          MinVersion:               tls.VersionTLS12,
+		      CurvePreferences:         []tls.CurveID{tls.X25519, tls.CurveP256},
+		      PreferServerCipherSuites: true,
+		      CipherSuites: []uint16{
+			      tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
+			      tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+			      tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+		      },
+        }
+			},
+		},
 	},
-	"path/to/certificate.crt",
-	"path/to/private.key",
-	nil, // Use default TLS configurations
 )
 if err != nil {
 	panic(fmt.Errorf("failed setting up wwr server: %s", err))

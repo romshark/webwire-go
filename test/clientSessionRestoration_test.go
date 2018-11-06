@@ -68,7 +68,7 @@ func TestClientSessionRestoration(t *testing.T) {
 
 	// Initialize client
 	initialClient := newCallbackPoweredClient(
-		server.AddressURL(),
+		server.Address(),
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
@@ -101,7 +101,7 @@ func TestClientSessionRestoration(t *testing.T) {
 
 	// Initialize client
 	secondClient := newCallbackPoweredClient(
-		server.AddressURL(),
+		server.Address(),
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},

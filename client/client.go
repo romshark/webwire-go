@@ -10,6 +10,7 @@ import (
 	webwire "github.com/qbeon/webwire-go"
 	"github.com/qbeon/webwire-go/message"
 	reqman "github.com/qbeon/webwire-go/requestManager"
+	"github.com/qbeon/webwire-go/transport"
 )
 
 // Status represents the status of a client instance
@@ -69,7 +70,7 @@ type client struct {
 	connectingLock sync.RWMutex
 
 	connectLock   sync.Mutex
-	conn          webwire.Socket
+	conn          transport.Socket
 	readerClosing chan bool
 
 	heartbeat      heartbeat

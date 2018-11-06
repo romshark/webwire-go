@@ -1,207 +1,63 @@
 package webwire
 
 import (
-	"fmt"
+	"github.com/qbeon/webwire-go/wwrerr"
 )
 
-// ConnIncompErr represents a connection error type indicating that the server
-// requires an incompatible version of the protocol
-// and can't therefore be connected to.
-type ConnIncompErr struct {
-	requiredVersion  string
-	supportedVersion string
-}
+// CanceledErr represents a failure due to cancellation
+type CanceledErr = wwrerr.CanceledErr
 
-func (err ConnIncompErr) Error() string {
-	return fmt.Sprintf(
-		"Unsupported protocol version: %s (%s is supported by this client)",
-		err.requiredVersion,
-		err.supportedVersion,
-	)
-}
+// DeadlineExceededErr represents a failure due to an excess of a user-defined
+// deadline
+type DeadlineExceededErr = wwrerr.DeadlineExceededErr
 
-// NewConnIncompErr constructs and returns a new "incompatible protocol version"
-// error based on the required and supported protocol versions
-func NewConnIncompErr(requiredVersion, supportedVersion string) ConnIncompErr {
-	return ConnIncompErr{
-		requiredVersion:  requiredVersion,
-		supportedVersion: supportedVersion,
-	}
-}
+// DisconnectedErr represents an error indicating a disconnected connection
+type DisconnectedErr = wwrerr.DisconnectedErr
 
-// ReqTransErr represents a connection error type
-// indicating that the dialing failed.
-type ReqTransErr struct {
-	msg string
-}
+// DialTimeoutErr represents a dialing error caused by a timeout
+type DialTimeoutErr = wwrerr.DialTimeoutErr
 
-func (err ReqTransErr) Error() string {
-	return fmt.Sprintf("Message transmission failed: %s", err.msg)
-}
+// IncompatibleProtocolVersionErr represents a connection error indicating that
+// the server requires an incompatible version of the protocol and can't
+// therefore be connected to
+type IncompatibleProtocolVersionErr = wwrerr.IncompatibleProtocolVersionErr
 
-// NewReqTransErr constructs and returns a new request transmission error
-// based on the actual error message
-func NewReqTransErr(err error) ReqTransErr {
-	return ReqTransErr{
-		msg: err.Error(),
-	}
-}
+// InternalErr represents a server-side internal error
+type InternalErr = wwrerr.InternalErr
 
-// ReqSrvShutdownErr represents a request error type indicating
-// that the request cannot be processed
-// due to the server currently being shut down
-type ReqSrvShutdownErr struct{}
+// MaxSessConnsReachedErr represents an authentication error indicating that the
+// given session already reached the maximum number of concurrent connections
+type MaxSessConnsReachedErr = wwrerr.MaxSessConnsReachedErr
 
-func (err ReqSrvShutdownErr) Error() string {
-	return "Server is currently being shut down and won't process the request"
-}
+// ProtocolErr represents a protocol error
+type ProtocolErr = wwrerr.ProtocolErr
 
-// ReqInternalErr represents a request error type
-// indicating that the request failed due to an internal server-side error
-type ReqInternalErr struct{}
+// RequestErr represents an error returned when a request couldn't be processed
+type RequestErr = wwrerr.RequestErr
 
-func (err ReqInternalErr) Error() string {
-	return "Internal server error"
-}
+// ServerShutdownErr represents a request error indicating that the request
+// cannot be processed due to the server currently being shut down
+type ServerShutdownErr = wwrerr.ServerShutdownErr
 
-// TimeoutErr represents a failure due to a timeout
-type TimeoutErr struct {
-	cause error
-}
+// SessionNotFoundErr represents a session restoration error indicating that the
+// server didn't find the session to be restored
+type SessionNotFoundErr = wwrerr.SessionNotFoundErr
 
-// NewTimeoutErr constructs a new timeout error
-func NewTimeoutErr(cause error) TimeoutErr {
-	return TimeoutErr{cause}
-}
+// SessionsDisabledErr represents an error indicating that the server has
+// sessions disabled
+type SessionsDisabledErr = wwrerr.SessionsDisabledErr
 
-// Error implements the error interface
-func (err TimeoutErr) Error() string {
-	return err.cause.Error()
-}
+// TimeoutErr represents a failure caused by a timeout
+type TimeoutErr = wwrerr.TimeoutErr
 
-// DeadlineExceededErr represents a failure due to
-// an excess of a user-defined deadline
-type DeadlineExceededErr struct {
-	cause error
-}
-
-// NewDeadlineExceededErr constructs a new deadline excess error
-func NewDeadlineExceededErr(cause error) DeadlineExceededErr {
-	return DeadlineExceededErr{cause}
-}
-
-// Error implements the error interface
-func (err DeadlineExceededErr) Error() string {
-	return err.cause.Error()
-}
-
-// ReqErr represents an error returned in case of
-// a request that couldn't be processed
-type ReqErr struct {
-	Code    string
-	Message string
-}
-
-func (err ReqErr) Error() string {
-	return err.Message
-}
-
-// SessionsDisabledErr represents an error type
-// indicating that the server has sessions disabled
-type SessionsDisabledErr struct{}
-
-func (err SessionsDisabledErr) Error() string {
-	return "Sessions are disabled for this server"
-}
-
-// SessNotFoundErr represents a session restoration error type
-// indicating that the server didn't find the session to be restored
-type SessNotFoundErr struct{}
-
-func (err SessNotFoundErr) Error() string {
-	return "Session not found"
-}
-
-// MaxSessConnsReachedErr represents an authentication error type
-// indicating that the given session already reached the maximum number
-// of concurrent connections
-type MaxSessConnsReachedErr struct{}
-
-func (err MaxSessConnsReachedErr) Error() string {
-	return "Reached maximum number of concurrent session connections"
-}
-
-// DisconnectedErr represents an error type
-// indicating that the targeted client is disconnected
-type DisconnectedErr struct {
-	Cause error
-}
-
-// NewDisconnectedErr constructs a new DisconnectedErr error
-// based on the actual error
-func NewDisconnectedErr(err error) DisconnectedErr {
-	return DisconnectedErr{
-		Cause: err,
-	}
-}
-
-func (err DisconnectedErr) Error() string {
-	if err.Cause == nil {
-		return "Disconnected"
-	}
-	return err.Cause.Error()
-}
-
-// ProtocolErr represents an error type
-// indicating an error in the protocol implementation
-type ProtocolErr struct {
-	cause error
-}
-
-// NewProtocolErr constructs a new ProtocolErr error based on the actual error
-func NewProtocolErr(err error) ProtocolErr {
-	return ProtocolErr{
-		cause: err,
-	}
-}
-
-func (err ProtocolErr) Error() string {
-	return err.cause.Error()
-}
-
-// CanceledErr represents a failure due to cancelation
-type CanceledErr struct {
-	cause error
-}
-
-// NewCanceledErr constructs a new canceled errror instance
-func NewCanceledErr(cause error) CanceledErr {
-	return CanceledErr{cause}
-}
-
-// Error implements the error interface
-func (err CanceledErr) Error() string {
-	return err.cause.Error()
-}
+// TransmissionErr represents a connection error indicating a failed
+// transmission
+type TransmissionErr = wwrerr.TransmissionErr
 
 // IsTimeoutErr returns true if the given error is either a TimeoutErr
 // or a DeadlineExceededErr, otherwise returns false
-func IsTimeoutErr(err error) bool {
-	switch err.(type) {
-	case TimeoutErr:
-		return true
-	case DeadlineExceededErr:
-		return true
-	}
-	return false
-}
+func IsTimeoutErr(err error) bool { return wwrerr.IsTimeoutErr(err) }
 
 // IsCanceledErr returns true if the given error is a CanceledErr,
 // otherwise returns false
-func IsCanceledErr(err error) bool {
-	switch err.(type) {
-	case CanceledErr:
-		return true
-	}
-	return false
-}
+func IsCanceledErr(err error) bool { return wwrerr.IsCanceledErr(err) }

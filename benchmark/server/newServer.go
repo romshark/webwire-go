@@ -8,11 +8,13 @@ import (
 	"time"
 
 	wwr "github.com/qbeon/webwire-go"
+	wwrfasthttp "github.com/qbeon/webwire-go/transport/fasthttp"
+	"github.com/valyala/fasthttp"
 )
 
 type settings struct {
 	HostAddress        string
-	HTTPSEnabled       bool
+	Transport          string
 	CertFilePath       string
 	PrivateKeyFilePath string
 	TLSConfig          *tls.Config
@@ -33,28 +35,8 @@ func newServer(settings settings) (server wwr.Server, err error) {
 	)
 
 	// Initialize server
-	if settings.HTTPSEnabled {
-		// Setup a new TLS protected webwire server instance
-		server, err = wwr.NewServerSecure(
-			&BenchmarkServer{},
-			wwr.ServerOptions{
-				Host:              settings.HostAddress,
-				WarnLog:           warnLog,
-				ErrorLog:          errorLog,
-				ReadTimeout:       settings.ReadTimeout,
-				ReadBufferSize:    1024 * 8,
-				WriteBufferSize:   1024 * 8,
-				MessageBufferSize: 1024 * 16,
-			},
-			settings.CertFilePath,
-			settings.PrivateKeyFilePath,
-			settings.TLSConfig,
-		)
-		if err != nil {
-			return nil, fmt.Errorf("wwr secure server setup failure: %s", err)
-		}
-	} else {
-		// Setup a new unencrypted webwire server instance
+	if settings.Transport == "https" {
+		// Setup a new TLS protected webwire over HTTPS server instance
 		server, err = wwr.NewServer(
 			&BenchmarkServer{},
 			wwr.ServerOptions{
@@ -63,11 +45,56 @@ func newServer(settings settings) (server wwr.Server, err error) {
 				ErrorLog:          errorLog,
 				ReadTimeout:       settings.ReadTimeout,
 				MessageBufferSize: 1024 * 16,
+				Transport: &wwrfasthttp.Transport{
+					HTTPServer: &fasthttp.Server{
+						ReadBufferSize:  1024 * 8,
+						WriteBufferSize: 1024 * 8,
+					},
+					TLS: &wwrfasthttp.TLS{
+						CertFilePath:       settings.CertFilePath,
+						PrivateKeyFilePath: settings.PrivateKeyFilePath,
+						Config:             settings.TLSConfig,
+					},
+					BeforeUpgrade: func(
+						_ *fasthttp.RequestCtx,
+					) wwr.ConnectionOptions {
+						return wwr.ConnectionOptions{
+							ConcurrencyLimit: 10,
+						}
+					},
+				},
 			},
 		)
 		if err != nil {
-			return nil, fmt.Errorf("wwr server setup failure: %s", err)
+			return nil, fmt.Errorf("wwr (wss) server setup failure: %s", err)
 		}
+	} else if settings.Transport == "http" {
+		// Setup a new unencrypted webwire over HTTP server instance
+		server, err = wwr.NewServer(
+			&BenchmarkServer{},
+			wwr.ServerOptions{
+				Host:              settings.HostAddress,
+				WarnLog:           warnLog,
+				ErrorLog:          errorLog,
+				ReadTimeout:       settings.ReadTimeout,
+				MessageBufferSize: 1024 * 16,
+				Transport: &wwrfasthttp.Transport{
+					HTTPServer: &fasthttp.Server{
+						ReadBufferSize:  1024 * 8,
+						WriteBufferSize: 1024 * 8,
+					},
+				},
+			},
+		)
+		if err != nil {
+			return nil, fmt.Errorf("wwr (ws) server setup failure: %s", err)
+		}
+	} else {
+		return nil, fmt.Errorf(
+			"unsupported transport layer: %s",
+			settings.Transport,
+		)
 	}
+
 	return server, nil
 }

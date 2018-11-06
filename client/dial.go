@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/qbeon/webwire-go/message"
+	"github.com/qbeon/webwire-go/wwrerr"
 )
 
 // dial tries to dial in the server and await an approval including the endpoint
@@ -113,7 +114,7 @@ func (clt *client) dial() (message.ServerConfiguration, error) {
 		// Abort due to timeout
 		dialingTimer.Stop()
 		atomic.StoreUint32(&abortAwait, 1)
-		return message.ServerConfiguration{}, DialTimeout{}
+		return message.ServerConfiguration{}, wwrerr.DialTimeoutErr{}
 	case result := <-result:
 		dialingTimer.Stop()
 		return result.serverConfiguration, result.err

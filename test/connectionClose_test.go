@@ -55,7 +55,7 @@ func TestConnectionClose(t *testing.T) {
 
 	// Initialize client A
 	clientA := newCallbackPoweredClient(
-		server.AddressURL(),
+		server.Address(),
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 			// Disable autoconnect to prevent automatic reconnection
@@ -98,7 +98,7 @@ func TestConnectionClose(t *testing.T) {
 
 	// Initialize client B
 	clientB := newCallbackPoweredClient(
-		server.AddressURL(),
+		server.Address(),
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 			// Disable autoconnect to prevent automatic reconnection

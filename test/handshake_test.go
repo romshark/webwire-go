@@ -29,7 +29,7 @@ func TestHandshake(t *testing.T) {
 	readTimeout := 5 * time.Second
 
 	// Setup a regular websocket connection
-	serverAddr := server.AddressURL()
+	serverAddr := server.Address()
 	if serverAddr.Scheme == "https" {
 		serverAddr.Scheme = "wss"
 	} else {

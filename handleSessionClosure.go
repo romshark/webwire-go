@@ -2,6 +2,7 @@ package webwire
 
 import (
 	"github.com/qbeon/webwire-go/message"
+	"github.com/qbeon/webwire-go/wwrerr"
 )
 
 // handleSessionClosure handles session destruction requests
@@ -11,7 +12,7 @@ func (srv *server) handleSessionClosure(
 	msg *message.Message,
 ) {
 	if !srv.sessionsEnabled {
-		srv.failMsg(conn, msg, SessionsDisabledErr{})
+		srv.failMsg(conn, msg, wwrerr.SessionsDisabledErr{})
 		return
 	}
 

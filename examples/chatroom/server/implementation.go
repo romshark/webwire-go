@@ -9,7 +9,6 @@ import (
 
 	wwr "github.com/qbeon/webwire-go"
 	"github.com/qbeon/webwire-go/examples/chatroom/shared"
-	"github.com/valyala/fasthttp"
 )
 
 // ChatRoomServer implements the webwire.ServerImplementation interface
@@ -77,7 +76,7 @@ func (srv *ChatRoomServer) handleAuth(
 ) (wwr.Payload, error) {
 	credentialsText, err := message.PayloadUtf8()
 	if err != nil {
-		return wwr.Payload{}, wwr.ReqErr{
+		return wwr.Payload{}, wwr.RequestErr{
 			Code:    "DECODING_FAILURE",
 			Message: fmt.Sprintf("Failed decoding message: %s", err),
 		}
@@ -97,7 +96,7 @@ func (srv *ChatRoomServer) handleAuth(
 	// Verify username
 	password, userExists := userAccounts[credentials.Name]
 	if !userExists {
-		return wwr.Payload{}, wwr.ReqErr{
+		return wwr.Payload{}, wwr.RequestErr{
 			Code:    "INEXISTENT_USER",
 			Message: fmt.Sprintf("No such user: '%s'", credentials.Name),
 		}
@@ -105,7 +104,7 @@ func (srv *ChatRoomServer) handleAuth(
 
 	// Verify password
 	if password != credentials.Password {
-		return wwr.Payload{}, wwr.ReqErr{
+		return wwr.Payload{}, wwr.RequestErr{
 			Code:    "WRONG_PASSWORD",
 			Message: "Provided password is wrong",
 		}
@@ -174,13 +173,6 @@ func (srv *ChatRoomServer) handleMessage(
 	Hook implementations
 \****************************************************************/
 
-// OnOptions implements the webwire.ServerImplementation interface.
-// Sets HTTP access control headers to satisfy CORS
-func (srv *ChatRoomServer) OnOptions(ctx *fasthttp.RequestCtx) {
-	ctx.Response.Header.Set("Access-Control-Allow-Origin", "*")
-	ctx.Response.Header.Set("Access-Control-Allow-Methods", "WEBWIRE")
-}
-
 // OnSignal implements the webwire.ServerImplementation interface
 // Does nothing, not needed in this example
 func (srv *ChatRoomServer) OnSignal(
@@ -188,13 +180,6 @@ func (srv *ChatRoomServer) OnSignal(
 	_ wwr.Connection,
 	_ wwr.Message,
 ) {
-}
-
-// BeforeUpgrade implements the webwire.ServerImplementation interface
-func (srv *ChatRoomServer) BeforeUpgrade(
-	_ *fasthttp.RequestCtx,
-) wwr.ConnectionOptions {
-	return wwr.ConnectionOptions{}
 }
 
 // OnRequest implements the webwire.ServerImplementation interface.
@@ -210,7 +195,7 @@ func (srv *ChatRoomServer) OnRequest(
 	case "msg":
 		return srv.handleMessage(ctx, client, message)
 	}
-	return wwr.Payload{}, wwr.ReqErr{
+	return wwr.Payload{}, wwr.RequestErr{
 		Code:    "BAD_REQUEST",
 		Message: fmt.Sprintf("Unsupported request name: %s", message.Name()),
 	}

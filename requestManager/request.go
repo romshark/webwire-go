@@ -7,6 +7,7 @@ import (
 
 	webwire "github.com/qbeon/webwire-go"
 	"github.com/qbeon/webwire-go/message"
+	"github.com/qbeon/webwire-go/wwrerr"
 )
 
 // TODO: The request identifier should remain a uint64 until it's converted into
@@ -56,12 +57,12 @@ func (req *Request) AwaitReply(ctx context.Context) (webwire.Reply, error) {
 	case <-ctx.Done():
 		timeoutTimer.Stop()
 		req.manager.deregister(req.identifier)
-		return nil, webwire.TranslateContextError(ctx.Err())
+		return nil, wwrerr.TranslateContextError(ctx.Err())
 
 	case <-timeoutTimer.C:
 		timeoutTimer.Stop()
 		req.manager.deregister(req.identifier)
-		return nil, webwire.NewTimeoutErr(errors.New("timed out"))
+		return nil, wwrerr.TimeoutErr{Cause: errors.New("timed out")}
 
 	case rp := <-req.reply:
 		timeoutTimer.Stop()

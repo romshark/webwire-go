@@ -32,15 +32,6 @@ func (srv *BenchmarkServer) OnClientDisconnected(
 ) {
 }
 
-// BeforeUpgrade implements the webwire.ServerImplementation interface
-func (srv *BenchmarkServer) BeforeUpgrade(
-	_ *fasthttp.RequestCtx,
-) wwr.ConnectionOptions {
-	return wwr.ConnectionOptions{
-		ConcurrencyLimit: 10,
-	}
-}
-
 // OnRequest implements the webwire.ServerImplementation interface.
 // Returns the received message back to the client
 func (srv *BenchmarkServer) OnRequest(

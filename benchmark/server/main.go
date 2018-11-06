@@ -28,7 +28,7 @@ func listenOsSignals(server wwr.Server) {
 }
 
 var argHostAddr = flag.String("addr", "localhost:8081", "server host address")
-var argEnableHTTPS = flag.Bool("https", false, "enable TLS")
+var argTransport = flag.String("transport", "http", "http / https")
 var argCertFilePath = flag.String(
 	"tls_cert",
 	"./server.crt",
@@ -108,7 +108,7 @@ func main() {
 
 	server, err := newServer(settings{
 		HostAddress:        *argHostAddr,
-		HTTPSEnabled:       *argEnableHTTPS,
+		Transport:          *argTransport,
 		CertFilePath:       *argCertFilePath,
 		PrivateKeyFilePath: *argPrivateKeyFilePath,
 		ReadTimeout:        time.Duration(*argReadTimeout) * time.Second,
@@ -117,7 +117,8 @@ func main() {
 		log.Fatal(err)
 	}
 
-	log.Printf("Listening on %s", server.Address())
+	addr := server.Address()
+	log.Printf("Listening on %s", addr.String())
 
 	go listenOsSignals(server)
 	go userInterface()

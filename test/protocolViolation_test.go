@@ -25,7 +25,7 @@ func TestProtocolViolation(t *testing.T) {
 	setupAndSend := func(
 		message []byte,
 	) (response []byte, writeErr, readErr error) {
-		serverAddr := server.AddressURL()
+		serverAddr := server.Address()
 		if serverAddr.Scheme == "https" {
 			serverAddr.Scheme = "wss"
 		} else {

@@ -23,14 +23,14 @@ type Benchmark struct {
 
 // BenchmarkOptions represents the benchmark options
 type BenchmarkOptions struct {
-	Duration         uint `json:"duration"`
-	MaxClients       uint `json:"max-connections"`
-	MaxReqsPerClient uint `json:"max-reqs-per-connection"`
-	MinPayloadSize   uint `json:"min-payload-size"`
-	MaxPayloadSize   uint `json:"max-payload-size"`
-	RequestTimeout   uint `json:"req-timeo"`
-	MinReqInterval   uint `json:"min-req-interval"`
-	MaxReqInterval   uint `json:"max-req-interval"`
+	Duration             uint `json:"duration"`
+	MaxClients           uint `json:"max-connections"`
+	MaxRequestsPerClient uint `json:"max-reqs-per-connection"`
+	MinPayloadSize       uint `json:"min-payload-size"`
+	MaxPayloadSize       uint `json:"max-payload-size"`
+	RequestTimeout       uint `json:"req-timeo"`
+	MinReqInterval       uint `json:"min-req-interval"`
+	MaxReqInterval       uint `json:"max-req-interval"`
 }
 
 // NewBenchmark creates a new benchmark instance
@@ -79,7 +79,7 @@ func (bc *Benchmark) Start() {
 			// Initialize the semaphore synchronizing the number of simultaneous
 			// requests per client
 			requestSlots := semaphore.NewWeighted(int64(
-				bc.options.MaxReqsPerClient,
+				bc.options.MaxRequestsPerClient,
 			))
 
 			for {

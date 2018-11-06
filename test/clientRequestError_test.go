@@ -13,7 +13,7 @@ import (
 // TestClientRequestError tests server-side request errors properly
 // failing the client-side requests
 func TestClientRequestError(t *testing.T) {
-	expectedReplyError := wwr.ReqErr{
+	expectedReplyError := wwr.RequestErr{
 		Code:    "SAMPLE_ERROR",
 		Message: "Sample error message",
 	}
@@ -36,7 +36,7 @@ func TestClientRequestError(t *testing.T) {
 
 	// Initialize client
 	client := newCallbackPoweredClient(
-		server.AddressURL(),
+		server.Address(),
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
@@ -57,8 +57,8 @@ func TestClientRequestError(t *testing.T) {
 
 	// Verify returned error
 	require.Error(t, err)
-	require.IsType(t, wwr.ReqErr{}, err)
-	require.Equal(t, err.(wwr.ReqErr).Code, expectedReplyError.Code)
-	require.Equal(t, err.(wwr.ReqErr).Message, expectedReplyError.Message)
+	require.IsType(t, wwr.RequestErr{}, err)
+	require.Equal(t, err.(wwr.RequestErr).Code, expectedReplyError.Code)
+	require.Equal(t, err.(wwr.RequestErr).Message, expectedReplyError.Message)
 	require.Nil(t, reply)
 }

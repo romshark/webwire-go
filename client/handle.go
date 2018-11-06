@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/qbeon/webwire-go/message"
-
 	webwire "github.com/qbeon/webwire-go"
+	"github.com/qbeon/webwire-go/message"
 	pld "github.com/qbeon/webwire-go/payload"
+	"github.com/qbeon/webwire-go/wwrerr"
 )
 
 func (clt *client) handleSessionCreated(msgPayload pld.Payload) {
@@ -44,23 +44,23 @@ func (clt *client) handleSessionClosed() {
 
 func (clt *client) handleInternalError(reqIdent [8]byte) {
 	// Fail request
-	clt.requestManager.Fail(reqIdent, webwire.ReqInternalErr{})
+	clt.requestManager.Fail(reqIdent, wwrerr.InternalErr{})
 }
 
 func (clt *client) handleReplyShutdown(reqIdent [8]byte) {
-	clt.requestManager.Fail(reqIdent, webwire.ReqSrvShutdownErr{})
+	clt.requestManager.Fail(reqIdent, wwrerr.ServerShutdownErr{})
 }
 
 func (clt *client) handleSessionNotFound(reqIdent [8]byte) {
-	clt.requestManager.Fail(reqIdent, webwire.SessNotFoundErr{})
+	clt.requestManager.Fail(reqIdent, wwrerr.SessionNotFoundErr{})
 }
 
 func (clt *client) handleMaxSessConnsReached(reqIdent [8]byte) {
-	clt.requestManager.Fail(reqIdent, webwire.MaxSessConnsReachedErr{})
+	clt.requestManager.Fail(reqIdent, wwrerr.MaxSessConnsReachedErr{})
 }
 
 func (clt *client) handleSessionsDisabled(reqIdent [8]byte) {
-	clt.requestManager.Fail(reqIdent, webwire.SessionsDisabledErr{})
+	clt.requestManager.Fail(reqIdent, wwrerr.SessionsDisabledErr{})
 }
 
 // handleMessage handles incoming messages
@@ -109,7 +109,7 @@ func (clt *client) handleMessage(msg *message.Message) (err error) {
 		// The message name contains the error code in case of
 		// error reply messages, while the UTF8 encoded error message is
 		// contained in the message payload
-		clt.requestManager.Fail(msg.MsgIdentifier, webwire.ReqErr{
+		clt.requestManager.Fail(msg.MsgIdentifier, wwrerr.RequestErr{
 			Code:    string(msg.MsgName),
 			Message: string(msg.MsgPayload.Data),
 		})

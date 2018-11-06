@@ -34,7 +34,7 @@ func TestClientRequestInternalError(t *testing.T) {
 
 	// Initialize client
 	client := newCallbackPoweredClient(
-		server.AddressURL(),
+		server.Address(),
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
@@ -55,6 +55,6 @@ func TestClientRequestInternalError(t *testing.T) {
 
 	// Verify returned error
 	require.Error(t, reqErr)
-	require.IsType(t, wwr.ReqInternalErr{}, reqErr)
+	require.IsType(t, wwr.InternalErr{}, reqErr)
 	require.Nil(t, reply)
 }

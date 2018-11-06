@@ -1,4 +1,4 @@
-package webwire
+package fasthttp
 
 import (
 	"crypto/tls"
@@ -14,21 +14,21 @@ import (
 
 	"github.com/fasthttp/websocket"
 	"github.com/qbeon/webwire-go/message"
+	"github.com/qbeon/webwire-go/wwrerr"
 )
 
-// fasthttpSockReadErr represents an implementation of the SockReadErr
-// interface using the fasthttp/websocket library
-type fasthttpSockReadErr struct {
+// SockReadErr implements the SockReadErr interface
+type SockReadErr struct {
 	cause error
 }
 
 // Error implements the Go error interface
-func (err fasthttpSockReadErr) Error() string {
+func (err SockReadErr) Error() string {
 	return fmt.Sprintf("Reading socket failed: %s", err.cause)
 }
 
 // IsAbnormalCloseErr implements the SockReadErr interface
-func (err fasthttpSockReadErr) IsAbnormalCloseErr() bool {
+func (err SockReadErr) IsAbnormalCloseErr() bool {
 	return websocket.IsUnexpectedCloseError(
 		err.cause,
 		websocket.CloseGoingAway,
@@ -36,25 +36,24 @@ func (err fasthttpSockReadErr) IsAbnormalCloseErr() bool {
 	)
 }
 
-// fasthttpSockReadWrongMsgTypeErr represents an implementation of the
-// SockReadErr interface
-type fasthttpSockReadWrongMsgTypeErr struct {
+// SockReadWrongMsgTypeErr implements the SockReadErr interface
+type SockReadWrongMsgTypeErr struct {
 	messageType int
 }
 
 // Error implements the Go error interface
-func (err fasthttpSockReadWrongMsgTypeErr) Error() string {
+func (err SockReadWrongMsgTypeErr) Error() string {
 	return fmt.Sprintf("invalid websocket message type: %d", err.messageType)
 }
 
 // IsAbnormalCloseErr implements the SockReadErr interface
-func (err fasthttpSockReadWrongMsgTypeErr) IsAbnormalCloseErr() bool {
+func (err SockReadWrongMsgTypeErr) IsAbnormalCloseErr() bool {
 	return false
 }
 
-// fasthttpSocket implements the webwire.Socket interface using
+// Socket implements the webwire.Socket interface using
 // the fasthttp/websocket library
-type fasthttpSocket struct {
+type Socket struct {
 	connected bool
 	lock      sync.RWMutex
 	readLock  sync.Mutex
@@ -63,14 +62,14 @@ type fasthttpSocket struct {
 	dialer    websocket.Dialer
 }
 
-// newFasthttpConnectedSocket creates a new fasthttp/websocket based socket
+// NewConnectedSocket creates a new fasthttp/websocket based socket
 // instance
-func newFasthttpConnectedSocket(conn *websocket.Conn) Socket {
+func NewConnectedSocket(conn *websocket.Conn) *Socket {
 	connected := false
 	if conn != nil {
 		connected = true
 	}
-	return &fasthttpSocket{
+	return &Socket{
 		connected: connected,
 		lock:      sync.RWMutex{},
 		readLock:  sync.Mutex{},
@@ -79,17 +78,17 @@ func newFasthttpConnectedSocket(conn *websocket.Conn) Socket {
 	}
 }
 
-// NewFasthttpSocket creates a new disconnected fasthttp/websocket based socket
+// NewSocket creates a new disconnected fasthttp/websocket based socket
 // instance
-func NewFasthttpSocket(
+func NewSocket(
 	tlsConfig *tls.Config,
 	dialTimeout time.Duration,
-) Socket {
+) *Socket {
 	if tlsConfig == nil {
 		tlsConfig = &tls.Config{}
 	}
 
-	return &fasthttpSocket{
+	return &Socket{
 		connected: false,
 		lock:      sync.RWMutex{},
 		readLock:  sync.Mutex{},
@@ -103,7 +102,7 @@ func NewFasthttpSocket(
 }
 
 // Dial implements the webwire.Socket interface
-func (sock *fasthttpSocket) Dial(serverAddr url.URL) (err error) {
+func (sock *Socket) Dial(serverAddr url.URL) (err error) {
 	sock.lock.Lock()
 	if sock.connected {
 		sock.conn.Close()
@@ -115,7 +114,9 @@ func (sock *fasthttpSocket) Dial(serverAddr url.URL) (err error) {
 	if err != nil {
 		sock.connected = false
 		sock.lock.Unlock()
-		return NewDisconnectedErr(fmt.Errorf("dial failure: %s", err))
+		return wwrerr.DisconnectedErr{
+			Cause: fmt.Errorf("dial failure: %s", err),
+		}
 	}
 	sock.conn = connection
 	sock.connected = true
@@ -142,11 +143,11 @@ func (wc *fasthttpWriteCloser) Close() error {
 }
 
 // GetWriter implements the webwire.Socket interface
-func (sock *fasthttpSocket) GetWriter() (io.WriteCloser, error) {
+func (sock *Socket) GetWriter() (io.WriteCloser, error) {
 	sock.writeLock.Lock()
 	if !sock.connected {
 		sock.writeLock.Unlock()
-		return nil, DisconnectedErr{
+		return nil, wwrerr.DisconnectedErr{
 			Cause: fmt.Errorf("can't write to a closed socket"),
 		}
 	}
@@ -165,34 +166,34 @@ func (sock *fasthttpSocket) GetWriter() (io.WriteCloser, error) {
 }
 
 // Read implements the webwire.Socket interface
-func (sock *fasthttpSocket) Read(msg *message.Message) SockReadErr {
+func (sock *Socket) Read(msg *message.Message) wwrerr.SockReadErr {
 	sock.readLock.Lock()
 	messageType, reader, err := sock.conn.NextReader()
 	sock.readLock.Unlock()
 	if err != nil {
-		return fasthttpSockReadErr{cause: err}
+		return SockReadErr{cause: err}
 	}
 
 	// Discard message in case of unexpected message types
 	if messageType != websocket.BinaryMessage {
 		io.Copy(ioutil.Discard, reader)
-		return fasthttpSockReadWrongMsgTypeErr{messageType: messageType}
+		return SockReadWrongMsgTypeErr{messageType: messageType}
 	}
 
 	// Try to read the socket into the buffer
 	typeParsed, err := msg.Read(reader)
 	if err != nil {
-		return fasthttpSockReadErr{cause: err}
+		return SockReadErr{cause: err}
 	}
 	if !typeParsed {
-		return fasthttpSockReadErr{cause: errors.New("no message type")}
+		return SockReadErr{cause: errors.New("no message type")}
 	}
 
 	return nil
 }
 
 // IsConnected implements the webwire.Socket interface
-func (sock *fasthttpSocket) IsConnected() bool {
+func (sock *Socket) IsConnected() bool {
 	sock.lock.RLock()
 	connected := sock.connected
 	sock.lock.RUnlock()
@@ -200,7 +201,7 @@ func (sock *fasthttpSocket) IsConnected() bool {
 }
 
 // RemoteAddr implements the webwire.Socket interface
-func (sock *fasthttpSocket) RemoteAddr() net.Addr {
+func (sock *Socket) RemoteAddr() net.Addr {
 	sock.lock.RLock()
 	if sock.conn == nil {
 		sock.lock.RUnlock()
@@ -212,7 +213,7 @@ func (sock *fasthttpSocket) RemoteAddr() net.Addr {
 }
 
 // Close implements the webwire.Socket interface
-func (sock *fasthttpSocket) Close() error {
+func (sock *Socket) Close() error {
 	sock.lock.Lock()
 	sock.connected = false
 	err := sock.conn.Close()
@@ -221,7 +222,7 @@ func (sock *fasthttpSocket) Close() error {
 }
 
 // SetReadDeadline implements the webwire.Socket interface
-func (sock *fasthttpSocket) SetReadDeadline(deadline time.Time) error {
+func (sock *Socket) SetReadDeadline(deadline time.Time) error {
 	sock.lock.Lock()
 	err := sock.conn.SetReadDeadline(deadline)
 	sock.lock.Unlock()
@@ -229,21 +230,21 @@ func (sock *fasthttpSocket) SetReadDeadline(deadline time.Time) error {
 }
 
 // OnPong implements the webwire.Socket interface
-func (sock *fasthttpSocket) OnPong(handler func(string) error) {
+func (sock *Socket) OnPong(handler func(string) error) {
 	sock.lock.Lock()
 	sock.conn.SetPongHandler(handler)
 	sock.lock.Unlock()
 }
 
 // OnPing implements the webwire.Socket interface
-func (sock *fasthttpSocket) OnPing(handler func(string) error) {
+func (sock *Socket) OnPing(handler func(string) error) {
 	sock.lock.Lock()
 	sock.conn.SetPingHandler(handler)
 	sock.lock.Unlock()
 }
 
 // WritePing implements the webwire.Socket interface
-func (sock *fasthttpSocket) WritePing(data []byte, deadline time.Time) error {
+func (sock *Socket) WritePing(data []byte, deadline time.Time) error {
 	sock.lock.Lock()
 	err := sock.conn.WriteControl(websocket.PingMessage, data, deadline)
 	sock.lock.Unlock()
