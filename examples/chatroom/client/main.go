@@ -9,9 +9,10 @@ import (
 	"os"
 	"time"
 
-	"github.com/qbeon/webwire-go/examples/chatroom/shared"
-
+	"github.com/fasthttp/websocket"
 	wwrclt "github.com/qbeon/webwire-go/client"
+	"github.com/qbeon/webwire-go/examples/chatroom/shared"
+	wwrfasthttp "github.com/qbeon/webwire-go/transport/fasthttp"
 )
 
 // ChatroomClient implements the wwrclt.Implementation interface
@@ -51,15 +52,21 @@ func NewChatroomClient(serverAddr url.URL) (*ChatroomClient, error) {
 				--------------------------------------------------------------
 				WARNING! NEVER DISABLE CERTIFICATE VERIFICATION IN PRODUCTION!
 				--------------------------------------------------------------
-				InsecureSkipVerify is enabled for demonstration purposes only
-				to allow the use of a self-signed localhost SSL certificate.
-				Enabling this option in production is dangerous and irresponsible.
-				Alternatively, you can install the "wwrexampleCA.pem" root
-				certificate to make your system accept the self-signed "server.crt"
-				certificate for "localhost" and disable InsecureSkipVerify.
+				InsecureSkipVerify is enabled for demonstration purposes only to
+				allow the use of a self-signed localhost SSL certificate without
+				installing the provided CA root certificate on the testing
+				system. Enabling this option in production is dangerous and
+				irresponsible. Alternatively, you can install the
+				"wwrexampleCA.pem" root certificate to make your system accept
+				the self-signed "server.crt" certificate for "localhost" and
+				disable InsecureSkipVerify.
 			*/
-			TLSConfig: &tls.Config{
-				InsecureSkipVerify: true,
+			Transport: &wwrfasthttp.ClientTransport{
+				Dialer: websocket.Dialer{
+					TLSClientConfig: &tls.Config{
+						InsecureSkipVerify: true,
+					},
+				},
 			},
 		},
 	)

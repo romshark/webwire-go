@@ -5,9 +5,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/fasthttp/websocket"
 	"github.com/qbeon/tmdwg-go"
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
+	wwrfasthttp "github.com/qbeon/webwire-go/transport/fasthttp"
 	"github.com/stretchr/testify/require"
 )
 
@@ -58,8 +60,12 @@ func TestServerMessageBufferOverflow(t *testing.T) {
 			DefaultRequestTimeout: 2 * time.Second,
 			// Use bigger buffers on the client
 			MessageBufferSize: messageBufferSize * 2,
-			ReadBufferSize:    messageBufferSize * 2,
-			WriteBufferSize:   messageBufferSize * 2,
+			Transport: &wwrfasthttp.ClientTransport{
+				Dialer: websocket.Dialer{
+					ReadBufferSize:  int(messageBufferSize * 2),
+					WriteBufferSize: int(messageBufferSize * 2),
+				},
+			},
 		},
 		callbackPoweredClientHooks{},
 	)

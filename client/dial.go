@@ -101,7 +101,10 @@ func (clt *client) dial() (message.ServerConfiguration, error) {
 
 		// Finish successful dial
 		if err := clt.conn.SetReadDeadline(time.Time{}); err != nil {
-			clt.errorLog.Print("couldn't set read deadline after dial: ", err)
+			clt.options.ErrorLog.Print(
+				"couldn't set read deadline after dial: ",
+				err,
+			)
 		}
 		result <- dialResult{
 			serverConfiguration: msg.ServerConfiguration,

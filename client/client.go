@@ -3,7 +3,6 @@ package client
 import (
 	"sync/atomic"
 
-	"log"
 	"net/url"
 	"sync"
 
@@ -76,10 +75,6 @@ type client struct {
 	heartbeat      heartbeat
 	requestManager reqman.RequestManager
 	messagePool    message.Pool
-
-	// Loggers
-	warningLog *log.Logger
-	errorLog   *log.Logger
 }
 
 // Status returns the current client status
@@ -159,7 +154,7 @@ func (clt *client) Close() {
 	atomic.StoreInt32(&clt.status, Disabled)
 
 	if err := clt.conn.Close(); err != nil {
-		clt.errorLog.Printf("Failed closing connection: %s", err)
+		clt.options.ErrorLog.Printf("Failed closing connection: %s", err)
 	}
 
 	// Wait for the reader goroutine to die before returning

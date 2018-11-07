@@ -9,7 +9,6 @@ import (
 	webwire "github.com/qbeon/webwire-go"
 	"github.com/qbeon/webwire-go/message"
 	reqman "github.com/qbeon/webwire-go/requestManager"
-	wwrfhttp "github.com/qbeon/webwire-go/transport/fasthttp"
 )
 
 // NewClient creates a new client instance.
@@ -41,10 +40,11 @@ func NewClient(
 		autoconnect = autoconnectDisabled
 	}
 
-	conn := wwrfhttp.NewSocket(
-		options.TLSConfig,
-		options.DialingTimeout,
-	)
+	// Initialize socket
+	conn, err := options.Transport.NewSocket(options.DialingTimeout)
+	if err != nil {
+		return nil, fmt.Errorf("couldn't initialize socket: %s", err)
+	}
 
 	// Initialize new client
 	newClt := &client{
@@ -65,8 +65,6 @@ func NewClient(
 		heartbeat:      newHeartbeat(conn, options.ErrorLog),
 		requestManager: reqman.NewRequestManager(),
 		messagePool:    message.NewSyncPool(options.MessageBufferSize, 1024),
-		errorLog:       options.ErrorLog,
-		warningLog:     options.WarnLog,
 	}
 
 	if autoconnect == autoconnectEnabled {

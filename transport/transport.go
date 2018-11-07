@@ -15,7 +15,7 @@ type IsShuttingDown func() bool
 // webwire server
 type OnNewConnection func(connopt.ConnectionOptions, []byte, Socket)
 
-// Transport defines the interface of a webwire transport implementation
+// Transport defines the interface of a webwire transport
 type Transport interface {
 	// Initialize initializes the server
 	Initialize(
@@ -34,4 +34,10 @@ type Transport interface {
 
 	// Address returns the URL address the server is listening on
 	Address() url.URL
+}
+
+// ClientTransport defines the interface of a webwire client transport
+type ClientTransport interface {
+	// NewSocket initializes a new client socket
+	NewSocket(dialTimeout time.Duration) (Socket, error)
 }

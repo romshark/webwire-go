@@ -13,7 +13,10 @@ import (
 func (clt *client) handleSessionCreated(msgPayload pld.Payload) {
 	var encoded webwire.JSONEncodedSession
 	if err := json.Unmarshal(msgPayload.Data, &encoded); err != nil {
-		clt.errorLog.Printf("Failed unmarshalling session object: %s", err)
+		clt.options.ErrorLog.Printf(
+			"Failed unmarshalling session object: %s",
+			err,
+		)
 		return
 	}
 
@@ -142,7 +145,7 @@ func (clt *client) handleMessage(msg *message.Message) (err error) {
 	default:
 		// Release the buffer
 		msg.Close()
-		clt.warningLog.Printf(
+		clt.options.WarnLog.Printf(
 			"Strange message type received: '%d'\n",
 			msg.MsgType,
 		)

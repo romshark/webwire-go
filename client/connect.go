@@ -50,7 +50,7 @@ func (clt *client) connect() error {
 				msg.Close()
 				if err.IsAbnormalCloseErr() {
 					// Error while reading message
-					clt.errorLog.Print("Abnormal closure error:", err)
+					clt.options.ErrorLog.Print("Abnormal closure error:", err)
 				}
 
 				atomic.StoreInt32(&clt.status, Disconnected)
@@ -70,7 +70,7 @@ func (clt *client) connect() error {
 							context.Background(),
 							false,
 						); err != nil {
-							clt.errorLog.Printf(
+							clt.options.ErrorLog.Printf(
 								"Auto-reconnect failed "+
 									"after connection loss: %s",
 								err,
@@ -84,7 +84,7 @@ func (clt *client) connect() error {
 
 			// Try to handle the message
 			if err := clt.handleMessage(msg); err != nil {
-				clt.errorLog.Print("message handler failed:", err)
+				clt.options.ErrorLog.Print("message handler failed:", err)
 			}
 		}
 	}()
@@ -108,7 +108,7 @@ func (clt *client) connect() error {
 		// even if session restoration failed,
 		// because we only care about the connection establishment
 		// in this method
-		clt.warningLog.Printf(
+		clt.options.WarnLog.Printf(
 			"Couldn't restore session on reconnection: %s",
 			err,
 		)

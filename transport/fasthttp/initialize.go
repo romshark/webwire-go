@@ -51,7 +51,7 @@ func (srv *Transport) Initialize(
 	}
 	if srv.TLS != nil {
 		// Use TLS listener on top of the TCP listener in HTTPS mode
-		listener = tls.NewListener(listener, srv.TLS.Config)
+		listener = tls.NewListener(listener, srv.TLS.Config.Clone())
 	}
 	srv.listener = listener
 

@@ -1,13 +1,14 @@
 package client
 
 import (
-	"crypto/tls"
 	"fmt"
 	"log"
 	"os"
 	"time"
 
 	webwire "github.com/qbeon/webwire-go"
+	"github.com/qbeon/webwire-go/transport"
+	wwrfasthttp "github.com/qbeon/webwire-go/transport/fasthttp"
 )
 
 // Options represents the options used during the creation a new client instance
@@ -44,17 +45,11 @@ type Options struct {
 	// ErrorLog defines the error logging output target
 	ErrorLog *log.Logger
 
-	// TLSConfig defines optional TLS configurations
-	TLSConfig *tls.Config
-
-	// ReadBufferSize defines the size of the inbound buffer in bytes
-	ReadBufferSize uint32
-
-	// WriteBufferSize defines the size of the outbound buffer in bytes
-	WriteBufferSize uint32
-
 	// MessageBufferSize defines the size of the inbound message buffer
 	MessageBufferSize uint32
+
+	// Transport specifies the underlying transport layer implementation
+	Transport transport.ClientTransport
 }
 
 // Prepare validates the specified options and sets the default values for
@@ -97,43 +92,23 @@ func (op *Options) Prepare() error {
 		op.DialingTimeout = 5 * time.Second
 	}
 
-	// Copy the TLS configuration if any
-	if op.TLSConfig != nil {
-		op.TLSConfig = op.TLSConfig.Clone()
-	}
-
 	// Verify buffer sizes
 	const minBufferSize = 1024
 
-	if op.ReadBufferSize == 0 {
-		op.ReadBufferSize = minBufferSize
-	} else if op.ReadBufferSize < minBufferSize {
-		return fmt.Errorf(
-			"socket read buffer size too small: %d bytes (min: %d bytes)",
-			op.ReadBufferSize,
-			minBufferSize,
-		)
-	}
-
-	if op.WriteBufferSize == 0 {
-		op.WriteBufferSize = minBufferSize
-	} else if op.WriteBufferSize < minBufferSize {
-		return fmt.Errorf(
-			"socket write buffer size too small: %d bytes (min: %d bytes)",
-			op.WriteBufferSize,
-			minBufferSize,
-		)
-	}
-
 	// Verify the message buffer size
 	if op.MessageBufferSize == 0 {
-		op.MessageBufferSize = op.ReadBufferSize
-	} else if op.MessageBufferSize < op.ReadBufferSize {
+		op.MessageBufferSize = minBufferSize
+	} else if op.MessageBufferSize < minBufferSize {
 		return fmt.Errorf(
 			"message buffer size too small: %d bytes (min: %d bytes)",
 			op.MessageBufferSize,
-			op.ReadBufferSize,
+			minBufferSize,
 		)
+	}
+
+	// Set default transport
+	if op.Transport == nil {
+		op.Transport = &wwrfasthttp.ClientTransport{}
 	}
 
 	return nil

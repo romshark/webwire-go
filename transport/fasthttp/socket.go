@@ -1,13 +1,11 @@
 package fasthttp
 
 import (
-	"crypto/tls"
 	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net"
-	"net/http"
 	"net/url"
 	"sync"
 	"time"
@@ -75,29 +73,6 @@ func NewConnectedSocket(conn *websocket.Conn) *Socket {
 		readLock:  sync.Mutex{},
 		writeLock: sync.Mutex{},
 		conn:      conn,
-	}
-}
-
-// NewSocket creates a new disconnected fasthttp/websocket based socket
-// instance
-func NewSocket(
-	tlsConfig *tls.Config,
-	dialTimeout time.Duration,
-) *Socket {
-	if tlsConfig == nil {
-		tlsConfig = &tls.Config{}
-	}
-
-	return &Socket{
-		connected: false,
-		lock:      sync.RWMutex{},
-		readLock:  sync.Mutex{},
-		writeLock: sync.Mutex{},
-		dialer: websocket.Dialer{
-			Proxy:            http.ProxyFromEnvironment,
-			HandshakeTimeout: dialTimeout,
-			TLSClientConfig:  tlsConfig.Clone(),
-		},
 	}
 }
 
