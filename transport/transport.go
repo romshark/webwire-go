@@ -13,7 +13,11 @@ type IsShuttingDown func() bool
 
 // OnNewConnection must be called when the connection is ready to be used by the
 // webwire server
-type OnNewConnection func(connopt.ConnectionOptions, []byte, Socket)
+type OnNewConnection func(
+	connectionOptions connopt.ConnectionOptions,
+	clientAgentString []byte,
+	socket Socket,
+)
 
 // Transport defines the interface of a webwire transport
 type Transport interface {
@@ -39,5 +43,5 @@ type Transport interface {
 // ClientTransport defines the interface of a webwire client transport
 type ClientTransport interface {
 	// NewSocket initializes a new client socket
-	NewSocket(dialTimeout time.Duration) (Socket, error)
+	NewSocket(dialTimeout time.Duration) (ClientSocket, error)
 }

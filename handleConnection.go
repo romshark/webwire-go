@@ -41,13 +41,6 @@ func (srv *server) handleConnection(
 		return
 	}
 
-	if err := sock.SetReadDeadline(
-		time.Now().Add(srv.options.ReadTimeout),
-	); err != nil {
-		srv.errorLog.Printf("couldn't set read deadline: %s", err)
-		return
-	}
-
 	// Register connected client
 	connection := newConnection(
 		sock,
@@ -75,7 +68,10 @@ func (srv *server) handleConnection(
 		}
 
 		// Await message
-		if err := sock.Read(msg); err != nil {
+		if err := sock.Read(
+			msg,
+			time.Now().Add(srv.options.ReadTimeout), // Deadline
+		); err != nil {
 			msg.Close()
 
 			if err.IsAbnormalCloseErr() {

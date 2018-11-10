@@ -3,7 +3,6 @@ package transport
 import (
 	"io"
 	"net"
-	"net/url"
 	"time"
 
 	"github.com/qbeon/webwire-go/message"
@@ -12,26 +11,24 @@ import (
 
 // Socket defines the abstract socket implementation interface
 type Socket interface {
-	// Dial connects the socket to the specified server
-	Dial(serverAddr url.URL) error
-
 	// GetWriter returns a writer for the next message to send. The writer's
-	// Close method flushes the complete message to the network
+	// Close method flushes the written message to the network. In case of
+	// concurrent use GetWriter will block until the previous writer is closed
+	// and a new one is available
 	GetWriter() (io.WriteCloser, error)
 
-	// Read blocks the calling goroutine and awaits an incoming message
-	Read(*message.Message) wwrerr.SockReadErr
+	// Read blocks the calling goroutine and awaits an incoming message. If
+	// deadline is 0 then Read will never timeout. In case of concurrent use
+	// Read will block until the previous call finished
+	Read(into *message.Message, deadline time.Time) wwrerr.SockReadErr
 
-	// IsConnected returns true if the given socket maintains an open
-	// connection or otherwise return false
+	// IsConnected returns true if the given socket maintains an open connection
+	// or otherwise return false
 	IsConnected() bool
 
 	// RemoteAddr returns the address of the remote client or nil if the client
 	// is not connected
 	RemoteAddr() net.Addr
-
-	// SetReadDeadline sets the readers deadline
-	SetReadDeadline(deadline time.Time) error
 
 	// Close closes the socket
 	Close() error

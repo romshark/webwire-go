@@ -13,18 +13,20 @@ import (
 // requestSessionRestoration sends a session restoration request
 // and decodes the session object from the received reply.
 // Expects the client to be connected beforehand
-func (clt *client) requestSessionRestoration(sessionKey []byte) (
+func (clt *client) requestSessionRestoration(
+	ctx context.Context,
+	sessionKey []byte,
+) (
 	*webwire.Session,
 	error,
 ) {
 	reply, err := clt.sendNamelessRequest(
-		context.Background(),
+		ctx,
 		message.MsgRestoreSession,
 		pld.Payload{
 			Encoding: webwire.EncodingBinary,
 			Data:     sessionKey,
 		},
-		clt.options.DefaultRequestTimeout,
 	)
 	if err != nil {
 		return nil, err

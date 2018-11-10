@@ -45,7 +45,7 @@ func (clt *client) RestoreSession(
 		return err
 	}
 
-	restoredSession, err := clt.requestSessionRestoration(sessionKey)
+	restoredSession, err := clt.requestSessionRestoration(ctx, sessionKey)
 	if err != nil {
 		clt.apiLock.Unlock()
 		closeCtx()

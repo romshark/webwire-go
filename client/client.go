@@ -69,7 +69,7 @@ type client struct {
 	connectingLock sync.RWMutex
 
 	connectLock   sync.Mutex
-	conn          transport.Socket
+	conn          transport.ClientSocket
 	readerClosing chan bool
 
 	heartbeat      heartbeat

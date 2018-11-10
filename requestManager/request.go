@@ -2,8 +2,6 @@ package requestmanager
 
 import (
 	"context"
-	"errors"
-	"time"
 
 	webwire "github.com/qbeon/webwire-go"
 	"github.com/qbeon/webwire-go/message"
@@ -31,9 +29,6 @@ type Request struct {
 	// identifier represents the unique identifier of this request
 	identifier RequestIdentifier
 
-	// timeout represents the configured timeout duration of this request
-	timeout time.Duration
-
 	// reply represents a channel for asynchronous reply handling
 	reply chan genericReply
 }
@@ -48,24 +43,13 @@ func (req *Request) Identifier() RequestIdentifier {
 // a user-defined deadline was exceeded or the request was prematurely canceled.
 // The timer is started when AwaitReply is called.
 func (req *Request) AwaitReply(ctx context.Context) (webwire.Reply, error) {
-	// Start timeout timer
-	timeoutTimer := time.NewTimer(req.timeout)
-
-	// Block until either deadline exceeded, canceled,
-	// timed out or reply received
+	// Block until either context canceled (including timeout) or reply received
 	select {
 	case <-ctx.Done():
-		timeoutTimer.Stop()
 		req.manager.deregister(req.identifier)
 		return nil, wwrerr.TranslateContextError(ctx.Err())
 
-	case <-timeoutTimer.C:
-		timeoutTimer.Stop()
-		req.manager.deregister(req.identifier)
-		return nil, wwrerr.TimeoutErr{Cause: errors.New("timed out")}
-
 	case rp := <-req.reply:
-		timeoutTimer.Stop()
 		if rp.Error != nil {
 			return nil, rp.Error
 		}

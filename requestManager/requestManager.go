@@ -3,7 +3,6 @@ package requestmanager
 import (
 	"encoding/binary"
 	"sync"
-	"time"
 
 	"github.com/qbeon/webwire-go/message"
 )
@@ -29,7 +28,7 @@ func NewRequestManager() RequestManager {
 // Create creates and registers a new request.
 // Create doesn't start the timeout timer,
 // this is done in the subsequent request.AwaitReply
-func (manager *RequestManager) Create(timeout time.Duration) *Request {
+func (manager *RequestManager) Create() *Request {
 	manager.lock.Lock()
 
 	// Generate unique request identifier by incrementing the last assigned id
@@ -42,7 +41,6 @@ func (manager *RequestManager) Create(timeout time.Duration) *Request {
 	newRequest := &Request{
 		manager,
 		identifier,
-		timeout,
 		make(chan genericReply),
 	}
 

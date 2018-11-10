@@ -3,7 +3,6 @@ package webwire
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/qbeon/webwire-go/message"
 	"github.com/qbeon/webwire-go/wwrerr"
@@ -14,14 +13,6 @@ func (srv *server) handleMessage(
 	con *connection,
 	msg *message.Message,
 ) (err error) {
-	// Reset the read deadline on valid message
-	if err := con.sock.SetReadDeadline(
-		time.Now().Add(srv.options.ReadTimeout),
-	); err != nil {
-		srv.errorLog.Printf("couldn't set read deadline: %s", err)
-		return nil
-	}
-
 	// Don't register a task handler for heartbeat messages
 	//
 	// TODO: probably this check should include any message type that's not

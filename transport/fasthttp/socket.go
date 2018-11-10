@@ -53,9 +53,9 @@ func (err SockReadWrongMsgTypeErr) IsAbnormalCloseErr() bool {
 // the fasthttp/websocket library
 type Socket struct {
 	connected bool
-	lock      sync.RWMutex
-	readLock  sync.Mutex
-	writeLock sync.Mutex
+	lock      *sync.Mutex
+	readLock  *sync.Mutex
+	writeLock *sync.Mutex
 	conn      *websocket.Conn
 	dialer    websocket.Dialer
 }
@@ -63,31 +63,25 @@ type Socket struct {
 // NewConnectedSocket creates a new fasthttp/websocket based socket
 // instance
 func NewConnectedSocket(conn *websocket.Conn) *Socket {
-	connected := false
-	if conn != nil {
-		connected = true
-	}
+	connected := conn != nil
 	return &Socket{
 		connected: connected,
-		lock:      sync.RWMutex{},
-		readLock:  sync.Mutex{},
-		writeLock: sync.Mutex{},
+		lock:      &sync.Mutex{},
+		readLock:  &sync.Mutex{},
+		writeLock: &sync.Mutex{},
 		conn:      conn,
 	}
 }
 
 // Dial implements the webwire.Socket interface
-func (sock *Socket) Dial(serverAddr url.URL) (err error) {
+func (sock *Socket) Dial(serverAddr url.URL, deadline time.Time) (err error) {
 	sock.lock.Lock()
 	if sock.connected {
-		sock.conn.Close()
-		sock.conn = nil
-		sock.connected = false
+		sock.lock.Unlock()
+		return errors.New("already connected")
 	}
-
 	connection, _, err := sock.dialer.Dial(serverAddr.String(), nil)
 	if err != nil {
-		sock.connected = false
 		sock.lock.Unlock()
 		return wwrerr.DisconnectedErr{
 			Cause: fmt.Errorf("dial failure: %s", err),
@@ -120,12 +114,18 @@ func (wc *fasthttpWriteCloser) Close() error {
 // GetWriter implements the webwire.Socket interface
 func (sock *Socket) GetWriter() (io.WriteCloser, error) {
 	sock.writeLock.Lock()
+
+	// Check connection status
+	sock.lock.Lock()
 	if !sock.connected {
+		sock.lock.Unlock()
 		sock.writeLock.Unlock()
 		return nil, wwrerr.DisconnectedErr{
 			Cause: fmt.Errorf("can't write to a closed socket"),
 		}
 	}
+	sock.lock.Unlock()
+
 	writer, err := sock.conn.NextWriter(websocket.BinaryMessage)
 	if err != nil {
 		sock.writeLock.Unlock()
@@ -141,87 +141,79 @@ func (sock *Socket) GetWriter() (io.WriteCloser, error) {
 }
 
 // Read implements the webwire.Socket interface
-func (sock *Socket) Read(msg *message.Message) wwrerr.SockReadErr {
+func (sock *Socket) Read(
+	msg *message.Message,
+	deadline time.Time,
+) wwrerr.SockReadErr {
 	sock.readLock.Lock()
+	if err := sock.conn.SetReadDeadline(deadline); err != nil {
+		sock.readLock.Unlock()
+		return SockReadErr{cause: errors.New("couldn't set read deadline")}
+	}
 	messageType, reader, err := sock.conn.NextReader()
-	sock.readLock.Unlock()
 	if err != nil {
+		sock.Close()
+		sock.readLock.Unlock()
+		return SockReadErr{cause: err}
+	}
+
+	// Stop deadline timer
+	if err := sock.conn.SetReadDeadline(time.Time{}); err != nil {
+		sock.readLock.Unlock()
 		return SockReadErr{cause: err}
 	}
 
 	// Discard message in case of unexpected message types
 	if messageType != websocket.BinaryMessage {
 		io.Copy(ioutil.Discard, reader)
+		sock.readLock.Unlock()
 		return SockReadWrongMsgTypeErr{messageType: messageType}
 	}
 
 	// Try to read the socket into the buffer
 	typeParsed, err := msg.Read(reader)
 	if err != nil {
+		sock.readLock.Unlock()
 		return SockReadErr{cause: err}
 	}
 	if !typeParsed {
+		sock.readLock.Unlock()
 		return SockReadErr{cause: errors.New("no message type")}
 	}
 
+	sock.readLock.Unlock()
 	return nil
 }
 
 // IsConnected implements the webwire.Socket interface
 func (sock *Socket) IsConnected() bool {
-	sock.lock.RLock()
+	sock.lock.Lock()
 	connected := sock.connected
-	sock.lock.RUnlock()
+	sock.lock.Unlock()
 	return connected
 }
 
 // RemoteAddr implements the webwire.Socket interface
 func (sock *Socket) RemoteAddr() net.Addr {
-	sock.lock.RLock()
-	if sock.conn == nil {
-		sock.lock.RUnlock()
-		return nil
+	sock.lock.Lock()
+	if sock.connected {
+		addr := sock.conn.RemoteAddr()
+		sock.lock.Unlock()
+		return addr
 	}
-	addr := sock.conn.RemoteAddr()
-	sock.lock.RUnlock()
-	return addr
+	sock.lock.Unlock()
+	return nil
 }
 
 // Close implements the webwire.Socket interface
 func (sock *Socket) Close() error {
 	sock.lock.Lock()
-	sock.connected = false
-	err := sock.conn.Close()
+	if sock.connected {
+		err := sock.conn.Close()
+		sock.connected = false
+		sock.lock.Unlock()
+		return err
+	}
 	sock.lock.Unlock()
-	return err
-}
-
-// SetReadDeadline implements the webwire.Socket interface
-func (sock *Socket) SetReadDeadline(deadline time.Time) error {
-	sock.lock.Lock()
-	err := sock.conn.SetReadDeadline(deadline)
-	sock.lock.Unlock()
-	return err
-}
-
-// OnPong implements the webwire.Socket interface
-func (sock *Socket) OnPong(handler func(string) error) {
-	sock.lock.Lock()
-	sock.conn.SetPongHandler(handler)
-	sock.lock.Unlock()
-}
-
-// OnPing implements the webwire.Socket interface
-func (sock *Socket) OnPing(handler func(string) error) {
-	sock.lock.Lock()
-	sock.conn.SetPingHandler(handler)
-	sock.lock.Unlock()
-}
-
-// WritePing implements the webwire.Socket interface
-func (sock *Socket) WritePing(data []byte, deadline time.Time) error {
-	sock.lock.Lock()
-	err := sock.conn.WriteControl(websocket.PingMessage, data, deadline)
-	sock.lock.Unlock()
-	return err
+	return nil
 }

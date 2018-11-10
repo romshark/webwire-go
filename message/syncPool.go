@@ -1,8 +1,6 @@
 package message
 
-import (
-	"sync"
-)
+import "sync"
 
 // SyncPool represents a thread-safe messageBuffer pool
 type SyncPool struct {

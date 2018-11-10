@@ -17,15 +17,15 @@ type ClientTransport struct {
 // NewSocket implements the ClientTransport interface
 func (cltTrans *ClientTransport) NewSocket(
 	dialTimeout time.Duration,
-) (transport.Socket, error) {
+) (transport.ClientSocket, error) {
 	// Reset handshake timeout to client-enforced dial timeout
 	cltTrans.Dialer.HandshakeTimeout = dialTimeout
 
 	return &Socket{
 		connected: false,
-		lock:      sync.RWMutex{},
-		readLock:  sync.Mutex{},
-		writeLock: sync.Mutex{},
+		lock:      &sync.Mutex{},
+		readLock:  &sync.Mutex{},
+		writeLock: &sync.Mutex{},
 		dialer:    cltTrans.Dialer,
 	}, nil
 }

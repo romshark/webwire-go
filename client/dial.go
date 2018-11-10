@@ -33,7 +33,7 @@ func (clt *client) dial() (message.ServerConfiguration, error) {
 
 	go func() {
 		// Dial
-		if err := clt.conn.Dial(serverAddr); err != nil {
+		if err := clt.conn.Dial(serverAddr, deadline); err != nil {
 			result <- dialResult{err: err}
 			return
 		}
@@ -55,17 +55,7 @@ func (clt *client) dial() (message.ServerConfiguration, error) {
 		}
 
 		// Await the server configuration handshake response
-		if err := clt.conn.SetReadDeadline(deadline); err != nil {
-			result <- dialResult{err: fmt.Errorf(
-				"couldn't set read deadline: %s",
-				err,
-			)}
-			msg.Close()
-			clt.conn.Close()
-			return
-		}
-
-		if err := clt.conn.Read(msg); err != nil {
+		if err := clt.conn.Read(msg, deadline); err != nil {
 			result <- dialResult{err: fmt.Errorf("read err: %s", err.Error())}
 			clt.conn.Close()
 			msg.Close()
@@ -100,12 +90,6 @@ func (clt *client) dial() (message.ServerConfiguration, error) {
 		}
 
 		// Finish successful dial
-		if err := clt.conn.SetReadDeadline(time.Time{}); err != nil {
-			clt.options.ErrorLog.Print(
-				"couldn't set read deadline after dial: ",
-				err,
-			)
-		}
 		result <- dialResult{
 			serverConfiguration: msg.ServerConfiguration,
 		}
@@ -115,11 +99,12 @@ func (clt *client) dial() (message.ServerConfiguration, error) {
 	select {
 	case <-dialingTimer.C:
 		// Abort due to timeout
-		dialingTimer.Stop()
 		atomic.StoreUint32(&abortAwait, 1)
 		return message.ServerConfiguration{}, wwrerr.DialTimeoutErr{}
 	case result := <-result:
-		dialingTimer.Stop()
+		if !dialingTimer.Stop() {
+			<-dialingTimer.C
+		}
 		return result.serverConfiguration, result.err
 	}
 }

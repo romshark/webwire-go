@@ -25,15 +25,21 @@ func (clt *client) CloseSession() error {
 	}
 	clt.sessionLock.RUnlock()
 
+	// Set deadline based on the default request timeout
+	ctx, closeCtx := context.WithTimeout(
+		context.Background(),
+		clt.options.DefaultRequestTimeout,
+	)
+
 	// Synchronize session closure to the server if connected
 	if atomic.LoadInt32(&clt.status) == Connected {
 		if _, err := clt.sendNamelessRequest(
-			context.Background(),
+			ctx,
 			message.MsgCloseSession,
 			payload.Payload{},
-			clt.options.DefaultRequestTimeout,
 		); err != nil {
 			clt.apiLock.Unlock()
+			closeCtx()
 			return err
 		}
 	}
@@ -44,5 +50,6 @@ func (clt *client) CloseSession() error {
 	clt.sessionLock.Unlock()
 
 	clt.apiLock.Unlock()
+	closeCtx()
 	return nil
 }

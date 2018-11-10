@@ -2,7 +2,6 @@ package client
 
 import (
 	"context"
-	"time"
 
 	webwire "github.com/qbeon/webwire-go"
 	"github.com/qbeon/webwire-go/message"
@@ -13,9 +12,8 @@ func (clt *client) sendNamelessRequest(
 	ctx context.Context,
 	messageType byte,
 	payload pld.Payload,
-	timeout time.Duration,
 ) (webwire.Reply, error) {
-	request := clt.requestManager.Create(timeout)
+	request := clt.requestManager.Create()
 	reqIdentifier := request.Identifier()
 
 	writer, err := clt.conn.GetWriter()

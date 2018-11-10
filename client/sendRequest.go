@@ -3,7 +3,6 @@ package client
 import (
 	"context"
 	"fmt"
-	"time"
 
 	webwire "github.com/qbeon/webwire-go"
 	"github.com/qbeon/webwire-go/message"
@@ -15,7 +14,6 @@ func (clt *client) sendRequest(
 	messageType byte,
 	name []byte,
 	payload webwire.Payload,
-	timeout time.Duration,
 ) (webwire.Reply, error) {
 	// Require either a name or a payload or both
 	if len(name) < 1 && len(payload.Data) < 1 {
@@ -27,7 +25,7 @@ func (clt *client) sendRequest(
 	}
 
 	// Register a new request
-	request := clt.requestManager.Create(timeout)
+	request := clt.requestManager.Create()
 	reqIdentifier := request.Identifier()
 
 	writer, err := clt.conn.GetWriter()

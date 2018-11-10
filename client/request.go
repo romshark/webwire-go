@@ -44,7 +44,6 @@ func (clt *client) Request(
 		determineMsgTypeBasedOnEncoding(payload.Encoding),
 		name,
 		payload,
-		clt.options.DefaultRequestTimeout,
 	)
 
 	clt.apiLock.RUnlock()

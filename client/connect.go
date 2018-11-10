@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"sync/atomic"
+	"time"
 )
 
 // connect will try to establish a connection to the configured webwire server
@@ -46,7 +47,7 @@ func (clt *client) connect() error {
 			// Get a message buffer from the pool
 			msg := clt.messagePool.Get()
 
-			if err := clt.conn.Read(msg); err != nil {
+			if err := clt.conn.Read(msg, time.Time{}); err != nil {
 				msg.Close()
 				if err.IsAbnormalCloseErr() {
 					// Error while reading message
@@ -101,8 +102,17 @@ func (clt *client) connect() error {
 	sessionKey := clt.session.Key
 	clt.sessionLock.RUnlock()
 
+	// Set session restoration deadline
+	ctx, closeCtx := context.WithTimeout(
+		context.Background(),
+		clt.options.DefaultRequestTimeout,
+	)
+
 	// Try to restore session if necessary
-	restoredSession, err := clt.requestSessionRestoration([]byte(sessionKey))
+	restoredSession, err := clt.requestSessionRestoration(
+		ctx,
+		[]byte(sessionKey),
+	)
 	if err != nil {
 		// Just log a warning and still return nil,
 		// even if session restoration failed,
@@ -118,6 +128,7 @@ func (clt *client) connect() error {
 		clt.session = nil
 		clt.sessionLock.Unlock()
 		clt.connectLock.Unlock()
+		closeCtx()
 		return nil
 	}
 
@@ -125,5 +136,6 @@ func (clt *client) connect() error {
 	clt.session = restoredSession
 	clt.sessionLock.Unlock()
 	clt.connectLock.Unlock()
+	closeCtx()
 	return nil
 }
