@@ -60,11 +60,12 @@ func (srv *Transport) Initialize(
 	// Set default HTTP server if none is specified
 	if srv.HTTPServer == nil {
 		srv.HTTPServer = &fasthttp.Server{
-			Handler:     srv.handleAccept,
-			Name:        "webwire 2.0",
-			ReadTimeout: readTimeout,
+			Name: "webwire 2.0",
 		}
 	}
+
+	srv.HTTPServer.ReadTimeout = readTimeout
+	srv.HTTPServer.Handler = srv.handleAccept
 
 	// Set default connection upgrader if none is specified
 	if srv.Upgrader == nil {
