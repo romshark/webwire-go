@@ -2,7 +2,6 @@ package client
 
 import (
 	"context"
-	"sync/atomic"
 
 	"github.com/qbeon/webwire-go/message"
 	"github.com/qbeon/webwire-go/payload"
@@ -32,7 +31,7 @@ func (clt *client) CloseSession() error {
 	)
 
 	// Synchronize session closure to the server if connected
-	if atomic.LoadInt32(&clt.status) == Connected {
+	if clt.Status() == Connected {
 		if _, err := clt.sendNamelessRequest(
 			ctx,
 			message.MsgCloseSession,

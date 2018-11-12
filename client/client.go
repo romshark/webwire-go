@@ -20,7 +20,7 @@ const (
 	Disabled Status = 0
 
 	// Disconnected represents a temporarily connection loss
-	Disconnected
+	Disconnected Status = 1
 
 	// Connected represents a normal connection
 	Connected Status = 2
@@ -45,8 +45,9 @@ type client struct {
 	serverAddr  url.URL
 	options     Options
 	impl        Implementation
-	status      Status
 	autoconnect autoconnectStatus
+	statusLock  *sync.Mutex
+	status      Status
 
 	sessionLock sync.RWMutex
 	session     *webwire.Session
@@ -84,7 +85,10 @@ type client struct {
 // a temporary connection loss.
 // A disabled client won't autoconnect until enabled again.
 func (clt *client) Status() Status {
-	return atomic.LoadInt32(&clt.status)
+	clt.statusLock.Lock()
+	status := clt.status
+	clt.statusLock.Unlock()
+	return status
 }
 
 // Connect connects the client to the configured server and
@@ -140,18 +144,23 @@ func (clt *client) PendingRequests() int {
 func (clt *client) Close() {
 	// Apply exclusive lock
 	clt.apiLock.Lock()
+	clt.statusLock.Lock()
 
 	// Disable autoconnect and set status to disabled
-	if atomic.LoadInt32(&clt.autoconnect) != autoconnectDisabled {
-		atomic.StoreInt32(&clt.autoconnect, autoconnectDeactivated)
-	}
+	atomic.CompareAndSwapInt32(
+		&clt.autoconnect,
+		autoconnectEnabled,
+		autoconnectDeactivated,
+	)
 
-	if atomic.LoadInt32(&clt.status) != Connected {
-		atomic.StoreInt32(&clt.status, Disabled)
+	if clt.status != Connected {
+		clt.status = Disabled
+		clt.statusLock.Unlock()
 		clt.apiLock.Unlock()
 		return
 	}
-	atomic.StoreInt32(&clt.status, Disabled)
+	clt.status = Disabled
+	clt.statusLock.Unlock()
 
 	if err := clt.conn.Close(); err != nil {
 		clt.options.ErrorLog.Printf("Failed closing connection: %s", err)
@@ -161,4 +170,11 @@ func (clt *client) Close() {
 	<-clt.readerClosing
 
 	clt.apiLock.Unlock()
+}
+
+// setStatus atomically sets the status
+func (clt *client) setStatus(newStatus Status) {
+	clt.statusLock.Lock()
+	clt.status = newStatus
+	clt.statusLock.Unlock()
 }
