@@ -1,6 +1,8 @@
 package message
 
 import (
+	"errors"
+
 	pld "github.com/qbeon/webwire-go/payload"
 )
 
@@ -91,7 +93,7 @@ func (msg *Message) parse() (parsedMsgType bool, err error) {
 
 	// Ignore messages of invalid message type
 	default:
-		return false, nil
+		return false, errors.New("invalid message type")
 	}
 
 	msg.MsgType = msgType
