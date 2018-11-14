@@ -178,7 +178,7 @@ func (sock *Socket) readWithDeadline(deadline time.Time) (
 	data []byte,
 	err wwrerr.SockReadErr,
 ) {
-	sock.readTimer.Reset(deadline.Sub(time.Now()))
+	sock.readTimer.Reset(time.Until(deadline))
 
 	// Await either a message, socket closure or deadline trigger
 	select {
