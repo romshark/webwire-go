@@ -41,7 +41,7 @@ func (manager *RequestManager) Create() *Request {
 	newRequest := &Request{
 		manager,
 		identifier,
-		make(chan genericReply),
+		make(chan genericReply, 1),
 	}
 
 	// Register the newly created request
