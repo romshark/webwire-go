@@ -31,7 +31,7 @@ func (clt *client) CloseSession() error {
 	)
 
 	// Synchronize session closure to the server if connected
-	if clt.Status() == Connected {
+	if clt.Status() == StatusConnected {
 		if _, err := clt.sendNamelessRequest(
 			ctx,
 			message.MsgCloseSession,

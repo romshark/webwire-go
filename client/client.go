@@ -16,14 +16,14 @@ import (
 type Status = int32
 
 const (
-	// Disabled represents a permanent connection loss
-	Disabled Status = 0
+	// StatusDisabled represents a permanent connection loss
+	StatusDisabled Status = 0
 
-	// Disconnected represents a temporarily connection loss
-	Disconnected Status = 1
+	// StatusDisconnected represents a temporarily connection loss
+	StatusDisconnected Status = 1
 
-	// Connected represents a normal connection
-	Connected Status = 2
+	// StatusConnected represents a normal connection
+	StatusConnected Status = 2
 )
 
 // autoconnectStatus represents the activation of auto-reconnection
@@ -147,7 +147,8 @@ func (clt *client) PendingRequests() int {
 func (clt *client) Close() {
 	// Apply exclusive lock
 	clt.apiLock.Lock()
-	clt.statusLock.Lock()
+
+	clt.close()
 
 	// Disable autoconnect and set status to disabled
 	atomic.CompareAndSwapInt32(
@@ -156,13 +157,20 @@ func (clt *client) Close() {
 		autoconnectDeactivated,
 	)
 
-	if clt.status != Connected {
-		clt.status = Disabled
+	clt.apiLock.Unlock()
+}
+
+// close closes the connection if it's open
+func (clt *client) close() {
+	// Apply exclusive lock
+	clt.statusLock.Lock()
+
+	if clt.status != StatusConnected {
+		clt.status = StatusDisabled
 		clt.statusLock.Unlock()
-		clt.apiLock.Unlock()
 		return
 	}
-	clt.status = Disabled
+	clt.status = StatusDisabled
 	clt.statusLock.Unlock()
 
 	if err := clt.conn.Close(); err != nil {
@@ -171,8 +179,6 @@ func (clt *client) Close() {
 
 	// Wait for the reader goroutine to die before returning
 	<-clt.readerClosing
-
-	clt.apiLock.Unlock()
 }
 
 // setStatus atomically sets the status

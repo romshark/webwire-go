@@ -53,7 +53,7 @@ func NewClient(
 		impl:           implementation,
 		autoconnect:    autoconnect,
 		statusLock:     &sync.Mutex{},
-		status:         Disconnected,
+		status:         StatusDisconnected,
 		sessionLock:    sync.RWMutex{},
 		session:        nil,
 		apiLock:        sync.RWMutex{},

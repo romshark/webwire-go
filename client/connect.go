@@ -16,7 +16,7 @@ import (
 // the required protocol version of this client instance.
 func (clt *client) connect() error {
 	clt.connectLock.Lock()
-	if clt.Status() == Connected {
+	if clt.Status() == StatusConnected {
 		clt.connectLock.Unlock()
 		return nil
 	}
@@ -37,7 +37,7 @@ func (clt *client) connect() error {
 	go func() {
 		defer func() {
 			// Set status
-			clt.setStatus(Disconnected)
+			clt.setStatus(StatusDisconnected)
 			select {
 			case clt.readerClosing <- true:
 			default:
@@ -54,7 +54,7 @@ func (clt *client) connect() error {
 					clt.options.ErrorLog.Print("Abnormal closure error:", err)
 				}
 
-				clt.setStatus(Disconnected)
+				clt.setStatus(StatusDisconnected)
 
 				// Stop heartbeat
 				clt.heartbeat.stop()
@@ -90,7 +90,7 @@ func (clt *client) connect() error {
 		}
 	}()
 
-	clt.setStatus(Connected)
+	clt.setStatus(StatusConnected)
 
 	// Read the current sessions key if there is any
 	clt.sessionLock.RLock()

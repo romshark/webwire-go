@@ -19,7 +19,7 @@ func (clt *client) tryAutoconnect(
 	ctx context.Context,
 	ctxHasDeadline bool,
 ) error {
-	if clt.Status() == Connected {
+	if clt.Status() == StatusConnected {
 		return nil
 	} else if atomic.LoadInt32(&clt.autoconnect) != autoconnectEnabled {
 		// Don't try to auto-connect if it's either temporarily deactivated
