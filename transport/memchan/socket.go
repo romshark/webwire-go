@@ -86,12 +86,6 @@ func (sock *Socket) onBufferFlush(data []byte) (err error) {
 	return
 }
 
-// onBufferOverflow is a slot method called by the outbound buffer's onOverflow
-// callback when it's overflowed by the writer
-func (sock *Socket) onBufferOverflow() {
-	sock.Close()
-}
-
 // Dial implements the transport.Socket interface
 func (sock *Socket) Dial(serverAddr url.URL, deadline time.Time) error {
 	if sock.sockType != SocketClient {
