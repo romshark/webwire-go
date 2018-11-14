@@ -65,11 +65,13 @@ func TestConnectionInfo(t *testing.T) {
 			},
 		},
 		wwr.ServerOptions{},
+		nil, // Use the default transport implementation
 	)
 
 	// Initialize client
 	setup.newClient(
 		wwrclt.Options{},
+		nil, // Use the default transport implementation
 		testClientHooks{},
 	)
 

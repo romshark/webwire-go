@@ -5,9 +5,6 @@ import (
 	"log"
 	"os"
 	"time"
-
-	"github.com/qbeon/webwire-go/transport"
-	wwrfhttp "github.com/qbeon/webwire-go/transport/fasthttp"
 )
 
 // OptionValue represents the setting value of an option
@@ -27,7 +24,6 @@ const (
 // ServerOptions represents the options
 // used during the creation of a new WebWire server instance
 type ServerOptions struct {
-	Transport             transport.Transport
 	Host                  string
 	Sessions              OptionValue
 	SessionManager        SessionManager
@@ -95,11 +91,6 @@ func (op *ServerOptions) Prepare() error {
 			op.MessageBufferSize,
 			minBufferSize,
 		)
-	}
-
-	// Set default fasthttp (no TLS) transport layer if non is specified
-	if op.Transport == nil {
-		op.Transport = &wwrfhttp.Transport{}
 	}
 
 	return nil

@@ -34,6 +34,7 @@ func TestClientOnSessionCreated(t *testing.T) {
 			},
 		},
 		wwr.ServerOptions{},
+		nil, // Use the default transport implementation
 	)
 
 	// Initialize client
@@ -41,6 +42,7 @@ func TestClientOnSessionCreated(t *testing.T) {
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
+		nil, // Use the default transport implementation
 		testClientHooks{
 			OnSessionCreated: func(newSession *wwr.Session) {
 				sessionFromHook = newSession

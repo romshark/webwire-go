@@ -66,11 +66,13 @@ func TestClientAutomaticSessionRestoration(t *testing.T) {
 				},
 			},
 		},
+		nil, // Use the default transport implementation
 	)
 
 	// Initialize client
 	client := setup.newClient(
 		wwrclt.Options{},
+		nil, // Use the default transport implementation
 		testClientHooks{},
 	)
 

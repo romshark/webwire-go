@@ -45,12 +45,12 @@ func main() {
 				log.Ldate|log.Ltime|log.Lshortfile,
 			),
 			ReadTimeout: 3 * time.Second,
-			Transport: &wwrfasthttp.Transport{
-				TLS: &wwrfasthttp.TLS{
-					CertFilePath:       *argCertFilePath,
-					PrivateKeyFilePath: *argPrivateKeyFile,
-					Config:             nil,
-				},
+		},
+		&wwrfasthttp.Transport{
+			TLS: &wwrfasthttp.TLS{
+				CertFilePath:       *argCertFilePath,
+				PrivateKeyFilePath: *argPrivateKeyFile,
+				Config:             nil,
 			},
 		},
 	)

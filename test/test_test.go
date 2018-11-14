@@ -12,20 +12,18 @@ import (
 	"time"
 
 	"github.com/fasthttp/websocket"
-
-	"github.com/stretchr/testify/require"
-
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
-	"github.com/qbeon/webwire-go/transport"
+	wwrtrn "github.com/qbeon/webwire-go/transport"
 	wwrfasthttp "github.com/qbeon/webwire-go/transport/fasthttp"
 	wwrmemchan "github.com/qbeon/webwire-go/transport/memchan"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/valyala/fasthttp"
 )
 
 type serverSetup struct {
-	Transport transport.Transport
+	Transport wwrtrn.Transport
 	Server    wwr.Server
 }
 
@@ -39,6 +37,7 @@ type testServerSetup struct {
 func setupServer(
 	impl *serverImpl,
 	opts wwr.ServerOptions,
+	trans wwrtrn.Transport,
 ) (serverSetup, error) {
 	// Setup headed server on arbitrary port
 	if impl.onClientConnected == nil {
@@ -76,41 +75,38 @@ func setupServer(
 	// Use the transport layer implementation specified by the CLI arguments
 	switch *argTransport {
 	case "fasthttp/websocket":
-		if opts.Transport == nil {
+		if trans == nil {
 			// Use default configuration
-			opts.Transport = &wwrfasthttp.Transport{
+			trans = &wwrfasthttp.Transport{
 				HTTPServer: &fasthttp.Server{
 					ReadBufferSize:  1024 * 8,
 					WriteBufferSize: 1024 * 8,
 				},
 			}
 		} else {
-			if _, isType := opts.Transport.(*wwrfasthttp.Transport); !isType {
+			if _, isType := trans.(*wwrfasthttp.Transport); !isType {
 				return serverSetup{}, fmt.Errorf(
 					"unexpected server transport implementation: %s",
-					reflect.TypeOf(opts.Transport),
+					reflect.TypeOf(trans),
 				)
 			}
 		}
 	case "memchan":
-		if opts.Transport == nil {
+		if trans == nil {
 			// Use default configuration
-			opts.Transport = &wwrmemchan.Transport{}
+			trans = &wwrmemchan.Transport{}
 		} else {
-			if _, isType := opts.Transport.(*wwrmemchan.Transport); !isType {
+			if _, isType := trans.(*wwrmemchan.Transport); !isType {
 				return serverSetup{}, fmt.Errorf(
 					"unexpected server transport implementation: %s",
-					reflect.TypeOf(opts.Transport),
+					reflect.TypeOf(trans),
 				)
 			}
 		}
 	}
 
 	// Initialize webwire server
-	server, err := wwr.NewServer(
-		impl,
-		opts,
-	)
+	server, err := wwr.NewServer(impl, opts, trans)
 	if err != nil {
 		return serverSetup{}, fmt.Errorf(
 			"failed setting up server instance: %s",
@@ -128,7 +124,7 @@ func setupServer(
 	// Return reference to the server and the address its bound to
 	return serverSetup{
 		Server:    server,
-		Transport: opts.Transport,
+		Transport: trans,
 	}, nil
 }
 
@@ -138,8 +134,9 @@ func setupTestServer(
 	t *testing.T,
 	impl *serverImpl,
 	opts wwr.ServerOptions,
+	trans wwrtrn.Transport,
 ) testServerSetup {
-	setup, err := setupServer(impl, opts)
+	setup, err := setupServer(impl, opts, trans)
 	require.NoError(t, err)
 	return testServerSetup{t, setup}
 }
@@ -147,12 +144,14 @@ func setupTestServer(
 // newClient sets up a new test client instance
 func (setup *serverSetup) newClient(
 	options wwrclt.Options,
+	transport wwrtrn.ClientTransport,
 	hooks testClientHooks,
 ) (*testClient, error) {
 	return newClient(
 		setup.Server.Address(),
 		setup.Transport,
 		options,
+		transport,
 		hooks,
 	)
 }
@@ -160,12 +159,14 @@ func (setup *serverSetup) newClient(
 // newClient sets up a new test client instance
 func (setup *testServerSetup) newClient(
 	options wwrclt.Options,
+	transport wwrtrn.ClientTransport,
 	hooks testClientHooks,
 ) *testClient {
 	clt, err := newClient(
 		setup.Server.Address(),
 		setup.Transport,
 		options,
+		transport,
 		hooks,
 	)
 	require.NoError(setup.t, err)
@@ -175,43 +176,44 @@ func (setup *testServerSetup) newClient(
 // newClient sets up a new test client instance
 func newClient(
 	serverAddr url.URL,
-	transport transport.Transport,
+	transport wwrtrn.Transport,
 	options wwrclt.Options,
+	clientTransport wwrtrn.ClientTransport,
 	hooks testClientHooks,
 ) (*testClient, error) {
 	// Prepare transport layer
 	switch transport.(type) {
 	case *wwrfasthttp.Transport:
-		if options.Transport == nil {
+		if clientTransport == nil {
 			// Use default configuration
-			options.Transport = &wwrfasthttp.ClientTransport{}
+			clientTransport = &wwrfasthttp.ClientTransport{}
 		} else {
-			_, isType := options.Transport.(*wwrfasthttp.ClientTransport)
+			_, isType := clientTransport.(*wwrfasthttp.ClientTransport)
 			if !isType {
 				return nil, fmt.Errorf(
 					"unexpected client transport implementation: %s",
-					reflect.TypeOf(options.Transport),
+					reflect.TypeOf(clientTransport),
 				)
 			}
 		}
 
 	case *wwrmemchan.Transport:
-		if options.Transport == nil {
+		if clientTransport == nil {
 			// Use default configuration
-			options.Transport = &wwrmemchan.ClientTransport{
+			clientTransport = &wwrmemchan.ClientTransport{
 				Server: transport.(*wwrmemchan.Transport),
 			}
 		} else {
-			_, isType := options.Transport.(*wwrmemchan.ClientTransport)
+			_, isType := clientTransport.(*wwrmemchan.ClientTransport)
 			if !isType {
 				return nil, fmt.Errorf(
 					"unexpected client transport implementation: %s",
-					reflect.TypeOf(options.Transport),
+					reflect.TypeOf(clientTransport),
 				)
 			}
 		}
 		// Rewrite server reference
-		options.Transport.(*wwrmemchan.ClientTransport).Server =
+		clientTransport.(*wwrmemchan.ClientTransport).Server =
 			transport.(*wwrmemchan.Transport)
 
 	default:
@@ -226,7 +228,7 @@ func newClient(
 	}
 
 	// Initialize connection
-	conn, err := wwrclt.NewClient(serverAddr, newClt, options)
+	conn, err := wwrclt.NewClient(serverAddr, newClt, options, clientTransport)
 	if err != nil {
 		return nil, fmt.Errorf("failed setting up client instance: %s", err)
 	}
@@ -237,7 +239,7 @@ func newClient(
 }
 
 // newClientSocket creates a new raw client socket connected to the server
-func (setup *serverSetup) newClientSocket() (transport.Socket, error) {
+func (setup *serverSetup) newClientSocket() (wwrtrn.Socket, error) {
 	switch srvTrans := setup.Transport.(type) {
 	case *wwrfasthttp.Transport:
 		// Setup a regular websocket connection
@@ -269,7 +271,7 @@ func (setup *serverSetup) newClientSocket() (transport.Socket, error) {
 }
 
 // newClientSocket creates a new raw client socket connected to the server
-func (setup *testServerSetup) newClientSocket() transport.Socket {
+func (setup *testServerSetup) newClientSocket() wwrtrn.Socket {
 	sock, err := setup.serverSetup.newClientSocket()
 	require.NoError(setup.t, err)
 	return sock

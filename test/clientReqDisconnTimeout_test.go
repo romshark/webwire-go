@@ -23,6 +23,7 @@ func TestClientReqDisconnTimeout(t *testing.T) {
 			ReconnectionInterval:  5 * time.Millisecond,
 			DefaultRequestTimeout: 50 * time.Millisecond,
 		},
+		nil, // Use the default transport implementation
 		testClientHooks{},
 	)
 	require.NoError(t, err)

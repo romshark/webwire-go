@@ -5,10 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/qbeon/webwire-go/transport"
-
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
+	wwrtrn "github.com/qbeon/webwire-go/transport"
 	wwrfasthttp "github.com/qbeon/webwire-go/transport/fasthttp"
 	wwrmemchan "github.com/qbeon/webwire-go/transport/memchan"
 	"github.com/stretchr/testify/require"
@@ -21,7 +20,7 @@ func TestRefuseConnections(t *testing.T) {
 	numClients := 5
 
 	// Prepare transport layer implementation parameters
-	var transImpl transport.Transport
+	var transImpl wwrtrn.Transport
 	switch *argTransport {
 	case "fasthttp/websocket":
 		transImpl = &wwrfasthttp.Transport{
@@ -57,9 +56,8 @@ func TestRefuseConnections(t *testing.T) {
 				return wwr.Payload{}, nil
 			},
 		},
-		wwr.ServerOptions{
-			Transport: transImpl,
-		},
+		wwr.ServerOptions{},
+		transImpl,
 	)
 
 	clients := make([]*testClient, numClients)
@@ -69,6 +67,7 @@ func TestRefuseConnections(t *testing.T) {
 				DefaultRequestTimeout: 2 * time.Second,
 				Autoconnect:           wwr.Disabled,
 			},
+			nil, // Use the default transport implementation
 			testClientHooks{},
 		)
 		defer clt.connection.Close()

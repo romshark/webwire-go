@@ -8,8 +8,8 @@ import (
 	"time"
 
 	wwr "github.com/qbeon/webwire-go"
-
 	wwrclt "github.com/qbeon/webwire-go/client"
+	wwrfasthttp "github.com/qbeon/webwire-go/transport/fasthttp"
 )
 
 var serverAddr = flag.String("addr", ":8081", "server address")
@@ -45,6 +45,7 @@ func NewPubSubClient(
 			DefaultRequestTimeout: 10 * time.Second,
 			ReconnectionInterval:  2 * time.Second,
 		},
+		&wwrfasthttp.ClientTransport{},
 	)
 	if err != nil {
 		return nil, err

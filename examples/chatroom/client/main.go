@@ -48,24 +48,23 @@ func NewChatroomClient(serverAddr url.URL) (*ChatroomClient, error) {
 				"ERR: ",
 				log.Ldate|log.Ltime|log.Lshortfile,
 			),
-			/*
-				--------------------------------------------------------------
-				WARNING! NEVER DISABLE CERTIFICATE VERIFICATION IN PRODUCTION!
-				--------------------------------------------------------------
-				InsecureSkipVerify is enabled for demonstration purposes only to
-				allow the use of a self-signed localhost SSL certificate without
-				installing the provided CA root certificate on the testing
-				system. Enabling this option in production is dangerous and
-				irresponsible. Alternatively, you can install the
-				"wwrexampleCA.pem" root certificate to make your system accept
-				the self-signed "server.crt" certificate for "localhost" and
-				disable InsecureSkipVerify.
-			*/
-			Transport: &wwrfasthttp.ClientTransport{
-				Dialer: websocket.Dialer{
-					TLSClientConfig: &tls.Config{
-						InsecureSkipVerify: true,
-					},
+		},
+		/*
+			--------------------------------------------------------------
+			WARNING! NEVER DISABLE CERTIFICATE VERIFICATION IN PRODUCTION!
+			--------------------------------------------------------------
+			InsecureSkipVerify is enabled for demonstration purposes only to
+			allow the use of a self-signed localhost SSL certificate without
+			installing the provided CA root certificate on the testing system.
+			Enabling this option in production is dangerous and irresponsible.
+			Alternatively, you can install the "wwrexampleCA.pem" root
+			certificate to make your system accept the self-signed "server.crt"
+			certificate for "localhost" and disable InsecureSkipVerify.
+		*/
+		&wwrfasthttp.ClientTransport{
+			Dialer: websocket.Dialer{
+				TLSClientConfig: &tls.Config{
+					InsecureSkipVerify: true,
 				},
 			},
 		},

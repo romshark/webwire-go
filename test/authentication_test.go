@@ -126,6 +126,7 @@ func TestAuthentication(t *testing.T) {
 			},
 		},
 		wwr.ServerOptions{},
+		nil, // Use the default transport implementation
 	)
 
 	// Initialize client
@@ -141,6 +142,7 @@ func TestAuthentication(t *testing.T) {
 				}
 			},
 		},
+		nil, // Use the default transport implementation
 		testClientHooks{
 			OnSessionCreated: func(session *wwr.Session) {
 				// The session info object won't be of initial structure type

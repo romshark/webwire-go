@@ -42,6 +42,7 @@ func TestServerSideSessionClosure(t *testing.T) {
 		wwr.ServerOptions{
 			MaxSessionConnections: uint(simultaneousClients),
 		},
+		nil, // Use the default transport implementation
 	)
 
 	// Initialize clients
@@ -52,6 +53,7 @@ func TestServerSideSessionClosure(t *testing.T) {
 				DefaultRequestTimeout: 2 * time.Second,
 				Autoconnect:           wwr.Disabled,
 			},
+			nil, // Use the default transport implementation
 			testClientHooks{
 				OnSessionClosed: func() {
 					onSessionClosedHooksExecuted.Progress(1)

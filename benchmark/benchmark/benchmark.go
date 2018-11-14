@@ -11,6 +11,7 @@ import (
 	"golang.org/x/sync/semaphore"
 
 	wwr "github.com/qbeon/webwire-go"
+	wwrfasthttp "github.com/qbeon/webwire-go/transport/fasthttp"
 )
 
 // Benchmark represents the request benchmark
@@ -55,6 +56,7 @@ func (bc *Benchmark) Start() {
 		clients[i] = NewClient(
 			bc.serverAddr,
 			time.Duration(bc.options.RequestTimeout)*time.Millisecond,
+			&wwrfasthttp.ClientTransport{},
 		)
 	}
 

@@ -9,8 +9,8 @@ import (
 	"time"
 
 	wwr "github.com/qbeon/webwire-go"
-
 	wwrclt "github.com/qbeon/webwire-go/client"
+	wwrfasthttp "github.com/qbeon/webwire-go/transport/fasthttp"
 )
 
 // EchoClient implements the wwrclt.Implementation interface
@@ -31,6 +31,7 @@ func NewEchoClient(serverAddr url.URL) (*EchoClient, error) {
 			DefaultRequestTimeout: 10 * time.Second,
 			ReconnectionInterval:  2 * time.Second,
 		},
+		&wwrfasthttp.ClientTransport{},
 	)
 	if err != nil {
 		return nil, err

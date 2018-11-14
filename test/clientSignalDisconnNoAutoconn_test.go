@@ -19,6 +19,7 @@ func TestClientSignalDisconnectedErr(t *testing.T) {
 		t,
 		&serverImpl{},
 		wwr.ServerOptions{},
+		nil, // Use the default transport implementation
 	)
 
 	// Initialize client
@@ -28,6 +29,7 @@ func TestClientSignalDisconnectedErr(t *testing.T) {
 			// Disable autoconnect to prevent automatic reconnection
 			Autoconnect: wwr.Disabled,
 		},
+		nil, // Use the default transport implementation
 		testClientHooks{},
 	)
 

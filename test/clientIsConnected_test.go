@@ -12,7 +12,12 @@ import (
 // TestClientIsConnected tests the client.Status method
 func TestClientIsConnected(t *testing.T) {
 	// Initialize webwire server given only the request
-	setup := setupTestServer(t, &serverImpl{}, wwr.ServerOptions{})
+	setup := setupTestServer(
+		t,
+		&serverImpl{},
+		wwr.ServerOptions{},
+		nil, // Use the default transport implementation
+	)
 
 	// Initialize client
 	client := setup.newClient(
@@ -20,6 +25,7 @@ func TestClientIsConnected(t *testing.T) {
 			DefaultRequestTimeout: 2 * time.Second,
 			Autoconnect:           wwr.Disabled,
 		},
+		nil, // Use the default transport implementation
 		testClientHooks{},
 	)
 

@@ -49,6 +49,7 @@ func TestServerMessageBufferOverflow(t *testing.T) {
 		wwr.ServerOptions{
 			MessageBufferSize: messageBufferSize,
 		},
+		nil, // Use the default transport implementation
 	)
 
 	// Initialize client
@@ -61,6 +62,7 @@ func TestServerMessageBufferOverflow(t *testing.T) {
 			// Use bigger buffers on the client
 			MessageBufferSize: messageBufferSize * 2,
 		},
+		nil, // Use the default transport implementation
 		testClientHooks{},
 	)
 

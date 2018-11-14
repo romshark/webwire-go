@@ -45,6 +45,7 @@ func TestActiveSessionRegistry(t *testing.T) {
 			},
 		},
 		wwr.ServerOptions{},
+		nil, // Use the default transport implementation
 	)
 
 	// Initialize client
@@ -52,6 +53,7 @@ func TestActiveSessionRegistry(t *testing.T) {
 		wwrclt.Options{
 			DefaultRequestTimeout: time.Second * 2,
 		},
+		nil, // Use the default transport implementation
 		testClientHooks{},
 	)
 	defer client.connection.Close()

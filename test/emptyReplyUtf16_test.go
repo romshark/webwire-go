@@ -29,6 +29,7 @@ func TestEmptyReplyUtf16(t *testing.T) {
 			},
 		},
 		wwr.ServerOptions{},
+		nil, // Use the default transport implementation
 	)
 
 	// Initialize client
@@ -36,6 +37,7 @@ func TestEmptyReplyUtf16(t *testing.T) {
 		webwireClient.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
+		nil, // Use the default transport implementation
 		testClientHooks{},
 	)
 

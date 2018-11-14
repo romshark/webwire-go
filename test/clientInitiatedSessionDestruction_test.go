@@ -72,6 +72,7 @@ func TestClientInitiatedSessionDestruction(t *testing.T) {
 			},
 		},
 		wwr.ServerOptions{},
+		nil, // Use the default transport implementation
 	)
 
 	// Initialize client
@@ -79,6 +80,7 @@ func TestClientInitiatedSessionDestruction(t *testing.T) {
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
+		nil, // Use the default transport implementation
 		testClientHooks{
 			OnSessionCreated: func(_ *wwr.Session) {
 				// Mark the client-side session creation callback as executed

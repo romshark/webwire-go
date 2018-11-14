@@ -64,6 +64,7 @@ func TestClientConnIsConnected(t *testing.T) {
 			},
 		},
 		wwr.ServerOptions{},
+		nil, // Use the default transport implementation
 	)
 
 	// Initialize client
@@ -72,6 +73,7 @@ func TestClientConnIsConnected(t *testing.T) {
 			DefaultRequestTimeout: 2 * time.Second,
 			Autoconnect:           wwr.Disabled,
 		},
+		nil, // Use the default transport implementation
 		testClientHooks{},
 	)
 

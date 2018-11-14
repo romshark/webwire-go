@@ -43,6 +43,7 @@ func TestRequestNamespaces(t *testing.T) {
 			},
 		},
 		webwire.ServerOptions{},
+		nil, // Use the default transport implementation
 	)
 
 	// Initialize client
@@ -50,6 +51,7 @@ func TestRequestNamespaces(t *testing.T) {
 		webwireClient.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
+		nil, // Use the default transport implementation
 		testClientHooks{},
 	)
 

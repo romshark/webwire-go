@@ -69,6 +69,7 @@ func TestClientOfflineSessionClosure(t *testing.T) {
 				},
 			},
 		},
+		nil, // Use the default transport implementation
 	)
 
 	// Initialize client
@@ -76,6 +77,7 @@ func TestClientOfflineSessionClosure(t *testing.T) {
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
+		nil, // Use the default transport implementation
 		testClientHooks{},
 	)
 

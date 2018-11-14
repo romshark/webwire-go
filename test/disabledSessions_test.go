@@ -37,6 +37,7 @@ func TestDisabledSessions(t *testing.T) {
 		wwr.ServerOptions{
 			Sessions: wwr.Disabled,
 		},
+		nil, // Use the default transport implementation
 	)
 
 	// Initialize client
@@ -44,6 +45,7 @@ func TestDisabledSessions(t *testing.T) {
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
+		nil, // Use the default transport implementation
 		testClientHooks{
 			OnSessionCreated: func(*wwr.Session) {
 				t.Errorf("OnSessionCreated was not expected to be called")

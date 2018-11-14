@@ -1,11 +1,13 @@
 package webwire
 
 import (
+	"errors"
 	"fmt"
 	"net/url"
 	"sync"
 
 	"github.com/qbeon/webwire-go/message"
+	wwrtrn "github.com/qbeon/webwire-go/transport"
 )
 
 // NewServer creates a new WebWire server instance which uses a
@@ -13,11 +15,14 @@ import (
 func NewServer(
 	implementation ServerImplementation,
 	opts ServerOptions,
+	transport wwrtrn.Transport,
 ) (instance Server, err error) {
 	if implementation == nil {
-		return nil, fmt.Errorf(
-			"a webwire server instance requires an implementation, got nil",
-		)
+		return nil, errors.New("missing server implementation")
+	}
+
+	if transport == nil {
+		return nil, errors.New("missing transport layer implementation")
 	}
 
 	if err := opts.Prepare(); err != nil {
@@ -47,6 +52,7 @@ func NewServer(
 
 	// Initialize the webwire server
 	srv := &server{
+		transport:         transport,
 		impl:              implementation,
 		sessionManager:    opts.SessionManager,
 		sessionKeyGen:     opts.SessionKeyGenerator,
@@ -68,7 +74,7 @@ func NewServer(
 	}
 
 	// Initialize the transport layer
-	if err := opts.Transport.Initialize(
+	if err := transport.Initialize(
 		opts.Host,
 		opts.ReadTimeout,
 		opts.MessageBufferSize,

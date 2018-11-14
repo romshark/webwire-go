@@ -19,6 +19,7 @@ func TestClientRestSessAutoconn(t *testing.T) {
 		t,
 		&serverImpl{},
 		wwr.ServerOptions{},
+		nil, // Use the default transport implementation
 	)
 
 	// Initialize client
@@ -26,6 +27,7 @@ func TestClientRestSessAutoconn(t *testing.T) {
 		wwrclt.Options{
 			DefaultRequestTimeout: 100 * time.Millisecond,
 		},
+		nil, // Use the default transport implementation
 		testClientHooks{},
 	)
 

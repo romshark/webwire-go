@@ -48,6 +48,7 @@ func TestConnectionClose(t *testing.T) {
 			},
 		},
 		wwr.ServerOptions{},
+		nil, // Use the default transport implementation
 	)
 
 	actSess := setup.Server.ActiveSessionsNum()
@@ -60,6 +61,7 @@ func TestConnectionClose(t *testing.T) {
 			// Disable autoconnect to prevent automatic reconnection
 			Autoconnect: wwr.Disabled,
 		},
+		nil, // Use the default transport implementation
 		testClientHooks{},
 	)
 
@@ -102,6 +104,7 @@ func TestConnectionClose(t *testing.T) {
 			// Disable autoconnect to prevent automatic reconnection
 			Autoconnect: wwr.Disabled,
 		},
+		nil, // Use the default transport implementation
 		testClientHooks{},
 	)
 

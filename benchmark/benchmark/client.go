@@ -7,6 +7,7 @@ import (
 
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
+	wwrtrn "github.com/qbeon/webwire-go/transport"
 )
 
 // Client implements the wwrclt.Client interface
@@ -15,7 +16,11 @@ type Client struct {
 }
 
 // NewClient creates a new autoconnected client instance
-func NewClient(serverAddr url.URL, defaultReqTimeo time.Duration) *Client {
+func NewClient(
+	serverAddr url.URL,
+	defaultReqTimeo time.Duration,
+	transport wwrtrn.ClientTransport,
+) *Client {
 	clt := &Client{}
 
 	// Initialize client
@@ -27,6 +32,7 @@ func NewClient(serverAddr url.URL, defaultReqTimeo time.Duration) *Client {
 			DefaultRequestTimeout: defaultReqTimeo,
 			MessageBufferSize:     1024 * 16,
 		},
+		transport,
 	)
 	if err != nil {
 		panic(err)

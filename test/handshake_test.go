@@ -23,6 +23,7 @@ func TestHandshake(t *testing.T) {
 			ReadTimeout:       serverReadTimeout,
 			MessageBufferSize: messageBufferSize,
 		},
+		nil, // Use the default transport implementation
 	)
 
 	readTimeout := 5 * time.Second

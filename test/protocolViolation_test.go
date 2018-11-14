@@ -16,6 +16,7 @@ func TestProtocolViolation(t *testing.T) {
 		t,
 		&serverImpl{},
 		wwr.ServerOptions{},
+		nil, // Use the default transport implementation
 	)
 
 	defaultReadTimeout := 2 * time.Second

@@ -17,6 +17,7 @@ func TestSimpleShutdown(t *testing.T) {
 		t,
 		&serverImpl{},
 		wwr.ServerOptions{},
+		nil, // Use the default transport implementation
 	)
 
 	clients := make([]*testClient, connectedClientsNum)
@@ -25,6 +26,7 @@ func TestSimpleShutdown(t *testing.T) {
 			wwrclt.Options{
 				Autoconnect: wwr.Disabled,
 			},
+			nil, // Use the default transport implementation
 			testClientHooks{},
 		)
 		require.NoError(t, client.connection.Connect())

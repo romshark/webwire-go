@@ -45,23 +45,23 @@ func newServer(settings settings) (server wwr.Server, err error) {
 				ErrorLog:          errorLog,
 				ReadTimeout:       settings.ReadTimeout,
 				MessageBufferSize: 1024 * 16,
-				Transport: &wwrfasthttp.Transport{
-					HTTPServer: &fasthttp.Server{
-						ReadBufferSize:  1024 * 8,
-						WriteBufferSize: 1024 * 8,
-					},
-					TLS: &wwrfasthttp.TLS{
-						CertFilePath:       settings.CertFilePath,
-						PrivateKeyFilePath: settings.PrivateKeyFilePath,
-						Config:             settings.TLSConfig,
-					},
-					BeforeUpgrade: func(
-						_ *fasthttp.RequestCtx,
-					) wwr.ConnectionOptions {
-						return wwr.ConnectionOptions{
-							ConcurrencyLimit: 10,
-						}
-					},
+			},
+			&wwrfasthttp.Transport{
+				HTTPServer: &fasthttp.Server{
+					ReadBufferSize:  1024 * 8,
+					WriteBufferSize: 1024 * 8,
+				},
+				TLS: &wwrfasthttp.TLS{
+					CertFilePath:       settings.CertFilePath,
+					PrivateKeyFilePath: settings.PrivateKeyFilePath,
+					Config:             settings.TLSConfig,
+				},
+				BeforeUpgrade: func(
+					_ *fasthttp.RequestCtx,
+				) wwr.ConnectionOptions {
+					return wwr.ConnectionOptions{
+						ConcurrencyLimit: 10,
+					}
 				},
 			},
 		)
@@ -78,11 +78,11 @@ func newServer(settings settings) (server wwr.Server, err error) {
 				ErrorLog:          errorLog,
 				ReadTimeout:       settings.ReadTimeout,
 				MessageBufferSize: 1024 * 16,
-				Transport: &wwrfasthttp.Transport{
-					HTTPServer: &fasthttp.Server{
-						ReadBufferSize:  1024 * 8,
-						WriteBufferSize: 1024 * 8,
-					},
+			},
+			&wwrfasthttp.Transport{
+				HTTPServer: &fasthttp.Server{
+					ReadBufferSize:  1024 * 8,
+					WriteBufferSize: 1024 * 8,
 				},
 			},
 		)

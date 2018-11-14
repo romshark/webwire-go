@@ -36,6 +36,7 @@ func BenchmarkRequestC1_P16(b *testing.B) {
 		wwr.ServerOptions{
 			MessageBufferSize: 1024,
 		},
+		nil, // Use default transport implementation
 	)
 	if err != nil {
 		log.Fatalf("couldn't setup server: %s", err)
@@ -46,6 +47,7 @@ func BenchmarkRequestC1_P16(b *testing.B) {
 		wwrclt.Options{
 			MessageBufferSize: 1024,
 		},
+		nil, // Use the default transport implementation
 		testClientHooks{},
 	)
 	if err != nil {
@@ -95,6 +97,7 @@ func BenchmarkRequestC1_P1K(b *testing.B) {
 		wwr.ServerOptions{
 			MessageBufferSize: 2048,
 		},
+		nil, // Use default transport implementation
 	)
 	if err != nil {
 		log.Fatalf("couldn't setup server: %s", err)
@@ -105,6 +108,7 @@ func BenchmarkRequestC1_P1K(b *testing.B) {
 		wwrclt.Options{
 			MessageBufferSize: 2048,
 		},
+		nil, // Use the default transport implementation
 		testClientHooks{},
 	)
 	if err != nil {
@@ -154,6 +158,7 @@ func BenchmarkRequestC1_P1M(b *testing.B) {
 		wwr.ServerOptions{
 			MessageBufferSize: 1024*1024 + 1024,
 		},
+		nil, // Use default transport implementation
 	)
 	if err != nil {
 		log.Fatalf("couldn't setup server: %s", err)
@@ -164,6 +169,7 @@ func BenchmarkRequestC1_P1M(b *testing.B) {
 		wwrclt.Options{
 			MessageBufferSize: 1024*1024 + 1024,
 		},
+		nil, // Use the default transport implementation
 		testClientHooks{},
 	)
 	if err != nil {
@@ -215,6 +221,7 @@ func BenchmarkRequestC1K_P1K(b *testing.B) {
 		wwr.ServerOptions{
 			MessageBufferSize: 2048,
 		},
+		nil, // Use default transport implementation
 	)
 	if err != nil {
 		log.Fatalf("couldn't setup server: %s", err)
@@ -227,6 +234,7 @@ func BenchmarkRequestC1K_P1K(b *testing.B) {
 			wwrclt.Options{
 				MessageBufferSize: 2048,
 			},
+			nil, // Use the default transport implementation
 			testClientHooks{},
 		)
 		if err != nil {

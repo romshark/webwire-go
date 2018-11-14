@@ -12,6 +12,7 @@ import (
 	"time"
 
 	wwr "github.com/qbeon/webwire-go"
+	wwrfasthttp "github.com/qbeon/webwire-go/transport/fasthttp"
 )
 
 // PubSubServer implements the webwire.ServerImplementation interface
@@ -120,6 +121,7 @@ func main() {
 		wwr.ServerOptions{
 			Host: *serverAddr,
 		},
+		&wwrfasthttp.Transport{},
 	)
 	if err != nil {
 		panic(fmt.Errorf("Failed setting up WebWire server: %s", err))

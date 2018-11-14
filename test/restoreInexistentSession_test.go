@@ -17,6 +17,7 @@ func TestRestoreInexistentSession(t *testing.T) {
 		t,
 		&serverImpl{},
 		wwr.ServerOptions{},
+		nil, // Use the default transport implementation
 	)
 
 	// Initialize client
@@ -26,6 +27,7 @@ func TestRestoreInexistentSession(t *testing.T) {
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
+		nil, // Use the default transport implementation
 		testClientHooks{},
 	)
 

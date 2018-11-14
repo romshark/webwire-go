@@ -26,6 +26,7 @@ func TestClientRequestAutoconn(t *testing.T) {
 			},
 		},
 		wwr.ServerOptions{},
+		nil, // Use the default transport implementation
 	)
 
 	// Initialize client and skip manual connection establishment
@@ -33,6 +34,7 @@ func TestClientRequestAutoconn(t *testing.T) {
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
+		nil, // Use the default transport implementation
 		testClientHooks{},
 	)
 

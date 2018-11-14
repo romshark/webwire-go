@@ -63,6 +63,7 @@ func TestGracefulShutdown(t *testing.T) {
 			},
 		},
 		wwr.ServerOptions{},
+		nil, // Use the default transport implementation
 	)
 
 	// Initialize different clients for the signal,
@@ -75,14 +76,17 @@ func TestGracefulShutdown(t *testing.T) {
 	}
 	clientSig := setup.newClient(
 		cltOpts,
+		nil, // Use the default transport implementation
 		testClientHooks{},
 	)
 	clientReq := setup.newClient(
 		cltOpts,
+		nil, // Use the default transport implementation
 		testClientHooks{},
 	)
 	clientLateReq := setup.newClient(
 		cltOpts,
+		nil, // Use the default transport implementation
 		testClientHooks{},
 	)
 
@@ -95,6 +99,7 @@ func TestGracefulShutdown(t *testing.T) {
 		wwrclt.Options{
 			Autoconnect: wwr.Disabled,
 		},
+		nil, // Use the default transport implementation
 		testClientHooks{},
 	)
 

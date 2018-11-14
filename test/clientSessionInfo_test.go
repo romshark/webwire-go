@@ -140,6 +140,7 @@ func TestClientSessionInfo(t *testing.T) {
 			},
 		},
 		wwr.ServerOptions{},
+		nil, // Use the default transport implementation
 	)
 
 	// Initialize client
@@ -148,6 +149,7 @@ func TestClientSessionInfo(t *testing.T) {
 			DefaultRequestTimeout: 2 * time.Second,
 			SessionInfoParser:     testClientSessionInfoSessionInfoParser,
 		},
+		nil, // Use the default transport implementation
 		testClientHooks{},
 	)
 	defer client.connection.Close()

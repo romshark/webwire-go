@@ -18,13 +18,19 @@ func TestClientConcurrentConnect(t *testing.T) {
 	finished := tmdwg.NewTimedWaitGroup(concurrentAccessors, 2*time.Second)
 
 	// Initialize webwire server
-	setup := setupTestServer(t, &serverImpl{}, wwr.ServerOptions{})
+	setup := setupTestServer(
+		t,
+		&serverImpl{},
+		wwr.ServerOptions{},
+		nil, // Use the default transport implementation
+	)
 
 	// Initialize client
 	client := setup.newClient(
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
+		nil, // Use the default transport implementation
 		testClientHooks{},
 	)
 	defer client.connection.Close()

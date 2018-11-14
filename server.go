@@ -7,11 +7,13 @@ import (
 	"sync"
 
 	"github.com/qbeon/webwire-go/message"
+	"github.com/qbeon/webwire-go/transport"
 )
 
 // server represents a headless WebWire server instance,
 // where headless means there's no HTTP server that's hosting it
 type server struct {
+	transport         transport.Transport
 	impl              ServerImplementation
 	sessionManager    SessionManager
 	sessionKeyGen     SessionKeyGenerator
@@ -36,7 +38,7 @@ type server struct {
 
 // shutdownServer initiates the shutdown of the underlying transport layer
 func (srv *server) shutdownServer() error {
-	if err := srv.options.Transport.Shutdown(); err != nil {
+	if err := srv.transport.Shutdown(); err != nil {
 		return fmt.Errorf("couldn't properly shutdown HTTP server: %s", err)
 	}
 	return nil
@@ -44,12 +46,12 @@ func (srv *server) shutdownServer() error {
 
 // Run implements the Server interface
 func (srv *server) Run() error {
-	return srv.options.Transport.Serve()
+	return srv.transport.Serve()
 }
 
 // Address implements the Server interface
 func (srv *server) Address() url.URL {
-	return srv.options.Transport.Address()
+	return srv.transport.Address()
 }
 
 // Shutdown implements the Server interface

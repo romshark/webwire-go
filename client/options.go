@@ -7,8 +7,6 @@ import (
 	"time"
 
 	webwire "github.com/qbeon/webwire-go"
-	"github.com/qbeon/webwire-go/transport"
-	wwrfasthttp "github.com/qbeon/webwire-go/transport/fasthttp"
 )
 
 // Options represents the options used during the creation a new client instance
@@ -47,9 +45,6 @@ type Options struct {
 
 	// MessageBufferSize defines the size of the inbound message buffer
 	MessageBufferSize uint32
-
-	// Transport specifies the underlying transport layer implementation
-	Transport transport.ClientTransport
 }
 
 // Prepare validates the specified options and sets the default values for
@@ -104,11 +99,6 @@ func (op *Options) Prepare() error {
 			op.MessageBufferSize,
 			minBufferSize,
 		)
-	}
-
-	// Set default transport
-	if op.Transport == nil {
-		op.Transport = &wwrfasthttp.ClientTransport{}
 	}
 
 	return nil

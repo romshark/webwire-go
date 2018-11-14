@@ -9,6 +9,7 @@ import (
 	webwire "github.com/qbeon/webwire-go"
 	"github.com/qbeon/webwire-go/message"
 	reqman "github.com/qbeon/webwire-go/requestManager"
+	wwrtrn "github.com/qbeon/webwire-go/transport"
 )
 
 // NewClient creates a new client instance.
@@ -17,11 +18,14 @@ func NewClient(
 	serverAddress url.URL,
 	implementation Implementation,
 	options Options,
+	transport wwrtrn.ClientTransport,
 ) (Client, error) {
 	if implementation == nil {
-		return nil, fmt.Errorf(
-			"webwire client requires a client implementation, got nil",
-		)
+		return nil, fmt.Errorf("missing client implementation")
+	}
+
+	if transport == nil {
+		return nil, fmt.Errorf("missing client transport layer implementation")
 	}
 
 	// Prepare server address
@@ -41,7 +45,7 @@ func NewClient(
 	}
 
 	// Initialize socket
-	conn, err := options.Transport.NewSocket(options.DialingTimeout)
+	conn, err := transport.NewSocket(options.DialingTimeout)
 	if err != nil {
 		return nil, fmt.Errorf("couldn't initialize socket: %s", err)
 	}

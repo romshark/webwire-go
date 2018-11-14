@@ -25,6 +25,7 @@ func TestClientRequestDisconnected(t *testing.T) {
 			},
 		},
 		wwr.ServerOptions{},
+		nil, // Use the default transport implementation
 	)
 
 	// Initialize client and skip manual connection establishment
@@ -33,6 +34,7 @@ func TestClientRequestDisconnected(t *testing.T) {
 			DefaultRequestTimeout: 2 * time.Second,
 			Autoconnect:           wwrclt.StatusDisabled,
 		},
+		nil, // Use the default transport implementation
 		testClientHooks{},
 	)
 
