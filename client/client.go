@@ -96,9 +96,12 @@ func (clt *client) Status() Status {
 // Automatically tries to restore the previous session.
 // Enables autoconnect if it was disabled
 func (clt *client) Connect() error {
-	if atomic.LoadInt32(&clt.autoconnect) == autoconnectDeactivated {
-		atomic.StoreInt32(&clt.autoconnect, autoconnectEnabled)
-	}
+	atomic.CompareAndSwapInt32(
+		&clt.autoconnect,
+		autoconnectDeactivated,
+		autoconnectEnabled,
+	)
+
 	return clt.connect()
 }
 
