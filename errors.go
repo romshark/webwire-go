@@ -54,6 +54,9 @@ type TimeoutErr = wwrerr.TimeoutErr
 // transmission
 type TransmissionErr = wwrerr.TransmissionErr
 
+// BufferOverflowErr represents a message buffer overflow error
+type BufferOverflowErr = wwrerr.BufferOverflowErr
+
 // IsTimeoutErr returns true if the given error is either a TimeoutErr
 // or a DeadlineExceededErr, otherwise returns false
 func IsTimeoutErr(err error) bool { return wwrerr.IsTimeoutErr(err) }

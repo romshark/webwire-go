@@ -13,7 +13,7 @@ import (
 // TestRestoreInexistentSession tests the restoration of an inexistent session
 func TestRestoreInexistentSession(t *testing.T) {
 	// Initialize server
-	server := setupServer(
+	setup := setupTestServer(
 		t,
 		&serverImpl{},
 		wwr.ServerOptions{},
@@ -22,12 +22,11 @@ func TestRestoreInexistentSession(t *testing.T) {
 	// Initialize client
 
 	// Ensure that the last superfluous client is rejected
-	client := newCallbackPoweredClient(
-		server.Address(),
+	client := setup.newClient(
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
-		callbackPoweredClientHooks{},
+		testClientHooks{},
 	)
 
 	require.NoError(t, client.connection.Connect())

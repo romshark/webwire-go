@@ -5,9 +5,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/qbeon/webwire-go/transport"
+
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
 	wwrfasthttp "github.com/qbeon/webwire-go/transport/fasthttp"
+	wwrmemchan "github.com/qbeon/webwire-go/transport/memchan"
 	"github.com/stretchr/testify/require"
 	"github.com/valyala/fasthttp"
 )
@@ -17,8 +20,31 @@ import (
 func TestRefuseConnections(t *testing.T) {
 	numClients := 5
 
+	// Prepare transport layer implementation parameters
+	var transImpl transport.Transport
+	switch *argTransport {
+	case "fasthttp/websocket":
+		transImpl = &wwrfasthttp.Transport{
+			BeforeUpgrade: func(
+				_ *fasthttp.RequestCtx,
+			) wwr.ConnectionOptions {
+				// Refuse all incoming connections
+				return wwr.ConnectionOptions{Connection: wwr.Refuse}
+			},
+		}
+	case "memchan":
+		transImpl = &wwrmemchan.Transport{
+			// Refuse all incoming connections
+			ConnectionOptions: wwr.ConnectionOptions{
+				Connection: wwr.Refuse,
+			},
+		}
+	default:
+		t.Fatalf("unexpected transport implementation: %s", *argTransport)
+	}
+
 	// Initialize server
-	server := setupServer(
+	setup := setupTestServer(
 		t,
 		&serverImpl{
 			onRequest: func(
@@ -32,26 +58,18 @@ func TestRefuseConnections(t *testing.T) {
 			},
 		},
 		wwr.ServerOptions{
-			Transport: &wwrfasthttp.Transport{
-				BeforeUpgrade: func(
-					_ *fasthttp.RequestCtx,
-				) wwr.ConnectionOptions {
-					// Refuse all incoming connections
-					return wwr.ConnectionOptions{Connection: wwr.Refuse}
-				},
-			},
+			Transport: transImpl,
 		},
 	)
 
-	clients := make([]*callbackPoweredClient, numClients)
+	clients := make([]*testClient, numClients)
 	for i := 0; i < numClients; i++ {
-		clt := newCallbackPoweredClient(
-			server.Address(),
+		clt := setup.newClient(
 			wwrclt.Options{
 				DefaultRequestTimeout: 2 * time.Second,
 				Autoconnect:           wwr.Disabled,
 			},
-			callbackPoweredClientHooks{},
+			testClientHooks{},
 		)
 		defer clt.connection.Close()
 		clients[i] = clt

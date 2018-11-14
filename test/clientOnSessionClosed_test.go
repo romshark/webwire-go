@@ -18,7 +18,7 @@ func TestClientOnSessionClosed(t *testing.T) {
 	hookCalled := tmdwg.NewTimedWaitGroup(1, 1*time.Second)
 
 	// Initialize webwire server
-	server := setupServer(
+	setup := setupTestServer(
 		t,
 		&serverImpl{
 			onRequest: func(
@@ -51,12 +51,11 @@ func TestClientOnSessionClosed(t *testing.T) {
 	)
 
 	// Initialize client
-	client := newCallbackPoweredClient(
-		server.Address(),
+	client := setup.newClient(
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
-		callbackPoweredClientHooks{
+		testClientHooks{
 			OnSessionClosed: func() {
 				hookCalled.Progress(1)
 			},

@@ -8,6 +8,7 @@ import (
 
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
+	wwrfasthttp "github.com/qbeon/webwire-go/transport/fasthttp"
 	"github.com/stretchr/testify/require"
 )
 
@@ -16,18 +17,20 @@ import (
 // and autoconn is disabled
 func TestClientReqDisconnNoAutoconn(t *testing.T) {
 	// Initialize client
-	client := newCallbackPoweredClient(
+	client, err := newClient(
 		url.URL{Host: "127.0.0.1:65000"},
+		&wwrfasthttp.Transport{},
 		wwrclt.Options{
 			Autoconnect:           wwr.Disabled,
 			ReconnectionInterval:  5 * time.Millisecond,
 			DefaultRequestTimeout: 50 * time.Millisecond,
 		},
-		callbackPoweredClientHooks{},
+		testClientHooks{},
 	)
+	require.NoError(t, err)
 
 	// Try to send a request and expect a DisconnectedErr error
-	_, err := client.connection.Request(
+	_, err = client.connection.Request(
 		context.Background(),
 		nil,
 		wwr.Payload{Data: []byte("testdata")},

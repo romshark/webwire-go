@@ -20,7 +20,7 @@ func TestClientDisconnectedHook(t *testing.T) {
 	connectedClientLock := sync.Mutex{}
 
 	// Initialize webwire server given only the request
-	server := setupServer(
+	setup := setupTestServer(
 		t,
 		&serverImpl{
 			onClientConnected: func(conn wwr.Connection) {
@@ -39,12 +39,11 @@ func TestClientDisconnectedHook(t *testing.T) {
 	)
 
 	// Initialize client
-	client := newCallbackPoweredClient(
-		server.Address(),
+	client := setup.newClient(
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
-		callbackPoweredClientHooks{},
+		testClientHooks{},
 	)
 
 	// Connect to the server

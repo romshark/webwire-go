@@ -14,7 +14,7 @@ import (
 // on a disconnected connection
 func TestSessionCreationOnClosedConn(t *testing.T) {
 	// Initialize server
-	server := setupServer(
+	setup := setupTestServer(
 		t,
 		&serverImpl{
 			onClientConnected: func(conn wwr.Connection) {
@@ -33,12 +33,11 @@ func TestSessionCreationOnClosedConn(t *testing.T) {
 	)
 
 	// Initialize client
-	client := newCallbackPoweredClient(
-		server.Address(),
+	client := setup.newClient(
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
-		callbackPoweredClientHooks{},
+		testClientHooks{},
 	)
 
 	require.NoError(t, client.connection.Connect())

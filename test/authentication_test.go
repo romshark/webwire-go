@@ -84,7 +84,7 @@ func TestAuthentication(t *testing.T) {
 	currentStep := 1
 
 	// Initialize webwire server
-	server := setupServer(
+	setup := setupTestServer(
 		t,
 		&serverImpl{
 			onSignal: func(
@@ -129,8 +129,7 @@ func TestAuthentication(t *testing.T) {
 	)
 
 	// Initialize client
-	client := newCallbackPoweredClient(
-		server.Address(),
+	client := setup.newClient(
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 			SessionInfoParser: func(
@@ -142,7 +141,7 @@ func TestAuthentication(t *testing.T) {
 				}
 			},
 		},
-		callbackPoweredClientHooks{
+		testClientHooks{
 			OnSessionCreated: func(session *wwr.Session) {
 				// The session info object won't be of initial structure type
 				// because of intermediate JSON encoding

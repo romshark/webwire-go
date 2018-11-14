@@ -20,7 +20,7 @@ func TestClientSignal(t *testing.T) {
 	signalArrived := tmdwg.NewTimedWaitGroup(1, 1*time.Second)
 
 	// Initialize webwire server given only the signal handler
-	server := setupServer(
+	setup := setupTestServer(
 		t,
 		&serverImpl{
 			onSignal: func(
@@ -48,12 +48,11 @@ func TestClientSignal(t *testing.T) {
 	)
 
 	// Initialize client
-	client := newCallbackPoweredClient(
-		server.Address(),
+	client := setup.newClient(
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
-		callbackPoweredClientHooks{},
+		testClientHooks{},
 	)
 
 	require.NoError(t, client.connection.Connect())

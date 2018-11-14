@@ -2,6 +2,7 @@ package test
 
 import (
 	"context"
+	"log"
 	"testing"
 
 	wwr "github.com/qbeon/webwire-go"
@@ -19,7 +20,7 @@ func BenchmarkRequestC1_P16(b *testing.B) {
 	}
 
 	// Initialize a webwire server
-	server := setupBenchmarkServer(
+	setup, err := setupServer(
 		&serverImpl{
 			onRequest: func(
 				_ context.Context,
@@ -36,16 +37,22 @@ func BenchmarkRequestC1_P16(b *testing.B) {
 			MessageBufferSize: 1024,
 		},
 	)
+	if err != nil {
+		log.Fatalf("couldn't setup server: %s", err)
+	}
 
 	// Initialize client
-	client := newCallbackPoweredClient(
-		server.Address(),
+	client, err := setup.newClient(
 		wwrclt.Options{
 			MessageBufferSize: 1024,
 		},
-		callbackPoweredClientHooks{},
+		testClientHooks{},
 	)
+	if err != nil {
+		log.Fatalf("couldn't setup client: %s", err)
+	}
 
+	// Ensure the client is connected
 	if err := client.connection.Connect(); err != nil {
 		panic(err)
 	}
@@ -72,7 +79,7 @@ func BenchmarkRequestC1_P1K(b *testing.B) {
 	}
 
 	// Initialize a webwire server
-	server := setupBenchmarkServer(
+	setup, err := setupServer(
 		&serverImpl{
 			onRequest: func(
 				_ context.Context,
@@ -89,16 +96,22 @@ func BenchmarkRequestC1_P1K(b *testing.B) {
 			MessageBufferSize: 2048,
 		},
 	)
+	if err != nil {
+		log.Fatalf("couldn't setup server: %s", err)
+	}
 
 	// Initialize client
-	client := newCallbackPoweredClient(
-		server.Address(),
+	client, err := setup.newClient(
 		wwrclt.Options{
 			MessageBufferSize: 2048,
 		},
-		callbackPoweredClientHooks{},
+		testClientHooks{},
 	)
+	if err != nil {
+		log.Fatalf("couldn't setup client: %s", err)
+	}
 
+	// Ensure the client is connected
 	if err := client.connection.Connect(); err != nil {
 		panic(err)
 	}
@@ -125,7 +138,7 @@ func BenchmarkRequestC1_P1M(b *testing.B) {
 	}
 
 	// Initialize a webwire server
-	server := setupBenchmarkServer(
+	setup, err := setupServer(
 		&serverImpl{
 			onRequest: func(
 				_ context.Context,
@@ -142,16 +155,22 @@ func BenchmarkRequestC1_P1M(b *testing.B) {
 			MessageBufferSize: 1024*1024 + 1024,
 		},
 	)
+	if err != nil {
+		log.Fatalf("couldn't setup server: %s", err)
+	}
 
 	// Initialize client
-	client := newCallbackPoweredClient(
-		server.Address(),
+	client, err := setup.newClient(
 		wwrclt.Options{
 			MessageBufferSize: 1024*1024 + 1024,
 		},
-		callbackPoweredClientHooks{},
+		testClientHooks{},
 	)
+	if err != nil {
+		log.Fatalf("couldn't setup client: %s", err)
+	}
 
+	// Ensure the client is connected
 	if err := client.connection.Connect(); err != nil {
 		panic(err)
 	}
@@ -180,7 +199,7 @@ func BenchmarkRequestC1K_P1K(b *testing.B) {
 	}
 
 	// Initialize a webwire server
-	server := setupBenchmarkServer(
+	setup, err := setupServer(
 		&serverImpl{
 			onRequest: func(
 				_ context.Context,
@@ -197,18 +216,26 @@ func BenchmarkRequestC1K_P1K(b *testing.B) {
 			MessageBufferSize: 2048,
 		},
 	)
+	if err != nil {
+		log.Fatalf("couldn't setup server: %s", err)
+	}
 
 	// Initialize client
-	clients := make([]*callbackPoweredClient, concurrentConnections)
+	clients := make([]*testClient, concurrentConnections)
 	for i := 0; i < concurrentConnections; i++ {
-		client := newCallbackPoweredClient(
-			server.Address(),
+		client, err := setup.newClient(
 			wwrclt.Options{
 				MessageBufferSize: 2048,
 			},
-			callbackPoweredClientHooks{},
+			testClientHooks{},
 		)
+		if err != nil {
+			log.Fatalf("couldn't setup client: %s", err)
+		}
+
 		clients[i] = client
+
+		// Ensure the client is connected
 		if err := client.connection.Connect(); err != nil {
 			panic(err)
 		}

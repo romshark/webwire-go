@@ -15,7 +15,7 @@ import (
 // from the request handler
 func TestClientRequestInternalError(t *testing.T) {
 	// Initialize webwire server given only the request
-	server := setupServer(
+	setup := setupTestServer(
 		t,
 		&serverImpl{
 			onRequest: func(
@@ -33,12 +33,11 @@ func TestClientRequestInternalError(t *testing.T) {
 	)
 
 	// Initialize client
-	client := newCallbackPoweredClient(
-		server.Address(),
+	client := setup.newClient(
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
-		callbackPoweredClientHooks{},
+		testClientHooks{},
 	)
 
 	require.NoError(t, client.connection.Connect())

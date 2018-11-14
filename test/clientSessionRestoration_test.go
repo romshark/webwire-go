@@ -19,7 +19,7 @@ func TestClientSessionRestoration(t *testing.T) {
 	var createdSession *wwr.Session
 
 	// Initialize webwire server
-	server := setupServer(
+	setup := setupTestServer(
 		t,
 		&serverImpl{
 			onRequest: func(
@@ -67,12 +67,11 @@ func TestClientSessionRestoration(t *testing.T) {
 	)
 
 	// Initialize client
-	initialClient := newCallbackPoweredClient(
-		server.Address(),
+	initialClient := setup.newClient(
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
-		callbackPoweredClientHooks{},
+		testClientHooks{},
 	)
 
 	require.NoError(t, initialClient.connection.Connect())
@@ -100,12 +99,11 @@ func TestClientSessionRestoration(t *testing.T) {
 	currentStep = 2
 
 	// Initialize client
-	secondClient := newCallbackPoweredClient(
-		server.Address(),
+	secondClient := setup.newClient(
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
-		callbackPoweredClientHooks{},
+		testClientHooks{},
 	)
 
 	require.NoError(t, secondClient.connection.Connect())

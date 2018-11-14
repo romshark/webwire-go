@@ -4,7 +4,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/fasthttp/websocket"
 	wwr "github.com/qbeon/webwire-go"
 	"github.com/qbeon/webwire-go/message"
 	"github.com/stretchr/testify/require"
@@ -13,7 +12,7 @@ import (
 // TestProtocolViolation tests sending messages that violate the protocol
 func TestProtocolViolation(t *testing.T) {
 	// Initialize webwire server
-	server := setupServer(
+	setup := setupTestServer(
 		t,
 		&serverImpl{},
 		wwr.ServerOptions{},
@@ -22,63 +21,43 @@ func TestProtocolViolation(t *testing.T) {
 	defaultReadTimeout := 2 * time.Second
 
 	// Setup a regular websocket connection
-	setupAndSend := func(
-		message []byte,
-	) (response []byte, writeErr, readErr error) {
-		serverAddr := server.Address()
-		if serverAddr.Scheme == "https" {
-			serverAddr.Scheme = "wss"
-		} else {
-			serverAddr.Scheme = "ws"
-		}
-
-		conn, _, err := websocket.DefaultDialer.Dial(serverAddr.String(), nil)
-		require.NoError(t, err)
-		defer conn.Close()
+	try := func(m []byte) {
+		socket := setup.newClientSocket()
 
 		// Ignore the server configuration push-message
-		conn.SetReadDeadline(time.Now().Add(defaultReadTimeout))
-		_, _, err = conn.ReadMessage()
+		confMsg := message.NewMessage(256)
+		require.NoError(t, socket.Read(
+			confMsg,
+			time.Now().Add(defaultReadTimeout),
+		))
+
+		// Get writer
+		writer, err := socket.GetWriter()
 		require.NoError(t, err)
 
 		// Write the message
-		writeErr = conn.WriteMessage(websocket.BinaryMessage, message)
-		if writeErr != nil {
-			return nil, writeErr, nil
-		}
+		bytesWritten, writeErr := writer.Write(m)
+		require.NoError(t, writeErr)
+		require.Equal(t, len(m), bytesWritten)
+		require.NoError(t, writer.Close())
 
-		// Await the response
-		conn.SetReadDeadline(time.Now().Add(defaultReadTimeout))
-		_, response, readErr = conn.ReadMessage()
-		if readErr != nil {
-			return nil, nil, readErr
-		}
+		emptyMsg := message.NewMessage(256)
+		readErr := socket.Read(emptyMsg, time.Now().Add(defaultReadTimeout))
+		require.Error(t, readErr)
 
-		return response, nil, nil
+		require.False(t, socket.IsConnected())
 	}
 
 	// Test a message with an invalid type identifier (200, which is undefined)
 	// and expect the server to ignore it returning no answer
-	func() {
-		msg := []byte{byte(200)}
-		response, writeErr, readErr := setupAndSend(msg)
-		require.NoError(t, writeErr)
-		require.Error(t, readErr)
-		require.Nil(t, response)
-	}()
+	try([]byte{byte(200)})
 
 	// Test a message with an invalid name length flag (bigger than name)
 	// and expect the server to return a protocol violation error response
-	func() {
-		msg := []byte{
-			message.MsgRequestBinary, // Message type identifier
-			0, 0, 0, 0, 0, 0, 0, 0,   // Request identifier
-			3,     // Name length flag
-			0x041, // Name
-		}
-		response, writeErr, readErr := setupAndSend(msg)
-		require.NoError(t, writeErr)
-		require.Error(t, readErr)
-		require.Nil(t, response)
-	}()
+	try([]byte{
+		message.MsgRequestBinary, // Message type identifier
+		0, 0, 0, 0, 0, 0, 0, 0,   // Request identifier
+		3,     // Name length flag
+		0x041, // Name
+	})
 }

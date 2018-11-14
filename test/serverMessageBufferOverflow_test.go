@@ -5,11 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/fasthttp/websocket"
 	"github.com/qbeon/tmdwg-go"
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
-	wwrfasthttp "github.com/qbeon/webwire-go/transport/fasthttp"
 	"github.com/stretchr/testify/require"
 )
 
@@ -31,7 +29,7 @@ func TestServerMessageBufferOverflow(t *testing.T) {
 	maliciousPayload := wwr.Payload{Data: make([]byte, maxPayloadSize+1)}
 
 	// Initialize webwire server given only the request
-	server := setupServer(
+	setup := setupTestServer(
 		t,
 		&serverImpl{
 			onRequest: func(
@@ -54,36 +52,20 @@ func TestServerMessageBufferOverflow(t *testing.T) {
 	)
 
 	// Initialize client
-	client := newCallbackPoweredClient(
-		server.Address(),
+	client := setup.newClient(
 		wwrclt.Options{
+			// Disable autoconnect to avoid auto-reconnection on kick
+			Autoconnect: wwr.Disabled,
+
 			DefaultRequestTimeout: 2 * time.Second,
 			// Use bigger buffers on the client
 			MessageBufferSize: messageBufferSize * 2,
-			Transport: &wwrfasthttp.ClientTransport{
-				Dialer: websocket.Dialer{
-					ReadBufferSize:  int(messageBufferSize * 2),
-					WriteBufferSize: int(messageBufferSize * 2),
-				},
-			},
 		},
-		callbackPoweredClientHooks{},
+		testClientHooks{},
 	)
 
 	// Wait until connected
 	require.NoError(t, client.connection.Connect())
-
-	// Send an overflowing request message and expect an error
-	reply, err := client.connection.Request(
-		context.Background(),
-		[]byte("overflow"),
-		maliciousPayload,
-	)
-	require.Nil(t, reply)
-	require.Error(t, err)
-
-	// Expect the request handler not to be called
-	require.Error(t, requestHandleCalled.Wait())
 
 	// Send a perfectly sized request message and expect a reply
 	replyCorrect, errCorrect := client.connection.Request(
@@ -97,4 +79,24 @@ func TestServerMessageBufferOverflow(t *testing.T) {
 	replyCorrect.Close()
 
 	require.NoError(t, correctRequestTriggeredHandler.Wait())
+
+	// Send an overflowing request message and expect the server to close the
+	// connection
+	reply, err := client.connection.Request(
+		context.Background(),
+		[]byte("overflow"),
+		maliciousPayload,
+	)
+	require.Nil(t, reply)
+	require.Error(t, err)
+
+	switch *argTransport {
+	case "memchan":
+		require.Equal(t, wwrclt.StatusConnected, client.connection.Status())
+	default:
+		require.Equal(t, wwrclt.StatusDisconnected, client.connection.Status())
+	}
+
+	// Expect the request handler not to be called
+	require.Error(t, requestHandleCalled.Wait())
 }

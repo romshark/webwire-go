@@ -35,7 +35,7 @@ func TestGracefulShutdown(t *testing.T) {
 	)
 
 	// Initialize webwire server
-	server := setupServer(
+	setup := setupTestServer(
 		t,
 		&serverImpl{
 			onSignal: func(
@@ -65,8 +65,6 @@ func TestGracefulShutdown(t *testing.T) {
 		wwr.ServerOptions{},
 	)
 
-	serverAddr := server.Address()
-
 	// Initialize different clients for the signal,
 	// the request and the late request and conn
 	// to avoid serializing them because every client
@@ -75,20 +73,17 @@ func TestGracefulShutdown(t *testing.T) {
 		DefaultRequestTimeout: 5 * time.Second,
 		Autoconnect:           wwr.Disabled,
 	}
-	clientSig := newCallbackPoweredClient(
-		serverAddr,
+	clientSig := setup.newClient(
 		cltOpts,
-		callbackPoweredClientHooks{},
+		testClientHooks{},
 	)
-	clientReq := newCallbackPoweredClient(
-		serverAddr,
+	clientReq := setup.newClient(
 		cltOpts,
-		callbackPoweredClientHooks{},
+		testClientHooks{},
 	)
-	clientLateReq := newCallbackPoweredClient(
-		serverAddr,
+	clientLateReq := setup.newClient(
 		cltOpts,
-		callbackPoweredClientHooks{},
+		testClientHooks{},
 	)
 
 	require.NoError(t, clientSig.connection.Connect())
@@ -96,12 +91,11 @@ func TestGracefulShutdown(t *testing.T) {
 	require.NoError(t, clientLateReq.connection.Connect())
 
 	// Disable autoconnect for the late client to enable immediate errors
-	clientLateConn := newCallbackPoweredClient(
-		serverAddr,
+	clientLateConn := setup.newClient(
 		wwrclt.Options{
 			Autoconnect: wwr.Disabled,
 		},
-		callbackPoweredClientHooks{},
+		testClientHooks{},
 	)
 
 	// Send signal and request in another parallel goroutine
@@ -140,7 +134,7 @@ func TestGracefulShutdown(t *testing.T) {
 
 		// (SRV SHUTDWN)
 		serverShuttingDown.Progress(1)
-		server.Shutdown()
+		setup.Server.Shutdown()
 		serverShutDown.Progress(1)
 	}()
 

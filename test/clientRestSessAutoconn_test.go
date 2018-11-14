@@ -15,19 +15,18 @@ import (
 // to automatically establish a connection
 func TestClientRestSessAutoconn(t *testing.T) {
 	// Initialize webwire server
-	server := setupServer(
+	setup := setupTestServer(
 		t,
 		&serverImpl{},
 		wwr.ServerOptions{},
 	)
 
 	// Initialize client
-	client := newCallbackPoweredClient(
-		server.Address(),
+	client := setup.newClient(
 		wwrclt.Options{
 			DefaultRequestTimeout: 100 * time.Millisecond,
 		},
-		callbackPoweredClientHooks{},
+		testClientHooks{},
 	)
 
 	// Skip manual connection establishment and rely on autoconnect instead

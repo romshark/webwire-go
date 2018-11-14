@@ -12,20 +12,19 @@ import (
 // TestClientIsConnected tests the client.Status method
 func TestClientIsConnected(t *testing.T) {
 	// Initialize webwire server given only the request
-	server := setupServer(t, &serverImpl{}, wwr.ServerOptions{})
+	setup := setupTestServer(t, &serverImpl{}, wwr.ServerOptions{})
 
 	// Initialize client
-	client := newCallbackPoweredClient(
-		server.Address(),
+	client := setup.newClient(
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 			Autoconnect:           wwr.Disabled,
 		},
-		callbackPoweredClientHooks{},
+		testClientHooks{},
 	)
 
 	require.NotEqual(t,
-		wwrclt.Connected, client.connection.Status(),
+		wwrclt.StatusConnected, client.connection.Status(),
 		"Expected client to be disconnected "+
 			"before the connection establishment",
 	)
@@ -34,7 +33,7 @@ func TestClientIsConnected(t *testing.T) {
 	require.NoError(t, client.connection.Connect())
 
 	require.Equal(t,
-		wwrclt.Connected, client.connection.Status(),
+		wwrclt.StatusConnected, client.connection.Status(),
 		"Expected client to be connected after the connection establishment",
 	)
 
@@ -42,7 +41,7 @@ func TestClientIsConnected(t *testing.T) {
 	client.connection.Close()
 
 	require.NotEqual(t,
-		wwrclt.Connected, client.connection.Status(),
+		wwrclt.StatusConnected, client.connection.Status(),
 		"Expected client to be disconnected after closure",
 	)
 }

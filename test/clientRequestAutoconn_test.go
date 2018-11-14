@@ -14,7 +14,7 @@ import (
 // expecting it to connect automatically
 func TestClientRequestAutoconn(t *testing.T) {
 	// Initialize webwire server given only the request
-	server := setupServer(
+	setup := setupTestServer(
 		t,
 		&serverImpl{
 			onRequest: func(
@@ -29,12 +29,11 @@ func TestClientRequestAutoconn(t *testing.T) {
 	)
 
 	// Initialize client and skip manual connection establishment
-	client := newCallbackPoweredClient(
-		server.Address(),
+	client := setup.newClient(
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
-		callbackPoweredClientHooks{},
+		testClientHooks{},
 	)
 
 	// Send request and await reply

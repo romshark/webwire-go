@@ -15,7 +15,7 @@ import (
 // of currently active sessions is properly updated
 func TestActiveSessionRegistry(t *testing.T) {
 	// Initialize webwire server
-	server := setupServer(
+	setup := setupTestServer(
 		t,
 		&serverImpl{
 			onRequest: func(
@@ -48,12 +48,11 @@ func TestActiveSessionRegistry(t *testing.T) {
 	)
 
 	// Initialize client
-	client := newCallbackPoweredClient(
-		server.Address(),
+	client := setup.newClient(
 		wwrclt.Options{
 			DefaultRequestTimeout: time.Second * 2,
 		},
-		callbackPoweredClientHooks{},
+		testClientHooks{},
 	)
 	defer client.connection.Close()
 
@@ -71,7 +70,7 @@ func TestActiveSessionRegistry(t *testing.T) {
 	require.NoError(t, err)
 	reply.Close()
 
-	activeSessionNumberBefore := server.ActiveSessionsNum()
+	activeSessionNumberBefore := setup.Server.ActiveSessionsNum()
 	require.Equal(t,
 		1, activeSessionNumberBefore,
 		"Unexpected active session number after authentication",
@@ -89,7 +88,7 @@ func TestActiveSessionRegistry(t *testing.T) {
 	require.NoError(t, err)
 	reply.Close()
 
-	activeSessionNumberAfter := server.ActiveSessionsNum()
+	activeSessionNumberAfter := setup.Server.ActiveSessionsNum()
 	require.Equal(t,
 		0, activeSessionNumberAfter,
 		"Unexpected active session number after logout",

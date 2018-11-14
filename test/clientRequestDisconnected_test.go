@@ -13,7 +13,7 @@ import (
 // TestClientRequestDisconnected tests sending requests on disconnected clients
 func TestClientRequestDisconnected(t *testing.T) {
 	// Initialize webwire server given only the request
-	server := setupServer(
+	setup := setupTestServer(
 		t,
 		&serverImpl{
 			onRequest: func(
@@ -28,13 +28,12 @@ func TestClientRequestDisconnected(t *testing.T) {
 	)
 
 	// Initialize client and skip manual connection establishment
-	client := newCallbackPoweredClient(
-		server.Address(),
+	client := setup.newClient(
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
-			Autoconnect:           wwrclt.Disabled,
+			Autoconnect:           wwrclt.StatusDisabled,
 		},
-		callbackPoweredClientHooks{},
+		testClientHooks{},
 	)
 
 	// Send request and await reply

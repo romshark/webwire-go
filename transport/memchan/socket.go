@@ -10,42 +10,40 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/qbeon/webwire-go/connopt"
 	"github.com/qbeon/webwire-go/message"
 	"github.com/qbeon/webwire-go/wwrerr"
 )
 
-const statusDisconnected uint32 = 0
 const statusConnected uint32 = 1
+const statusDisconnected uint32 = 2
 
-// SockReadErr implements the SockReadErr interface
-type SockReadErr struct {
-	// closed is true when the error was caused by a graceful socket closure
-	closed bool
+// SocketType represents the type of a socket
+type SocketType uint
 
-	err error
-}
+const (
+	// SocketUninitialized is the default type of an uninitialized socket
+	SocketUninitialized SocketType = iota
 
-// Error implements the Go error interface
-func (err SockReadErr) Error() string {
-	return fmt.Sprintf("Reading socket failed: %s", err.err)
-}
+	// SocketServer represents server-side sockets
+	SocketServer
 
-// IsAbnormalCloseErr implements the SockReadErr interface
-func (err SockReadErr) IsAbnormalCloseErr() bool {
-	return !err.closed
-}
+	// SocketClient represents client-side sockets
+	SocketClient
+)
 
 // Socket implements the transport.Socket interface using
 // the fasthttp/websocket library
 type Socket struct {
-	// server references the remote server transport for sockets of client type.
-	// this reference is nil for sockets of server type
 	server *Transport
 
+	sockType SocketType
+
+	// remote references the remote socket
 	remote *Socket
 
-	// connectionStatus indicates the current connection status
-	connectionStatus *uint32
+	// status represents the connection status
+	status *uint32
 
 	// readTimer enables reader timeout. It's started when the reader is applied
 	// a deadline and cleared when it finished reading
@@ -63,40 +61,64 @@ type Socket struct {
 
 	// reader is the data receiving channel to the reader goroutine. It must be
 	// triggered as soon as any data is received
-	reader chan []byte
-
-	// readerErr must be triggered as soon as the reader finished reading
-	readerErr chan error
-
-	// close is a signal causing the local reader to fail and close
-	close chan struct{}
+	reader     chan []byte
+	readerErr  chan error
+	readerLock *sync.Mutex
 }
 
 // onBufferFlush is a slot method that's called by the outbound buffer's onFlush
 // callback. It notifies the remote socket about the buffer being available for
 // reading and waits until it's finished reading eventually releasing the local
 // writer buffer
-func (sock *Socket) onBufferFlush(data []byte) error {
+func (sock *Socket) onBufferFlush(data []byte) (err error) {
 	if !sock.IsConnected() {
 		sock.writerLock.Unlock()
 		return errors.New("can't write to a closed socket")
 	}
 
 	// Notify the remote reader about the new message
-	sock.remote.reader <- data
+	sock.remote.getReader() <- data
 
 	// Wait for the remote reader to finish reading
-	readerErr := <-sock.remote.readerErr
+	err = <-sock.remote.readerErr
+
 	sock.writerLock.Unlock()
-	return readerErr
+	return
+}
+
+// onBufferOverflow is a slot method called by the outbound buffer's onOverflow
+// callback when it's overflowed by the writer
+func (sock *Socket) onBufferOverflow() {
+	sock.Close()
 }
 
 // Dial implements the transport.Socket interface
-func (sock *Socket) Dial(serverAddr url.URL, deadline time.Time) (err error) {
-	if sock.server == nil {
-		return errors.New("cannot dial on a server socket")
+func (sock *Socket) Dial(serverAddr url.URL, deadline time.Time) error {
+	if sock.sockType != SocketClient {
+		return errors.New("cannot dial on a non-client socket")
 	}
-	return sock.server.Connect(sock)
+
+	if sock.server.ConnectionOptions.Connection != connopt.Accept {
+		return errors.New("connection refused")
+	}
+
+	if !atomic.CompareAndSwapUint32(
+		sock.status,
+		statusDisconnected,
+		statusConnected,
+	) {
+		return errors.New("socket already connected")
+	}
+
+	sock.resetReader()
+	sock.remote.resetReader()
+
+	// Execute server callback
+	if err := sock.server.onConnect(sock); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // GetWriter implements the transport.Socket interface
@@ -116,19 +138,40 @@ func (sock *Socket) GetWriter() (io.WriteCloser, error) {
 	return &sock.outboundBuffer, nil
 }
 
+func (sock *Socket) getReader() chan []byte {
+	sock.readerLock.Lock()
+	reader := sock.reader
+	sock.readerLock.Unlock()
+	return reader
+}
+
+// closeReader closes the current reader
+func (sock *Socket) closeReader() {
+	sock.readerLock.Lock()
+	close(sock.reader)
+	sock.readerLock.Unlock()
+}
+
+// resetReader resets the socket reader
+func (sock *Socket) resetReader() {
+	sock.readerLock.Lock()
+	sock.reader = make(chan []byte, 1)
+	sock.readerLock.Unlock()
+}
+
 func (sock *Socket) readWithoutDeadline() (
 	data []byte,
 	err wwrerr.SockReadErr,
 ) {
 	// Await either a message or remote/local socket closure
-	select {
-	case <-sock.close:
+	data = <-sock.getReader()
+
+	if data == nil {
 		// Socket closed
-		err = SockReadErr{closed: true}
-	case data = <-sock.reader:
-		// Data received
+		return nil, SockReadErr{closed: true}
 	}
-	return
+
+	return data, nil
 }
 
 func (sock *Socket) readWithDeadline(deadline time.Time) (
@@ -142,11 +185,14 @@ func (sock *Socket) readWithDeadline(deadline time.Time) (
 	case <-sock.readTimer.C:
 		// Deadline exceeded
 		err = SockReadErr{err: errors.New("read deadline exceeded")}
-	case <-sock.close:
-		// Socket closed
-		err = SockReadErr{closed: true}
-	case data = <-sock.reader:
-		// Data received
+
+	case result := <-sock.getReader():
+		if result == nil {
+			// Socket closed
+			err = SockReadErr{closed: true}
+		} else {
+			data = result
+		}
 	}
 
 	if !sock.readTimer.Stop() {
@@ -189,15 +235,14 @@ func (sock *Socket) Read(
 	// writer by sending nil to the sock.reader channel
 	typeParsed, parseErr := msg.ReadBytes(data)
 	if parseErr != nil {
-		sock.readerErr <- parseErr
+		sock.readerErr <- nil
 		sock.readLock.Unlock()
 		return SockReadErr{err: parseErr}
 	}
 	if !typeParsed {
-		err := errors.New("no message type")
-		sock.readerErr <- err
+		sock.readerErr <- nil
 		sock.readLock.Unlock()
-		return SockReadErr{err: err}
+		return SockReadErr{err: errors.New("no message type")}
 	}
 
 	sock.readerErr <- nil
@@ -207,33 +252,47 @@ func (sock *Socket) Read(
 
 // IsConnected implements the transport.Socket interface
 func (sock *Socket) IsConnected() bool {
-	return atomic.LoadUint32(sock.connectionStatus) == statusConnected
+	return atomic.LoadUint32(sock.status) == statusConnected
 }
 
 // RemoteAddr implements the transport.Socket interface
 func (sock *Socket) RemoteAddr() net.Addr {
-	// The in-memory socket implementation doesn't provide any address
-	// information
+	switch sock.sockType {
+	case SocketServer, SocketClient:
+		return RemoteAddress{sock.remote}
+	}
 	return nil
 }
 
 // Close implements the transport.Socket interface
 func (sock *Socket) Close() error {
-	if atomic.CompareAndSwapUint32(
-		sock.connectionStatus,
+	if !atomic.CompareAndSwapUint32(
+		sock.status,
 		statusConnected,
 		statusDisconnected,
 	) {
-		// Close the remote reader
-		select {
-		case sock.remote.close <- struct{}{}:
-		default:
-		}
-		// Close the local reader
-		select {
-		case sock.close <- struct{}{}:
-		default:
-		}
+		return nil
 	}
+
+	// Close remote reader and writer
+	sock.remote.closeReader()
+
+	// Send reader confirmation if any remote writer is currently awaiting
+	// the local reader to finish
+	select {
+	case sock.readerErr <- errors.New("socket closed"):
+	default:
+	}
+
+	// Close the local reader
+	sock.closeReader()
+
+	// Execute server callback
+	if sock.sockType == SocketClient {
+		sock.server.onDisconnect(sock.remote)
+	} else {
+		sock.server.onDisconnect(sock)
+	}
+
 	return nil
 }

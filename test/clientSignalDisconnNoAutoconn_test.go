@@ -15,21 +15,20 @@ import (
 // and the client is disconnected
 func TestClientSignalDisconnectedErr(t *testing.T) {
 	// Initialize webwire server
-	server := setupServer(
+	setup := setupTestServer(
 		t,
 		&serverImpl{},
 		wwr.ServerOptions{},
 	)
 
 	// Initialize client
-	client := newCallbackPoweredClient(
-		server.Address(),
+	client := setup.newClient(
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 			// Disable autoconnect to prevent automatic reconnection
 			Autoconnect: wwr.Disabled,
 		},
-		callbackPoweredClientHooks{},
+		testClientHooks{},
 	)
 
 	// Try to send a signal and expect a DisconnectedErr error

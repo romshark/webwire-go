@@ -114,7 +114,7 @@ func TestClientSessionInfo(t *testing.T) {
 	}
 
 	// Initialize webwire server
-	server := setupServer(
+	setup := setupTestServer(
 		t,
 		&serverImpl{
 			onRequest: func(
@@ -143,13 +143,12 @@ func TestClientSessionInfo(t *testing.T) {
 	)
 
 	// Initialize client
-	client := newCallbackPoweredClient(
-		server.Address(),
+	client := setup.newClient(
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 			SessionInfoParser:     testClientSessionInfoSessionInfoParser,
 		},
-		callbackPoweredClientHooks{},
+		testClientHooks{},
 	)
 	defer client.connection.Close()
 

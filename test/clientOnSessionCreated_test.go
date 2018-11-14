@@ -19,7 +19,7 @@ func TestClientOnSessionCreated(t *testing.T) {
 	var sessionFromHook *wwr.Session
 
 	// Initialize webwire server
-	server := setupServer(
+	setup := setupTestServer(
 		t,
 		&serverImpl{
 			onRequest: func(
@@ -37,12 +37,11 @@ func TestClientOnSessionCreated(t *testing.T) {
 	)
 
 	// Initialize client
-	client := newCallbackPoweredClient(
-		server.Address(),
+	client := setup.newClient(
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
-		callbackPoweredClientHooks{
+		testClientHooks{
 			OnSessionCreated: func(newSession *wwr.Session) {
 				sessionFromHook = newSession
 				hookCalled.Progress(1)

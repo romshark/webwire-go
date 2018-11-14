@@ -19,7 +19,7 @@ func TestClientAutomaticSessionRestoration(t *testing.T) {
 	var createdSession *wwr.Session
 
 	// Initialize webwire server
-	server := setupServer(
+	setup := setupTestServer(
 		t,
 		&serverImpl{
 			onRequest: func(
@@ -69,10 +69,9 @@ func TestClientAutomaticSessionRestoration(t *testing.T) {
 	)
 
 	// Initialize client
-	client := newCallbackPoweredClient(
-		server.Address(),
+	client := setup.newClient(
 		wwrclt.Options{},
-		callbackPoweredClientHooks{},
+		testClientHooks{},
 	)
 
 	require.NoError(t, client.connection.Connect())
@@ -99,7 +98,7 @@ func TestClientAutomaticSessionRestoration(t *testing.T) {
 
 	// Ensure the session isn't lost
 	require.NotEqual(t,
-		wwrclt.Connected, client.connection.Status(),
+		wwrclt.StatusConnected, client.connection.Status(),
 		"Client is expected to be disconnected",
 	)
 	require.NotEqual(t,

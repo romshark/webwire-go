@@ -31,7 +31,7 @@ func TestClientInitiatedSessionDestruction(t *testing.T) {
 	currentStep := 1
 
 	// Initialize webwire server
-	server := setupServer(
+	setup := setupTestServer(
 		t,
 		&serverImpl{
 			onRequest: func(
@@ -75,12 +75,11 @@ func TestClientInitiatedSessionDestruction(t *testing.T) {
 	)
 
 	// Initialize client
-	client := newCallbackPoweredClient(
-		server.Address(),
+	client := setup.newClient(
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
-		callbackPoweredClientHooks{
+		testClientHooks{
 			OnSessionCreated: func(_ *wwr.Session) {
 				// Mark the client-side session creation callback as executed
 				sessionCreationCallbackCalled.Progress(1)

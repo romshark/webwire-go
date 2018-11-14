@@ -15,7 +15,7 @@ import (
 // TestConnectionClose tests closing a client connection on the server-side
 func TestConnectionClose(t *testing.T) {
 	// Initialize webwire server
-	server := setupServer(
+	setup := setupTestServer(
 		t,
 		&serverImpl{
 			onRequest: func(
@@ -50,18 +50,17 @@ func TestConnectionClose(t *testing.T) {
 		wwr.ServerOptions{},
 	)
 
-	actSess := server.ActiveSessionsNum()
+	actSess := setup.Server.ActiveSessionsNum()
 	require.Equal(t, 0, actSess, "Unexpected number of active sessions")
 
 	// Initialize client A
-	clientA := newCallbackPoweredClient(
-		server.Address(),
+	clientA := setup.newClient(
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 			// Disable autoconnect to prevent automatic reconnection
 			Autoconnect: wwr.Disabled,
 		},
-		callbackPoweredClientHooks{},
+		testClientHooks{},
 	)
 
 	require.NoError(t, clientA.connection.Connect())
@@ -82,29 +81,28 @@ func TestConnectionClose(t *testing.T) {
 
 	// Check status, expect 1 session, 1 connection
 	require.Equal(t,
-		1, server.ActiveSessionsNum(),
+		1, setup.Server.ActiveSessionsNum(),
 		"Unexpected active sessions number",
 	)
 
 	require.Equal(t,
-		1, server.SessionConnectionsNum(session.Key),
+		1, setup.Server.SessionConnectionsNum(session.Key),
 		"Unexpected session connections number",
 	)
 
 	require.Len(t,
-		server.SessionConnections(session.Key), 1,
+		setup.Server.SessionConnections(session.Key), 1,
 		"Unexpected session connections",
 	)
 
 	// Initialize client B
-	clientB := newCallbackPoweredClient(
-		server.Address(),
+	clientB := setup.newClient(
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 			// Disable autoconnect to prevent automatic reconnection
 			Autoconnect: wwr.Disabled,
 		},
-		callbackPoweredClientHooks{},
+		testClientHooks{},
 	)
 
 	if err := clientB.connection.Connect(); err != nil {
@@ -118,17 +116,17 @@ func TestConnectionClose(t *testing.T) {
 
 	// Check status, expect 1 session, 2 connections
 	require.Equal(t,
-		1, server.ActiveSessionsNum(),
+		1, setup.Server.ActiveSessionsNum(),
 		"Unexpected active sessions number",
 	)
 
 	require.Equal(t,
-		2, server.SessionConnectionsNum(session.Key),
+		2, setup.Server.SessionConnectionsNum(session.Key),
 		"Unexpected session connections number",
 	)
 
 	require.Len(t,
-		server.SessionConnections(session.Key), 2,
+		setup.Server.SessionConnections(session.Key), 2,
 		"Unexpected session connections",
 	)
 
@@ -154,17 +152,17 @@ func TestConnectionClose(t *testing.T) {
 
 	// Check status, expect 1 session, 1 connection
 	require.Equal(t,
-		1, server.ActiveSessionsNum(),
+		1, setup.Server.ActiveSessionsNum(),
 		"Unexpected active sessions number",
 	)
 
 	require.Equal(t,
-		1, server.SessionConnectionsNum(session.Key),
+		1, setup.Server.SessionConnectionsNum(session.Key),
 		"Unexpected session connections number",
 	)
 
 	require.Len(t,
-		server.SessionConnections(session.Key), 1,
+		setup.Server.SessionConnections(session.Key), 1,
 		"Unexpected session connections",
 	)
 
@@ -190,17 +188,17 @@ func TestConnectionClose(t *testing.T) {
 
 	// Check status, expect 0 sessions
 	require.Equal(t,
-		0, server.ActiveSessionsNum(),
+		0, setup.Server.ActiveSessionsNum(),
 		"Unexpected active sessions number",
 	)
 
 	require.Equal(t,
-		-1, server.SessionConnectionsNum(session.Key),
+		-1, setup.Server.SessionConnectionsNum(session.Key),
 		"Unexpected session connections number",
 	)
 
 	require.Nil(t,
-		server.SessionConnections(session.Key),
+		setup.Server.SessionConnections(session.Key),
 		"Unexpected session connections",
 	)
 }

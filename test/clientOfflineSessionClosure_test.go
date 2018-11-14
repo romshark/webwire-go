@@ -19,7 +19,7 @@ func TestClientOfflineSessionClosure(t *testing.T) {
 	var createdSession *wwr.Session
 
 	// Initialize webwire server
-	server := setupServer(
+	setup := setupTestServer(
 		t,
 		&serverImpl{
 			onRequest: func(
@@ -72,12 +72,11 @@ func TestClientOfflineSessionClosure(t *testing.T) {
 	)
 
 	// Initialize client
-	client := newCallbackPoweredClient(
-		server.Address(),
+	client := setup.newClient(
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
-		callbackPoweredClientHooks{},
+		testClientHooks{},
 	)
 
 	require.NoError(t, client.connection.Connect())
@@ -105,7 +104,7 @@ func TestClientOfflineSessionClosure(t *testing.T) {
 
 	// Ensure the session isn't lost
 	require.NotEqual(t,
-		wwrclt.Connected, client.connection.Status(),
+		wwrclt.StatusConnected, client.connection.Status(),
 		"Client is expected to be disconnected",
 	)
 	require.NotEqual(t,

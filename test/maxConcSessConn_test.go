@@ -22,7 +22,7 @@ func TestMaxConcSessConn(t *testing.T) {
 	concurrentConns := uint(4)
 
 	// Initialize server
-	server := setupServer(
+	setup := setupTestServer(
 		t,
 		&serverImpl{
 			onClientConnected: func(conn wwr.Connection) {
@@ -66,14 +66,13 @@ func TestMaxConcSessConn(t *testing.T) {
 	)
 
 	// Initialize client
-	clients := make([]*callbackPoweredClient, concurrentConns)
+	clients := make([]*testClient, concurrentConns)
 	for i := uint(0); i < concurrentConns; i++ {
-		client := newCallbackPoweredClient(
-			server.Address(),
+		client := setup.newClient(
 			wwrclt.Options{
 				DefaultRequestTimeout: 2 * time.Second,
 			},
-			callbackPoweredClientHooks{},
+			testClientHooks{},
 		)
 		clients[i] = client
 
@@ -91,12 +90,11 @@ func TestMaxConcSessConn(t *testing.T) {
 	}
 
 	// Ensure that the last superfluous client is rejected
-	superfluousClient := newCallbackPoweredClient(
-		server.Address(),
+	superfluousClient := setup.newClient(
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
-		callbackPoweredClientHooks{},
+		testClientHooks{},
 	)
 
 	require.NoError(t, superfluousClient.connection.Connect())

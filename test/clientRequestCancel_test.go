@@ -17,7 +17,7 @@ func TestClientRequestCancel(t *testing.T) {
 	requestFinished := tmdwg.NewTimedWaitGroup(1, 1*time.Second)
 
 	// Initialize webwire server given only the request
-	server := setupServer(
+	setup := setupTestServer(
 		t,
 		&serverImpl{
 			onRequest: func(
@@ -33,12 +33,11 @@ func TestClientRequestCancel(t *testing.T) {
 	)
 
 	// Initialize client
-	client := newCallbackPoweredClient(
-		server.Address(),
+	client := setup.newClient(
 		wwrclt.Options{
 			DefaultRequestTimeout: 5 * time.Second,
 		},
-		callbackPoweredClientHooks{},
+		testClientHooks{},
 	)
 
 	require.NoError(t, client.connection.Connect())

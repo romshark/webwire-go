@@ -16,7 +16,7 @@ func TestCustomSessKeyGen(t *testing.T) {
 	expectedSessionKey := "customkey123"
 
 	// Initialize webwire server
-	server := setupServer(
+	setup := setupTestServer(
 		t,
 		&serverImpl{
 			onRequest: func(
@@ -49,12 +49,11 @@ func TestCustomSessKeyGen(t *testing.T) {
 	)
 
 	// Initialize client
-	client := newCallbackPoweredClient(
-		server.Address(),
+	client := setup.newClient(
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
-		callbackPoweredClientHooks{},
+		testClientHooks{},
 	)
 	defer client.connection.Close()
 

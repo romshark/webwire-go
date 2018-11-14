@@ -9,8 +9,7 @@ import (
 
 // ClientTransport implements the ClientTransport interface
 type ClientTransport struct {
-	Server     *Transport
-	BufferSize uint32
+	Server *Transport
 }
 
 // NewSocket implements the ClientTransport interface
@@ -24,12 +23,8 @@ func (cltTrans *ClientTransport) NewSocket(
 		)
 	}
 
-	// Set default buffer size if none is specified
-	bufferSize := uint32(8 * 1024)
-	if cltTrans.BufferSize > 0 {
-		bufferSize = cltTrans.BufferSize
-	}
+	// Create a new entangled socket pair
+	_, clt := NewEntangledSockets(cltTrans.Server)
 
-	// Create a disconnected socket instance
-	return NewDisconnectedSocket(cltTrans.Server, bufferSize), nil
+	return clt, nil
 }

@@ -17,7 +17,7 @@ func TestClientRequestRegisterOnTimeout(t *testing.T) {
 	var connection wwrclt.Client
 
 	// Initialize webwire server given only the request
-	server := setupServer(
+	setup := setupTestServer(
 		t,
 		&serverImpl{
 			onRequest: func(
@@ -37,12 +37,11 @@ func TestClientRequestRegisterOnTimeout(t *testing.T) {
 	)
 
 	// Initialize client
-	client := newCallbackPoweredClient(
-		server.Address(),
+	client := setup.newClient(
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
-		callbackPoweredClientHooks{},
+		testClientHooks{},
 	)
 	connection = client.connection
 

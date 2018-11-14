@@ -4,6 +4,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/qbeon/webwire-go/wwrerr"
 	"github.com/stretchr/testify/require"
 )
 
@@ -20,12 +21,6 @@ func TestBufferWrite(t *testing.T) {
 	require.Equal(t, 3, bytesWritten)
 
 	require.Equal(t, []byte{1, 2, 3, 4, 0, 0}, buf)
-
-	// Try buffer overflow
-	bytesWritten, err = buffer.Write([]byte{1, 2, 3})
-	require.Equal(t, 0, bytesWritten)
-	require.Error(t, err)
-	require.Equal(t, []byte{1, 2, 3, 4, 0, 0}, buf)
 }
 
 // TestBufferWriteOverflow tests Buffer.Write overflowing the buffer
@@ -36,6 +31,7 @@ func TestBufferWriteOverflow(t *testing.T) {
 	bytesWritten, err := buffer.Write([]byte{1, 2, 3, 4, 5})
 	require.Equal(t, 0, bytesWritten)
 	require.Error(t, err)
+	require.IsType(t, wwrerr.BufferOverflowErr{}, err)
 
 	require.Equal(t, []byte{0, 0, 0, 0}, buf)
 }

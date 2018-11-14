@@ -14,7 +14,7 @@ import (
 // TestRequestNameNoPayload tests named requests without a payload
 func TestRequestNameNoPayload(t *testing.T) {
 	// Initialize server
-	server := setupServer(
+	setup := setupTestServer(
 		t,
 		&serverImpl{
 			onRequest: func(
@@ -36,12 +36,11 @@ func TestRequestNameNoPayload(t *testing.T) {
 	)
 
 	// Initialize client
-	client := newCallbackPoweredClient(
-		server.Address(),
+	client := setup.newClient(
 		webwireClient.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
-		callbackPoweredClientHooks{},
+		testClientHooks{},
 	)
 
 	// Send a named binary request without a payload and await reply

@@ -22,7 +22,7 @@ type SockReadErr struct {
 
 // Error implements the Go error interface
 func (err SockReadErr) Error() string {
-	return fmt.Sprintf("Reading socket failed: %s", err.cause)
+	return fmt.Sprintf("reading socket failed: %s", err.cause)
 }
 
 // IsAbnormalCloseErr implements the SockReadErr interface

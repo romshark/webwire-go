@@ -26,7 +26,7 @@ func TestServerSideSessionClosure(t *testing.T) {
 	)
 
 	// Initialize webwire server
-	server := setupServer(
+	setup := setupTestServer(
 		t,
 		&serverImpl{
 			onRequest: func(
@@ -45,15 +45,14 @@ func TestServerSideSessionClosure(t *testing.T) {
 	)
 
 	// Initialize clients
-	clients := make([]*callbackPoweredClient, simultaneousClients)
+	clients := make([]*testClient, simultaneousClients)
 	for i := 0; i < simultaneousClients; i++ {
-		client := newCallbackPoweredClient(
-			server.Address(),
+		client := setup.newClient(
 			wwrclt.Options{
 				DefaultRequestTimeout: 2 * time.Second,
 				Autoconnect:           wwr.Disabled,
 			},
-			callbackPoweredClientHooks{
+			testClientHooks{
 				OnSessionClosed: func() {
 					onSessionClosedHooksExecuted.Progress(1)
 				},
@@ -100,7 +99,9 @@ func TestServerSideSessionClosure(t *testing.T) {
 	}
 
 	// Close the session
-	affectedConnections, closeErrors, err := server.CloseSession(sessionKey)
+	affectedConnections, closeErrors, err := setup.Server.CloseSession(
+		sessionKey,
+	)
 	require.NoError(t, err)
 	require.Len(t, affectedConnections, simultaneousClients)
 	require.Len(t, closeErrors, simultaneousClients)
