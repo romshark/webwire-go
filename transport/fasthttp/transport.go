@@ -3,7 +3,6 @@ package fasthttp
 import (
 	"crypto/tls"
 	"log"
-	"net"
 	"net/url"
 	"time"
 
@@ -39,6 +38,10 @@ type Transport struct {
 	// ErrorLog defines the error logging output target
 	ErrorLog *log.Logger
 
+	// KeepAlive enables the keep-alive option if set to a duration above -1.
+	// KeepAlive is automatically set to 30 seconds when it's set to 0
+	KeepAlive time.Duration
+
 	// Upgrader specifies the websocket connection upgrader
 	Upgrader *websocket.FastHTTPUpgrader
 
@@ -48,7 +51,7 @@ type Transport struct {
 	// TLS enables TLS encryption if specified
 	TLS *TLS
 
-	listener        net.Listener
+	listener        *tcpKeepAliveListener
 	addr            url.URL
 	readTimeout     time.Duration
 	isShuttingdown  wwr.IsShuttingDown

@@ -7,15 +7,21 @@ import (
 
 type tcpKeepAliveListener struct {
 	*net.TCPListener
+	period time.Duration
 }
 
-// Accept accepts incoming client connections
-func (ln tcpKeepAliveListener) Accept() (c net.Conn, err error) {
+func (ln tcpKeepAliveListener) Accept() (net.Conn, error) {
 	tc, err := ln.AcceptTCP()
 	if err != nil {
-		return
+		return nil, err
 	}
-	tc.SetKeepAlive(true)
-	tc.SetKeepAlivePeriod(3 * time.Minute)
+	if ln.period > 0 {
+		if err := tc.SetKeepAlive(true); err != nil {
+			return nil, err
+		}
+		if err := tc.SetKeepAlivePeriod(ln.period); err != nil {
+			return nil, err
+		}
+	}
 	return tc, nil
 }

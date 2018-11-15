@@ -1,12 +1,12 @@
 package fasthttp
 
 import (
-	"crypto/tls"
 	"fmt"
 	"log"
 	"net"
 	"net/url"
 	"os"
+	"time"
 
 	"github.com/fasthttp/websocket"
 	wwr "github.com/qbeon/webwire-go"
@@ -37,6 +37,11 @@ func (srv *Transport) Initialize(
 		}
 	}
 
+	// Set default keep-alive period
+	if srv.KeepAlive == 0 {
+		srv.KeepAlive = 30 * time.Second
+	}
+
 	// Initialize TCP/IP listener
 	listener, err := net.Listen("tcp", host)
 	if err != nil {
@@ -47,13 +52,10 @@ func (srv *Transport) Initialize(
 		Host:   listener.Addr().String(),
 		Path:   "/",
 	}
-	if srv.TLS != nil {
-		// Use TLS listener on top of the TCP listener in HTTPS mode
-		listener = tls.NewListener(listener, srv.TLS.Config.Clone())
+	srv.listener = &tcpKeepAliveListener{
+		listener.(*net.TCPListener),
+		srv.KeepAlive,
 	}
-	srv.listener = listener
-
-	/* SET DEFAULTS */
 
 	// Set default HTTP server if none is specified
 	if srv.HTTPServer == nil {
