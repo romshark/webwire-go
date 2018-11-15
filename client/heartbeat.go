@@ -5,8 +5,8 @@ import (
 	"sync"
 	"time"
 
+	webwire "github.com/qbeon/webwire-go"
 	"github.com/qbeon/webwire-go/message"
-	"github.com/qbeon/webwire-go/transport"
 )
 
 // heartbeat represents the heartbeat module of the client that's responsible
@@ -16,12 +16,12 @@ type heartbeat struct {
 	resetChan chan struct{}
 	stopChan  chan struct{}
 	lock      sync.Mutex
-	conn      transport.Socket
+	conn      webwire.Socket
 	errLog    *log.Logger
 }
 
 // newHeartbeat creates a new heartbeat module instance
-func newHeartbeat(conn transport.Socket, errLog *log.Logger) heartbeat {
+func newHeartbeat(conn webwire.Socket, errLog *log.Logger) heartbeat {
 	return heartbeat{
 		resetChan: make(chan struct{}, 1),
 		stopChan:  make(chan struct{}, 1),

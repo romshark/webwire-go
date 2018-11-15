@@ -3,11 +3,9 @@ package webwire
 import (
 	"fmt"
 	"time"
-
-	"github.com/qbeon/webwire-go/transport"
 )
 
-func (srv *server) writeConfMessage(sock transport.Socket) error {
+func (srv *server) writeConfMessage(sock Socket) error {
 	writer, err := sock.GetWriter()
 	if err != nil {
 		return fmt.Errorf(
@@ -30,7 +28,7 @@ func (srv *server) writeConfMessage(sock transport.Socket) error {
 func (srv *server) handleConnection(
 	connectionOptions ConnectionOptions,
 	userAgent []byte,
-	sock transport.Socket,
+	sock Socket,
 ) {
 	// Send server configuration message
 	if err := srv.writeConfMessage(sock); err != nil {

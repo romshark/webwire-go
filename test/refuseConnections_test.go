@@ -7,7 +7,6 @@ import (
 
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
-	wwrtrn "github.com/qbeon/webwire-go/transport"
 	wwrfasthttp "github.com/qbeon/webwire-go/transport/fasthttp"
 	wwrmemchan "github.com/qbeon/webwire-go/transport/memchan"
 	"github.com/stretchr/testify/require"
@@ -20,7 +19,7 @@ func TestRefuseConnections(t *testing.T) {
 	numClients := 5
 
 	// Prepare transport layer implementation parameters
-	var transImpl wwrtrn.Transport
+	var transImpl wwr.Transport
 	switch *argTransport {
 	case "fasthttp/websocket":
 		transImpl = &wwrfasthttp.Transport{

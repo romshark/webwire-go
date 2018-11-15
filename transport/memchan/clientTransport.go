@@ -4,7 +4,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/qbeon/webwire-go/transport"
+	wwr "github.com/qbeon/webwire-go"
 )
 
 // ClientTransport implements the ClientTransport interface
@@ -15,7 +15,7 @@ type ClientTransport struct {
 // NewSocket implements the ClientTransport interface
 func (cltTrans *ClientTransport) NewSocket(
 	dialTimeout time.Duration,
-) (transport.ClientSocket, error) {
+) (wwr.ClientSocket, error) {
 	// Verify server reference
 	if cltTrans.Server == nil {
 		return nil, errors.New(

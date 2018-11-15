@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/qbeon/webwire-go/message"
-	"github.com/qbeon/webwire-go/transport"
 	"github.com/qbeon/webwire-go/wwrerr"
 	"golang.org/x/sync/semaphore"
 )
@@ -39,7 +38,7 @@ type connection struct {
 	srv *server
 
 	// sock references the connection's socket
-	sock transport.Socket
+	sock Socket
 
 	// sessionLock protects the session field from concurrent access
 	sessionLock sync.RWMutex
@@ -53,7 +52,7 @@ type connection struct {
 
 // newConnection creates and returns a new client connection instance
 func newConnection(
-	socket transport.Socket,
+	socket Socket,
 	userAgent []byte,
 	srv *server,
 	options ConnectionOptions,

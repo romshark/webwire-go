@@ -7,30 +7,28 @@ import (
 	"net"
 	"net/url"
 	"os"
-	"time"
 
 	"github.com/fasthttp/websocket"
-	"github.com/qbeon/webwire-go/transport"
+	wwr "github.com/qbeon/webwire-go"
 	"github.com/valyala/fasthttp"
 )
 
 // Initialize implements the Transport interface
 func (srv *Transport) Initialize(
-	host string,
-	readTimeout time.Duration,
-	messageBufferSize uint32,
-	isShuttingdown transport.IsShuttingDown,
-	onNewConnection transport.OnNewConnection,
+	options wwr.ServerOptions,
+	isShuttingdown wwr.IsShuttingDown,
+	onNewConnection wwr.OnNewConnection,
 ) error {
 	srv.isShuttingdown = isShuttingdown
 	srv.onNewConnection = onNewConnection
-	srv.readTimeout = readTimeout
+	srv.readTimeout = options.ReadTimeout
 
 	// Determine final address
 	scheme := "http"
 	if srv.TLS != nil {
 		scheme = "https"
 	}
+	host := options.Host
 	if host == "" {
 		if srv.TLS != nil {
 			host = ":https"
@@ -64,7 +62,7 @@ func (srv *Transport) Initialize(
 		}
 	}
 
-	srv.HTTPServer.ReadTimeout = readTimeout
+	srv.HTTPServer.ReadTimeout = options.ReadTimeout
 	srv.HTTPServer.Handler = srv.handleAccept
 
 	// Set default connection upgrader if none is specified

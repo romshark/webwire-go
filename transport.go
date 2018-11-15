@@ -1,4 +1,4 @@
-package transport
+package webwire
 
 import (
 	"net/url"
@@ -23,9 +23,7 @@ type OnNewConnection func(
 type Transport interface {
 	// Initialize initializes the server
 	Initialize(
-		host string,
-		readTimeout time.Duration,
-		messageBufferSize uint32,
+		options ServerOptions,
 		isShuttingdown IsShuttingDown,
 		onNewConnection OnNewConnection,
 	) error

@@ -7,7 +7,6 @@ import (
 	"sync"
 
 	"github.com/qbeon/webwire-go/message"
-	wwrtrn "github.com/qbeon/webwire-go/transport"
 )
 
 // NewServer creates a new WebWire server instance which uses a
@@ -15,7 +14,7 @@ import (
 func NewServer(
 	implementation ServerImplementation,
 	opts ServerOptions,
-	transport wwrtrn.Transport,
+	transport Transport,
 ) (instance Server, err error) {
 	if implementation == nil {
 		return nil, errors.New("missing server implementation")
@@ -75,9 +74,7 @@ func NewServer(
 
 	// Initialize the transport layer
 	if err := transport.Initialize(
-		opts.Host,
-		opts.ReadTimeout,
-		opts.MessageBufferSize,
+		opts,
 		srv.isShuttingDown,
 		srv.handleConnection,
 	); err != nil {

@@ -8,8 +8,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	wwr "github.com/qbeon/webwire-go"
 	"github.com/qbeon/webwire-go/connopt"
-	"github.com/qbeon/webwire-go/transport"
 )
 
 const serverClosed = 0
@@ -19,8 +19,8 @@ const serverActive = 1
 type Transport struct {
 	ConnectionOptions connopt.ConnectionOptions
 
-	onNewConnection transport.OnNewConnection
-	isShuttingdown  transport.IsShuttingDown
+	onNewConnection wwr.OnNewConnection
+	isShuttingdown  wwr.IsShuttingDown
 
 	bufferSize      uint32
 	readTimeout     time.Duration
@@ -32,14 +32,12 @@ type Transport struct {
 
 // Initialize implements the Transport interface
 func (srv *Transport) Initialize(
-	host string,
-	readTimeout time.Duration,
-	messageBufferSize uint32,
-	isShuttingdown transport.IsShuttingDown,
-	onNewConnection transport.OnNewConnection,
+	options wwr.ServerOptions,
+	isShuttingdown wwr.IsShuttingDown,
+	onNewConnection wwr.OnNewConnection,
 ) error {
-	srv.readTimeout = readTimeout
-	srv.bufferSize = messageBufferSize
+	srv.readTimeout = options.ReadTimeout
+	srv.bufferSize = options.MessageBufferSize
 	srv.isShuttingdown = isShuttingdown
 	srv.onNewConnection = onNewConnection
 	srv.connections = make(map[*Socket]*Socket)

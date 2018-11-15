@@ -7,13 +7,12 @@ import (
 	"sync"
 
 	"github.com/qbeon/webwire-go/message"
-	"github.com/qbeon/webwire-go/transport"
 )
 
 // server represents a headless WebWire server instance,
 // where headless means there's no HTTP server that's hosting it
 type server struct {
-	transport         transport.Transport
+	transport         Transport
 	impl              ServerImplementation
 	sessionManager    SessionManager
 	sessionKeyGen     SessionKeyGenerator

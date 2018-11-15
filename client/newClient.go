@@ -9,7 +9,6 @@ import (
 	webwire "github.com/qbeon/webwire-go"
 	"github.com/qbeon/webwire-go/message"
 	reqman "github.com/qbeon/webwire-go/requestManager"
-	wwrtrn "github.com/qbeon/webwire-go/transport"
 )
 
 // NewClient creates a new client instance.
@@ -18,7 +17,7 @@ func NewClient(
 	serverAddress url.URL,
 	implementation Implementation,
 	options Options,
-	transport wwrtrn.ClientTransport,
+	transport webwire.ClientTransport,
 ) (Client, error) {
 	if implementation == nil {
 		return nil, fmt.Errorf("missing client implementation")

@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/fasthttp/websocket"
+	wwr "github.com/qbeon/webwire-go"
 	"github.com/qbeon/webwire-go/connopt"
-	"github.com/qbeon/webwire-go/transport"
 	"github.com/valyala/fasthttp"
 )
 
@@ -51,8 +51,8 @@ type Transport struct {
 	listener        net.Listener
 	addr            url.URL
 	readTimeout     time.Duration
-	isShuttingdown  transport.IsShuttingDown
-	onNewConnection transport.OnNewConnection
+	isShuttingdown  wwr.IsShuttingDown
+	onNewConnection wwr.OnNewConnection
 }
 
 // Address returns the URL address the server is listening on

@@ -7,7 +7,6 @@ import (
 
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
-	wwrtrn "github.com/qbeon/webwire-go/transport"
 )
 
 // Client implements the wwrclt.Client interface
@@ -19,7 +18,7 @@ type Client struct {
 func NewClient(
 	serverAddr url.URL,
 	defaultReqTimeo time.Duration,
-	transport wwrtrn.ClientTransport,
+	transport wwr.ClientTransport,
 ) *Client {
 	clt := &Client{}
 

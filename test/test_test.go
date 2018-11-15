@@ -14,7 +14,6 @@ import (
 	"github.com/fasthttp/websocket"
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
-	wwrtrn "github.com/qbeon/webwire-go/transport"
 	wwrfasthttp "github.com/qbeon/webwire-go/transport/fasthttp"
 	wwrmemchan "github.com/qbeon/webwire-go/transport/memchan"
 	"github.com/stretchr/testify/assert"
@@ -23,7 +22,7 @@ import (
 )
 
 type serverSetup struct {
-	Transport wwrtrn.Transport
+	Transport wwr.Transport
 	Server    wwr.Server
 }
 
@@ -37,7 +36,7 @@ type testServerSetup struct {
 func setupServer(
 	impl *serverImpl,
 	opts wwr.ServerOptions,
-	trans wwrtrn.Transport,
+	trans wwr.Transport,
 ) (serverSetup, error) {
 	// Setup headed server on arbitrary port
 	if impl.onClientConnected == nil {
@@ -134,7 +133,7 @@ func setupTestServer(
 	t *testing.T,
 	impl *serverImpl,
 	opts wwr.ServerOptions,
-	trans wwrtrn.Transport,
+	trans wwr.Transport,
 ) testServerSetup {
 	setup, err := setupServer(impl, opts, trans)
 	require.NoError(t, err)
@@ -144,7 +143,7 @@ func setupTestServer(
 // newClient sets up a new test client instance
 func (setup *serverSetup) newClient(
 	options wwrclt.Options,
-	transport wwrtrn.ClientTransport,
+	transport wwr.ClientTransport,
 	hooks testClientHooks,
 ) (*testClient, error) {
 	return newClient(
@@ -159,7 +158,7 @@ func (setup *serverSetup) newClient(
 // newClient sets up a new test client instance
 func (setup *testServerSetup) newClient(
 	options wwrclt.Options,
-	transport wwrtrn.ClientTransport,
+	transport wwr.ClientTransport,
 	hooks testClientHooks,
 ) *testClient {
 	clt, err := newClient(
@@ -176,9 +175,9 @@ func (setup *testServerSetup) newClient(
 // newClient sets up a new test client instance
 func newClient(
 	serverAddr url.URL,
-	transport wwrtrn.Transport,
+	transport wwr.Transport,
 	options wwrclt.Options,
-	clientTransport wwrtrn.ClientTransport,
+	clientTransport wwr.ClientTransport,
 	hooks testClientHooks,
 ) (*testClient, error) {
 	// Prepare transport layer
@@ -239,7 +238,7 @@ func newClient(
 }
 
 // newClientSocket creates a new raw client socket connected to the server
-func (setup *serverSetup) newClientSocket() (wwrtrn.Socket, error) {
+func (setup *serverSetup) newClientSocket() (wwr.Socket, error) {
 	switch srvTrans := setup.Transport.(type) {
 	case *wwrfasthttp.Transport:
 		// Setup a regular websocket connection
@@ -271,7 +270,7 @@ func (setup *serverSetup) newClientSocket() (wwrtrn.Socket, error) {
 }
 
 // newClientSocket creates a new raw client socket connected to the server
-func (setup *testServerSetup) newClientSocket() wwrtrn.Socket {
+func (setup *testServerSetup) newClientSocket() wwr.Socket {
 	sock, err := setup.serverSetup.newClientSocket()
 	require.NoError(setup.t, err)
 	return sock
