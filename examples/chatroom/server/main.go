@@ -71,7 +71,8 @@ func main() {
 	}()
 
 	// Launch server
-	log.Printf("Listening on %v", server.Address())
+	addr := server.Address()
+	log.Printf("Listening on %s", addr.String())
 	if err := server.Run(); err != nil {
 		panic(fmt.Errorf("WebWire server failed: %s", err))
 	}
