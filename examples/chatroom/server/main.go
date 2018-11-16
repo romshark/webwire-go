@@ -10,15 +10,16 @@ import (
 	"time"
 
 	wwr "github.com/qbeon/webwire-go"
+	wwrfasthttp "github.com/qbeon/webwire-go/transport/fasthttp"
 )
 
-var serverAddr = flag.String("addr", ":9090", "server address")
-var certFile = flag.String(
+var argServerAddr = flag.String("addr", ":9090", "server address")
+var argCertFilePath = flag.String(
 	"sslcert",
 	"./server.crt",
 	"path to the SSL certificate file",
 )
-var privateKeyFile = flag.String(
+var argPrivateKeyFile = flag.String(
 	"sslkey",
 	"./server.key",
 	"path to the SSL private-key file",
@@ -29,10 +30,10 @@ func main() {
 	flag.Parse()
 
 	// Setup a new webwire server instance
-	server, err := wwr.NewServerSecure(
+	server, err := wwr.NewServer(
 		NewChatRoomServer(),
 		wwr.ServerOptions{
-			Host: *serverAddr,
+			Host: *argServerAddr,
 			WarnLog: log.New(
 				os.Stdout,
 				"WARN: ",
@@ -45,9 +46,13 @@ func main() {
 			),
 			ReadTimeout: 3 * time.Second,
 		},
-		*certFile,
-		*privateKeyFile,
-		nil,
+		&wwrfasthttp.Transport{
+			TLS: &wwrfasthttp.TLS{
+				CertFilePath:       *argCertFilePath,
+				PrivateKeyFilePath: *argPrivateKeyFile,
+				Config:             nil,
+			},
+		},
 	)
 	if err != nil {
 		panic(fmt.Errorf("Failed setting up WebWire server: %s", err))
@@ -66,7 +71,8 @@ func main() {
 	}()
 
 	// Launch server
-	log.Printf("Listening on %v", server.Address())
+	addr := server.Address()
+	log.Printf("Listening on %s", addr.String())
 	if err := server.Run(); err != nil {
 		panic(fmt.Errorf("WebWire server failed: %s", err))
 	}

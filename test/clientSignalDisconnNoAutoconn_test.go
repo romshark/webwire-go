@@ -1,6 +1,7 @@
 package test
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -14,29 +15,30 @@ import (
 // and the client is disconnected
 func TestClientSignalDisconnectedErr(t *testing.T) {
 	// Initialize webwire server
-	server := setupServer(
+	setup := setupTestServer(
 		t,
 		&serverImpl{},
 		wwr.ServerOptions{},
+		nil, // Use the default transport implementation
 	)
 
 	// Initialize client
-	client := newCallbackPoweredClient(
-		server.AddressURL(),
+	client := setup.newClient(
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 			// Disable autoconnect to prevent automatic reconnection
 			Autoconnect: wwr.Disabled,
 		},
-		callbackPoweredClientHooks{},
-		nil, // No TLS configuration
+		nil, // Use the default transport implementation
+		testClientHooks{},
 	)
 
 	// Try to send a signal and expect a DisconnectedErr error
-	err := client.connection.Signal("", wwr.NewPayload(
-		wwr.EncodingBinary,
-		[]byte("test"),
-	))
+	err := client.connection.Signal(
+		context.Background(),
+		nil,
+		wwr.Payload{Data: []byte("test")},
+	)
 	require.Error(t, err)
 	require.IsType(t, wwr.DisconnectedErr{}, err)
 }

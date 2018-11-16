@@ -5,19 +5,17 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-
-	"github.com/stretchr/testify/require"
-
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestCustomSessKeyGenInvalid tests custom session key generators
 // returning invalid keys
 func TestCustomSessKeyGenInvalid(t *testing.T) {
 	// Initialize webwire server
-	server := setupServer(
+	setup := setupTestServer(
 		t,
 		&serverImpl{
 			onRequest: func(
@@ -36,7 +34,7 @@ func TestCustomSessKeyGenInvalid(t *testing.T) {
 				// Try to create a new session
 				err := conn.CreateSession(nil)
 				assert.NoError(t, err)
-				return nil, err
+				return wwr.Payload{}, err
 			},
 		},
 		wwr.ServerOptions{
@@ -47,24 +45,24 @@ func TestCustomSessKeyGenInvalid(t *testing.T) {
 				},
 			},
 		},
+		nil, // Use the default transport implementation
 	)
 
 	// Initialize client
-	client := newCallbackPoweredClient(
-		server.AddressURL(),
+	client := setup.newClient(
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
-		callbackPoweredClientHooks{},
-		nil, // No TLS configuration
+		nil, // Use the default transport implementation
+		testClientHooks{},
 	)
 	defer client.connection.Close()
 
 	// Send authentication request and await reply
 	_, err := client.connection.Request(
 		context.Background(),
-		"login",
-		wwr.NewPayload(wwr.EncodingBinary, []byte("testdata")),
+		[]byte("login"),
+		wwr.Payload{Data: []byte("testdata")},
 	)
 	require.NoError(t, err)
 }

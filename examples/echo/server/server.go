@@ -5,23 +5,16 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 
 	wwr "github.com/qbeon/webwire-go"
+	wwrfasthttp "github.com/qbeon/webwire-go/transport/fasthttp"
 )
 
 // EchoServer implements the webwire.ServerImplementation interface
 type EchoServer struct{}
-
-// OnOptions implements the webwire.ServerImplementation interface.
-// Sets HTTP access control headers to satisfy CORS
-func (srv *EchoServer) OnOptions(resp http.ResponseWriter) {
-	resp.Header().Set("Access-Control-Allow-Origin", "*")
-	resp.Header().Set("Access-Control-Allow-Methods", "WEBWIRE")
-}
 
 // OnSignal implements the webwire.ServerImplementation interface
 // Does nothing, not needed in this example
@@ -38,15 +31,7 @@ func (srv *EchoServer) OnClientConnected(client wwr.Connection) {}
 
 // OnClientDisconnected implements the webwire.ServerImplementation interface
 // Does nothing, not needed in this example
-func (srv *EchoServer) OnClientDisconnected(client wwr.Connection) {}
-
-// BeforeUpgrade implements the webwire.ServerImplementation interface
-func (srv *EchoServer) BeforeUpgrade(
-	resp http.ResponseWriter,
-	req *http.Request,
-) wwr.ConnectionOptions {
-	return wwr.ConnectionOptions{}
-}
+func (srv *EchoServer) OnClientDisconnected(_ wwr.Connection, _ error) {}
 
 // OnRequest implements the webwire.ServerImplementation interface.
 // Returns the received message back to the client
@@ -58,7 +43,10 @@ func (srv *EchoServer) OnRequest(
 	log.Printf("Replied to client: %s", client.Info().RemoteAddr)
 
 	// Reply to the request using the same data and encoding
-	return message.Payload(), nil
+	return wwr.Payload{
+		Encoding: message.PayloadEncoding(),
+		Data:     message.Payload(),
+	}, nil
 }
 
 var serverAddr = flag.String("addr", ":8081", "server address")
@@ -73,6 +61,7 @@ func main() {
 		wwr.ServerOptions{
 			Host: *serverAddr,
 		},
+		&wwrfasthttp.Transport{},
 	)
 	if err != nil {
 		panic(fmt.Errorf("Failed setting up WebWire server: %s", err))
@@ -91,7 +80,8 @@ func main() {
 	}()
 
 	// Launch echo server
-	log.Printf("Listening on %s", server.Address())
+	addr := server.Address()
+	log.Printf("Listening on %s", addr.String())
 	if err := server.Run(); err != nil {
 		panic(fmt.Errorf("WebWire server failed: %s", err))
 	}

@@ -2,19 +2,14 @@ package test
 
 import (
 	"context"
-	"net/http"
 
 	wwr "github.com/qbeon/webwire-go"
 )
 
 // serverImpl implements the webwire.ServerImplementation interface
 type serverImpl struct {
-	beforeUpgrade func(
-		resp http.ResponseWriter,
-		req *http.Request,
-	) wwr.ConnectionOptions
 	onClientConnected    func(connection wwr.Connection)
-	onClientDisconnected func(connection wwr.Connection)
+	onClientDisconnected func(connection wwr.Connection, reason error)
 	onSignal             func(
 		ctx context.Context,
 		connection wwr.Connection,
@@ -27,28 +22,14 @@ type serverImpl struct {
 	) (response wwr.Payload, err error)
 }
 
-// OnOptions implements the webwire.ServerImplementation interface
-func (srv *serverImpl) OnOptions(resp http.ResponseWriter) {
-	resp.Header().Set("Access-Control-Allow-Origin", "*")
-	resp.Header().Set("Access-Control-Allow-Methods", "WEBWIRE")
-}
-
-// BeforeUpgrade implements the webwire.ServerImplementation interface
-func (srv *serverImpl) BeforeUpgrade(
-	resp http.ResponseWriter,
-	req *http.Request,
-) wwr.ConnectionOptions {
-	return srv.beforeUpgrade(resp, req)
-}
-
 // OnClientConnected implements the webwire.ServerImplementation interface
 func (srv *serverImpl) OnClientConnected(conn wwr.Connection) {
 	srv.onClientConnected(conn)
 }
 
 // OnClientDisconnected implements the webwire.ServerImplementation interface
-func (srv *serverImpl) OnClientDisconnected(conn wwr.Connection) {
-	srv.onClientDisconnected(conn)
+func (srv *serverImpl) OnClientDisconnected(conn wwr.Connection, reason error) {
+	srv.onClientDisconnected(conn, reason)
 }
 
 // OnSignal implements the webwire.ServerImplementation interface

@@ -21,17 +21,21 @@ func (clt *ChatroomClient) Authenticate(login, password string) {
 		panic(fmt.Errorf("Couldn't marshal credentials: %s", err))
 	}
 
-	_, reqErr := clt.connection.Request(
+	reply, reqErr := clt.connection.Request(
 		context.Background(),
-		"auth",
-		webwire.NewPayload(webwire.EncodingBinary, encodedCreds),
+		[]byte("auth"),
+		webwire.Payload{
+			Encoding: webwire.EncodingBinary,
+			Data:     encodedCreds,
+		},
 	)
+	reply.Close()
 	switch err := reqErr.(type) {
 	case nil:
 		break
-	case webwire.ReqErr:
+	case webwire.RequestErr:
 		log.Printf("Authentication failed: %s : %s", err.Code, err.Message)
-	case webwire.ReqSrvShutdownErr:
+	case webwire.ServerShutdownErr:
 		log.Print("Authentication failed, server is currently being shut down")
 	default:
 		log.Print("Authentication failed, unknown error")

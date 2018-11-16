@@ -8,8 +8,8 @@ import (
 	"time"
 
 	wwr "github.com/qbeon/webwire-go"
-
 	wwrclt "github.com/qbeon/webwire-go/client"
+	wwrfasthttp "github.com/qbeon/webwire-go/transport/fasthttp"
 )
 
 var serverAddr = flag.String("addr", ":8081", "server address")
@@ -45,7 +45,7 @@ func NewPubSubClient(
 			DefaultRequestTimeout: 10 * time.Second,
 			ReconnectionInterval:  2 * time.Second,
 		},
-		nil, // No TLS configuration
+		&wwrfasthttp.ClientTransport{},
 	)
 	if err != nil {
 		return nil, err
@@ -66,13 +66,13 @@ func (clt *PubSubClient) OnSessionClosed() {}
 func (clt *PubSubClient) OnSessionCreated(_ *wwr.Session) {}
 
 // OnSignal implements the wwrclt.Implementation interface
-func (clt *PubSubClient) OnSignal(message wwr.Message) {
+func (clt *PubSubClient) OnSignal(msg wwr.Message) {
 	clt.counter++
 	log.Printf(
 		"Signal %d of %d received: %s",
 		clt.counter,
 		clt.target,
-		string(message.Payload().Data()),
+		string(msg.Payload()),
 	)
 	clt.targetReached.Done()
 }

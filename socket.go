@@ -1,58 +1,44 @@
 package webwire
 
 import (
+	"io"
 	"net"
-	"net/http"
 	"net/url"
 	"time"
-)
 
-// SockReadErr defines the interface of a webwire.Socket.Read error
-type SockReadErr interface {
-	// IsAbnormalCloseErr must return true if the error represents
-	// an abnormal closure error
-	IsAbnormalCloseErr() bool
-}
+	"github.com/qbeon/webwire-go/message"
+	"github.com/qbeon/webwire-go/wwrerr"
+)
 
 // Socket defines the abstract socket implementation interface
 type Socket interface {
-	// Dial must connect the socket to the specified server
-	Dial(serverAddr url.URL) error
+	// GetWriter returns a writer for the next message to send. The writer's
+	// Close method flushes the written message to the network. In case of
+	// concurrent use GetWriter will block until the previous writer is closed
+	// and a new one is available
+	GetWriter() (io.WriteCloser, error)
 
-	// Write must send the given data to the other side of the socket
-	// while protecting the connection from concurrent writes
-	Write(data []byte) error
+	// Read blocks the calling goroutine and awaits an incoming message. If
+	// deadline is 0 then Read will never timeout. In case of concurrent use
+	// Read will block until the previous call finished
+	Read(into *message.Message, deadline time.Time) wwrerr.SockReadErr
 
-	// Read must block the calling goroutine and await an incoming message.
-	// When a message arrives or an error occurs Read must return
-	Read() ([]byte, SockReadErr)
-
-	// IsConnected must return true if the given socket
-	// maintains an open connection or otherwise return false
+	// IsConnected returns true if the given socket maintains an open connection
+	// or otherwise return false
 	IsConnected() bool
 
-	// RemoteAddr must return the address of the remote client
-	// or nil if the client is not connected
+	// RemoteAddr returns the address of the remote client or nil if the client
+	// is not connected
 	RemoteAddr() net.Addr
 
-	// Close must close the socket
+	// Close closes the socket
 	Close() error
-
-	// SetReadDeadline must set the readers deadline
-	SetReadDeadline(deadline time.Time) error
-
-	// OnPong must set the pong-message handler
-	OnPong(handler func(string) error)
-
-	// OnPing must set the ping-message handler
-	OnPing(handler func(string) error)
-
-	// WritePing must send a ping-message with the given data appended
-	WritePing(data []byte, deadline time.Time) error
 }
 
-// ConnUpgrader defines the abstract interface
-// of an HTTP to WebSocket connection upgrader
-type ConnUpgrader interface {
-	Upgrade(resp http.ResponseWriter, req *http.Request) (Socket, error)
+// ClientSocket defines the abstract client socket implementation interface
+type ClientSocket interface {
+	// Dial connects the socket to the specified server
+	Dial(serverAddr url.URL, deadline time.Time) error
+
+	Socket
 }

@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"sync/atomic"
+	"time"
 )
 
 // connect will try to establish a connection to the configured webwire server
@@ -15,24 +16,15 @@ import (
 // the required protocol version of this client instance.
 func (clt *client) connect() error {
 	clt.connectLock.Lock()
-	defer clt.connectLock.Unlock()
-	if atomic.LoadInt32(&clt.status) == Connected {
+	if clt.Status() == StatusConnected {
+		clt.connectLock.Unlock()
 		return nil
 	}
 
-	endpointMeta, err := clt.verifyProtocolVersion()
+	// Dial and await approval
+	endpointMeta, err := clt.dial()
 	if err != nil {
-		return err
-	}
-
-	serverAddr := clt.serverAddr
-	if serverAddr.Scheme == "https" {
-		serverAddr.Scheme = "wss"
-	} else {
-		serverAddr.Scheme = "ws"
-	}
-
-	if err := clt.conn.Dial(serverAddr); err != nil {
+		clt.connectLock.Unlock()
 		return err
 	}
 
@@ -45,21 +37,22 @@ func (clt *client) connect() error {
 	go func() {
 		defer func() {
 			// Set status
-			atomic.StoreInt32(&clt.status, Disconnected)
+			clt.setStatus(StatusDisconnected)
 			select {
 			case clt.readerClosing <- true:
 			default:
 			}
 		}()
 		for {
-			message, err := clt.conn.Read()
-			if err != nil {
-				if err.IsAbnormalCloseErr() {
-					// Error while reading message
-					clt.errorLog.Print("Abnormal closure error:", err)
-				}
+			// Get a message buffer from the pool
+			msg := clt.messagePool.Get()
 
-				atomic.StoreInt32(&clt.status, Disconnected)
+			if err := clt.conn.Read(msg, time.Time{}); err != nil {
+				// Return message object back to the pool
+				msg.Close()
+
+				// Set connection status to disconnected
+				clt.setStatus(StatusDisconnected)
 
 				// Stop heartbeat
 				clt.heartbeat.stop()
@@ -72,47 +65,48 @@ func (clt *client) connect() error {
 				// and free up the socket
 				if atomic.LoadInt32(&clt.autoconnect) == autoconnectEnabled {
 					go func() {
-						if err := clt.tryAutoconnect(
-							context.Background(),
-							0,
-						); err != nil {
-							clt.errorLog.Printf(
-								"Auto-reconnect failed "+
-									"after connection loss: %s",
-								err,
-							)
-							return
-						}
+						clt.tryAutoconnect(context.Background(), false)
 					}()
 				}
 				return
 			}
+
 			// Try to handle the message
-			if err := clt.handleMessage(message); err != nil {
-				clt.warningLog.Print("Failed handling message:", err)
+			if err := clt.handleMessage(msg); err != nil {
+				clt.options.ErrorLog.Print("message handler failed:", err)
 			}
 		}
 	}()
 
-	atomic.StoreInt32(&clt.status, Connected)
+	clt.setStatus(StatusConnected)
 
 	// Read the current sessions key if there is any
 	clt.sessionLock.RLock()
 	if clt.session == nil {
 		clt.sessionLock.RUnlock()
+		clt.connectLock.Unlock()
 		return nil
 	}
 	sessionKey := clt.session.Key
 	clt.sessionLock.RUnlock()
 
+	// Set session restoration deadline
+	ctx, closeCtx := context.WithTimeout(
+		context.Background(),
+		clt.options.DefaultRequestTimeout,
+	)
+
 	// Try to restore session if necessary
-	restoredSession, err := clt.requestSessionRestoration([]byte(sessionKey))
+	restoredSession, err := clt.requestSessionRestoration(
+		ctx,
+		[]byte(sessionKey),
+	)
 	if err != nil {
 		// Just log a warning and still return nil,
 		// even if session restoration failed,
 		// because we only care about the connection establishment
 		// in this method
-		clt.warningLog.Printf(
+		clt.options.WarnLog.Printf(
 			"Couldn't restore session on reconnection: %s",
 			err,
 		)
@@ -121,11 +115,15 @@ func (clt *client) connect() error {
 		clt.sessionLock.Lock()
 		clt.session = nil
 		clt.sessionLock.Unlock()
+		clt.connectLock.Unlock()
+		closeCtx()
 		return nil
 	}
 
 	clt.sessionLock.Lock()
 	clt.session = restoredSession
 	clt.sessionLock.Unlock()
+	clt.connectLock.Unlock()
+	closeCtx()
 	return nil
 }

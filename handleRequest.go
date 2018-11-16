@@ -3,42 +3,34 @@ package webwire
 import (
 	"context"
 
-	msg "github.com/qbeon/webwire-go/message"
+	"github.com/qbeon/webwire-go/message"
+	"github.com/qbeon/webwire-go/wwrerr"
 )
 
 // handleRequest handles incoming requests
 // and returns an error if the ongoing connection cannot be proceeded
-func (srv *server) handleRequest(conn *connection, message *msg.Message) {
+func (srv *server) handleRequest(conn *connection, msg *message.Message) {
 	replyPayload, returnedErr := srv.impl.OnRequest(
 		context.Background(),
 		conn,
-		NewMessageWrapper(message),
+		msg,
 	)
 	switch returnedErr.(type) {
 	case nil:
-		// Initialize payload encoding & data
-		var encoding PayloadEncoding
-		var data []byte
-		if replyPayload != nil {
-			encoding = replyPayload.Encoding()
-			data = replyPayload.Data()
-		}
-
 		srv.fulfillMsg(
 			conn,
-			message,
-			encoding,
-			data,
+			msg,
+			replyPayload,
 		)
-	case ReqErr:
-		srv.failMsg(conn, message, returnedErr)
-	case *ReqErr:
-		srv.failMsg(conn, message, returnedErr)
+	case wwrerr.RequestErr:
+		srv.failMsg(conn, msg, returnedErr)
+	case *wwrerr.RequestErr:
+		srv.failMsg(conn, msg, returnedErr)
 	default:
 		srv.errorLog.Printf(
 			"Internal error during request handling: %s",
 			returnedErr,
 		)
-		srv.failMsg(conn, message, returnedErr)
+		srv.failMsg(conn, msg, returnedErr)
 	}
 }

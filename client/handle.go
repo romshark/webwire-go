@@ -5,21 +5,25 @@ import (
 	"fmt"
 
 	webwire "github.com/qbeon/webwire-go"
-	msg "github.com/qbeon/webwire-go/message"
+	"github.com/qbeon/webwire-go/message"
 	pld "github.com/qbeon/webwire-go/payload"
+	"github.com/qbeon/webwire-go/wwrerr"
 )
 
 func (clt *client) handleSessionCreated(msgPayload pld.Payload) {
 	var encoded webwire.JSONEncodedSession
 	if err := json.Unmarshal(msgPayload.Data, &encoded); err != nil {
-		clt.errorLog.Printf("Failed unmarshalling session object: %s", err)
+		clt.options.ErrorLog.Printf(
+			"Failed unmarshalling session object: %s",
+			err,
+		)
 		return
 	}
 
 	// parse attached session info
 	var parsedSessInfo webwire.SessionInfo
-	if encoded.Info != nil && clt.sessionInfoParser != nil {
-		parsedSessInfo = clt.sessionInfoParser(encoded.Info)
+	if encoded.Info != nil && clt.options.SessionInfoParser != nil {
+		parsedSessInfo = clt.options.SessionInfoParser(encoded.Info)
 	}
 
 	clt.sessionLock.Lock()
@@ -41,98 +45,109 @@ func (clt *client) handleSessionClosed() {
 	clt.impl.OnSessionClosed()
 }
 
-func (clt *client) handleFailure(
-	reqIdent [8]byte,
-	errCode,
-	errMessage string,
-) {
-	// Fail request
-	clt.requestManager.Fail(reqIdent, webwire.ReqErr{
-		Code:    errCode,
-		Message: errMessage,
-	})
-}
-
 func (clt *client) handleInternalError(reqIdent [8]byte) {
 	// Fail request
-	clt.requestManager.Fail(reqIdent, webwire.ReqInternalErr{})
+	clt.requestManager.Fail(reqIdent, wwrerr.InternalErr{})
 }
 
 func (clt *client) handleReplyShutdown(reqIdent [8]byte) {
-	clt.requestManager.Fail(reqIdent, webwire.ReqSrvShutdownErr{})
+	clt.requestManager.Fail(reqIdent, wwrerr.ServerShutdownErr{})
 }
 
 func (clt *client) handleSessionNotFound(reqIdent [8]byte) {
-	clt.requestManager.Fail(reqIdent, webwire.SessNotFoundErr{})
+	clt.requestManager.Fail(reqIdent, wwrerr.SessionNotFoundErr{})
 }
 
 func (clt *client) handleMaxSessConnsReached(reqIdent [8]byte) {
-	clt.requestManager.Fail(reqIdent, webwire.MaxSessConnsReachedErr{})
+	clt.requestManager.Fail(reqIdent, wwrerr.MaxSessConnsReachedErr{})
 }
 
 func (clt *client) handleSessionsDisabled(reqIdent [8]byte) {
-	clt.requestManager.Fail(reqIdent, webwire.SessionsDisabledErr{})
+	clt.requestManager.Fail(reqIdent, wwrerr.SessionsDisabledErr{})
 }
 
-func (clt *client) handleReply(reqIdent [8]byte, payload pld.Payload) {
-	clt.requestManager.Fulfill(reqIdent, payload)
-}
+// handleMessage handles incoming messages
+func (clt *client) handleMessage(msg *message.Message) (err error) {
+	// Recover user-space panics to avoid leaking memory through unreleased
+	// message buffer
+	defer func() {
+		if recvErr := recover(); recvErr != nil {
+			r, ok := recvErr.(error)
+			if !ok {
+				err = fmt.Errorf("unexpected panic: %v", recvErr)
+			} else {
+				err = r
+			}
+		}
+	}()
 
-func (clt *client) handleMessage(message []byte) error {
-	if len(message) < 1 {
-		return nil
-	}
+	switch msg.MsgType {
+	case message.MsgReplyBinary:
+		clt.requestManager.Fulfill(msg)
+		// Don't release the buffer, make the user responsible for releasing it
+	case message.MsgReplyUtf8:
+		clt.requestManager.Fulfill(msg)
+		// Don't release the buffer, make the user responsible for releasing it
+	case message.MsgReplyUtf16:
+		clt.requestManager.Fulfill(msg)
+		// Don't release the buffer, make the user responsible for releasing it
 
-	var parsedMsg msg.Message
-	typeDetermined, err := parsedMsg.Parse(message)
-	if !typeDetermined {
-		return fmt.Errorf("Couldn't determine message type")
-	} else if err != nil {
-		return err
-	}
-
-	switch parsedMsg.Type {
-	case msg.MsgReplyBinary:
-		clt.handleReply(parsedMsg.Identifier, parsedMsg.Payload)
-	case msg.MsgReplyUtf8:
-		clt.handleReply(parsedMsg.Identifier, parsedMsg.Payload)
-	case msg.MsgReplyUtf16:
-		clt.handleReply(parsedMsg.Identifier, parsedMsg.Payload)
-	case msg.MsgReplyShutdown:
-		clt.handleReplyShutdown(parsedMsg.Identifier)
-	case msg.MsgSessionNotFound:
-		clt.handleSessionNotFound(parsedMsg.Identifier)
-	case msg.MsgMaxSessConnsReached:
-		clt.handleMaxSessConnsReached(parsedMsg.Identifier)
-	case msg.MsgSessionsDisabled:
-		clt.handleSessionsDisabled(parsedMsg.Identifier)
-	case msg.MsgErrorReply:
+	case message.MsgReplyShutdown:
+		clt.handleReplyShutdown(msg.MsgIdentifier)
+		// Release the buffer
+		msg.Close()
+	case message.MsgSessionNotFound:
+		clt.handleSessionNotFound(msg.MsgIdentifier)
+		// Release the buffer
+		msg.Close()
+	case message.MsgMaxSessConnsReached:
+		clt.handleMaxSessConnsReached(msg.MsgIdentifier)
+		// Release the buffer
+		msg.Close()
+	case message.MsgSessionsDisabled:
+		clt.handleSessionsDisabled(msg.MsgIdentifier)
+		// Release the buffer
+		msg.Close()
+	case message.MsgErrorReply:
 		// The message name contains the error code in case of
 		// error reply messages, while the UTF8 encoded error message is
 		// contained in the message payload
-		clt.handleFailure(
-			parsedMsg.Identifier,
-			parsedMsg.Name,
-			string(parsedMsg.Payload.Data),
-		)
-	case msg.MsgInternalError:
-		clt.handleInternalError(parsedMsg.Identifier)
+		clt.requestManager.Fail(msg.MsgIdentifier, wwrerr.RequestErr{
+			Code:    string(msg.MsgName),
+			Message: string(msg.MsgPayload.Data),
+		})
+		// Release the buffer
+		msg.Close()
+	case message.MsgInternalError:
+		clt.handleInternalError(msg.MsgIdentifier)
+		// Release the buffer
+		msg.Close()
 
-	case msg.MsgSignalBinary:
+	case message.MsgSignalBinary:
 		fallthrough
-	case msg.MsgSignalUtf8:
+	case message.MsgSignalUtf8:
 		fallthrough
-	case msg.MsgSignalUtf16:
-		clt.impl.OnSignal(webwire.NewMessageWrapper(&parsedMsg))
+	case message.MsgSignalUtf16:
+		clt.impl.OnSignal(msg)
+		// Realease the buffer after the OnSignal user-space hook is executed
+		// because it's referenced there through the payload
+		msg.Close()
 
-	case msg.MsgSessionCreated:
-		clt.handleSessionCreated(parsedMsg.Payload)
-	case msg.MsgSessionClosed:
+	case message.MsgSessionCreated:
+		clt.handleSessionCreated(msg.MsgPayload)
+		// Release the buffer after the OnSessionCreated user-space hook is
+		// executed because it's referenced there through the payload
+		msg.Close()
+	case message.MsgSessionClosed:
+		// Release the buffer before calling the OnSessionClosed user-space hook
+		msg.Close()
 		clt.handleSessionClosed()
 	default:
-		clt.warningLog.Printf(
+		// Release the buffer
+		msg.Close()
+		clt.options.WarnLog.Printf(
 			"Strange message type received: '%d'\n",
-			parsedMsg.Type,
+			msg.MsgType,
 		)
 	}
 	return nil

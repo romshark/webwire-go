@@ -22,20 +22,29 @@ type Client interface {
 	// Enables autoconnect if it was previously disabled
 	Connect() error
 
-	// Request sends a request containing the given payload to the server
-	// and asynchronously returns the servers response.
-	// It blocks until either a response is received
-	// or the request fails or times out.
-	// Request will respect cancelable and timed contexts,
-	// nil contexts are also supported
+	// Request sends a request containing the given payload to the server and
+	// asynchronously returns the servers response. It blocks until either a
+	// response is received or the request fails or times out.
+	//
+	// Request respects context cancellation. Nil contexts are not guaranteed to
+	// be accepted, context.TODO() or context.Background() should therefor
+	// always be used instead.
+	//
+	// The returned reply object must be closed for the underlying reply message
+	// buffer to be released. If the reply object is never closed it will leak
+	// memory.
 	Request(
 		ctx context.Context,
-		name string,
+		name []byte,
 		payload webwire.Payload,
-	) (webwire.Payload, error)
+	) (webwire.Reply, error)
 
 	// Signal sends a signal containing the given payload to the server
-	Signal(name string, payload webwire.Payload) error
+	Signal(
+		ctx context.Context,
+		name []byte,
+		payload webwire.Payload,
+	) error
 
 	// Session returns an exact copy of the session object,
 	// otherwise returns nil if there's currently no session
@@ -50,7 +59,10 @@ type Client interface {
 
 	// RestoreSession tries to restore the previously opened session.
 	// Fails if a session is currently already active
-	RestoreSession(sessionKey []byte) error
+	RestoreSession(
+		ctx context.Context,
+		sessionKey []byte,
+	) error
 
 	// CloseSession disables the currently active session
 	// and acknowledges the server if connected.
@@ -71,7 +83,7 @@ type Implementation interface {
 	OnDisconnected()
 
 	// OnSignal is invoked when the client receives a signal from the server
-	OnSignal(message webwire.Message)
+	OnSignal(webwire.Message)
 
 	// OnSessionCreated is invoked when the client was assigned a new session
 	OnSessionCreated(*webwire.Session)

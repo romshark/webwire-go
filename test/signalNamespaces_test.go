@@ -5,13 +5,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-
-	"github.com/stretchr/testify/require"
-
 	tmdwg "github.com/qbeon/tmdwg-go"
 	webwire "github.com/qbeon/webwire-go"
 	webwireClient "github.com/qbeon/webwire-go/client"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestSignalNamespaces tests correct handling of namespaced signals
@@ -21,15 +19,14 @@ func TestSignalNamespaces(t *testing.T) {
 	longestNameSignalArrived := tmdwg.NewTimedWaitGroup(1, 1*time.Second)
 	currentStep := 1
 
-	shortestPossibleName := "s"
-	buf := make([]rune, 255)
-	for i := 0; i < 255; i++ {
-		buf[i] = 'x'
+	shortestPossibleName := []byte("s")
+	longestPossibleName := make([]byte, 255)
+	for i := range longestPossibleName {
+		longestPossibleName[i] = 'x'
 	}
-	longestPossibleName := string(buf)
 
 	// Initialize server
-	server := setupServer(
+	setup := setupTestServer(
 		t,
 		&serverImpl{
 			onSignal: func(
@@ -40,7 +37,7 @@ func TestSignalNamespaces(t *testing.T) {
 				msgName := msg.Name()
 				switch currentStep {
 				case 1:
-					assert.Equal(t, "", msgName)
+					assert.Nil(t, msgName)
 					unnamedSignalArrived.Progress(1)
 				case 2:
 					assert.Equal(t, shortestPossibleName, msgName)
@@ -52,16 +49,16 @@ func TestSignalNamespaces(t *testing.T) {
 			},
 		},
 		webwire.ServerOptions{},
+		nil, // Use the default transport implementation
 	)
 
 	// Initialize client
-	client := newCallbackPoweredClient(
-		server.AddressURL(),
+	client := setup.newClient(
 		webwireClient.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
-		callbackPoweredClientHooks{},
-		nil, // No TLS configuration
+		nil, // Use the default transport implementation
+		testClientHooks{},
 	)
 
 	require.NoError(t, client.connection.Connect())
@@ -70,10 +67,11 @@ func TestSignalNamespaces(t *testing.T) {
 		Step 1 - Unnamed signal name
 	\*****************************************************************/
 	// Send unnamed signal
-	require.NoError(t, client.connection.Signal("", webwire.NewPayload(
-		webwire.EncodingBinary,
-		[]byte("dummy"),
-	)))
+	require.NoError(t, client.connection.Signal(
+		context.Background(),
+		nil, // No name
+		webwire.Payload{Data: []byte("dummy")},
+	))
 	require.NoError(t,
 		unnamedSignalArrived.Wait(),
 		"Unnamed signal didn't arrive",
@@ -86,8 +84,9 @@ func TestSignalNamespaces(t *testing.T) {
 
 	// Send request with the shortest possible name
 	require.NoError(t, client.connection.Signal(
+		context.Background(),
 		shortestPossibleName,
-		webwire.NewPayload(webwire.EncodingBinary, []byte("dummy")),
+		webwire.Payload{Data: []byte("dummy")},
 	))
 	require.NoError(t,
 		shortestNameSignalArrived.Wait(),
@@ -101,8 +100,9 @@ func TestSignalNamespaces(t *testing.T) {
 
 	// Send request with the longest possible name
 	require.NoError(t, client.connection.Signal(
+		context.Background(),
 		longestPossibleName,
-		webwire.NewPayload(webwire.EncodingBinary, []byte("dummy")),
+		webwire.Payload{Data: []byte("dummy")},
 	))
 	require.NoError(t,
 		longestNameSignalArrived.Wait(),

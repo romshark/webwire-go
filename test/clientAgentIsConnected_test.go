@@ -4,12 +4,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
-
 	tmdwg "github.com/qbeon/tmdwg-go"
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestClientConnIsConnected tests the IsActive method of a connection
@@ -20,7 +19,7 @@ func TestClientConnIsConnected(t *testing.T) {
 	testerGoroutineFinished := tmdwg.NewTimedWaitGroup(1, 1*time.Second)
 
 	// Initialize webwire server
-	server := setupServer(
+	setup := setupTestServer(
 		t,
 		&serverImpl{
 			onClientConnected: func(newConn wwr.Connection) {
@@ -45,34 +44,37 @@ func TestClientConnIsConnected(t *testing.T) {
 					testerGoroutineFinished.Progress(1)
 				}()
 			},
-			onClientDisconnected: func(_ wwr.Connection) {
+			onClientDisconnected: func(_ wwr.Connection, _ error) {
 				assert.False(t,
 					clientConn.IsActive(),
 					"Expected connection to be inactive",
 				)
 
 				// Try to send a signal to a inactive client and expect an error
-				sigErr := clientConn.Signal("", wwr.NewPayload(
-					wwr.EncodingBinary,
-					[]byte("testdata"),
-				))
+				sigErr := clientConn.Signal(
+					nil,
+					wwr.Payload{
+						Encoding: wwr.EncodingBinary,
+						Data:     []byte("testdata"),
+					},
+				)
 				assert.IsType(t, wwr.DisconnectedErr{}, sigErr)
 
 				clientDisconnected.Progress(1)
 			},
 		},
 		wwr.ServerOptions{},
+		nil, // Use the default transport implementation
 	)
 
 	// Initialize client
-	client := newCallbackPoweredClient(
-		server.AddressURL(),
+	client := setup.newClient(
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 			Autoconnect:           wwr.Disabled,
 		},
-		callbackPoweredClientHooks{},
-		nil, // No TLS configuration
+		nil, // Use the default transport implementation
+		testClientHooks{},
 	)
 
 	require.NoError(t, client.connection.Connect())

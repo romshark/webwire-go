@@ -5,12 +5,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-
-	"github.com/stretchr/testify/require"
-
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type testClientSessionInfoStruct struct {
@@ -116,7 +114,7 @@ func TestClientSessionInfo(t *testing.T) {
 	}
 
 	// Initialize webwire server
-	server := setupServer(
+	setup := setupTestServer(
 		t,
 		&serverImpl{
 			onRequest: func(
@@ -138,21 +136,21 @@ func TestClientSessionInfo(t *testing.T) {
 					},
 				})
 				assert.NoError(t, err)
-				return nil, err
+				return wwr.Payload{}, err
 			},
 		},
 		wwr.ServerOptions{},
+		nil, // Use the default transport implementation
 	)
 
 	// Initialize client
-	client := newCallbackPoweredClient(
-		server.AddressURL(),
+	client := setup.newClient(
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 			SessionInfoParser:     testClientSessionInfoSessionInfoParser,
 		},
-		callbackPoweredClientHooks{},
-		nil, // No TLS configuration
+		nil, // Use the default transport implementation
+		testClientHooks{},
 	)
 	defer client.connection.Close()
 
@@ -161,8 +159,8 @@ func TestClientSessionInfo(t *testing.T) {
 	// Send authentication request and await reply
 	_, err := client.connection.Request(
 		context.Background(),
-		"login",
-		wwr.NewPayload(wwr.EncodingBinary, []byte("credentials")),
+		[]byte("login"),
+		wwr.Payload{Data: []byte("credentials")},
 	)
 	require.NoError(t, err)
 

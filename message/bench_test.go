@@ -2,8 +2,6 @@ package message
 
 import "testing"
 
-var parsedMsgResult Message
-
 // BenchmarkParseRequestBinary benchmarks parsing of
 // binary encoded request messages
 func BenchmarkParseRequestBinary(b *testing.B) {
@@ -15,11 +13,11 @@ func BenchmarkParseRequestBinary(b *testing.B) {
 		1, 255,
 		1024, 1024,
 	)
+	msg := NewMessage(uint32(len(encoded)))
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		_, err := parsedMsgResult.Parse(encoded)
-		if err != nil {
+		if _, err := msg.ReadBytes(encoded); err != nil {
 			b.Fatalf("Failed parsing: %s", err)
 		}
 	}
@@ -36,11 +34,11 @@ func BenchmarkParseRequestUtf8(b *testing.B) {
 		1, 255,
 		1024, 1024,
 	)
+	msg := NewMessage(uint32(len(encoded)))
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		_, err := parsedMsgResult.Parse(encoded)
-		if err != nil {
+		if _, err := msg.ReadBytes(encoded); err != nil {
 			b.Fatalf("Failed parsing: %s", err)
 		}
 	}
@@ -56,11 +54,11 @@ func BenchmarkParseRequestUtf16(b *testing.B) {
 		1, 255,
 		1024, 1024,
 	)
+	msg := NewMessage(uint32(len(encoded)))
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		_, err := parsedMsgResult.Parse(encoded)
-		if err != nil {
+		if _, err := msg.ReadBytes(encoded); err != nil {
 			b.Fatalf("Failed parsing: %s", err)
 		}
 	}
@@ -77,11 +75,11 @@ func BenchmarkParseRequestBinaryLarge(b *testing.B) {
 		255, 255,
 		134217728, 134217728,
 	)
+	msg := NewMessage(uint32(len(encoded)))
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		_, err := parsedMsgResult.Parse(encoded)
-		if err != nil {
+		if _, err := msg.ReadBytes(encoded); err != nil {
 			b.Fatalf("Failed parsing: %s", err)
 		}
 	}
@@ -97,11 +95,11 @@ func BenchmarkParseReplyBinary(b *testing.B) {
 		MsgReplyBinary,
 		1024, 1024,
 	)
+	msg := NewMessage(uint32(len(encoded)))
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		_, err := parsedMsgResult.Parse(encoded)
-		if err != nil {
+		if _, err := msg.ReadBytes(encoded); err != nil {
 			b.Fatalf("Failed parsing: %s", err)
 		}
 	}
@@ -117,11 +115,11 @@ func BenchmarkParseReplyUtf8(b *testing.B) {
 		MsgReplyUtf8,
 		1024, 1024,
 	)
+	msg := NewMessage(uint32(len(encoded)))
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		_, err := parsedMsgResult.Parse(encoded)
-		if err != nil {
+		if _, err := msg.ReadBytes(encoded); err != nil {
 			b.Fatalf("Failed parsing: %s", err)
 		}
 	}
@@ -136,11 +134,11 @@ func BenchmarkParseReplyUtf16(b *testing.B) {
 	encoded, _, _ := rndReplyMsgUtf16(
 		1024, 1024,
 	)
+	msg := NewMessage(uint32(len(encoded)))
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		_, err := parsedMsgResult.Parse(encoded)
-		if err != nil {
+		if _, err := msg.ReadBytes(encoded); err != nil {
 			b.Fatalf("Failed parsing: %s", err)
 		}
 	}
@@ -156,11 +154,11 @@ func BenchmarkParseReplyBinaryLarge(b *testing.B) {
 		MsgReplyBinary,
 		134217728, 134217728,
 	)
+	msg := NewMessage(uint32(len(encoded)))
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		_, err := parsedMsgResult.Parse(encoded)
-		if err != nil {
+		if _, err := msg.ReadBytes(encoded); err != nil {
 			b.Fatalf("Failed parsing: %s", err)
 		}
 	}
@@ -177,11 +175,11 @@ func BenchmarkParseSignalBinary(b *testing.B) {
 		1, 255,
 		1024, 1024,
 	)
+	msg := NewMessage(uint32(len(encoded)))
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		_, err := parsedMsgResult.Parse(encoded)
-		if err != nil {
+		if _, err := msg.ReadBytes(encoded); err != nil {
 			b.Fatalf("Failed parsing: %s", err)
 		}
 	}
@@ -198,11 +196,11 @@ func BenchmarkParseSignalUtf8(b *testing.B) {
 		1, 255,
 		1024, 1024,
 	)
+	msg := NewMessage(uint32(len(encoded)))
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		_, err := parsedMsgResult.Parse(encoded)
-		if err != nil {
+		if _, err := msg.ReadBytes(encoded); err != nil {
 			b.Fatalf("Failed parsing: %s", err)
 		}
 	}
@@ -218,11 +216,11 @@ func BenchmarkParseSignalUtf16(b *testing.B) {
 		1, 255,
 		1024, 1024,
 	)
+	msg := NewMessage(uint32(len(encoded)))
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		_, err := parsedMsgResult.Parse(encoded)
-		if err != nil {
+		if _, err := msg.ReadBytes(encoded); err != nil {
 			b.Fatalf("Failed parsing: %s", err)
 		}
 	}
@@ -239,11 +237,11 @@ func BenchmarkParseSignalBinaryLarge(b *testing.B) {
 		255, 255,
 		134217728, 134217728,
 	)
+	msg := NewMessage(uint32(len(encoded)))
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		_, err := parsedMsgResult.Parse(encoded)
-		if err != nil {
+		if _, err := msg.ReadBytes(encoded); err != nil {
 			b.Fatalf("Failed parsing: %s", err)
 		}
 	}

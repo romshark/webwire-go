@@ -5,16 +5,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
-
 	wwr "github.com/qbeon/webwire-go"
 	webwireClient "github.com/qbeon/webwire-go/client"
+	"github.com/stretchr/testify/require"
 )
 
 // TestEmptyReply verifies empty binary reply acceptance
 func TestEmptyReply(t *testing.T) {
 	// Initialize webwire server given only the request
-	server := setupServer(
+	setup := setupTestServer(
 		t,
 		&serverImpl{
 			onRequest: func(
@@ -23,20 +22,20 @@ func TestEmptyReply(t *testing.T) {
 				_ wwr.Message,
 			) (wwr.Payload, error) {
 				// Return empty reply
-				return nil, nil
+				return wwr.Payload{}, nil
 			},
 		},
 		wwr.ServerOptions{},
+		nil, // Use the default transport implementation
 	)
 
 	// Initialize client
-	client := newCallbackPoweredClient(
-		server.AddressURL(),
+	client := setup.newClient(
 		webwireClient.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
-		callbackPoweredClientHooks{},
-		nil, // No TLS configuration
+		nil, // Use the default transport implementation
+		testClientHooks{},
 	)
 
 	require.NoError(t, client.connection.Connect())
@@ -44,12 +43,13 @@ func TestEmptyReply(t *testing.T) {
 	// Send request and await reply
 	reply, err := client.connection.Request(
 		context.Background(),
-		"",
-		wwr.NewPayload(wwr.EncodingBinary, []byte("test")),
+		nil,
+		wwr.Payload{Data: []byte("test")},
 	)
 	require.NoError(t, err)
 
 	// Verify reply is empty
-	require.Equal(t, wwr.EncodingBinary, reply.Encoding())
-	require.Len(t, reply.Data(), 0)
+	require.Equal(t, wwr.EncodingBinary, reply.PayloadEncoding())
+	require.Len(t, reply.Payload(), 0)
+	reply.Close()
 }

@@ -113,14 +113,15 @@ Clients can initiate multiple simultaneous requests and receive replies asynchro
 // Send a request to the server,
 // this will block the goroutine until either a reply is received
 // or the default timeout triggers (if there is one)
-reply, err := client.Request(nil, "", wwr.NewPayload(
+reply, err := client.Request(nil, nil, wwr.NewPayload(
   wwr.EncodingBinary,
   []byte("sudo rm -rf /"),
 ))
 if err != nil {
   // Oh oh, request failed for some reason!
 }
-reply // Here we go!
+defer reply.Close()
+reply.PayloadUtf8() // Here we go!
  ```
 
 Requests will respect cancelable contexts and provided deadlines
@@ -133,7 +134,7 @@ defer cancelTimed()
 
 // Send a cancelable request to the server with a 1 second deadline
 // will block the goroutine for 1 second at max
-reply, err := client.Request(timedCtx, "", wwr.Payload(
+reply, err := client.Request(timedCtx, nil, wwr.Payload(
   wwr.EncodingUtf8,
   []byte("hurry up!"),
 ))
@@ -149,6 +150,7 @@ switch err.(type) {
     // within the specified default request timeout duration
   case nil:
     // Replied successfully
+    defer reply.Close()
 }
 
 // ... or check for a timeout error the easier way:
@@ -187,7 +189,10 @@ func OnRequest(
   _ wwr.Message,
 ) (wwr.Payload, error) {
   // Send a signal to the client before replying to the request
-  conn.Signal("", wwr.NewPayload(wwr.EncodingUtf8, []byte("ping!")))
+  conn.Signal(
+    nil, // No message name
+    wwr.NewPayload(wwr.EncodingUtf8, []byte("example")),
+  )
 
   // Reply nothing
   return nil, nil
@@ -297,8 +302,6 @@ All exported interfaces provided by both the server and the client are thread sa
 Various hooks provide the ability to asynchronously react to different kinds of events and control the behavior of both the client and the server.
 
 #### Server-side Hooks
-- OnOptions
-- BeforeUpgrade
 - OnClientConnected
 - OnClientDisconnected
 - OnSignal
@@ -340,14 +343,30 @@ The [official JavaScript library](https://github.com/qbeon/webwire-js) enables s
 Webwire can be hosted by a [TLS](https://en.wikipedia.org/wiki/Transport_Layer_Security) protected HTTPS server to prevent [man-in-the-middle attacks](https://en.wikipedia.org/wiki/Man-in-the-middle_attack) as well as to verify the identity of the server. Setting up a TLS protected server is easy:
 ```go
 // Setup a secure webwire server instance
-server, err := wwr.NewServerSecure(
+server, err := wwr.NewSecure(
 	serverImplementation,
 	wwr.ServerOptions{
-		Host: "localhost:443",
+    Host: "localhost:443",
+    // Use a TLS protected transport layer
+    Transport: &wwrfasthttp.Transport{
+			TLS: &wwrfasthttp.TLS{
+        // Provide key and certificate
+				CertFilePath:       "path/to/certificate.crt",
+        PrivateKeyFilePath: "path/to/private.key",
+        // Specify TLS configs
+        Config: &tls.Config{
+          MinVersion:               tls.VersionTLS12,
+		      CurvePreferences:         []tls.CurveID{tls.X25519, tls.CurveP256},
+		      PreferServerCipherSuites: true,
+		      CipherSuites: []uint16{
+			      tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
+			      tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+			      tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+		      },
+        }
+			},
+		},
 	},
-	"path/to/certificate.crt",
-	"path/to/private.key",
-	nil, // Use default TLS configurations
 )
 if err != nil {
 	panic(fmt.Errorf("failed setting up wwr server: %s", err))
@@ -398,7 +417,7 @@ An alternative, somewhat safer approach would be to install the root CA certific
 
 ## Dependencies
 This library depends on:
-- **[websocket](https://github.com/gorilla/websocket)** (**embedded**) version [v1.2.0](https://github.com/gorilla/websocket/releases/tag/v1.2.0) by **[Gorilla web toolkit](https://github.com/gorilla)** - A WebSocket implementation for Go.  
+- **[websocket](https://github.com/fasthttp/websocket)** version [v1.4.0](https://github.com/fasthttp/websocket/releases/tag/v1.4.0) - A FastHTTP/Gorilla based WebSocket implementation for Go.  
 This library is used internally to abstract away the underlying websockets implementation.
 - **[tmdwg-go](https://github.com/qbeon/tmdwg-go)** version [v1.0.0](https://github.com/qbeon/tmdwg-go/releases/tag/1.0.0) by **[QBEON](https://github.com/qbeon)** - A timed wait group implementation used internally for asynchronous testing.
 - **[testify](https://github.com/stretchr/testify)** version [v1.2.2](https://github.com/stretchr/testify/releases/tag/v1.2.2) by **[stretchr](https://github.com/stretchr)** - A set of packages that provide testing tools used internally for testing.

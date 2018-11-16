@@ -5,22 +5,21 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
-
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
+	"github.com/stretchr/testify/require"
 )
 
 // TestClientRequestError tests server-side request errors properly
 // failing the client-side requests
 func TestClientRequestError(t *testing.T) {
-	expectedReplyError := wwr.ReqErr{
+	expectedReplyError := wwr.RequestErr{
 		Code:    "SAMPLE_ERROR",
 		Message: "Sample error message",
 	}
 
 	// Initialize webwire server given only the request
-	server := setupServer(
+	setup := setupTestServer(
 		t,
 		&serverImpl{
 			onRequest: func(
@@ -29,20 +28,20 @@ func TestClientRequestError(t *testing.T) {
 				_ wwr.Message,
 			) (wwr.Payload, error) {
 				// Fail the request by returning an error
-				return nil, expectedReplyError
+				return wwr.Payload{}, expectedReplyError
 			},
 		},
 		wwr.ServerOptions{},
+		nil, // Use the default transport implementation
 	)
 
 	// Initialize client
-	client := newCallbackPoweredClient(
-		server.AddressURL(),
+	client := setup.newClient(
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
-		callbackPoweredClientHooks{},
-		nil, // No TLS configuration
+		nil, // Use the default transport implementation
+		testClientHooks{},
 	)
 
 	require.NoError(t, client.connection.Connect())
@@ -50,17 +49,17 @@ func TestClientRequestError(t *testing.T) {
 	// Send request and await reply
 	reply, err := client.connection.Request(
 		context.Background(),
-		"",
-		wwr.NewPayload(
-			wwr.EncodingUtf8,
-			[]byte("webwire_test_REQUEST_payload"),
-		),
+		nil,
+		wwr.Payload{
+			Encoding: wwr.EncodingUtf8,
+			Data:     []byte("webwire_test_REQUEST_payload"),
+		},
 	)
 
 	// Verify returned error
 	require.Error(t, err)
-	require.IsType(t, wwr.ReqErr{}, err)
-	require.Equal(t, err.(wwr.ReqErr).Code, expectedReplyError.Code)
-	require.Equal(t, err.(wwr.ReqErr).Message, expectedReplyError.Message)
+	require.IsType(t, wwr.RequestErr{}, err)
+	require.Equal(t, err.(wwr.RequestErr).Code, expectedReplyError.Code)
+	require.Equal(t, err.(wwr.RequestErr).Message, expectedReplyError.Message)
 	require.Nil(t, reply)
 }

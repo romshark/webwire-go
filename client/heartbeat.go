@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/qbeon/webwire-go"
+	webwire "github.com/qbeon/webwire-go"
 	"github.com/qbeon/webwire-go/message"
 )
 
@@ -45,8 +45,16 @@ MAINLOOP:
 		select {
 		case <-hb.ticker.C:
 			// heartbeat
-			if err := hb.conn.Write([]byte{message.MsgHeartbeat}); err != nil {
-				hb.errLog.Printf("couldn't send heartbeat: %s", err)
+			writer, err := hb.conn.GetWriter()
+			if err != nil {
+				hb.errLog.Printf(
+					"couldn't get writer while sending a heartbeat: %s",
+					err,
+				)
+				return
+			}
+			if err := message.WriteMsgHeartbeat(writer); err != nil {
+				hb.errLog.Printf("couldn't write heartbeat message: %s", err)
 			}
 		case <-hb.resetChan:
 			// reset

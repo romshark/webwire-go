@@ -1,6 +1,7 @@
 package webwire
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"time"
@@ -29,49 +30,68 @@ type ServerOptions struct {
 	SessionKeyGenerator   SessionKeyGenerator
 	SessionInfoParser     SessionInfoParser
 	MaxSessionConnections uint
-	ReadTimeout           time.Duration
 	WarnLog               *log.Logger
 	ErrorLog              *log.Logger
+	ReadTimeout           time.Duration
+
+	// MessageBufferSize defines the size of the message buffer
+	MessageBufferSize uint32
 }
 
-// SetDefaults sets the defaults for undefined required values
-func (srvOpt *ServerOptions) SetDefaults() {
+// Prepare verifies the specified options and sets the default values to
+// unspecified options
+func (op *ServerOptions) Prepare() error {
 	// Enable sessions by default
-	if srvOpt.Sessions == OptionUnset {
-		srvOpt.Sessions = Enabled
+	if op.Sessions == OptionUnset {
+		op.Sessions = Enabled
 	}
 
-	if srvOpt.Sessions == Enabled && srvOpt.SessionManager == nil {
+	if op.Sessions == Enabled && op.SessionManager == nil {
 		// Force the default session manager
 		// to use the default session directory
-		srvOpt.SessionManager = NewDefaultSessionManager("")
+		op.SessionManager = NewDefaultSessionManager("")
 	}
 
-	if srvOpt.Sessions == Enabled && srvOpt.SessionKeyGenerator == nil {
-		srvOpt.SessionKeyGenerator = NewDefaultSessionKeyGenerator()
+	if op.Sessions == Enabled && op.SessionKeyGenerator == nil {
+		op.SessionKeyGenerator = NewDefaultSessionKeyGenerator()
 	}
 
-	if srvOpt.SessionInfoParser == nil {
-		srvOpt.SessionInfoParser = GenericSessionInfoParser
+	if op.SessionInfoParser == nil {
+		op.SessionInfoParser = GenericSessionInfoParser
 	}
 
-	if srvOpt.ReadTimeout < 1*time.Second {
-		srvOpt.ReadTimeout = 60 * time.Second
+	if op.ReadTimeout < 1*time.Second {
+		op.ReadTimeout = 60 * time.Second
 	}
 
 	// Create default loggers to std-out/err when no loggers are specified
-	if srvOpt.WarnLog == nil {
-		srvOpt.WarnLog = log.New(
+	if op.WarnLog == nil {
+		op.WarnLog = log.New(
 			os.Stdout,
-			"WEBWIRE_WARN: ",
+			"WWR_WARN: ",
 			log.Ldate|log.Ltime|log.Lshortfile,
 		)
 	}
-	if srvOpt.ErrorLog == nil {
-		srvOpt.ErrorLog = log.New(
+	if op.ErrorLog == nil {
+		op.ErrorLog = log.New(
 			os.Stderr,
-			"WEBWIRE_ERR: ",
+			"WWR_ERR: ",
 			log.Ldate|log.Ltime|log.Lshortfile,
 		)
 	}
+
+	const minBufferSize = 1024
+
+	// Verify the message buffer size
+	if op.MessageBufferSize == 0 {
+		op.MessageBufferSize = minBufferSize
+	} else if op.MessageBufferSize < minBufferSize {
+		return fmt.Errorf(
+			"message buffer size too small: %d bytes (min: %d bytes)",
+			op.MessageBufferSize,
+			minBufferSize,
+		)
+	}
+
+	return nil
 }

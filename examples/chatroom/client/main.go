@@ -2,17 +2,47 @@ package main
 
 import (
 	"crypto/tls"
+	"crypto/x509"
+	"encoding/pem"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/url"
 	"os"
 	"time"
 
-	"github.com/qbeon/webwire-go/examples/chatroom/shared"
-
+	"github.com/fasthttp/websocket"
 	wwrclt "github.com/qbeon/webwire-go/client"
+	"github.com/qbeon/webwire-go/examples/chatroom/shared"
+	wwrfasthttp "github.com/qbeon/webwire-go/transport/fasthttp"
 )
+
+// loadWebwireCACertificate loads the webwire CA certificate from a file
+// to make the client accept the self-signed TLS certificate
+func loadWebwireCACertificate(
+	certFilePath string,
+	dialer *websocket.Dialer,
+) error {
+	if dialer.TLSClientConfig.ClientCAs == nil {
+		dialer.TLSClientConfig.ClientCAs = x509.NewCertPool()
+	}
+
+	fileContents, err := ioutil.ReadFile(certFilePath)
+	if err != nil {
+		return fmt.Errorf("couldn't read webwire CA certificate file: %s", err)
+	}
+
+	block, _ := pem.Decode(fileContents)
+	rootCert, err := x509.ParseCertificate(block.Bytes)
+	if err != nil {
+		return fmt.Errorf("couldn't parse webwire CA x509 certificate: %s", err)
+	}
+
+	dialer.TLSClientConfig.ClientCAs.AddCert(rootCert)
+
+	return nil
+}
 
 // ChatroomClient implements the wwrclt.Implementation interface
 type ChatroomClient struct {
@@ -23,13 +53,33 @@ type ChatroomClient struct {
 func NewChatroomClient(serverAddr url.URL) (*ChatroomClient, error) {
 	newChatroomClient := &ChatroomClient{}
 
+	// Initialize dialer
+	dialer := websocket.Dialer{
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: true,
+		},
+	}
+
+	/*
+		Load webwire CA certificate. You can remove this call if the webwire CA
+		certificate is installed on your system
+	*/
+	if err := loadWebwireCACertificate(
+		"../server/wwrexampleCA.pem",
+		&dialer,
+	); err != nil {
+		return nil, err
+	}
+
 	// Initialize connection
 	connection, err := wwrclt.NewClient(
 		serverAddr,
 		newChatroomClient,
 		wwrclt.Options{
-			DefaultRequestTimeout: 10 * time.Second,
 			// Default timeout for timed requests
+			DefaultRequestTimeout: 10 * time.Second,
+
+			// Retry connection establishment after 2 seconds on failure
 			ReconnectionInterval: 2 * time.Second,
 
 			// Session info parser function must override the default one
@@ -48,20 +98,7 @@ func NewChatroomClient(serverAddr url.URL) (*ChatroomClient, error) {
 				log.Ldate|log.Ltime|log.Lshortfile,
 			),
 		},
-		/*
-			--------------------------------------------------------------
-			WARNING! NEVER DISABLE CERTIFICATE VERIFICATION IN PRODUCTION!
-			--------------------------------------------------------------
-			InsecureSkipVerify is enabled for demonstration purposes only
-			to allow the use of a self-signed localhost SSL certificate.
-			Enabling this option in production is dangerous and irresponsible.
-			Alternatively, you can install the "wwrexampleCA.pem" root
-			certificate to make your system accept the self-signed "server.crt"
-			certificate for "localhost" and disable InsecureSkipVerify.
-		*/
-		&tls.Config{
-			InsecureSkipVerify: true,
-		},
+		&wwrfasthttp.ClientTransport{Dialer: dialer},
 	)
 	if err != nil {
 		return nil, err

@@ -2,54 +2,57 @@ package client
 
 import (
 	"context"
-	"fmt"
 	"sync"
-	"time"
 
-	wwr "github.com/qbeon/webwire-go"
+	"github.com/qbeon/webwire-go/wwrerr"
 )
 
 // dam represents a "goroutine dam" that accumulates goroutines blocking them
 // until it's flushed
 type dam struct {
 	lock    sync.RWMutex
-	barrier chan error
+	trigger chan error
+	err     error
 }
 
 // newDam constructs a new dam instance
 func newDam() *dam {
 	return &dam{
 		lock:    sync.RWMutex{},
-		barrier: make(chan error),
+		trigger: make(chan error),
+		err:     nil,
 	}
 }
 
 // await blocks the calling goroutine until the dam is flushed
-func (dam *dam) await(ctx context.Context, timeout time.Duration) error {
+func (dam *dam) await(
+	ctx context.Context,
+	ctxHasDeadline bool,
+) error {
 	dam.lock.RLock()
-	defer dam.lock.RUnlock()
-	timer := time.NewTimer(timeout)
-	defer timer.Stop()
-	if timeout > 0 {
-		select {
-		case <-ctx.Done():
-			return wwr.TranslateContextError(ctx.Err())
-		case err := <-dam.barrier:
-			return err
-		case <-timer.C:
-			return wwr.NewTimeoutErr(fmt.Errorf("timed out"))
+	trigger := dam.trigger
+	dam.lock.RUnlock()
+	select {
+	case <-ctx.Done():
+		// Return context error if the context initially had a deadline
+		if ctxHasDeadline {
+			return ctx.Err()
 		}
-	} else {
-		return <-dam.barrier
+		// Or return a default timeout if the deadline was set automatically
+		return wwrerr.TimeoutErr{}
+	case <-trigger:
+		dam.lock.RLock()
+		err := dam.err
+		dam.lock.RUnlock()
+		return err
 	}
 }
 
 // flush flushes the dam freeing all accumulated goroutines
 func (dam *dam) flush(err error) {
-	close(dam.barrier)
-
-	// Reset barrier
 	dam.lock.Lock()
-	dam.barrier = make(chan error)
+	close(dam.trigger)
+	dam.err = err
+	dam.trigger = make(chan error)
 	dam.lock.Unlock()
 }

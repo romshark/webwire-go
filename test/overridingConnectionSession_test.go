@@ -4,17 +4,16 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestOverridingConnectionSession tests overriding of a connection session
 func TestOverridingConnectionSession(t *testing.T) {
 	// Initialize server
-	server := setupServer(
+	setup := setupTestServer(
 		t,
 		&serverImpl{
 			onClientConnected: func(conn wwr.Connection) {
@@ -29,16 +28,16 @@ func TestOverridingConnectionSession(t *testing.T) {
 			},
 		},
 		wwr.ServerOptions{},
+		nil, // Use the default transport implementation
 	)
 
 	// Initialize client
-	client := newCallbackPoweredClient(
-		server.AddressURL(),
+	client := setup.newClient(
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
-		callbackPoweredClientHooks{},
-		nil, // No TLS configuration
+		nil, // Use the default transport implementation
+		testClientHooks{},
 	)
 
 	require.NoError(t, client.connection.Connect())

@@ -5,13 +5,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-
-	"github.com/stretchr/testify/require"
-
 	"github.com/qbeon/tmdwg-go"
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestClientRequestCancel tests canceling of fired requests
@@ -19,7 +17,7 @@ func TestClientRequestCancel(t *testing.T) {
 	requestFinished := tmdwg.NewTimedWaitGroup(1, 1*time.Second)
 
 	// Initialize webwire server given only the request
-	server := setupServer(
+	setup := setupTestServer(
 		t,
 		&serverImpl{
 			onRequest: func(
@@ -28,20 +26,20 @@ func TestClientRequestCancel(t *testing.T) {
 				msg wwr.Message,
 			) (wwr.Payload, error) {
 				time.Sleep(2 * time.Second)
-				return nil, nil
+				return wwr.Payload{}, nil
 			},
 		},
 		wwr.ServerOptions{},
+		nil, // Use the default transport implementation
 	)
 
 	// Initialize client
-	client := newCallbackPoweredClient(
-		server.AddressURL(),
+	client := setup.newClient(
 		wwrclt.Options{
 			DefaultRequestTimeout: 5 * time.Second,
 		},
-		callbackPoweredClientHooks{},
-		nil, // No TLS configuration
+		nil, // Use the default transport implementation
+		testClientHooks{},
 	)
 
 	require.NoError(t, client.connection.Connect())
@@ -51,7 +49,11 @@ func TestClientRequestCancel(t *testing.T) {
 
 	// Send request and await reply
 	go func() {
-		reply, err := client.connection.Request(cancelableCtx, "test", nil)
+		reply, err := client.connection.Request(
+			cancelableCtx,
+			[]byte("test"),
+			wwr.Payload{},
+		)
 		assert.Error(t, err, "Expected a canceled-error")
 		assert.Nil(t, reply)
 		assert.IsType(t, wwr.CanceledErr{}, err)

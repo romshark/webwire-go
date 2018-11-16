@@ -13,7 +13,7 @@ import (
 // TestSessionStatus tests session monitoring methods
 func TestSessionStatus(t *testing.T) {
 	// Initialize webwire server
-	server := setupServer(
+	setup := setupTestServer(
 		t,
 		&serverImpl{
 			onRequest: func(
@@ -23,78 +23,77 @@ func TestSessionStatus(t *testing.T) {
 			) (wwr.Payload, error) {
 				// Try to create a new session
 				if err := conn.CreateSession(nil); err != nil {
-					return nil, err
+					return wwr.Payload{}, err
 				}
 
 				// Return the key of the newly created session
 				// (use default binary encoding)
-				return wwr.NewPayload(
-					wwr.EncodingBinary,
-					[]byte(conn.SessionKey()),
-				), nil
+				return wwr.Payload{Data: []byte(conn.SessionKey())}, nil
 			},
 		},
 		wwr.ServerOptions{},
+		nil, // Use the default transport implementation
 	)
 
-	require.Equal(t, 0, server.ActiveSessionsNum())
+	require.Equal(t, 0, setup.Server.ActiveSessionsNum())
 
 	// Initialize client A
-	clientA := newCallbackPoweredClient(
-		server.AddressURL(),
+	clientA := setup.newClient(
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
-		callbackPoweredClientHooks{},
-		nil, // No TLS configuration
+		nil, // Use the default transport implementation
+		testClientHooks{},
 	)
 
 	// Authenticate and create session
 	authReqReply, err := clientA.connection.Request(
 		context.Background(),
-		"login",
-		wwr.NewPayload(wwr.EncodingBinary, []byte("bla")),
+		[]byte("login"),
+		wwr.Payload{Data: []byte("bla")},
 	)
 	require.NoError(t, err)
 
 	session := clientA.connection.Session()
-	require.Equal(t, session.Key, string(authReqReply.Data()))
+	require.Equal(t, session.Key, string(authReqReply.Payload()))
 
 	// Check status, expect 1 session with 1 connection
-	require.Equal(t, 1, server.ActiveSessionsNum())
-	require.Equal(t, 1, server.SessionConnectionsNum(session.Key))
-	require.Len(t, server.SessionConnections(session.Key), 1)
+	require.Equal(t, 1, setup.Server.ActiveSessionsNum())
+	require.Equal(t, 1, setup.Server.SessionConnectionsNum(session.Key))
+	require.Len(t, setup.Server.SessionConnections(session.Key), 1)
 
 	// Initialize client B
-	clientB := newCallbackPoweredClient(
-		server.AddressURL(),
+	clientB := setup.newClient(
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
-		callbackPoweredClientHooks{},
-		nil, // No TLS configuration
+		nil, // Use the default transport implementation
+		testClientHooks{},
 	)
 
-	require.NoError(t, clientB.connection.RestoreSession(authReqReply.Data()))
+	require.NoError(t, clientB.connection.RestoreSession(
+		context.Background(),
+		authReqReply.Payload(),
+	))
 
 	// Check status, expect 1 session with 2 connections
-	require.Equal(t, 1, server.ActiveSessionsNum())
-	require.Equal(t, 2, server.SessionConnectionsNum(session.Key))
-	require.Len(t, server.SessionConnections(session.Key), 2)
+	require.Equal(t, 1, setup.Server.ActiveSessionsNum())
+	require.Equal(t, 2, setup.Server.SessionConnectionsNum(session.Key))
+	require.Len(t, setup.Server.SessionConnections(session.Key), 2)
 
 	// Close first connection
 	require.NoError(t, clientA.connection.CloseSession())
 
 	// Check status, expect 1 session with 1 connection
-	require.Equal(t, 1, server.ActiveSessionsNum())
-	require.Equal(t, 1, server.SessionConnectionsNum(session.Key))
-	require.Len(t, server.SessionConnections(session.Key), 1)
+	require.Equal(t, 1, setup.Server.ActiveSessionsNum())
+	require.Equal(t, 1, setup.Server.SessionConnectionsNum(session.Key))
+	require.Len(t, setup.Server.SessionConnections(session.Key), 1)
 
 	// Close second connection
 	require.NoError(t, clientB.connection.CloseSession())
 
 	// Check status, expect 0 sessions
-	require.Equal(t, 0, server.ActiveSessionsNum())
-	require.Equal(t, -1, server.SessionConnectionsNum(session.Key))
-	require.Nil(t, server.SessionConnections(session.Key))
+	require.Equal(t, 0, setup.Server.ActiveSessionsNum())
+	require.Equal(t, -1, setup.Server.SessionConnectionsNum(session.Key))
+	require.Nil(t, setup.Server.SessionConnections(session.Key))
 }

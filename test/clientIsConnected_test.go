@@ -4,30 +4,33 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
-
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
+	"github.com/stretchr/testify/require"
 )
 
 // TestClientIsConnected tests the client.Status method
 func TestClientIsConnected(t *testing.T) {
 	// Initialize webwire server given only the request
-	server := setupServer(t, &serverImpl{}, wwr.ServerOptions{})
+	setup := setupTestServer(
+		t,
+		&serverImpl{},
+		wwr.ServerOptions{},
+		nil, // Use the default transport implementation
+	)
 
 	// Initialize client
-	client := newCallbackPoweredClient(
-		server.AddressURL(),
+	client := setup.newClient(
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 			Autoconnect:           wwr.Disabled,
 		},
-		callbackPoweredClientHooks{},
-		nil, // No TLS configuration
+		nil, // Use the default transport implementation
+		testClientHooks{},
 	)
 
 	require.NotEqual(t,
-		wwrclt.Connected, client.connection.Status(),
+		wwrclt.StatusConnected, client.connection.Status(),
 		"Expected client to be disconnected "+
 			"before the connection establishment",
 	)
@@ -36,7 +39,7 @@ func TestClientIsConnected(t *testing.T) {
 	require.NoError(t, client.connection.Connect())
 
 	require.Equal(t,
-		wwrclt.Connected, client.connection.Status(),
+		wwrclt.StatusConnected, client.connection.Status(),
 		"Expected client to be connected after the connection establishment",
 	)
 
@@ -44,7 +47,7 @@ func TestClientIsConnected(t *testing.T) {
 	client.connection.Close()
 
 	require.NotEqual(t,
-		wwrclt.Connected, client.connection.Status(),
+		wwrclt.StatusConnected, client.connection.Status(),
 		"Expected client to be disconnected after closure",
 	)
 }

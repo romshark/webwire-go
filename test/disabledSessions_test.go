@@ -5,19 +5,17 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
-
-	"github.com/stretchr/testify/assert"
-
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestDisabledSessions tests errors returned by CreateSession, CloseSession
 // and client.RestoreSession when sessions are disabled
 func TestDisabledSessions(t *testing.T) {
 	// Initialize webwire server
-	server := setupServer(
+	setup := setupTestServer(
 		t,
 		&serverImpl{
 			onRequest: func(
@@ -33,26 +31,26 @@ func TestDisabledSessions(t *testing.T) {
 				closeErr := conn.CloseSession()
 				assert.IsType(t, wwr.SessionsDisabledErr{}, closeErr)
 
-				return nil, nil
+				return wwr.Payload{}, nil
 			},
 		},
 		wwr.ServerOptions{
 			Sessions: wwr.Disabled,
 		},
+		nil, // Use the default transport implementation
 	)
 
 	// Initialize client
-	client := newCallbackPoweredClient(
-		server.AddressURL(),
+	client := setup.newClient(
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
-		callbackPoweredClientHooks{
+		nil, // Use the default transport implementation
+		testClientHooks{
 			OnSessionCreated: func(*wwr.Session) {
 				t.Errorf("OnSessionCreated was not expected to be called")
 			},
 		},
-		nil, // No TLS configuration
 	)
 	defer client.connection.Close()
 
@@ -61,11 +59,14 @@ func TestDisabledSessions(t *testing.T) {
 	// Send authentication request and await reply
 	_, err := client.connection.Request(
 		context.Background(),
-		"login",
-		wwr.NewPayload(wwr.EncodingBinary, []byte("testdata")),
+		[]byte("login"),
+		wwr.Payload{Data: []byte("testdata")},
 	)
 	require.NoError(t, err)
 
-	sessRestErr := client.connection.RestoreSession([]byte("testkey"))
+	sessRestErr := client.connection.RestoreSession(
+		context.Background(),
+		[]byte("testkey"),
+	)
 	assert.IsType(t, wwr.SessionsDisabledErr{}, sessRestErr)
 }

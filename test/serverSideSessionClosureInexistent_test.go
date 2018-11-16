@@ -5,13 +5,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
-
-	"github.com/stretchr/testify/assert"
-
 	tmdwg "github.com/qbeon/tmdwg-go"
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestServerSideSessionClosureInexistent tests server-side closing of
@@ -29,7 +27,7 @@ func TestServerSideSessionClosureInexistent(t *testing.T) {
 	)
 
 	// Initialize webwire server
-	server := setupServer(
+	setup := setupTestServer(
 		t,
 		&serverImpl{
 			onRequest: func(
@@ -39,29 +37,29 @@ func TestServerSideSessionClosureInexistent(t *testing.T) {
 			) (wwr.Payload, error) {
 				err := conn.CreateSession(nil)
 				assert.NoError(t, err)
-				return nil, err
+				return wwr.Payload{}, err
 			},
 		},
 		wwr.ServerOptions{
 			MaxSessionConnections: uint(simultaneousClients),
 		},
+		nil, // Use the default transport implementation
 	)
 
 	// Initialize clients
-	clients := make([]*callbackPoweredClient, simultaneousClients)
+	clients := make([]*testClient, simultaneousClients)
 	for i := 0; i < simultaneousClients; i++ {
-		client := newCallbackPoweredClient(
-			server.AddressURL(),
+		client := setup.newClient(
 			wwrclt.Options{
 				DefaultRequestTimeout: 2 * time.Second,
 				Autoconnect:           wwr.Disabled,
 			},
-			callbackPoweredClientHooks{
+			nil, // Use the default transport implementation
+			testClientHooks{
 				OnSessionClosed: func() {
 					onSessionClosedHooksExecuted.Progress(1)
 				},
 			},
-			nil, // No TLS configuration
 		)
 		defer client.connection.Close()
 		clients[i] = client
@@ -74,8 +72,13 @@ func TestServerSideSessionClosureInexistent(t *testing.T) {
 
 	// Authenticate first client to get the session key
 	firstClient := clients[0]
-	_, err := firstClient.connection.Request(context.Background(), "auth", nil)
+	reply, err := firstClient.connection.Request(
+		context.Background(),
+		[]byte("auth"),
+		wwr.Payload{},
+	)
 	require.NoError(t, err)
+	reply.Close()
 
 	// Extract session key
 	createdSession = firstClient.connection.Session()
@@ -85,7 +88,10 @@ func TestServerSideSessionClosureInexistent(t *testing.T) {
 	// Apply the session to other remaining clients
 	for i := 1; i < len(clients); i++ {
 		clt := clients[i]
-		require.NoError(t, clt.connection.RestoreSession([]byte(sessionKey)))
+		require.NoError(t, clt.connection.RestoreSession(
+			context.Background(),
+			[]byte(sessionKey),
+		))
 	}
 
 	// Ensure all clients are logged into 1 session
@@ -103,7 +109,7 @@ func TestServerSideSessionClosureInexistent(t *testing.T) {
 	inexistentSessionKey[0] = '0'
 
 	// Try to close an inexistent session
-	affectedConnections, closeErrors, err := server.CloseSession(
+	affectedConnections, closeErrors, err := setup.Server.CloseSession(
 		string(inexistentSessionKey),
 	)
 	require.NoError(t, err)

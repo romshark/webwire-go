@@ -4,12 +4,10 @@ import (
 	"context"
 	"testing"
 
-	"github.com/stretchr/testify/require"
-
-	"github.com/stretchr/testify/assert"
-
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestClientAutomaticSessionRestoration verifies automatic session restoration
@@ -21,7 +19,7 @@ func TestClientAutomaticSessionRestoration(t *testing.T) {
 	var createdSession *wwr.Session
 
 	// Initialize webwire server
-	server := setupServer(
+	setup := setupTestServer(
 		t,
 		&serverImpl{
 			onRequest: func(
@@ -32,13 +30,13 @@ func TestClientAutomaticSessionRestoration(t *testing.T) {
 				if currentStep == 2 {
 					// Expect the session to have been automatically restored
 					compareSessions(t, createdSession, conn.Session())
-					return nil, nil
+					return wwr.Payload{}, nil
 				}
 
 				// Try to create a new session
 				err := conn.CreateSession(nil)
 				assert.NoError(t, err)
-				return nil, err
+				return wwr.Payload{}, err
 			},
 		},
 		wwr.ServerOptions{
@@ -68,14 +66,14 @@ func TestClientAutomaticSessionRestoration(t *testing.T) {
 				},
 			},
 		},
+		nil, // Use the default transport implementation
 	)
 
 	// Initialize client
-	client := newCallbackPoweredClient(
-		server.AddressURL(),
+	client := setup.newClient(
 		wwrclt.Options{},
-		callbackPoweredClientHooks{},
-		nil, // No TLS configuration
+		nil, // Use the default transport implementation
+		testClientHooks{},
 	)
 
 	require.NoError(t, client.connection.Connect())
@@ -87,8 +85,11 @@ func TestClientAutomaticSessionRestoration(t *testing.T) {
 	// Create a new session
 	_, err := client.connection.Request(
 		context.Background(),
-		"login",
-		wwr.NewPayload(wwr.EncodingBinary, []byte("auth")),
+		[]byte("login"),
+		wwr.Payload{
+			Encoding: wwr.EncodingBinary,
+			Data:     []byte("auth"),
+		},
 	)
 	require.NoError(t, err)
 
@@ -99,7 +100,7 @@ func TestClientAutomaticSessionRestoration(t *testing.T) {
 
 	// Ensure the session isn't lost
 	require.NotEqual(t,
-		wwrclt.Connected, client.connection.Status(),
+		wwrclt.StatusConnected, client.connection.Status(),
 		"Client is expected to be disconnected",
 	)
 	require.NotEqual(t,
@@ -119,8 +120,11 @@ func TestClientAutomaticSessionRestoration(t *testing.T) {
 	// and the server authenticates the user
 	_, err = client.connection.Request(
 		context.Background(),
-		"verify",
-		wwr.NewPayload(wwr.EncodingBinary, []byte("is_restored?")),
+		[]byte("verify"),
+		wwr.Payload{
+			Encoding: wwr.EncodingBinary,
+			Data:     []byte("is_restored?"),
+		},
 	)
 	require.NoError(t, err)
 }

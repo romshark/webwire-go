@@ -3,56 +3,47 @@ package client
 import (
 	"context"
 	"fmt"
-	"time"
 
 	webwire "github.com/qbeon/webwire-go"
-	msg "github.com/qbeon/webwire-go/message"
+	"github.com/qbeon/webwire-go/message"
+	"github.com/qbeon/webwire-go/wwrerr"
 )
 
 func (clt *client) sendRequest(
 	ctx context.Context,
 	messageType byte,
-	name string,
+	name []byte,
 	payload webwire.Payload,
-	timeout time.Duration,
-) (webwire.Payload, error) {
+) (webwire.Reply, error) {
 	// Require either a name or a payload or both
-	if len(name) < 1 && (payload == nil || len(payload.Data()) < 1) {
-		return nil, webwire.NewProtocolErr(
-			fmt.Errorf("Invalid request, request message requires " +
+	if len(name) < 1 && len(payload.Data) < 1 {
+		return nil, wwrerr.ProtocolErr{
+			Cause: fmt.Errorf("Invalid request, request message requires " +
 				"either a name, a payload or both but is missing both",
 			),
-		)
+		}
 	}
 
-	// Return an error if the request was already prematurely canceled
-	// or already exceeded the user-defined deadline for its completion
-	select {
-	case <-ctx.Done():
-		return nil, webwire.TranslateContextError(ctx.Err())
-	default:
-	}
+	// Register a new request
+	request := clt.requestManager.Create()
+	reqIdentifier := request.Identifier()
 
-	payloadEncoding := webwire.EncodingBinary
-	var payloadData []byte
-	if payload != nil {
-		payloadEncoding = payload.Encoding()
-		payloadData = payload.Data()
+	writer, err := clt.conn.GetWriter()
+	if err != nil {
+		return nil, err
 	}
 
 	// Compose a message and register it
-	request := clt.requestManager.Create(timeout)
-	reqIdentifier := request.Identifier()
-	msg := msg.NewRequestMessage(
+	if err := message.WriteMsgRequest(
+		writer,
 		reqIdentifier,
 		name,
-		payloadEncoding,
-		payloadData,
-	)
-
-	// Send request
-	if err := clt.conn.Write(msg); err != nil {
-		return nil, webwire.NewReqTransErr(err)
+		payload.Encoding,
+		payload.Data,
+		true,
+	); err != nil {
+		clt.requestManager.Fail(reqIdentifier, err)
+		return nil, wwrerr.TransmissionErr{Cause: err}
 	}
 
 	clt.heartbeat.reset()

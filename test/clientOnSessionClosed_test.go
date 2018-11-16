@@ -5,13 +5,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-
-	"github.com/stretchr/testify/require"
-
 	tmdwg "github.com/qbeon/tmdwg-go"
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestClientOnSessionClosed tests the OnSessionClosed hook of the client
@@ -20,7 +18,7 @@ func TestClientOnSessionClosed(t *testing.T) {
 	hookCalled := tmdwg.NewTimedWaitGroup(1, 1*time.Second)
 
 	// Initialize webwire server
-	server := setupServer(
+	setup := setupTestServer(
 		t,
 		&serverImpl{
 			onRequest: func(
@@ -32,7 +30,7 @@ func TestClientOnSessionClosed(t *testing.T) {
 				err := conn.CreateSession(nil)
 				assert.NoError(t, err)
 				if err != nil {
-					return nil, err
+					return wwr.Payload{}, err
 				}
 
 				go func() {
@@ -46,24 +44,24 @@ func TestClientOnSessionClosed(t *testing.T) {
 					assert.NoError(t, conn.CloseSession())
 				}()
 
-				return nil, nil
+				return wwr.Payload{}, nil
 			},
 		},
 		wwr.ServerOptions{},
+		nil, // Use the default transport implementation
 	)
 
 	// Initialize client
-	client := newCallbackPoweredClient(
-		server.AddressURL(),
+	client := setup.newClient(
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
-		callbackPoweredClientHooks{
+		nil, // Use the default transport implementation
+		testClientHooks{
 			OnSessionClosed: func() {
 				hookCalled.Progress(1)
 			},
 		},
-		nil, // No TLS configuration
 	)
 
 	require.NoError(t, client.connection.Connect())
@@ -71,8 +69,11 @@ func TestClientOnSessionClosed(t *testing.T) {
 	// Send authentication request and await reply
 	_, err := client.connection.Request(
 		context.Background(),
-		"login",
-		wwr.NewPayload(wwr.EncodingBinary, []byte("credentials")),
+		[]byte("login"),
+		wwr.Payload{
+			Encoding: wwr.EncodingBinary,
+			Data:     []byte("credentials"),
+		},
 	)
 	require.NoError(t, err)
 	authenticated.Progress(1)

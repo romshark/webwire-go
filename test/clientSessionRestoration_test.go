@@ -5,10 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -20,7 +19,7 @@ func TestClientSessionRestoration(t *testing.T) {
 	var createdSession *wwr.Session
 
 	// Initialize webwire server
-	server := setupServer(
+	setup := setupTestServer(
 		t,
 		&serverImpl{
 			onRequest: func(
@@ -31,13 +30,13 @@ func TestClientSessionRestoration(t *testing.T) {
 				if currentStep == 2 {
 					// Expect the session to be automatically restored
 					compareSessions(t, createdSession, conn.Session())
-					return nil, nil
+					return wwr.Payload{}, nil
 				}
 
 				// Try to create a new session
 				err := conn.CreateSession(nil)
 				assert.NoError(t, err)
-				return nil, err
+				return wwr.Payload{}, err
 			},
 		},
 		wwr.ServerOptions{
@@ -65,16 +64,16 @@ func TestClientSessionRestoration(t *testing.T) {
 				},
 			},
 		},
+		nil, // Use the default transport implementation
 	)
 
 	// Initialize client
-	initialClient := newCallbackPoweredClient(
-		server.AddressURL(),
+	initialClient := setup.newClient(
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
-		callbackPoweredClientHooks{},
-		nil, // No TLS configuration
+		nil, // Use the default transport implementation
+		testClientHooks{},
 	)
 
 	require.NoError(t, initialClient.connection.Connect())
@@ -86,8 +85,8 @@ func TestClientSessionRestoration(t *testing.T) {
 	// Create a new session
 	_, err := initialClient.connection.Request(
 		context.Background(),
-		"login",
-		wwr.NewPayload(wwr.EncodingBinary, []byte("auth")),
+		[]byte("login"),
+		wwr.Payload{Data: []byte("auth")},
 	)
 	require.NoError(t, err)
 
@@ -102,13 +101,12 @@ func TestClientSessionRestoration(t *testing.T) {
 	currentStep = 2
 
 	// Initialize client
-	secondClient := newCallbackPoweredClient(
-		server.AddressURL(),
+	secondClient := setup.newClient(
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
-		callbackPoweredClientHooks{},
-		nil, // No TLS configuration
+		nil, // Use the default transport implementation
+		testClientHooks{},
 	)
 
 	require.NoError(t, secondClient.connection.Connect())
@@ -119,6 +117,7 @@ func TestClientSessionRestoration(t *testing.T) {
 	// Try to manually restore the session
 	// using the initial clients session key
 	require.NoError(t, secondClient.connection.RestoreSession(
+		context.Background(),
 		[]byte(createdSession.Key),
 	))
 

@@ -6,17 +6,16 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
-
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
+	"github.com/stretchr/testify/require"
 )
 
 // TestClientRequestInternalError tests returning of non-ReqErr errors
 // from the request handler
 func TestClientRequestInternalError(t *testing.T) {
 	// Initialize webwire server given only the request
-	server := setupServer(
+	setup := setupTestServer(
 		t,
 		&serverImpl{
 			onRequest: func(
@@ -25,22 +24,22 @@ func TestClientRequestInternalError(t *testing.T) {
 				_ wwr.Message,
 			) (wwr.Payload, error) {
 				// Fail the request by returning a non-ReqErr error
-				return nil, fmt.Errorf(
+				return wwr.Payload{}, fmt.Errorf(
 					"don't worry, this internal error is expected",
 				)
 			},
 		},
 		wwr.ServerOptions{},
+		nil, // Use the default transport implementation
 	)
 
 	// Initialize client
-	client := newCallbackPoweredClient(
-		server.AddressURL(),
+	client := setup.newClient(
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
-		callbackPoweredClientHooks{},
-		nil, // No TLS configuration
+		nil, // Use the default transport implementation
+		testClientHooks{},
 	)
 
 	require.NoError(t, client.connection.Connect())
@@ -48,12 +47,15 @@ func TestClientRequestInternalError(t *testing.T) {
 	// Send request and await reply
 	reply, reqErr := client.connection.Request(
 		context.Background(),
-		"",
-		wwr.NewPayload(wwr.EncodingUtf8, []byte("dummydata")),
+		nil,
+		wwr.Payload{
+			Encoding: wwr.EncodingUtf8,
+			Data:     []byte("dummydata"),
+		},
 	)
 
 	// Verify returned error
 	require.Error(t, reqErr)
-	require.IsType(t, wwr.ReqInternalErr{}, reqErr)
+	require.IsType(t, wwr.InternalErr{}, reqErr)
 	require.Nil(t, reply)
 }

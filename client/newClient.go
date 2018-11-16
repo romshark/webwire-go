@@ -2,12 +2,13 @@ package client
 
 import (
 	"context"
-	"crypto/tls"
 	"fmt"
 	"net/url"
 	"sync"
+	"time"
 
 	webwire "github.com/qbeon/webwire-go"
+	"github.com/qbeon/webwire-go/message"
 	reqman "github.com/qbeon/webwire-go/requestManager"
 )
 
@@ -16,13 +17,15 @@ import (
 func NewClient(
 	serverAddress url.URL,
 	implementation Implementation,
-	opts Options,
-	tlsConfig *tls.Config,
+	options Options,
+	transport webwire.ClientTransport,
 ) (Client, error) {
 	if implementation == nil {
-		return nil, fmt.Errorf(
-			"webwire client requires a client implementation, got nil",
-		)
+		return nil, fmt.Errorf("missing client implementation")
+	}
+
+	if transport == nil {
+		return nil, fmt.Errorf("missing client transport layer implementation")
 	}
 
 	// Prepare server address
@@ -31,43 +34,46 @@ func NewClient(
 	}
 
 	// Prepare configuration
-	opts.SetDefaults()
+	if err := options.Prepare(); err != nil {
+		return nil, err
+	}
 
 	// Enable autoconnect by default
 	autoconnect := autoconnectStatus(autoconnectEnabled)
-	if opts.Autoconnect == webwire.Disabled {
+	if options.Autoconnect == webwire.Disabled {
 		autoconnect = autoconnectDisabled
 	}
 
-	if tlsConfig != nil {
-		tlsConfig = tlsConfig.Clone()
+	// Initialize socket
+	conn, err := transport.NewSocket(options.DialingTimeout)
+	if err != nil {
+		return nil, fmt.Errorf("couldn't initialize socket: %s", err)
 	}
 
-	conn := webwire.NewSocket(tlsConfig)
+	dialingTimer := time.NewTimer(0)
+	<-dialingTimer.C
 
 	// Initialize new client
 	newClt := &client{
-		serverAddr:        serverAddress,
-		tlsConfig:         tlsConfig,
-		impl:              implementation,
-		sessionInfoParser: opts.SessionInfoParser,
-		status:            Disconnected,
-		defaultReqTimeout: opts.DefaultRequestTimeout,
-		reconnInterval:    opts.ReconnectionInterval,
-		autoconnect:       autoconnect,
-		sessionLock:       sync.RWMutex{},
-		session:           nil,
-		apiLock:           sync.RWMutex{},
-		backReconn:        newDam(),
-		connecting:        false,
-		connectingLock:    sync.RWMutex{},
-		connectLock:       sync.Mutex{},
-		conn:              conn,
-		readerClosing:     make(chan bool, 1),
-		heartbeat:         newHeartbeat(conn, opts.ErrorLog),
-		requestManager:    reqman.NewRequestManager(),
-		warningLog:        opts.WarnLog,
-		errorLog:          opts.ErrorLog,
+		serverAddr:     serverAddress,
+		options:        options,
+		impl:           implementation,
+		dialingTimer:   dialingTimer,
+		autoconnect:    autoconnect,
+		statusLock:     &sync.Mutex{},
+		status:         StatusDisconnected,
+		sessionLock:    sync.RWMutex{},
+		session:        nil,
+		apiLock:        sync.RWMutex{},
+		backReconn:     newDam(),
+		connecting:     false,
+		connectingLock: sync.RWMutex{},
+		connectLock:    sync.Mutex{},
+		conn:           conn,
+		readerClosing:  make(chan bool, 1),
+		heartbeat:      newHeartbeat(conn, options.ErrorLog),
+		requestManager: reqman.NewRequestManager(),
+		messagePool:    message.NewSyncPool(options.MessageBufferSize, 1024),
 	}
 
 	if autoconnect == autoconnectEnabled {
@@ -76,7 +82,7 @@ func NewClient(
 		// Call in another goroutine to prevent blocking
 		// the constructor function caller.
 		// Set timeout to zero, try indefinitely until connected
-		go newClt.tryAutoconnect(context.Background(), 0)
+		go newClt.tryAutoconnect(context.Background(), false)
 	}
 
 	return newClt, nil

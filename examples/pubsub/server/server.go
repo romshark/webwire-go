@@ -5,7 +5,6 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"net/http"
 	"os"
 	"os/signal"
 	"sync"
@@ -13,6 +12,7 @@ import (
 	"time"
 
 	wwr "github.com/qbeon/webwire-go"
+	wwrfasthttp "github.com/qbeon/webwire-go/transport/fasthttp"
 )
 
 // PubSubServer implements the webwire.ServerImplementation interface
@@ -32,13 +32,6 @@ func NewPubSubServer() *PubSubServer {
 	}
 }
 
-// OnOptions implements the webwire.ServerImplementation interface.
-// Sets HTTP access control headers to satisfy CORS
-func (srv *PubSubServer) OnOptions(resp http.ResponseWriter) {
-	resp.Header().Set("Access-Control-Allow-Origin", "*")
-	resp.Header().Set("Access-Control-Allow-Methods", "WEBWIRE")
-}
-
 // OnSignal implements the webwire.ServerImplementation interface
 // Does nothing, not needed in this example
 func (srv *PubSubServer) OnSignal(
@@ -55,18 +48,10 @@ func (srv *PubSubServer) OnRequest(
 	_ wwr.Connection,
 	_ wwr.Message,
 ) (response wwr.Payload, err error) {
-	return nil, wwr.ReqErr{
+	return wwr.Payload{}, wwr.RequestErr{
 		Code:    "REQ_NOT_SUPPORTED",
 		Message: "Requests are not supported on this server",
 	}
-}
-
-// BeforeUpgrade implements the webwire.ServerImplementation interface
-func (srv *PubSubServer) BeforeUpgrade(
-	resp http.ResponseWriter,
-	req *http.Request,
-) wwr.ConnectionOptions {
-	return wwr.ConnectionOptions{}
 }
 
 // OnClientConnected implements the webwire.ServerImplementation interface.
@@ -79,7 +64,10 @@ func (srv *PubSubServer) OnClientConnected(client wwr.Connection) {
 
 // OnClientDisconnected implements the webwire.ServerImplementation interface
 // Deregisters a gone client
-func (srv *PubSubServer) OnClientDisconnected(client wwr.Connection) {
+func (srv *PubSubServer) OnClientDisconnected(
+	client wwr.Connection,
+	_ error,
+) {
 	srv.mapLock.Lock()
 	delete(srv.connectedClients, client)
 	srv.mapLock.Unlock()
@@ -108,7 +96,10 @@ func (srv *PubSubServer) Broadcast() {
 		)
 
 		for client := range srv.connectedClients {
-			client.Signal("", wwr.NewPayload(wwr.EncodingBinary, []byte(msg)))
+			client.Signal(nil, wwr.Payload{
+				Encoding: wwr.EncodingBinary,
+				Data:     []byte(msg),
+			})
 		}
 		srv.mapLock.Unlock()
 	}
@@ -130,6 +121,7 @@ func main() {
 		wwr.ServerOptions{
 			Host: *serverAddr,
 		},
+		&wwrfasthttp.Transport{},
 	)
 	if err != nil {
 		panic(fmt.Errorf("Failed setting up WebWire server: %s", err))
@@ -154,7 +146,8 @@ func main() {
 		log.Println("Server gracefully terminated")
 	}()
 
-	log.Printf("Listening on %s", server.Address())
+	addr := server.Address()
+	log.Printf("Listening on %s", addr.String())
 
 	// Launch server
 	if err := server.Run(); err != nil {

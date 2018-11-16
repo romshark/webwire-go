@@ -5,27 +5,24 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-
-	"github.com/stretchr/testify/require"
-
 	webwire "github.com/qbeon/webwire-go"
 	webwireClient "github.com/qbeon/webwire-go/client"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestRequestNamespaces tests correct handling of namespaced requests
 func TestRequestNamespaces(t *testing.T) {
 	currentStep := 1
 
-	shortestPossibleName := "s"
-	buf := make([]rune, 255)
-	for i := 0; i < 255; i++ {
-		buf[i] = 'x'
+	shortestPossibleName := []byte("s")
+	longestPossibleName := make([]byte, 255)
+	for i := range longestPossibleName {
+		longestPossibleName[i] = 'x'
 	}
-	longestPossibleName := string(buf)
 
 	// Initialize server
-	server := setupServer(
+	setup := setupTestServer(
 		t,
 		&serverImpl{
 			onRequest: func(
@@ -36,26 +33,26 @@ func TestRequestNamespaces(t *testing.T) {
 				msgName := msg.Name()
 				switch currentStep {
 				case 1:
-					assert.Equal(t, "", msgName)
+					assert.Nil(t, msgName)
 				case 2:
 					assert.Equal(t, shortestPossibleName, msgName)
 				case 3:
 					assert.Equal(t, longestPossibleName, msgName)
 				}
-				return nil, nil
+				return webwire.Payload{}, nil
 			},
 		},
 		webwire.ServerOptions{},
+		nil, // Use the default transport implementation
 	)
 
 	// Initialize client
-	client := newCallbackPoweredClient(
-		server.AddressURL(),
+	client := setup.newClient(
 		webwireClient.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
-		callbackPoweredClientHooks{},
-		nil, // No TLS configuration
+		nil, // Use the default transport implementation
+		testClientHooks{},
 	)
 
 	require.NoError(t, client.connection.Connect())
@@ -66,8 +63,8 @@ func TestRequestNamespaces(t *testing.T) {
 	// Send unnamed request
 	_, err := client.connection.Request(
 		context.Background(),
-		"",
-		webwire.NewPayload(webwire.EncodingBinary, []byte("dummy")),
+		nil,
+		webwire.Payload{Data: []byte("dummy")},
 	)
 	require.NoError(t, err)
 
@@ -79,7 +76,7 @@ func TestRequestNamespaces(t *testing.T) {
 	_, err = client.connection.Request(
 		context.Background(),
 		shortestPossibleName,
-		webwire.NewPayload(webwire.EncodingBinary, []byte("dummy")),
+		webwire.Payload{Data: []byte("dummy")},
 	)
 	require.NoError(t, err)
 
@@ -91,7 +88,7 @@ func TestRequestNamespaces(t *testing.T) {
 	_, err = client.connection.Request(
 		context.Background(),
 		longestPossibleName,
-		webwire.NewPayload(webwire.EncodingBinary, []byte("dummy")),
+		webwire.Payload{Data: []byte("dummy")},
 	)
 	require.NoError(t, err)
 }

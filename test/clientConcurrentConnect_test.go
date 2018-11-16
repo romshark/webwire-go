@@ -4,13 +4,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
-
-	"github.com/stretchr/testify/assert"
-
 	tmdwg "github.com/qbeon/tmdwg-go"
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestClientConcurrentConnect verifies concurrent calling of client.Connect
@@ -20,16 +18,20 @@ func TestClientConcurrentConnect(t *testing.T) {
 	finished := tmdwg.NewTimedWaitGroup(concurrentAccessors, 2*time.Second)
 
 	// Initialize webwire server
-	server := setupServer(t, &serverImpl{}, wwr.ServerOptions{})
+	setup := setupTestServer(
+		t,
+		&serverImpl{},
+		wwr.ServerOptions{},
+		nil, // Use the default transport implementation
+	)
 
 	// Initialize client
-	client := newCallbackPoweredClient(
-		server.AddressURL(),
+	client := setup.newClient(
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
-		callbackPoweredClientHooks{},
-		nil, // No TLS configuration
+		nil, // Use the default transport implementation
+		testClientHooks{},
 	)
 	defer client.connection.Close()
 

@@ -10,13 +10,20 @@ import (
 // TestRequiresReplyCloseSession tests the RequiresReply method
 // with a session closure request message
 func TestRequiresReplyCloseSession(t *testing.T) {
-	msg := &Message{}
-	_, err := msg.Parse(NewEmptyRequestMessage(
+	writer := &testWriter{}
+	require.NoError(t, WriteMsgEmptyRequest(
+		writer,
 		MsgCloseSession,
 		genRndMsgIdentifier(),
 	))
-	require.NoError(t, err)
+	require.True(t, writer.closed)
 
+	msg := NewMessage(2048)
+	typeParsed, err := msg.ReadBytes(writer.buf)
+	require.NoError(t, err)
+	require.True(t, typeParsed)
+
+	require.Equal(t, MsgCloseSession, msg.MsgType)
 	require.True(t,
 		msg.RequiresReply(),
 		"Expected a session closure request message to require a reply",
@@ -26,13 +33,19 @@ func TestRequiresReplyCloseSession(t *testing.T) {
 // TestRequiresReplyRestoreSession tests the RequiresReply method
 // with a session restoration request message
 func TestRequiresReplyRestoreSession(t *testing.T) {
-	msg := &Message{}
-	_, err := msg.Parse(NewNamelessRequestMessage(
+	writer := &testWriter{}
+	require.NoError(t, WriteMsgNamelessRequest(
+		writer,
 		MsgRestoreSession,
 		genRndMsgIdentifier(),
 		[]byte("somesamplesessionkey"),
 	))
+	require.True(t, writer.closed)
+
+	msg := NewMessage(1024)
+	typeParsed, err := msg.ReadBytes(writer.buf)
 	require.NoError(t, err)
+	require.True(t, typeParsed)
 
 	require.True(t,
 		msg.RequiresReply(),
@@ -43,14 +56,21 @@ func TestRequiresReplyRestoreSession(t *testing.T) {
 // TestRequiresReplyRequestBinary tests the RequiresReply method
 // with a binary request message
 func TestRequiresReplyRequestBinary(t *testing.T) {
-	msg := &Message{}
-	_, err := msg.Parse(NewRequestMessage(
+	writer := &testWriter{}
+	require.NoError(t, WriteMsgRequest(
+		writer,
 		genRndMsgIdentifier(),
-		"samplename",
+		[]byte("samplename"),
 		pld.Binary,
 		[]byte("random payload data"),
+		true,
 	))
+	require.True(t, writer.closed)
+
+	msg := NewMessage(1024)
+	typeParsed, err := msg.ReadBytes(writer.buf)
 	require.NoError(t, err)
+	require.True(t, typeParsed)
 
 	require.True(t,
 		msg.RequiresReply(),
@@ -61,14 +81,21 @@ func TestRequiresReplyRequestBinary(t *testing.T) {
 // TestRequiresReplyRequestUtf8 tests the RequiresReply method
 // with a UTF8 encoded request message
 func TestRequiresReplyRequestUtf8(t *testing.T) {
-	msg := &Message{}
-	_, err := msg.Parse(NewRequestMessage(
+	writer := &testWriter{}
+	require.NoError(t, WriteMsgRequest(
+		writer,
 		genRndMsgIdentifier(),
-		"samplename",
+		[]byte("samplename"),
 		pld.Utf8,
 		[]byte("random payload data"),
+		true,
 	))
+	require.True(t, writer.closed)
+
+	msg := NewMessage(1024)
+	typeParsed, err := msg.ReadBytes(writer.buf)
 	require.NoError(t, err)
+	require.True(t, typeParsed)
 
 	require.True(t,
 		msg.RequiresReply(),
@@ -79,14 +106,21 @@ func TestRequiresReplyRequestUtf8(t *testing.T) {
 // TestRequiresReplyRequestUtf16 tests the RequiresReply method
 // with a UTF16 encoded request message
 func TestRequiresReplyRequestUtf16(t *testing.T) {
-	msg := &Message{}
-	_, err := msg.Parse(NewRequestMessage(
+	writer := &testWriter{}
+	require.NoError(t, WriteMsgRequest(
+		writer,
 		genRndMsgIdentifier(),
-		"samplename",
+		[]byte("samplename"),
 		pld.Utf16,
 		[]byte{'r', 0, 'a', 0, 'n', 0, 'd', 0, 'o', 0, 'm', 0},
+		true,
 	))
+	require.True(t, writer.closed)
+
+	msg := NewMessage(1024)
+	typeParsed, err := msg.ReadBytes(writer.buf)
 	require.NoError(t, err)
+	require.True(t, typeParsed)
 
 	require.True(t,
 		msg.RequiresReply(),

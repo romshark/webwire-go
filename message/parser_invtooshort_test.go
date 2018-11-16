@@ -15,8 +15,8 @@ import (
 func TestMsgParseInvalidMessageTooShort(t *testing.T) {
 	invalidMessage := make([]byte, 0)
 
-	var actual Message
-	typeDetermined, _ := actual.Parse(invalidMessage)
+	actual := NewMessage(1024)
+	typeDetermined, _ := actual.ReadBytes(invalidMessage)
 	require.False(t,
 		typeDetermined,
 		"Expected type to not be determined "+

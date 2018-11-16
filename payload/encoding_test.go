@@ -29,7 +29,7 @@ func TestConvertUtf8ToUtf8(t *testing.T) {
 
 	result, err := payload.Utf8()
 	require.NoError(t, err)
-	require.Equal(t, "ABC", result)
+	require.Equal(t, []byte("ABC"), result)
 }
 
 // TestConvertBinaryToUtf8 tests the Utf8() payload conversion method
@@ -42,7 +42,7 @@ func TestConvertBinaryToUtf8(t *testing.T) {
 
 	result, err := payload.Utf8()
 	require.NoError(t, err)
-	require.Equal(t, "ABC ёжз φπμλβωϘ", result)
+	require.Equal(t, "ABC ёжз φπμλβωϘ", string(result))
 	require.Len(t, result, 25)
 }
 
@@ -73,7 +73,7 @@ func TestConvertUtf16ToUtf8(t *testing.T) {
 
 	result, err := payload.Utf8()
 	require.NoError(t, err)
-	require.Equal(t, "ABC ёжз φπμλβωϘ", result)
+	require.Equal(t, "ABC ёжз φπμλβωϘ", string(result))
 	require.Len(t, result, 25)
 }
 

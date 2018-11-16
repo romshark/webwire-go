@@ -1,6 +1,7 @@
 package client
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"time"
@@ -12,6 +13,9 @@ import (
 type Options struct {
 	// SessionInfoParser defines the optional session info parser function
 	SessionInfoParser webwire.SessionInfoParser
+
+	// DialingTimeout defines the dialing timeout
+	DialingTimeout time.Duration
 
 	// DefaultRequestTimeout defines the default request timeout duration
 	// used by client.Request and client.RestoreSession
@@ -38,39 +42,64 @@ type Options struct {
 
 	// ErrorLog defines the error logging output target
 	ErrorLog *log.Logger
+
+	// MessageBufferSize defines the size of the inbound message buffer
+	MessageBufferSize uint32
 }
 
-// SetDefaults sets default values for undefined required options
-func (opts *Options) SetDefaults() {
-	if opts.SessionInfoParser == nil {
-		opts.SessionInfoParser = webwire.GenericSessionInfoParser
+// Prepare validates the specified options and sets the default values for
+// unspecified options
+func (op *Options) Prepare() error {
+	if op.SessionInfoParser == nil {
+		op.SessionInfoParser = webwire.GenericSessionInfoParser
 	}
 
-	if opts.DefaultRequestTimeout < 1 {
-		opts.DefaultRequestTimeout = 60 * time.Second
+	if op.DefaultRequestTimeout < 1 {
+		op.DefaultRequestTimeout = 60 * time.Second
 	}
 
-	if opts.Autoconnect == webwire.OptionUnset {
-		opts.Autoconnect = webwire.Enabled
+	if op.Autoconnect == webwire.OptionUnset {
+		op.Autoconnect = webwire.Enabled
 	}
 
-	if opts.ReconnectionInterval < 1 {
-		opts.ReconnectionInterval = 2 * time.Second
+	if op.ReconnectionInterval < 1 {
+		op.ReconnectionInterval = 2 * time.Second
 	}
 
 	// Create default loggers to std-out/err when no loggers are specified
-	if opts.WarnLog == nil {
-		opts.WarnLog = log.New(
+	if op.WarnLog == nil {
+		op.WarnLog = log.New(
 			os.Stdout,
 			"WEBWIRE_CLT_WARN: ",
 			log.Ldate|log.Ltime|log.Lshortfile,
 		)
 	}
-	if opts.ErrorLog == nil {
-		opts.ErrorLog = log.New(
+	if op.ErrorLog == nil {
+		op.ErrorLog = log.New(
 			os.Stderr,
 			"WEBWIRE_CLT_ERR: ",
 			log.Ldate|log.Ltime|log.Lshortfile,
 		)
 	}
+
+	// Set default dialing timeout
+	if op.DialingTimeout < 1 {
+		op.DialingTimeout = 5 * time.Second
+	}
+
+	// Verify buffer sizes
+	const minBufferSize = 1024
+
+	// Verify the message buffer size
+	if op.MessageBufferSize == 0 {
+		op.MessageBufferSize = minBufferSize
+	} else if op.MessageBufferSize < minBufferSize {
+		return fmt.Errorf(
+			"message buffer size too small: %d bytes (min: %d bytes)",
+			op.MessageBufferSize,
+			minBufferSize,
+		)
+	}
+
+	return nil
 }

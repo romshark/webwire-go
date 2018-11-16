@@ -1,88 +1,56 @@
 package webwire
 
 import (
-	"context"
 	"fmt"
 	"log"
-	"net"
-	"net/http"
 	"net/url"
 	"sync"
-)
 
-const protocolVersion = "1.5"
+	"github.com/qbeon/webwire-go/message"
+)
 
 // server represents a headless WebWire server instance,
 // where headless means there's no HTTP server that's hosting it
 type server struct {
+	transport         Transport
 	impl              ServerImplementation
-	httpServer        *http.Server
-	listener          net.Listener
 	sessionManager    SessionManager
 	sessionKeyGen     SessionKeyGenerator
 	sessionInfoParser SessionInfoParser
-
-	// State
-	addr            url.URL
-	options         ServerOptions
-	certFilePath    string
-	keyFilePath     string
-	shutdown        bool
-	shutdownRdy     chan bool
-	currentOps      uint32
-	opsLock         *sync.Mutex
-	connectionsLock *sync.Mutex
-	connections     []*connection
-	sessionsEnabled bool
-	sessionRegistry *sessionRegistry
+	addr              url.URL
+	options           ServerOptions
+	configMsg         []byte
+	shutdown          bool
+	shutdownRdy       chan bool
+	currentOps        uint32
+	opsLock           *sync.Mutex
+	connectionsLock   *sync.Mutex
+	connections       []*connection
+	sessionsEnabled   bool
+	sessionRegistry   *sessionRegistry
+	messagePool       message.Pool
 
 	// Internals
-	connUpgrader ConnUpgrader
-	warnLog      *log.Logger
-	errorLog     *log.Logger
+	warnLog  *log.Logger
+	errorLog *log.Logger
 }
 
-func (srv *server) shutdownHTTPServer() error {
-	if srv.httpServer == nil {
-		return nil
-	}
-	if err := srv.httpServer.Shutdown(context.Background()); err != nil {
-		return fmt.Errorf("Couldn't properly shutdown HTTP server: %s", err)
+// shutdownServer initiates the shutdown of the underlying transport layer
+func (srv *server) shutdownServer() error {
+	if err := srv.transport.Shutdown(); err != nil {
+		return fmt.Errorf("couldn't properly shutdown HTTP server: %s", err)
 	}
 	return nil
 }
 
 // Run implements the Server interface
 func (srv *server) Run() error {
-	if srv.httpServer.TLSConfig != nil {
-		// Launch HTTPS server
-		if err := srv.httpServer.ServeTLS(
-			tcpKeepAliveListener{srv.listener.(*net.TCPListener)},
-			srv.certFilePath,
-			srv.keyFilePath,
-		); err != http.ErrServerClosed {
-			return fmt.Errorf("HTTPS Server failure: %s", err)
-		}
-	} else {
-		// Launch HTTP server
-		if err := srv.httpServer.Serve(
-			tcpKeepAliveListener{srv.listener.(*net.TCPListener)},
-		); err != http.ErrServerClosed {
-			return fmt.Errorf("HTTP Server failure: %s", err)
-		}
-	}
-
-	return nil
+	return srv.transport.Serve()
 }
 
 // Address implements the Server interface
-func (srv *server) Address() string {
-	return srv.addr.String()
-}
-
-// AddressURL implements the Server interface
-func (srv *server) AddressURL() url.URL {
-	return srv.addr
+func (srv *server) Address() url.URL {
+	return srv.transport.Address()
 }
 
 // Shutdown implements the Server interface
@@ -92,12 +60,14 @@ func (srv *server) Shutdown() error {
 	// Don't block if there's no currently processed operations
 	if srv.currentOps < 1 {
 		srv.opsLock.Unlock()
-		return srv.shutdownHTTPServer()
+		return srv.shutdownServer()
 	}
 	srv.opsLock.Unlock()
+
+	// Wait until the server is ready for shutdown
 	<-srv.shutdownRdy
 
-	return srv.shutdownHTTPServer()
+	return srv.shutdownServer()
 }
 
 // ActiveSessionsNum implements the Server interface

@@ -1,6 +1,10 @@
 package message
 
-import pld "github.com/qbeon/webwire-go/payload"
+import (
+	"time"
+
+	pld "github.com/qbeon/webwire-go/payload"
+)
 
 const (
 	// MsgMinLenSignal represents the minimum length
@@ -100,6 +104,15 @@ const (
 	// Session destruction notification message structure:
 	//  1. message type (1 byte)
 	MsgMinLenSessionClosed = int(1)
+
+	// MsgMinLenConf represents the minimum length
+	// of an endpoint metadata message.
+	//  1. message type (1 byte)
+	//  2. major protocol version (1 byte)
+	//  3. minor protocol version (1 byte)
+	//  4. read timeout in milliseconds (4 byte)
+	//  5. message buffer size in bytes (4 byte)
+	MsgMinLenConf = int(11)
 )
 
 const (
@@ -131,10 +144,6 @@ const (
 	// if sessions are disabled for the target server
 	MsgSessionsDisabled = byte(5)
 
-	// MsgReplyProtocolError is sent by the server in response to an invalid
-	// message violating the protocol
-	MsgReplyProtocolError = byte(6)
-
 	// MsgSessionCreated is sent by the server
 	// to notify the client about the session creation
 	MsgSessionCreated = byte(21)
@@ -142,6 +151,10 @@ const (
 	// MsgSessionClosed is sent by the server
 	// to notify the client about the session destruction
 	MsgSessionClosed = byte(22)
+
+	// MsgConf is sent by the server right after the handshake and includes
+	// the server exposed configurations
+	MsgConf = byte(23)
 
 	// CLIENT
 
@@ -199,18 +212,32 @@ const (
 	MsgReplyUtf16 = byte(193)
 )
 
-// Message represents a WebWire protocol message
+// ServerConfiguration represents the MsgConf payload data
+type ServerConfiguration struct {
+	MajorProtocolVersion byte
+	MinorProtocolVersion byte
+	ReadTimeout          time.Duration
+	MessageBufferSize    uint32
+}
+
+// Message represents a non-thread-safe WebWire protocol message
 type Message struct {
-	Type       byte
-	Identifier [8]byte
-	Name       string
-	Payload    pld.Payload
+	MsgBuffer     Buffer
+	MsgType       byte
+	MsgIdentifier [8]byte
+	MsgName       []byte
+	MsgPayload    pld.Payload
+
+	// ServerConfiguration is only initialized for MsgConf type messages
+	ServerConfiguration ServerConfiguration
+
+	onClose func()
 }
 
 // RequiresReply returns true if a message of this type requires a reply,
 // otherwise returns false.
 func (msg *Message) RequiresReply() bool {
-	switch msg.Type {
+	switch msg.MsgType {
 	case MsgCloseSession:
 		fallthrough
 	case MsgRestoreSession:
@@ -223,4 +250,61 @@ func (msg *Message) RequiresReply() bool {
 		return true
 	}
 	return false
+}
+
+// Identifier implements the Message interface
+func (msg *Message) Identifier() [8]byte {
+	if msg.MsgBuffer.IsEmpty() {
+		panic("read after close")
+	}
+	return msg.MsgIdentifier
+}
+
+// Name implements the Message interface
+func (msg *Message) Name() []byte {
+	if msg.MsgBuffer.IsEmpty() {
+		panic("read after close")
+	}
+	return msg.MsgName
+}
+
+// PayloadEncoding implements the Message interface
+func (msg *Message) PayloadEncoding() pld.Encoding {
+	if msg.MsgBuffer.IsEmpty() {
+		panic("read after close")
+	}
+	return msg.MsgPayload.Encoding
+}
+
+// Payload implements the Message interface
+func (msg *Message) Payload() []byte {
+	if msg.MsgBuffer.IsEmpty() {
+		panic("read after close")
+	}
+	return msg.MsgPayload.Data
+}
+
+// PayloadUtf8 implements the Message interface
+func (msg *Message) PayloadUtf8() ([]byte, error) {
+	if msg.MsgBuffer.IsEmpty() {
+		panic("read after close")
+	}
+	return msg.MsgPayload.Utf8()
+}
+
+// Close implements the Message interface
+func (msg *Message) Close() {
+	if msg.MsgBuffer.IsEmpty() {
+		return
+	}
+
+	msg.MsgBuffer.Close()
+	msg.MsgType = 0
+	msg.MsgIdentifier = [8]byte{0, 0, 0, 0, 0, 0, 0, 0}
+	msg.MsgName = nil
+	msg.MsgPayload = pld.Payload{}
+	msg.ServerConfiguration = ServerConfiguration{}
+
+	// Call closure callback
+	msg.onClose()
 }

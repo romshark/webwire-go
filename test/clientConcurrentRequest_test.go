@@ -5,11 +5,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-
 	tmdwg "github.com/qbeon/tmdwg-go"
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -20,7 +19,7 @@ func TestClientConcurrentRequest(t *testing.T) {
 	finished := tmdwg.NewTimedWaitGroup(concurrentAccessors*2, 2*time.Second)
 
 	// Initialize webwire server
-	server := setupServer(
+	setup := setupTestServer(
 		t,
 		&serverImpl{
 			onRequest: func(
@@ -29,20 +28,20 @@ func TestClientConcurrentRequest(t *testing.T) {
 				_ wwr.Message,
 			) (wwr.Payload, error) {
 				finished.Progress(1)
-				return nil, nil
+				return wwr.Payload{}, nil
 			},
 		},
 		wwr.ServerOptions{},
+		nil, // Use the default transport implementation
 	)
 
 	// Initialize client
-	client := newCallbackPoweredClient(
-		server.AddressURL(),
+	client := setup.newClient(
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
-		callbackPoweredClientHooks{},
-		nil, // No TLS configuration
+		nil, // Use the default transport implementation
+		testClientHooks{},
 	)
 	defer client.connection.Close()
 
@@ -52,8 +51,11 @@ func TestClientConcurrentRequest(t *testing.T) {
 		defer finished.Progress(1)
 		_, err := client.connection.Request(
 			context.Background(),
-			"sample",
-			wwr.NewPayload(wwr.EncodingBinary, []byte("samplepayload")),
+			[]byte("sample"),
+			wwr.Payload{
+				Encoding: wwr.EncodingBinary,
+				Data:     []byte("samplepayload"),
+			},
 		)
 		assert.NoError(t, err)
 	}

@@ -5,23 +5,22 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
-
 	tmdwg "github.com/qbeon/tmdwg-go"
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
+	"github.com/stretchr/testify/require"
 )
 
 // TestClientSignal tests client-side signals with UTF8 encoded payloads
 func TestClientSignal(t *testing.T) {
-	expectedSignalPayload := wwr.NewPayload(
-		wwr.EncodingUtf8,
-		[]byte("webwire_test_SIGNAL_payload"),
-	)
+	expectedSignalPayload := wwr.Payload{
+		Encoding: wwr.EncodingUtf8,
+		Data:     []byte("webwire_test_SIGNAL_payload"),
+	}
 	signalArrived := tmdwg.NewTimedWaitGroup(1, 1*time.Second)
 
 	// Initialize webwire server given only the signal handler
-	server := setupServer(
+	setup := setupTestServer(
 		t,
 		&serverImpl{
 			onSignal: func(
@@ -29,31 +28,43 @@ func TestClientSignal(t *testing.T) {
 				_ wwr.Connection,
 				msg wwr.Message,
 			) {
-
 				// Verify signal payload
-				comparePayload(t, expectedSignalPayload, msg.Payload())
+				require.Equal(
+					t,
+					expectedSignalPayload.Encoding,
+					msg.PayloadEncoding(),
+				)
+				require.Equal(
+					t,
+					expectedSignalPayload.Data,
+					msg.Payload(),
+				)
 
 				// Synchronize, notify signal arrival
 				signalArrived.Progress(1)
 			},
 		},
 		wwr.ServerOptions{},
+		nil, // Use the default transport implementation
 	)
 
 	// Initialize client
-	client := newCallbackPoweredClient(
-		server.AddressURL(),
+	client := setup.newClient(
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
-		callbackPoweredClientHooks{},
-		nil, // No TLS configuration
+		nil, // Use the default transport implementation
+		testClientHooks{},
 	)
 
 	require.NoError(t, client.connection.Connect())
 
 	// Send signal
-	require.NoError(t, client.connection.Signal("", expectedSignalPayload))
+	require.NoError(t, client.connection.Signal(
+		context.Background(),
+		nil,
+		expectedSignalPayload,
+	))
 
 	// Synchronize, await signal arrival
 	require.NoError(t, signalArrived.Wait(), "Signal wasn't processed")

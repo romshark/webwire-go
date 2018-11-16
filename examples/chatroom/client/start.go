@@ -75,13 +75,18 @@ MAINLOOP:
 			// Send the message and await server reply
 			// for the message to be considered posted
 			go func() {
-				if _, err := clt.connection.Request(
+				reply, err := clt.connection.Request(
 					context.Background(),
-					"msg",
-					webwire.NewPayload(webwire.EncodingBinary, []byte(input)),
-				); err != nil {
+					[]byte("msg"),
+					webwire.Payload{
+						Encoding: webwire.EncodingBinary,
+						Data:     []byte(input),
+					},
+				)
+				if err != nil {
 					log.Printf("WARNING: Couldn't send message: %s", err)
 				}
+				reply.Close()
 			}()
 		}
 	}

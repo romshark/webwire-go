@@ -9,8 +9,8 @@ import (
 	"time"
 
 	wwr "github.com/qbeon/webwire-go"
-
 	wwrclt "github.com/qbeon/webwire-go/client"
+	wwrfasthttp "github.com/qbeon/webwire-go/transport/fasthttp"
 )
 
 // EchoClient implements the wwrclt.Implementation interface
@@ -31,7 +31,7 @@ func NewEchoClient(serverAddr url.URL) (*EchoClient, error) {
 			DefaultRequestTimeout: 10 * time.Second,
 			ReconnectionInterval:  2 * time.Second,
 		},
-		nil, // No TLS configuration
+		&wwrfasthttp.ClientTransport{},
 	)
 	if err != nil {
 		return nil, err
@@ -56,26 +56,31 @@ func (clt *EchoClient) OnSignal(_ wwr.Message) {}
 
 // Request sends a message to the server and returns the reply.
 // panics if the request fails for whatever reason
-func (clt *EchoClient) Request(
-	ctx context.Context,
-	message string,
-) wwr.Payload {
+func (clt *EchoClient) Request(message string) []byte {
 	// Define a payload to be sent to the server, use default binary encoding
-	payload := wwr.NewPayload(wwr.EncodingBinary, []byte(message))
+	payload := wwr.Payload{Data: []byte(message)}
 
 	log.Printf(
 		"Sent request:   '%s' (%d)",
-		string(payload.Data()),
-		len(payload.Data()),
+		string(payload.Data),
+		len(payload.Data),
 	)
 
 	// Send request and await reply
-	reply, err := clt.connection.Request(ctx, "", payload)
+	reply, err := clt.connection.Request(context.Background(), nil, payload)
 	if err != nil {
 		panic(fmt.Errorf("Request failed: %s", err))
 	}
 
-	return reply
+	// Copy the reply payload
+	pld := reply.Payload()
+	data := make([]byte, len(pld))
+	copy(data, pld)
+
+	// Close the reply to release the buffer
+	reply.Close()
+
+	return data
 }
 
 var serverAddr = flag.String("addr", ":8081", "server address")
@@ -91,11 +96,11 @@ func main() {
 	}
 
 	// Send request and await reply
-	reply := echoClient.Request(context.Background(), "hey, server!")
+	reply := echoClient.Request("hey, server!")
 
 	log.Printf(
 		"Received reply: '%s' (%d)",
-		string(reply.Data()),
-		len(reply.Data()),
+		string(reply),
+		len(reply),
 	)
 }

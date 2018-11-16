@@ -5,25 +5,25 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
-
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestClientRequestUtf8 tests requests with UTF8 encoded payloads
 func TestClientRequestUtf8(t *testing.T) {
-	expectedRequestPayload := wwr.NewPayload(
-		wwr.EncodingUtf8,
-		[]byte("webwire_test_REQUEST_payload"),
-	)
-	expectedReplyPayload := wwr.NewPayload(
-		wwr.EncodingUtf8,
-		[]byte("webwire_test_RESPONSE_message"),
-	)
+	expectedRequestPayload := wwr.Payload{
+		Encoding: wwr.EncodingUtf8,
+		Data:     []byte("webwire_test_REQUEST_payload"),
+	}
+	expectedReplyPayload := wwr.Payload{
+		Encoding: wwr.EncodingUtf8,
+		Data:     []byte("webwire_test_RESPONSE_message"),
+	}
 
 	// Initialize webwire server given only the request
-	server := setupServer(
+	setup := setupTestServer(
 		t,
 		&serverImpl{
 			onRequest: func(
@@ -32,21 +32,30 @@ func TestClientRequestUtf8(t *testing.T) {
 				msg wwr.Message,
 			) (wwr.Payload, error) {
 				// Verify request payload
-				comparePayload(t, expectedRequestPayload, msg.Payload())
+				assert.Equal(
+					t,
+					expectedRequestPayload.Encoding,
+					msg.PayloadEncoding(),
+				)
+				assert.Equal(
+					t,
+					expectedRequestPayload.Data,
+					msg.Payload(),
+				)
 				return expectedReplyPayload, nil
 			},
 		},
 		wwr.ServerOptions{},
+		nil, // Use the default transport implementation
 	)
 
 	// Initialize client
-	client := newCallbackPoweredClient(
-		server.AddressURL(),
+	client := setup.newClient(
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
-		callbackPoweredClientHooks{},
-		nil, // No TLS configuration
+		nil, // Use the default transport implementation
+		testClientHooks{},
 	)
 
 	require.NoError(t, client.connection.Connect())
@@ -54,11 +63,21 @@ func TestClientRequestUtf8(t *testing.T) {
 	// Send request and await reply
 	reply, err := client.connection.Request(
 		context.Background(),
-		"",
+		nil,
 		expectedRequestPayload,
 	)
 	require.NoError(t, err)
 
 	// Verify reply
-	comparePayload(t, expectedReplyPayload, reply)
+	require.Equal(
+		t,
+		expectedReplyPayload.Encoding,
+		reply.PayloadEncoding(),
+	)
+	require.Equal(
+		t,
+		expectedReplyPayload.Data,
+		reply.Payload(),
+	)
+	reply.Close()
 }

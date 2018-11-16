@@ -54,13 +54,13 @@ func (mng *inMemSessManager) OnSessionLookup(key string) (
 	error,
 ) {
 	mng.lock.Lock()
-	defer mng.lock.Unlock()
 	if session, exists := mng.sessions[key]; exists {
 		// Update last lookup field
 		session.LastLookup = time.Now().UTC()
 		mng.sessions[key] = session
 
 		// Session found
+		mng.lock.Unlock()
 		return wwr.NewSessionLookupResult(
 			session.Creation,                      // Creation
 			session.LastLookup,                    // LastLookup
@@ -69,6 +69,7 @@ func (mng *inMemSessManager) OnSessionLookup(key string) (
 	}
 
 	// Session not found
+	mng.lock.Unlock()
 	return nil, nil
 }
 

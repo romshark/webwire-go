@@ -1,18 +1,16 @@
 package test
 
 import (
+	"context"
 	"sync"
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
-
-	"github.com/stretchr/testify/assert"
-
 	"github.com/qbeon/webwire-go"
-
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestMaxConcSessConn tests 4 maximum concurrent connections of a session
@@ -24,7 +22,7 @@ func TestMaxConcSessConn(t *testing.T) {
 	concurrentConns := uint(4)
 
 	// Initialize server
-	server := setupServer(
+	setup := setupTestServer(
 		t,
 		&serverImpl{
 			onClientConnected: func(conn wwr.Connection) {
@@ -65,18 +63,18 @@ func TestMaxConcSessConn(t *testing.T) {
 				},
 			},
 		},
+		nil, // Use the default transport implementation
 	)
 
 	// Initialize client
-	clients := make([]*callbackPoweredClient, concurrentConns)
+	clients := make([]*testClient, concurrentConns)
 	for i := uint(0); i < concurrentConns; i++ {
-		client := newCallbackPoweredClient(
-			server.AddressURL(),
+		client := setup.newClient(
 			wwrclt.Options{
 				DefaultRequestTimeout: 2 * time.Second,
 			},
-			callbackPoweredClientHooks{},
-			nil, // No TLS configuration
+			nil, // Use the default transport implementation
+			testClientHooks{},
 		)
 		clients[i] = client
 
@@ -86,6 +84,7 @@ func TestMaxConcSessConn(t *testing.T) {
 		if i > 0 {
 			sessionKeyLock.RLock()
 			assert.NoError(t, client.connection.RestoreSession(
+				context.Background(),
 				[]byte(sessionKey),
 			))
 			sessionKeyLock.RUnlock()
@@ -93,13 +92,12 @@ func TestMaxConcSessConn(t *testing.T) {
 	}
 
 	// Ensure that the last superfluous client is rejected
-	superfluousClient := newCallbackPoweredClient(
-		server.AddressURL(),
+	superfluousClient := setup.newClient(
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
-		callbackPoweredClientHooks{},
-		nil, // No TLS configuration
+		nil, // Use the default transport implementation
+		testClientHooks{},
 	)
 
 	require.NoError(t, superfluousClient.connection.Connect())
@@ -108,6 +106,7 @@ func TestMaxConcSessConn(t *testing.T) {
 	// due to reached limit
 	sessionKeyLock.RLock()
 	sessionRestorationError := superfluousClient.connection.RestoreSession(
+		context.Background(),
 		[]byte(sessionKey),
 	)
 	require.Error(t, sessionRestorationError)
