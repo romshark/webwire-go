@@ -343,7 +343,7 @@ The [official JavaScript library](https://github.com/qbeon/webwire-js) enables s
 Webwire can be hosted by a [TLS](https://en.wikipedia.org/wiki/Transport_Layer_Security) protected HTTPS server to prevent [man-in-the-middle attacks](https://en.wikipedia.org/wiki/Man-in-the-middle_attack) as well as to verify the identity of the server. Setting up a TLS protected server is easy:
 ```go
 // Setup a secure webwire server instance
-server, err := wwr.NewSecure(
+server, err := wwr.NewServer(
 	serverImplementation,
 	wwr.ServerOptions{
     Host: "localhost:443",
