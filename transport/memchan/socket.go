@@ -189,9 +189,7 @@ func (sock *Socket) readWithDeadline(deadline time.Time) (
 		}
 	}
 
-	if !sock.readTimer.Stop() {
-		<-sock.readTimer.C
-	}
+	sock.readTimer.Stop()
 
 	return
 }

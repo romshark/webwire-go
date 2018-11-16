@@ -4,7 +4,6 @@ package wwrerr
 type SockReadErr interface {
 	error
 
-	// IsAbnormalCloseErr must return true if the error represents
-	// an abnormal closure error
-	IsAbnormalCloseErr() bool
+	// IsCloseErr must return true if the error represents a closure error
+	IsCloseErr() bool
 }

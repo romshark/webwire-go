@@ -72,7 +72,7 @@ func (srv *server) handleConnection(
 		); err != nil {
 			msg.Close()
 
-			if err.IsAbnormalCloseErr() {
+			if !err.IsCloseErr() {
 				srv.warnLog.Printf("abnormal closure error: %s", err)
 			}
 

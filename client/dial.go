@@ -12,9 +12,9 @@ import (
 // dial tries to dial in the server and await an approval including the endpoint
 // metadata before the configured dialing timeout is reached.
 // clt.dial should only be called from within clt.connect.
-func (clt *client) dial() (message.ServerConfiguration, error) {
-	dialingTimer := time.NewTimer(clt.options.DialingTimeout)
+func (clt *client) dial() (srvConf message.ServerConfiguration, err error) {
 	deadline := time.Now().Add(clt.options.DialingTimeout)
+	clt.dialingTimer.Reset(clt.options.DialingTimeout)
 
 	type dialResult struct {
 		serverConfiguration message.ServerConfiguration
@@ -56,7 +56,21 @@ func (clt *client) dial() (message.ServerConfiguration, error) {
 
 		// Await the server configuration handshake response
 		if err := clt.conn.Read(msg, deadline); err != nil {
-			result <- dialResult{err: fmt.Errorf("read err: %s", err.Error())}
+			if err.IsCloseErr() {
+				// Regular connection closure
+				result <- dialResult{err: wwrerr.DisconnectedErr{
+					Cause: fmt.Errorf(
+						"couldn't read srv-conf message during dial: %s",
+						err,
+					),
+				}}
+			} else {
+				// Error during reading of server configuration message
+				result <- dialResult{err: fmt.Errorf(
+					"read err: %s",
+					err.Error(),
+				)}
+			}
 			clt.conn.Close()
 			msg.Close()
 			return
@@ -97,14 +111,17 @@ func (clt *client) dial() (message.ServerConfiguration, error) {
 	}()
 
 	select {
-	case <-dialingTimer.C:
+	case <-clt.dialingTimer.C:
 		// Abort due to timeout
 		atomic.StoreUint32(&abortAwait, 1)
-		return message.ServerConfiguration{}, wwrerr.DialTimeoutErr{}
+		err = wwrerr.DisconnectedErr{}
+
 	case result := <-result:
-		if !dialingTimer.Stop() {
-			<-dialingTimer.C
-		}
-		return result.serverConfiguration, result.err
+		srvConf = result.serverConfiguration
+		err = result.err
 	}
+
+	clt.dialingTimer.Stop()
+
+	return
 }

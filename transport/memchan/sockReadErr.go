@@ -18,7 +18,7 @@ func (err SockReadErr) Error() string {
 	return fmt.Sprintf("reading socket failed: %s", err.err)
 }
 
-// IsAbnormalCloseErr implements the SockReadErr interface
-func (err SockReadErr) IsAbnormalCloseErr() bool {
-	return !err.closed
+// IsCloseErr implements the SockReadErr interface
+func (err SockReadErr) IsCloseErr() bool {
+	return err.closed
 }

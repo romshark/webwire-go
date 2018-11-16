@@ -15,40 +15,6 @@ import (
 	"github.com/qbeon/webwire-go/wwrerr"
 )
 
-// SockReadErr implements the SockReadErr interface
-type SockReadErr struct {
-	cause error
-}
-
-// Error implements the Go error interface
-func (err SockReadErr) Error() string {
-	return fmt.Sprintf("reading socket failed: %s", err.cause)
-}
-
-// IsAbnormalCloseErr implements the SockReadErr interface
-func (err SockReadErr) IsAbnormalCloseErr() bool {
-	return websocket.IsUnexpectedCloseError(
-		err.cause,
-		websocket.CloseGoingAway,
-		websocket.CloseAbnormalClosure,
-	)
-}
-
-// SockReadWrongMsgTypeErr implements the SockReadErr interface
-type SockReadWrongMsgTypeErr struct {
-	messageType int
-}
-
-// Error implements the Go error interface
-func (err SockReadWrongMsgTypeErr) Error() string {
-	return fmt.Sprintf("invalid websocket message type: %d", err.messageType)
-}
-
-// IsAbnormalCloseErr implements the SockReadErr interface
-func (err SockReadWrongMsgTypeErr) IsAbnormalCloseErr() bool {
-	return false
-}
-
 // Socket implements the webwire.Socket interface using
 // the fasthttp/websocket library
 type Socket struct {
@@ -116,15 +82,11 @@ func (sock *Socket) GetWriter() (io.WriteCloser, error) {
 	sock.writeLock.Lock()
 
 	// Check connection status
-	sock.lock.Lock()
-	if !sock.connected {
-		sock.lock.Unlock()
-		sock.writeLock.Unlock()
+	if !sock.IsConnected() {
 		return nil, wwrerr.DisconnectedErr{
 			Cause: fmt.Errorf("can't write to a closed socket"),
 		}
 	}
-	sock.lock.Unlock()
 
 	writer, err := sock.conn.NextWriter(websocket.BinaryMessage)
 	if err != nil {
@@ -146,6 +108,14 @@ func (sock *Socket) Read(
 	deadline time.Time,
 ) wwrerr.SockReadErr {
 	sock.readLock.Lock()
+
+	// Check connection status
+	if !sock.IsConnected() {
+		return SockReadErr{cause: wwrerr.DisconnectedErr{
+			Cause: fmt.Errorf("can't read closed socket"),
+		}}
+	}
+
 	if err := sock.conn.SetReadDeadline(deadline); err != nil {
 		sock.readLock.Unlock()
 		return SockReadErr{cause: errors.New("couldn't set read deadline")}

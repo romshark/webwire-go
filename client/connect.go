@@ -48,12 +48,10 @@ func (clt *client) connect() error {
 			msg := clt.messagePool.Get()
 
 			if err := clt.conn.Read(msg, time.Time{}); err != nil {
+				// Return message object back to the pool
 				msg.Close()
-				if err.IsAbnormalCloseErr() {
-					// Error while reading message
-					clt.options.ErrorLog.Print("Abnormal closure error:", err)
-				}
 
+				// Set connection status to disconnected
 				clt.setStatus(StatusDisconnected)
 
 				// Stop heartbeat
@@ -67,17 +65,7 @@ func (clt *client) connect() error {
 				// and free up the socket
 				if atomic.LoadInt32(&clt.autoconnect) == autoconnectEnabled {
 					go func() {
-						if err := clt.tryAutoconnect(
-							context.Background(),
-							false,
-						); err != nil {
-							clt.options.ErrorLog.Printf(
-								"Auto-reconnect failed "+
-									"after connection loss: %s",
-								err,
-							)
-							return
-						}
+						clt.tryAutoconnect(context.Background(), false)
 					}()
 				}
 				return

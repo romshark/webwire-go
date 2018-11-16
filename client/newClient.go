@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/url"
 	"sync"
+	"time"
 
 	webwire "github.com/qbeon/webwire-go"
 	"github.com/qbeon/webwire-go/message"
@@ -49,11 +50,15 @@ func NewClient(
 		return nil, fmt.Errorf("couldn't initialize socket: %s", err)
 	}
 
+	dialingTimer := time.NewTimer(0)
+	<-dialingTimer.C
+
 	// Initialize new client
 	newClt := &client{
 		serverAddr:     serverAddress,
 		options:        options,
 		impl:           implementation,
+		dialingTimer:   dialingTimer,
 		autoconnect:    autoconnect,
 		statusLock:     &sync.Mutex{},
 		status:         StatusDisconnected,

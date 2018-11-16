@@ -2,6 +2,7 @@ package client
 
 import (
 	"sync/atomic"
+	"time"
 
 	"net/url"
 	"sync"
@@ -41,12 +42,13 @@ const (
 
 // client represents an instance of one of the servers clients
 type client struct {
-	serverAddr  url.URL
-	options     Options
-	impl        Implementation
-	autoconnect autoconnectStatus
-	statusLock  *sync.Mutex
-	status      Status
+	serverAddr   url.URL
+	options      Options
+	impl         Implementation
+	dialingTimer *time.Timer
+	autoconnect  autoconnectStatus
+	statusLock   *sync.Mutex
+	status       Status
 
 	sessionLock sync.RWMutex
 	session     *webwire.Session
