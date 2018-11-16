@@ -76,8 +76,10 @@ func NewChatroomClient(serverAddr url.URL) (*ChatroomClient, error) {
 		serverAddr,
 		newChatroomClient,
 		wwrclt.Options{
-			DefaultRequestTimeout: 10 * time.Second,
 			// Default timeout for timed requests
+			DefaultRequestTimeout: 10 * time.Second,
+
+			// Retry connection establishment after 2 seconds on failure
 			ReconnectionInterval: 2 * time.Second,
 
 			// Session info parser function must override the default one
