@@ -61,8 +61,8 @@ func (sock *Socket) Dial(serverAddr url.URL, deadline time.Time) (err error) {
 
 // fasthttpWriteCloser implements the io.WriteCloser interface
 type fasthttpWriteCloser struct {
-	writer  io.WriteCloser
-	onClose func()
+	writer    io.WriteCloser
+	writeLock *sync.Mutex
 }
 
 // Write implements the io.Writer interface
@@ -73,7 +73,7 @@ func (wc *fasthttpWriteCloser) Write(p []byte) (n int, err error) {
 // Close implements the io.Closer interface
 func (wc *fasthttpWriteCloser) Close() error {
 	err := wc.writer.Close()
-	wc.onClose()
+	wc.writeLock.Unlock()
 	return err
 }
 
@@ -94,11 +94,8 @@ func (sock *Socket) GetWriter() (io.WriteCloser, error) {
 		return nil, err
 	}
 	return &fasthttpWriteCloser{
-		writer: writer,
-		onClose: func() {
-			// Unlock the writer lock on writer closure
-			sock.writeLock.Unlock()
-		},
+		writer:    writer,
+		writeLock: sock.writeLock,
 	}, nil
 }
 
