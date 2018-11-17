@@ -60,7 +60,7 @@ func WriteMsgErrorReply(
 	}
 
 	// Write message type flag
-	if _, err := writer.Write([]byte{MsgErrorReply}); err != nil {
+	if _, err := writer.Write(msgTypeReplyError); err != nil {
 		if closeErr := writer.Close(); closeErr != nil {
 			return fmt.Errorf("%s: %s", err, closeErr)
 		}
@@ -76,7 +76,7 @@ func WriteMsgErrorReply(
 	}
 
 	// Write code length flag
-	if _, err := writer.Write([]byte{byte(len(code))}); err != nil {
+	if _, err := writer.Write(msgNameLenBytes[len(code)]); err != nil {
 		if closeErr := writer.Close(); closeErr != nil {
 			return fmt.Errorf("%s: %s", err, closeErr)
 		}

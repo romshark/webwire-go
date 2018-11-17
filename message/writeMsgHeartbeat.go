@@ -9,7 +9,7 @@ import (
 // given writer closing it eventually
 func WriteMsgHeartbeat(writer io.WriteCloser) error {
 	// Write message type flag
-	if _, err := writer.Write([]byte{MsgHeartbeat}); err != nil {
+	if _, err := writer.Write(msgTypeHeartbeat); err != nil {
 		if closeErr := writer.Close(); closeErr != nil {
 			return fmt.Errorf("%s: %s", err, closeErr)
 		}

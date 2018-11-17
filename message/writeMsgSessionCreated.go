@@ -12,7 +12,7 @@ func WriteMsgSessionCreated(
 	sessionInfo []byte,
 ) error {
 	// Write message type flag
-	if _, err := writer.Write([]byte{MsgSessionCreated}); err != nil {
+	if _, err := writer.Write(msgTypeSessionCreated); err != nil {
 		if closeErr := writer.Close(); closeErr != nil {
 			return fmt.Errorf("%s: %s", err, closeErr)
 		}

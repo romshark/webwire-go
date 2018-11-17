@@ -9,7 +9,7 @@ import (
 // given writer closing it eventually
 func WriteMsgSessionClosed(writer io.WriteCloser) error {
 	// Write message type flag
-	if _, err := writer.Write([]byte{MsgSessionClosed}); err != nil {
+	if _, err := writer.Write(msgTypeSessionClosed); err != nil {
 		if closeErr := writer.Close(); closeErr != nil {
 			return fmt.Errorf("%s: %s", err, closeErr)
 		}

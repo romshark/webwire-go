@@ -9,24 +9,25 @@ import (
 // given writer closing it eventually
 func WriteMsgSpecialRequestReply(
 	writer io.WriteCloser,
-	msgType byte,
+	reqType byte,
 	reqIdent [8]byte,
 ) error {
-	switch msgType {
+	msgType := msgTypeReplyInternalError
+	switch reqType {
 	case MsgInternalError:
-		break
+		msgType = msgTypeReplyInternalError
 	case MsgMaxSessConnsReached:
-		break
+		msgType = msgTypeReplyMaxSessConnsReached
 	case MsgSessionNotFound:
-		break
+		msgType = msgTypeReplySessionNotFound
 	case MsgSessionsDisabled:
-		break
+		msgType = msgTypeSessionsDisabled
 	case MsgReplyShutdown:
-		break
+		msgType = msgTypeReplyShutdown
 	default:
 		initialErr := fmt.Errorf(
 			"message type (%d) doesn't represent a special reply message",
-			msgType,
+			reqType,
 		)
 		if err := writer.Close(); err != nil {
 			return fmt.Errorf("%s: %s", initialErr, err)
@@ -35,7 +36,7 @@ func WriteMsgSpecialRequestReply(
 	}
 
 	// Write message type flag
-	if _, err := writer.Write([]byte{msgType}); err != nil {
+	if _, err := writer.Write(msgType); err != nil {
 		if closeErr := writer.Close(); closeErr != nil {
 			return fmt.Errorf("%s: %s", err, closeErr)
 		}

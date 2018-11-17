@@ -11,10 +11,11 @@ import (
 // with a session closure request message
 func TestRequiresReplyCloseSession(t *testing.T) {
 	writer := &testWriter{}
-	require.NoError(t, WriteMsgEmptyRequest(
+	require.NoError(t, WriteMsgNamelessRequest(
 		writer,
 		MsgCloseSession,
 		genRndMsgIdentifier(),
+		[]byte{},
 	))
 	require.True(t, writer.closed)
 

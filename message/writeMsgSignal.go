@@ -56,16 +56,15 @@ func WriteMsgSignal(
 	}
 
 	// Determine the message type from the payload encoding type
-	sigType := MsgSignalBinary
-	switch payloadEncoding {
-	case pld.Utf8:
-		sigType = MsgSignalUtf8
-	case pld.Utf16:
-		sigType = MsgSignalUtf16
+	msgType := msgTypeSignalBinary
+	if payloadEncoding == pld.Utf8 {
+		msgType = msgTypeSignalUtf8
+	} else if payloadEncoding == pld.Utf16 {
+		msgType = msgTypeSignalUtf16
 	}
 
 	// Write message type flag
-	if _, err := writer.Write([]byte{sigType}); err != nil {
+	if _, err := writer.Write(msgType); err != nil {
 		if closeErr := writer.Close(); closeErr != nil {
 			return fmt.Errorf("%s: %s", err, closeErr)
 		}
@@ -73,7 +72,7 @@ func WriteMsgSignal(
 	}
 
 	// Write name length flag
-	if _, err := writer.Write([]byte{byte(len(name))}); err != nil {
+	if _, err := writer.Write(msgNameLenBytes[len(name)]); err != nil {
 		if closeErr := writer.Close(); closeErr != nil {
 			return fmt.Errorf("%s: %s", err, closeErr)
 		}
@@ -90,7 +89,7 @@ func WriteMsgSignal(
 
 	// Write header padding byte if the payload requires proper alignment
 	if payloadEncoding == pld.Utf16 && len(name)%2 != 0 {
-		if _, err := writer.Write([]byte{0}); err != nil {
+		if _, err := writer.Write(msgPayloadOffset); err != nil {
 			if closeErr := writer.Close(); closeErr != nil {
 				return fmt.Errorf("%s: %s", err, closeErr)
 			}

@@ -36,26 +36,6 @@ func TestWriteMsgNamelessReq(t *testing.T) {
 	require.True(t, writer.closed)
 }
 
-// TestWriteMsgEmptyReq tests WriteMsgEmptyRequest
-func TestWriteMsgEmptyReq(t *testing.T) {
-	id := genRndMsgIdentifier()
-
-	// Compose encoded message
-	// Add type flag
-	expected := []byte{MsgCloseSession}
-	// Add identifier
-	expected = append(expected, id[:]...)
-
-	writer := &testWriter{}
-	require.NoError(t, WriteMsgEmptyRequest(
-		writer,
-		MsgCloseSession,
-		id,
-	))
-	require.Equal(t, expected, writer.buf)
-	require.True(t, writer.closed)
-}
-
 // TestWriteMsgReqBinary tests WriteMsgRequest
 // using default binary payload encoding
 func TestWriteMsgReqBinary(t *testing.T) {

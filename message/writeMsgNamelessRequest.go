@@ -13,8 +13,15 @@ func WriteMsgNamelessRequest(
 	identifier [8]byte,
 	binaryPayload []byte,
 ) error {
+	msgType := msgTypeRequestCloseSession
+	if reqType == MsgRestoreSession {
+		msgType = msgTypeRequestRestoreSession
+	} else if reqType != MsgCloseSession {
+		panic(fmt.Errorf("unexpected nameless request type: %d", reqType))
+	}
+
 	// Write message type flag
-	if _, err := writer.Write([]byte{reqType}); err != nil {
+	if _, err := writer.Write(msgType); err != nil {
 		if closeErr := writer.Close(); closeErr != nil {
 			return fmt.Errorf("%s: %s", err, closeErr)
 		}

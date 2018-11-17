@@ -28,16 +28,15 @@ func WriteMsgReply(
 	}
 
 	// Determine message type from payload encoding type
-	reqType := MsgReplyBinary
-	switch payloadEncoding {
-	case pld.Utf8:
-		reqType = MsgReplyUtf8
-	case pld.Utf16:
-		reqType = MsgReplyUtf16
+	msgType := msgTypeReplyBinary
+	if payloadEncoding == pld.Utf8 {
+		msgType = msgTypeReplyUtf8
+	} else if payloadEncoding == pld.Utf16 {
+		msgType = msgTypeReplyUtf16
 	}
 
 	// Write message type flag
-	if _, err := writer.Write([]byte{reqType}); err != nil {
+	if _, err := writer.Write(msgType); err != nil {
 		if closeErr := writer.Close(); closeErr != nil {
 			return fmt.Errorf("%s: %s", err, closeErr)
 		}
@@ -54,7 +53,7 @@ func WriteMsgReply(
 
 	// Write header padding byte if the payload requires proper alignment
 	if payloadEncoding == pld.Utf16 {
-		if _, err := writer.Write([]byte{0}); err != nil {
+		if _, err := writer.Write(msgPayloadOffset); err != nil {
 			if closeErr := writer.Close(); closeErr != nil {
 				return fmt.Errorf("%s: %s", err, closeErr)
 			}
