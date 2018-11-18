@@ -111,7 +111,7 @@ func WriteMsgRequest(
 
 	// Write header padding byte if the payload requires proper alignment
 	if payloadEncoding == pld.Utf16 && len(name)%2 != 0 {
-		if _, err := writer.Write(msgPayloadOffset); err != nil {
+		if _, err := writer.Write(msgHeaderPadding); err != nil {
 			if closeErr := writer.Close(); closeErr != nil {
 				return fmt.Errorf("%s: %s", err, closeErr)
 			}

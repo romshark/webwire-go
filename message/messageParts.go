@@ -27,7 +27,7 @@ var msgTypeReplySessionNotFound = []byte{MsgSessionNotFound}
 var msgTypeSessionsDisabled = []byte{MsgSessionsDisabled}
 var msgTypeReplyShutdown = []byte{MsgReplyShutdown}
 
-var msgPayloadOffset = []byte{0}
+var msgHeaderPadding = []byte{0}
 
 var msgNameLenBytes = [256][]byte{
 	[]byte{0}, []byte{1}, []byte{2}, []byte{3},
