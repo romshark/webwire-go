@@ -26,7 +26,6 @@ func (clt *client) sendRequest(
 
 	// Register a new request
 	request := clt.requestManager.Create()
-	reqIdentifier := request.Identifier()
 
 	writer, err := clt.conn.GetWriter()
 	if err != nil {
@@ -36,13 +35,13 @@ func (clt *client) sendRequest(
 	// Compose a message and register it
 	if err := message.WriteMsgRequest(
 		writer,
-		reqIdentifier,
+		request.IdentifierBytes,
 		name,
 		payload.Encoding,
 		payload.Data,
 		true,
 	); err != nil {
-		clt.requestManager.Fail(reqIdentifier, err)
+		clt.requestManager.Fail(request.Identifier, err)
 		return nil, wwrerr.TransmissionErr{Cause: err}
 	}
 

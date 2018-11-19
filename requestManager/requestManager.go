@@ -3,6 +3,7 @@ package requestmanager
 import (
 	"encoding/binary"
 	"sync"
+	"sync/atomic"
 
 	"github.com/qbeon/webwire-go/message"
 )
@@ -10,18 +11,18 @@ import (
 // RequestManager manages and keeps track of outgoing pending requests
 type RequestManager struct {
 	lastID uint64
-	lock   sync.RWMutex
+	lock   *sync.RWMutex
 
 	// pending represents an indexed list of all pending requests
-	pending map[RequestIdentifier]*Request
+	pending map[[8]byte]*Request
 }
 
 // NewRequestManager constructs and returns a new instance of a RequestManager
 func NewRequestManager() RequestManager {
 	return RequestManager{
 		lastID:  0,
-		lock:    sync.RWMutex{},
-		pending: make(map[RequestIdentifier]*Request),
+		lock:    &sync.RWMutex{},
+		pending: make(map[[8]byte]*Request),
 	}
 }
 
@@ -29,24 +30,21 @@ func NewRequestManager() RequestManager {
 // Create doesn't start the timeout timer,
 // this is done in the subsequent request.AwaitReply
 func (manager *RequestManager) Create() *Request {
-	manager.lock.Lock()
-
 	// Generate unique request identifier by incrementing the last assigned id
-	manager.lastID++
-	var identifier RequestIdentifier
-	idBytes := make([]byte, 8)
-	binary.LittleEndian.PutUint64(idBytes, manager.lastID)
-	copy(identifier[:], idBytes[0:8])
+	ident := atomic.AddUint64(&manager.lastID, 1)
 
+	identBytes := make([]byte, 8)
+	binary.LittleEndian.PutUint64(identBytes, ident)
 	newRequest := &Request{
-		manager,
-		identifier,
-		make(chan genericReply, 1),
+		manager:         manager,
+		IdentifierBytes: identBytes,
+		Reply:           make(chan genericReply, 1),
 	}
+	copy(newRequest.Identifier[:], identBytes)
 
 	// Register the newly created request
-	manager.pending[identifier] = newRequest
-
+	manager.lock.Lock()
+	manager.pending[newRequest.Identifier] = newRequest
 	manager.lock.Unlock()
 
 	return newRequest
@@ -54,7 +52,7 @@ func (manager *RequestManager) Create() *Request {
 
 // deregister deregisters the given clients session from the list
 // of currently pending requests
-func (manager *RequestManager) deregister(identifier RequestIdentifier) {
+func (manager *RequestManager) deregister(identifier [8]byte) {
 	manager.lock.Lock()
 	delete(manager.pending, identifier)
 	manager.lock.Unlock()
@@ -74,7 +72,7 @@ func (manager *RequestManager) Fulfill(msg *message.Message) bool {
 	}
 
 	manager.deregister(msg.MsgIdentifier)
-	req.reply <- genericReply{
+	req.Reply <- genericReply{
 		ReplyMsg: msg,
 	}
 	return true
@@ -84,7 +82,7 @@ func (manager *RequestManager) Fulfill(msg *message.Message) bool {
 // with the provided error. Returns true if a pending request
 // was failed and deregistered, otherwise returns false
 func (manager *RequestManager) Fail(
-	identifier RequestIdentifier,
+	identifier [8]byte,
 	err error,
 ) bool {
 	manager.lock.RLock()
@@ -96,7 +94,7 @@ func (manager *RequestManager) Fail(
 	}
 
 	manager.deregister(identifier)
-	req.reply <- genericReply{
+	req.Reply <- genericReply{
 		Error: err,
 	}
 	return true
@@ -112,7 +110,7 @@ func (manager *RequestManager) PendingRequests() int {
 
 // IsPending returns true if the request associated
 // with the given identifier is pending
-func (manager *RequestManager) IsPending(identifier RequestIdentifier) bool {
+func (manager *RequestManager) IsPending(identifier [8]byte) bool {
 	manager.lock.RLock()
 	_, exists := manager.pending[identifier]
 	manager.lock.RUnlock()

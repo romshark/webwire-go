@@ -10,7 +10,7 @@ import (
 func WriteMsgSpecialRequestReply(
 	writer io.WriteCloser,
 	reqType byte,
-	reqIdent [8]byte,
+	reqIdent []byte,
 ) error {
 	msgType := msgTypeReplyInternalError
 	switch reqType {
@@ -43,7 +43,7 @@ func WriteMsgSpecialRequestReply(
 	}
 
 	// Write request identifier
-	if _, err := writer.Write(reqIdent[:]); err != nil {
+	if _, err := writer.Write(reqIdent); err != nil {
 		if closeErr := writer.Close(); closeErr != nil {
 			return fmt.Errorf("%s: %s", err, closeErr)
 		}

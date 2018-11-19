@@ -11,7 +11,7 @@ import (
 // eventually
 func WriteMsgReply(
 	writer io.WriteCloser,
-	requestIdentifier [8]byte,
+	requestIdentifier []byte,
 	payloadEncoding pld.Encoding,
 	payloadData []byte,
 ) error {
@@ -44,7 +44,7 @@ func WriteMsgReply(
 	}
 
 	// Write request identifier
-	if _, err := writer.Write(requestIdentifier[:]); err != nil {
+	if _, err := writer.Write(requestIdentifier); err != nil {
 		if closeErr := writer.Close(); closeErr != nil {
 			return fmt.Errorf("%s: %s", err, closeErr)
 		}

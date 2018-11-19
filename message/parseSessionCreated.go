@@ -14,10 +14,8 @@ func (msg *Message) parseSessionCreated() error {
 		)
 	}
 
-	dat := msg.MsgBuffer.Data()
-
 	msg.MsgPayload = pld.Payload{
-		Data: dat[1:],
+		Data: msg.MsgBuffer.Data()[1:],
 	}
 
 	return nil

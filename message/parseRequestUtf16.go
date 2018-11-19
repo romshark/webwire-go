@@ -23,12 +23,11 @@ func (msg *Message) parseRequestUtf16() error {
 	dat := msg.MsgBuffer.Data()
 
 	// Read identifier
-	var id [8]byte
-	copy(id[:], dat[1:9])
-	msg.MsgIdentifier = id
+	msg.MsgIdentifierBytes = dat[1:9]
+	copy(msg.MsgIdentifier[:], msg.MsgIdentifierBytes)
 
 	// Read name length
-	nameLen := int(byte(dat[9:10][0]))
+	nameLen := int(dat[9])
 
 	// Determine minimum required message length.
 	// There's at least a 10 byte header and a 2 byte payload expected

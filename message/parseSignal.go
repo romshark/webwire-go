@@ -16,7 +16,7 @@ func (msg *Message) parseSignal() error {
 	dat := msg.MsgBuffer.Data()
 
 	// Read name length
-	nameLen := int(byte(dat[1:2][0]))
+	nameLen := int(dat[1])
 	payloadOffset := 2 + nameLen
 
 	// Verify total message size to prevent segmentation faults

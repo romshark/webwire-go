@@ -20,7 +20,7 @@ func TestFulfillRequest(t *testing.T) {
 	request := manager.Create()
 	require.NotNil(t, request)
 
-	require.True(t, manager.IsPending(request.Identifier()))
+	require.True(t, manager.IsPending(request.Identifier))
 
 	// Fulfill the request
 	pld := payload.Payload{
@@ -29,12 +29,12 @@ func TestFulfillRequest(t *testing.T) {
 	}
 	require.True(t, manager.Fulfill(
 		&message.Message{
-			MsgIdentifier: request.Identifier(),
+			MsgIdentifier: request.Identifier,
 			MsgPayload:    pld,
 		},
 	))
 
-	require.False(t, manager.IsPending(request.Identifier()))
+	require.False(t, manager.IsPending(request.Identifier))
 
 	reply, err := request.AwaitReply(context.Background())
 	require.NoError(t, err)
@@ -52,12 +52,12 @@ func TestFailRequest(t *testing.T) {
 	request := manager.Create()
 	require.NotNil(t, request)
 
-	require.True(t, manager.IsPending(request.Identifier()))
+	require.True(t, manager.IsPending(request.Identifier))
 
 	// Fail the request
-	manager.Fail(request.Identifier(), errors.New("test error"))
+	manager.Fail(request.Identifier, errors.New("test error"))
 
-	require.False(t, manager.IsPending(request.Identifier()))
+	require.False(t, manager.IsPending(request.Identifier))
 
 	reply, err := request.AwaitReply(context.Background())
 	require.Nil(t, reply)
@@ -78,13 +78,13 @@ func TestPendingRequests(t *testing.T) {
 	require.Equal(t, 2, manager.PendingRequests())
 
 	// Fail the first request
-	manager.Fail(request1.Identifier(), errors.New("test error"))
+	manager.Fail(request1.Identifier, errors.New("test error"))
 	require.Equal(t, 1, manager.PendingRequests())
 
 	// Fulfill the second request
 	require.True(t, manager.Fulfill(
 		&message.Message{
-			MsgIdentifier: request2.Identifier(),
+			MsgIdentifier: request2.Identifier,
 			MsgPayload: payload.Payload{
 				Encoding: payload.Binary,
 				Data:     []byte("test payload"),

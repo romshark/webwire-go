@@ -9,7 +9,7 @@ import (
 // closing it eventually
 func WriteMsgErrorReply(
 	writer io.WriteCloser,
-	requestIdent [8]byte,
+	requestIdent []byte,
 	code,
 	message []byte,
 	safeMode bool,
@@ -68,7 +68,7 @@ func WriteMsgErrorReply(
 	}
 
 	// Write request identifier
-	if _, err := writer.Write(requestIdent[:]); err != nil {
+	if _, err := writer.Write(requestIdent); err != nil {
 		if closeErr := writer.Close(); closeErr != nil {
 			return fmt.Errorf("%s: %s", err, closeErr)
 		}

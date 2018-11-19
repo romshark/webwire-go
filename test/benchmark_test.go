@@ -4,9 +4,11 @@ import (
 	"context"
 	"log"
 	"testing"
+	"time"
 
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
+	"github.com/qbeon/webwire-go/message"
 )
 
 // BenchmarkRequestC1_P16 benchmarks a request with a 1 kb payload on a single
@@ -261,6 +263,78 @@ func BenchmarkRequestC1K_P1K(b *testing.B) {
 				}
 				reply.Close()
 			}()
+		}
+	}
+}
+
+// BenchmarkRequestSock_C1_P8 benchmarks a request with an 8 byte payload on a
+// raw socket connection bypassing the client implementation
+func BenchmarkRequestSock_C1_P8(b *testing.B) {
+	// Preallocate the payload
+	msgBytes := make([]byte, 10+16)
+	msgBytes[0] = message.MsgRequestBinary
+	copy(msgBytes[1:9], []byte{1, 1, 1, 1, 1, 1, 1, 1})
+	msgBytes[9] = 0
+	copy(msgBytes[10:], []byte{1, 1, 1, 1, 1, 1, 1, 1})
+
+	// Initialize a webwire server
+	setup, err := setupServer(
+		&serverImpl{
+			onRequest: func(
+				_ context.Context,
+				conn wwr.Connection,
+				msg wwr.Message,
+			) (wwr.Payload, error) {
+				return wwr.Payload{
+					Encoding: msg.PayloadEncoding(),
+					Data:     msg.Payload(),
+				}, nil
+			},
+		},
+		wwr.ServerOptions{
+			MessageBufferSize: 1024,
+		},
+		nil, // Use default transport implementation
+	)
+	if err != nil {
+		log.Fatalf("couldn't setup server: %s", err)
+	}
+
+	// Setup client socket
+	socket, err := setup.newClientSocket()
+	if err != nil {
+		panic(err)
+	}
+
+	// Ignore the server configuration push-message
+	replyMsg := message.NewMessage(1024)
+	confMsg := message.NewMessage(1024)
+	if err := socket.Read(confMsg, time.Time{}); err != nil {
+		panic(err)
+	}
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		// Get writer
+		writer, err := socket.GetWriter()
+		if err != nil {
+			panic(err)
+		}
+
+		// Write the message
+		_, writeErr := writer.Write(msgBytes)
+		if writeErr != nil {
+			panic(writeErr)
+		}
+
+		// Flush buffer
+		if err := writer.Close(); err != nil {
+			panic(err)
+		}
+
+		// Await reply
+		if err := socket.Read(replyMsg, time.Time{}); err != nil {
+			panic(err)
 		}
 	}
 }

@@ -7,5 +7,6 @@ func NewMessage(bufferSize uint32) *Message {
 			buf: make([]byte, bufferSize),
 			len: 0,
 		},
+		MsgIdentifierBytes: make([]byte, 8),
 	}
 }

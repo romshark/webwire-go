@@ -17,9 +17,8 @@ func (msg *Message) parseRestoreSession() error {
 	dat := msg.MsgBuffer.Data()
 
 	// Read identifier
-	var id [8]byte
-	copy(id[:], dat[1:9])
-	msg.MsgIdentifier = id
+	msg.MsgIdentifierBytes = dat[1:9]
+	copy(msg.MsgIdentifier[:], msg.MsgIdentifierBytes)
 
 	// Read payload
 	msg.MsgPayload = pld.Payload{

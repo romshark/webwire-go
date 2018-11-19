@@ -1,6 +1,8 @@
 package message
 
-import "errors"
+import (
+	"errors"
+)
 
 // parseSpecialReplyMessage parses the following message types:
 // MsgReplyShutdown, MsgInternalError, MsgSessionNotFound,
@@ -11,9 +13,8 @@ func (msg *Message) parseSpecialReplyMessage() error {
 	}
 
 	// Read identifier
-	var id [8]byte
-	copy(id[:], msg.MsgBuffer.buf[1:9])
-	msg.MsgIdentifier = id
+	msg.MsgIdentifierBytes = msg.MsgBuffer.Data()[1:9]
+	copy(msg.MsgIdentifier[:], msg.MsgIdentifierBytes)
 
 	return nil
 }

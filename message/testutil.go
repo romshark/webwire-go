@@ -51,8 +51,9 @@ func tryParseNoErr(t *testing.T, encoded []byte) *Message {
 }
 
 // genRndMsgIdentifier returns a randomly generated message id
-func genRndMsgIdentifier() (randomIdentifier [8]byte) {
-	rand.Read(randomIdentifier[:])
+func genRndMsgIdentifier() (randomIdentifier []byte) {
+	randomIdentifier = make([]byte, 8)
+	rand.Read(randomIdentifier)
 	return randomIdentifier
 }
 
@@ -128,7 +129,7 @@ func rndRequestMsg(
 	maxPayloadLen uint,
 ) (
 	encodedMessage []byte,
-	id [8]byte,
+	id []byte,
 	name []byte,
 	payload pld.Payload,
 ) {
@@ -165,7 +166,7 @@ func rndRequestMsg(
 	encodedMessage = append(encodedMessage, messageType)
 
 	// Add identifier
-	encodedMessage = append(encodedMessage, id[:]...)
+	encodedMessage = append(encodedMessage, id...)
 
 	// Add name length flag
 	encodedMessage = append(encodedMessage, byte(len(name)))
@@ -187,7 +188,7 @@ func rndRequestMsgUtf16(
 	maxPayloadLen uint,
 ) (
 	encodedMessage []byte,
-	id [8]byte,
+	id []byte,
 	name []byte,
 	payload pld.Payload,
 ) {
@@ -214,7 +215,7 @@ func rndRequestMsgUtf16(
 	encodedMessage = append(encodedMessage, MsgRequestUtf16)
 
 	// Add identifier
-	encodedMessage = append(encodedMessage, id[:]...)
+	encodedMessage = append(encodedMessage, id...)
 
 	// Add name length flag
 	encodedMessage = append(encodedMessage, byte(len(name)))
@@ -241,7 +242,7 @@ func rndReplyMsg(
 	maxPayloadLen uint,
 ) (
 	encodedMessage []byte,
-	id [8]byte,
+	id []byte,
 	payload pld.Payload,
 ) {
 	id = genRndMsgIdentifier()
@@ -275,7 +276,7 @@ func rndReplyMsg(
 	encodedMessage = append(encodedMessage, messageType)
 
 	// Add identifier
-	encodedMessage = append(encodedMessage, id[:]...)
+	encodedMessage = append(encodedMessage, id...)
 
 	// Add payload
 	encodedMessage = append(encodedMessage, payload.Data...)
@@ -290,7 +291,7 @@ func rndReplyMsgUtf16(
 	maxPayloadLen uint,
 ) (
 	encodedMessage []byte,
-	id [8]byte,
+	id []byte,
 	payload pld.Payload,
 ) {
 	id = genRndMsgIdentifier()
@@ -308,7 +309,7 @@ func rndReplyMsgUtf16(
 	encodedMessage = append(encodedMessage, MsgReplyUtf16)
 
 	// Add identifier
-	encodedMessage = append(encodedMessage, id[:]...)
+	encodedMessage = append(encodedMessage, id...)
 
 	// Add header padding byte
 	encodedMessage = append(encodedMessage, byte(0))

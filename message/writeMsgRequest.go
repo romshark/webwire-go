@@ -12,7 +12,7 @@ import (
 // closing it eventually
 func WriteMsgRequest(
 	writer io.WriteCloser,
-	identifier [8]byte,
+	identifier []byte,
 	name []byte,
 	payloadEncoding pld.Encoding,
 	payloadData []byte,
@@ -87,7 +87,7 @@ func WriteMsgRequest(
 	}
 
 	// Write request identifier
-	if _, err := writer.Write(identifier[:]); err != nil {
+	if _, err := writer.Write(identifier); err != nil {
 		if closeErr := writer.Close(); closeErr != nil {
 			return fmt.Errorf("%s: %s", err, closeErr)
 		}

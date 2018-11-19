@@ -34,7 +34,8 @@ func TestHandshake(t *testing.T) {
 	msg := message.NewMessage(messageBufferSize)
 	require.NoError(t, socket.Read(msg, time.Now().Add(readTimeout)))
 
-	require.Equal(t, [8]byte{0, 0, 0, 0, 0, 0, 0, 0}, msg.MsgIdentifier)
+	require.Equal(t, [8]byte{}, msg.MsgIdentifier)
+	require.Equal(t, []byte{0, 0, 0, 0, 0, 0, 0, 0}, msg.MsgIdentifierBytes)
 	require.Nil(t, msg.MsgName)
 	require.Equal(t, message.ServerConfiguration{
 		MajorProtocolVersion: 2,

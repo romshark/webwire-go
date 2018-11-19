@@ -29,7 +29,8 @@ func TestMsgParseCloseSessReq(t *testing.T) {
 	// Compare
 	require.NotNil(t, actual.MsgBuffer)
 	require.Equal(t, MsgCloseSession, actual.MsgType)
-	require.Equal(t, id, actual.MsgIdentifier)
+	require.Equal(t, id, actual.MsgIdentifier[:])
+	require.Equal(t, id, actual.MsgIdentifierBytes)
 	require.Nil(t, actual.MsgName)
 	require.Equal(t, pld.Payload{
 		Encoding: pld.Binary,
@@ -59,7 +60,8 @@ func TestMsgParseRestrSessReq(t *testing.T) {
 	// Compare
 	require.NotNil(t, actual.MsgBuffer)
 	require.Equal(t, MsgRestoreSession, actual.MsgType)
-	require.Equal(t, id, actual.MsgIdentifier)
+	require.Equal(t, id, actual.MsgIdentifier[:])
+	require.Equal(t, id, actual.MsgIdentifierBytes)
 	require.Nil(t, actual.MsgName)
 	require.Equal(t, pld.Payload{
 		Encoding: pld.Binary,
@@ -82,7 +84,8 @@ func TestMsgParseRequestBinary(t *testing.T) {
 	// Compare
 	require.NotNil(t, actual.MsgBuffer)
 	require.Equal(t, MsgRequestBinary, actual.MsgType)
-	require.Equal(t, id, actual.MsgIdentifier)
+	require.Equal(t, id, actual.MsgIdentifier[:])
+	require.Equal(t, id, actual.MsgIdentifierBytes)
 	require.Equal(t, name, actual.MsgName)
 	require.Equal(t, payload, actual.MsgPayload)
 	require.Equal(t, ServerConfiguration{}, actual.ServerConfiguration)
@@ -102,7 +105,8 @@ func TestMsgParseRequestUtf8(t *testing.T) {
 	// Compare
 	require.NotNil(t, actual.MsgBuffer)
 	require.Equal(t, MsgRequestUtf8, actual.MsgType)
-	require.Equal(t, id, actual.MsgIdentifier)
+	require.Equal(t, id, actual.MsgIdentifier[:])
+	require.Equal(t, id, actual.MsgIdentifierBytes)
 	require.Equal(t, name, actual.MsgName)
 	require.Equal(t, payload, actual.MsgPayload)
 	require.Equal(t, ServerConfiguration{}, actual.ServerConfiguration)
@@ -121,7 +125,8 @@ func TestMsgParseRequestUtf16(t *testing.T) {
 	// Compare
 	require.NotNil(t, actual.MsgBuffer)
 	require.Equal(t, MsgRequestUtf16, actual.MsgType)
-	require.Equal(t, id, actual.MsgIdentifier)
+	require.Equal(t, id, actual.MsgIdentifier[:])
+	require.Equal(t, id, actual.MsgIdentifierBytes)
 	require.Equal(t, name, actual.MsgName)
 	require.Equal(t, payload, actual.MsgPayload)
 	require.Equal(t, ServerConfiguration{}, actual.ServerConfiguration)
@@ -140,7 +145,8 @@ func TestMsgParseReplyBinary(t *testing.T) {
 	// Compare
 	require.NotNil(t, actual.MsgBuffer)
 	require.Equal(t, MsgReplyBinary, actual.MsgType)
-	require.Equal(t, id, actual.MsgIdentifier)
+	require.Equal(t, id, actual.MsgIdentifier[:])
+	require.Equal(t, id, actual.MsgIdentifierBytes)
 	require.Nil(t, actual.MsgName)
 	require.Equal(t, payload, actual.MsgPayload)
 	require.Equal(t, ServerConfiguration{}, actual.ServerConfiguration)
@@ -159,7 +165,8 @@ func TestMsgParseReplyUtf8(t *testing.T) {
 	// Compare
 	require.NotNil(t, actual.MsgBuffer)
 	require.Equal(t, MsgReplyUtf8, actual.MsgType)
-	require.Equal(t, id, actual.MsgIdentifier)
+	require.Equal(t, id, actual.MsgIdentifier[:])
+	require.Equal(t, id, actual.MsgIdentifierBytes)
 	require.Nil(t, actual.MsgName)
 	require.Equal(t, payload, actual.MsgPayload)
 	require.Equal(t, ServerConfiguration{}, actual.ServerConfiguration)
@@ -177,7 +184,8 @@ func TestMsgParseReplyUtf16(t *testing.T) {
 	// Compare
 	require.NotNil(t, actual.MsgBuffer)
 	require.Equal(t, MsgReplyUtf16, actual.MsgType)
-	require.Equal(t, id, actual.MsgIdentifier)
+	require.Equal(t, id, actual.MsgIdentifier[:])
+	require.Equal(t, id, actual.MsgIdentifierBytes)
 	require.Nil(t, actual.MsgName)
 	require.Equal(t, payload, actual.MsgPayload)
 	require.Equal(t, ServerConfiguration{}, actual.ServerConfiguration)
@@ -197,7 +205,8 @@ func TestMsgParseSignalBinary(t *testing.T) {
 	// Compare
 	require.NotNil(t, actual.MsgBuffer)
 	require.Equal(t, MsgSignalBinary, actual.MsgType)
-	require.Equal(t, [8]byte{0, 0, 0, 0, 0, 0, 0, 0}, actual.MsgIdentifier)
+	require.Equal(t, []byte{0, 0, 0, 0, 0, 0, 0, 0}, actual.MsgIdentifierBytes)
+	require.Equal(t, [8]byte{}, actual.MsgIdentifier)
 	require.Equal(t, name, actual.MsgName)
 	require.Equal(t, payload, actual.MsgPayload)
 	require.Equal(t, ServerConfiguration{}, actual.ServerConfiguration)
@@ -217,7 +226,8 @@ func TestMsgParseSignalUtf8(t *testing.T) {
 	// Compare
 	require.NotNil(t, actual.MsgBuffer)
 	require.Equal(t, MsgSignalUtf8, actual.MsgType)
-	require.Equal(t, [8]byte{0, 0, 0, 0, 0, 0, 0, 0}, actual.MsgIdentifier)
+	require.Equal(t, []byte{0, 0, 0, 0, 0, 0, 0, 0}, actual.MsgIdentifierBytes)
+	require.Equal(t, [8]byte{}, actual.MsgIdentifier)
 	require.Equal(t, name, actual.MsgName)
 	require.Equal(t, payload, actual.MsgPayload)
 	require.Equal(t, ServerConfiguration{}, actual.ServerConfiguration)
@@ -236,7 +246,8 @@ func TestMsgParseSignalUtf16(t *testing.T) {
 	// Compare
 	require.NotNil(t, actual.MsgBuffer)
 	require.Equal(t, MsgSignalUtf16, actual.MsgType)
-	require.Equal(t, [8]byte{0, 0, 0, 0, 0, 0, 0, 0}, actual.MsgIdentifier)
+	require.Equal(t, []byte{0, 0, 0, 0, 0, 0, 0, 0}, actual.MsgIdentifierBytes)
+	require.Equal(t, [8]byte{}, actual.MsgIdentifier)
 	require.Equal(t, name, actual.MsgName)
 	require.Equal(t, payload, actual.MsgPayload)
 	require.Equal(t, ServerConfiguration{}, actual.ServerConfiguration)
@@ -274,7 +285,8 @@ func TestMsgParseSessCreatedSig(t *testing.T) {
 	// Compare
 	require.NotNil(t, actual.MsgBuffer)
 	require.Equal(t, MsgSessionCreated, actual.MsgType)
-	require.Equal(t, [8]byte{0, 0, 0, 0, 0, 0, 0, 0}, actual.MsgIdentifier)
+	require.Equal(t, []byte{0, 0, 0, 0, 0, 0, 0, 0}, actual.MsgIdentifierBytes)
+	require.Equal(t, [8]byte{}, actual.MsgIdentifier)
 	require.Nil(t, actual.MsgName)
 	require.Equal(t, payload, actual.MsgPayload)
 	require.Equal(t, ServerConfiguration{}, actual.ServerConfiguration)
@@ -292,7 +304,8 @@ func TestMsgParseSessClosedSig(t *testing.T) {
 	// Compare
 	require.NotNil(t, actual.MsgBuffer)
 	require.Equal(t, MsgSessionClosed, actual.MsgType)
-	require.Equal(t, [8]byte{0, 0, 0, 0, 0, 0, 0, 0}, actual.MsgIdentifier)
+	require.Equal(t, []byte{0, 0, 0, 0, 0, 0, 0, 0}, actual.MsgIdentifierBytes)
+	require.Equal(t, [8]byte{}, actual.MsgIdentifier)
 	require.Nil(t, actual.MsgName)
 	require.Equal(t, pld.Payload{}, actual.MsgPayload)
 	require.Equal(t, ServerConfiguration{}, actual.ServerConfiguration)
@@ -310,7 +323,8 @@ func TestMsgParseHeartbeat(t *testing.T) {
 	// Compare
 	require.NotNil(t, actual.MsgBuffer)
 	require.Equal(t, MsgHeartbeat, actual.MsgType)
-	require.Equal(t, [8]byte{0, 0, 0, 0, 0, 0, 0, 0}, actual.MsgIdentifier)
+	require.Equal(t, []byte{0, 0, 0, 0, 0, 0, 0, 0}, actual.MsgIdentifierBytes)
+	require.Equal(t, [8]byte{}, actual.MsgIdentifier)
 	require.Nil(t, actual.MsgName)
 	require.Equal(t, pld.Payload{}, actual.MsgPayload)
 	require.Equal(t, ServerConfiguration{}, actual.ServerConfiguration)
@@ -336,7 +350,8 @@ func TestMsgParseConf(t *testing.T) {
 	// Compare
 	require.NotNil(t, actual.MsgBuffer)
 	require.Equal(t, MsgConf, actual.MsgType)
-	require.Equal(t, [8]byte{0, 0, 0, 0, 0, 0, 0, 0}, actual.MsgIdentifier)
+	require.Equal(t, []byte{0, 0, 0, 0, 0, 0, 0, 0}, actual.MsgIdentifierBytes)
+	require.Equal(t, [8]byte{}, actual.MsgIdentifier)
 	require.Nil(t, actual.MsgName)
 	require.Equal(t, pld.Payload{}, actual.MsgPayload)
 	require.Equal(t, srvConf, actual.ServerConfiguration)

@@ -222,11 +222,12 @@ type ServerConfiguration struct {
 
 // Message represents a non-thread-safe WebWire protocol message
 type Message struct {
-	MsgBuffer     Buffer
-	MsgType       byte
-	MsgIdentifier [8]byte
-	MsgName       []byte
-	MsgPayload    pld.Payload
+	MsgBuffer          Buffer
+	MsgType            byte
+	MsgIdentifier      [8]byte
+	MsgIdentifierBytes []byte
+	MsgName            []byte
+	MsgPayload         pld.Payload
 
 	// ServerConfiguration is only initialized for MsgConf type messages
 	ServerConfiguration ServerConfiguration
@@ -300,7 +301,8 @@ func (msg *Message) Close() {
 
 	msg.MsgBuffer.Close()
 	msg.MsgType = 0
-	msg.MsgIdentifier = [8]byte{0, 0, 0, 0, 0, 0, 0, 0}
+	msg.MsgIdentifier = [8]byte{}
+	msg.MsgIdentifierBytes = nil
 	msg.MsgName = nil
 	msg.MsgPayload = pld.Payload{}
 	msg.ServerConfiguration = ServerConfiguration{}

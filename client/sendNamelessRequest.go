@@ -14,7 +14,6 @@ func (clt *client) sendNamelessRequest(
 	payload pld.Payload,
 ) (webwire.Reply, error) {
 	request := clt.requestManager.Create()
-	reqIdentifier := request.Identifier()
 
 	writer, err := clt.conn.GetWriter()
 	if err != nil {
@@ -24,7 +23,7 @@ func (clt *client) sendNamelessRequest(
 	if err := message.WriteMsgNamelessRequest(
 		writer,
 		messageType,
-		reqIdentifier,
+		request.IdentifierBytes,
 		payload.Data,
 	); err != nil {
 		return nil, err

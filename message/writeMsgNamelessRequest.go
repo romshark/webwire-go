@@ -10,7 +10,7 @@ import (
 func WriteMsgNamelessRequest(
 	writer io.WriteCloser,
 	reqType byte,
-	identifier [8]byte,
+	identifier []byte,
 	binaryPayload []byte,
 ) error {
 	msgType := msgTypeRequestCloseSession
@@ -29,7 +29,7 @@ func WriteMsgNamelessRequest(
 	}
 
 	// Write request identifier
-	if _, err := writer.Write(identifier[:]); err != nil {
+	if _, err := writer.Write(identifier); err != nil {
 		if closeErr := writer.Close(); closeErr != nil {
 			return fmt.Errorf("%s: %s", err, closeErr)
 		}
@@ -37,11 +37,13 @@ func WriteMsgNamelessRequest(
 	}
 
 	// Write payload
-	if _, err := writer.Write(binaryPayload); err != nil {
-		if closeErr := writer.Close(); closeErr != nil {
-			return fmt.Errorf("%s: %s", err, closeErr)
+	if len(binaryPayload) > 0 {
+		if _, err := writer.Write(binaryPayload); err != nil {
+			if closeErr := writer.Close(); closeErr != nil {
+				return fmt.Errorf("%s: %s", err, closeErr)
+			}
+			return err
 		}
-		return err
 	}
 
 	if err := writer.Close(); err != nil {

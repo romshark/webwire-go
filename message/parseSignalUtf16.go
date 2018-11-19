@@ -23,7 +23,7 @@ func (msg *Message) parseSignalUtf16() error {
 	dat := msg.MsgBuffer.Data()
 
 	// Read name length
-	nameLen := int(byte(dat[1:2][0]))
+	nameLen := int(dat[1])
 
 	// Determine minimum required message length
 	minMsgSize := MsgMinLenSignalUtf16 + nameLen

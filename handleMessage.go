@@ -141,7 +141,7 @@ func (srv *server) fulfillMsg(
 
 	if err := message.WriteMsgReply(
 		writer,
-		msg.MsgIdentifier,
+		msg.MsgIdentifierBytes,
 		replyPayload.Encoding,
 		replyPayload.Data,
 	); err != nil {
@@ -179,7 +179,7 @@ func (srv *server) failMsg(
 	case wwrerr.RequestErr:
 		if err := message.WriteMsgErrorReply(
 			writer,
-			msg.MsgIdentifier,
+			msg.MsgIdentifierBytes,
 			[]byte(err.Code),
 			[]byte(err.Message),
 			true,
@@ -190,7 +190,7 @@ func (srv *server) failMsg(
 	case *wwrerr.RequestErr:
 		if err := message.WriteMsgErrorReply(
 			writer,
-			msg.MsgIdentifier,
+			msg.MsgIdentifierBytes,
 			[]byte(err.Code),
 			[]byte(err.Message),
 			true,
@@ -202,7 +202,7 @@ func (srv *server) failMsg(
 		if err := message.WriteMsgSpecialRequestReply(
 			writer,
 			message.MsgMaxSessConnsReached,
-			msg.MsgIdentifier,
+			msg.MsgIdentifierBytes,
 		); err != nil {
 			srv.errorLog.Println(
 				"couldn't write max sessions reached message: ",
@@ -214,7 +214,7 @@ func (srv *server) failMsg(
 		if err := message.WriteMsgSpecialRequestReply(
 			writer,
 			message.MsgSessionNotFound,
-			msg.MsgIdentifier,
+			msg.MsgIdentifierBytes,
 		); err != nil {
 			srv.errorLog.Println(
 				"couldn't write session not found message: ",
@@ -226,7 +226,7 @@ func (srv *server) failMsg(
 		if err := message.WriteMsgSpecialRequestReply(
 			writer,
 			message.MsgSessionsDisabled,
-			msg.MsgIdentifier,
+			msg.MsgIdentifierBytes,
 		); err != nil {
 			srv.errorLog.Println(
 				"couldn't write sessions disabled message: ",
@@ -238,7 +238,7 @@ func (srv *server) failMsg(
 		if err := message.WriteMsgSpecialRequestReply(
 			writer,
 			message.MsgInternalError,
-			msg.MsgIdentifier,
+			msg.MsgIdentifierBytes,
 		); err != nil {
 			srv.errorLog.Println(
 				"couldn't write internal error message: ",
@@ -263,7 +263,7 @@ func (srv *server) failMsgShutdown(con *connection, msg *message.Message) {
 	if err := message.WriteMsgSpecialRequestReply(
 		writer,
 		message.MsgReplyShutdown,
-		msg.MsgIdentifier,
+		msg.MsgIdentifierBytes,
 	); err != nil {
 		srv.errorLog.Println("failed writing shutdown reply message: ", err)
 		return
