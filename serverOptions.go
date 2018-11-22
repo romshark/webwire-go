@@ -80,16 +80,16 @@ func (op *ServerOptions) Prepare() error {
 		)
 	}
 
-	const minBufferSize = 1024
+	const minMsgBufferSize = 32
 
 	// Verify the message buffer size
 	if op.MessageBufferSize == 0 {
-		op.MessageBufferSize = minBufferSize
-	} else if op.MessageBufferSize < minBufferSize {
+		op.MessageBufferSize = minMsgBufferSize
+	} else if op.MessageBufferSize < minMsgBufferSize {
 		return fmt.Errorf(
 			"message buffer size too small: %d bytes (min: %d bytes)",
 			op.MessageBufferSize,
-			minBufferSize,
+			minMsgBufferSize,
 		)
 	}
 
