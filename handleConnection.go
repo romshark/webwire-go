@@ -15,6 +15,13 @@ func (srv *server) writeConfMessage(sock Socket) error {
 	}
 
 	if _, err := writer.Write(srv.configMsg); err != nil {
+		if closeErr := writer.Close(); closeErr != nil {
+			return fmt.Errorf(
+				"couldn't close writer after failed conf message write: %s: %s",
+				err,
+				closeErr,
+			)
+		}
 		return fmt.Errorf("couldn't write configuration message: %s", err)
 	}
 

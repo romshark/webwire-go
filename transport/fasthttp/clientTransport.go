@@ -21,11 +21,15 @@ func (cltTrans *ClientTransport) NewSocket(
 	// Reset handshake timeout to client-enforced dial timeout
 	cltTrans.Dialer.HandshakeTimeout = dialTimeout
 
-	return &Socket{
+	sock := &Socket{
 		connected: false,
 		lock:      &sync.Mutex{},
 		readLock:  &sync.Mutex{},
 		writeLock: &sync.Mutex{},
 		dialer:    cltTrans.Dialer,
-	}, nil
+	}
+
+	sock.writerIface = writerInterface{sock: sock}
+
+	return sock, nil
 }
