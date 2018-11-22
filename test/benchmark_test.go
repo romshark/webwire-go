@@ -267,15 +267,26 @@ func BenchmarkRequestC1K_P1K(b *testing.B) {
 	}
 }
 
-// BenchmarkRequestSock_C1_P8 benchmarks a request with an 8 byte payload on a
+// BenchmarkRequestSock_C1_P16 benchmarks a request with an 8 byte payload on a
 // raw socket connection bypassing the client implementation
-func BenchmarkRequestSock_C1_P8(b *testing.B) {
-	// Preallocate the payload
-	msgBytes := make([]byte, 10+16)
+func BenchmarkRequestSock_C1_P16(b *testing.B) {
+	requestName := ""
+	const headerSize = 10
+	const payloadSize = 16
+
+	// Compose a binary request message
+	payload := make([]byte, payloadSize)
+	msgBytes := make([]byte, headerSize+len(requestName)+payloadSize)
 	msgBytes[0] = message.MsgRequestBinary
-	copy(msgBytes[1:9], []byte{1, 1, 1, 1, 1, 1, 1, 1})
-	msgBytes[9] = 0
-	copy(msgBytes[10:], []byte{1, 1, 1, 1, 1, 1, 1, 1})
+	requestIdent := [8]byte{1, 1, 1, 1, 1, 1, 1, 1}
+	copy(msgBytes[1:9], requestIdent[:])
+	msgBytes[9] = byte(len(requestName))
+	if len(requestName) > 0 {
+		copy(msgBytes[headerSize:], []byte(requestName))
+	}
+	if payloadSize > 0 {
+		copy(msgBytes[headerSize+len(requestName):], payload)
+	}
 
 	// Initialize a webwire server
 	setup, err := setupServer(
