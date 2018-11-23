@@ -93,6 +93,18 @@ func (clt *client) dial() (srvConf message.ServerConfiguration, err error) {
 			return
 		}
 
+		// Ensure the message buffer size is similar to the one on the server
+		if clt.options.MessageBufferSize !=
+			msg.ServerConfiguration.MessageBufferSize {
+			result <- dialResult{err: fmt.Errorf(
+				"mismatching message buffer capacity (server: %d; client: %d)",
+				msg.ServerConfiguration.MessageBufferSize,
+				clt.options.MessageBufferSize,
+			)}
+			msg.Close()
+			return
+		}
+
 		// Verify the protocol version
 		if err := verifyProtocolVersion(
 			msg.ServerConfiguration.MajorProtocolVersion,
