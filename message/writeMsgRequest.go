@@ -95,7 +95,9 @@ func WriteMsgRequest(
 	}
 
 	// Write name length flag
-	if _, err := writer.Write(msgNameLenBytes[len(name)]); err != nil {
+	if _, err := writer.Write(
+		msgNameLenBytes[len(name) : len(name)+1],
+	); err != nil {
 		if closeErr := writer.Close(); closeErr != nil {
 			return fmt.Errorf("%s: %s", err, closeErr)
 		}
