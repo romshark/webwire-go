@@ -14,6 +14,18 @@ func (srv *server) handleSessionRestore(
 	con *connection,
 	msg *message.Message,
 ) {
+	// Recover potential user-space hook panics to avoid panicking the server
+	defer func() {
+		if recvErr := recover(); recvErr != nil {
+			srv.errorLog.Printf(
+				"session restoration handler panic: %v",
+				recvErr,
+			)
+			srv.failMsg(con, msg, nil)
+		}
+		srv.deregisterHandler(con)
+	}()
+
 	if !srv.sessionsEnabled {
 		srv.failMsg(con, msg, wwrerr.SessionsDisabledErr{})
 		return
@@ -34,7 +46,7 @@ func (srv *server) handleSessionRestore(
 	if err != nil {
 		// Fail message with internal error and log it in case the handler fails
 		srv.failMsg(con, msg, nil)
-		srv.errorLog.Printf("CRITICAL: Session search handler failed: %s", err)
+		srv.errorLog.Printf("session search handler failed: %s", err)
 		return
 	}
 
@@ -59,7 +71,7 @@ func (srv *server) handleSessionRestore(
 	if err != nil {
 		srv.failMsg(con, msg, nil)
 		srv.errorLog.Printf(
-			"Couldn't encode session object (%v): %s",
+			"couldn't encode session object (%v): %s",
 			encodedSessionObj,
 			err,
 		)
@@ -79,7 +91,7 @@ func (srv *server) handleSessionRestore(
 		Info:       parsedSessInfo,
 	})
 	if err := srv.sessionRegistry.register(con); err != nil {
-		panic(fmt.Errorf("The number of concurrent session connections was " +
+		panic(fmt.Errorf("the number of concurrent session connections was " +
 			"unexpectedly exceeded",
 		))
 	}

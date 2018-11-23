@@ -8,27 +8,39 @@ import (
 // handleSessionClosure handles session destruction requests
 // and returns an error if the ongoing connection cannot be proceeded
 func (srv *server) handleSessionClosure(
-	conn *connection,
+	con *connection,
 	msg *message.Message,
 ) {
+	// Recover potential user-space hook panics to avoid panicking the server
+	defer func() {
+		if recvErr := recover(); recvErr != nil {
+			srv.errorLog.Printf(
+				"session closure handler panic: %v",
+				recvErr,
+			)
+			srv.failMsg(con, msg, nil)
+		}
+		srv.deregisterHandler(con)
+	}()
+
 	if !srv.sessionsEnabled {
-		srv.failMsg(conn, msg, wwrerr.SessionsDisabledErr{})
+		srv.failMsg(con, msg, wwrerr.SessionsDisabledErr{})
 		return
 	}
 
-	if !conn.HasSession() {
+	if !con.HasSession() {
 		// Send confirmation even though no session was closed
-		srv.fulfillMsg(conn, msg, Payload{})
+		srv.fulfillMsg(con, msg, Payload{})
 		return
 	}
 
 	// Deregister session from active sessions registry
-	srv.sessionRegistry.deregister(conn)
+	srv.sessionRegistry.deregister(con)
 
 	// Synchronize session destruction to the client
-	if err := conn.notifySessionClosed(); err != nil {
-		srv.failMsg(conn, msg, nil)
-		srv.errorLog.Printf("CRITICAL: Internal server error, "+
+	if err := con.notifySessionClosed(); err != nil {
+		srv.failMsg(con, msg, nil)
+		srv.errorLog.Printf("internal server error: "+
 			"couldn't notify client about the session destruction: %s",
 			err,
 		)
@@ -36,8 +48,8 @@ func (srv *server) handleSessionClosure(
 	}
 
 	// Reset the session on the connection
-	conn.setSession(nil)
+	con.setSession(nil)
 
 	// Send confirmation
-	srv.fulfillMsg(conn, msg, Payload{})
+	srv.fulfillMsg(con, msg, Payload{})
 }

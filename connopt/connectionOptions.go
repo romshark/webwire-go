@@ -21,6 +21,8 @@ type ConnectionOptions struct {
 	// ConcurrencyLimit defines the maximum number of operations to be processed
 	// concurrently for this particular client connection. If ConcurrencyLimit
 	// is 0 (which it is by default) then the number of concurrent operations
-	// for this particular connection will be unlimited
-	ConcurrencyLimit uint
+	// for this particular connection will be limited to 1. Anything below 0
+	// will lift the limitation entirely while everything above 0 will set the
+	// limit to the specified number of handlers
+	ConcurrencyLimit int
 }
