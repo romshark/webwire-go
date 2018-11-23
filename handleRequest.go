@@ -9,28 +9,36 @@ import (
 
 // handleRequest handles incoming requests
 // and returns an error if the ongoing connection cannot be proceeded
-func (srv *server) handleRequest(conn *connection, msg *message.Message) {
+func (srv *server) handleRequest(con *connection, msg *message.Message) {
+	// Recover potential user-space hook panics to avoid panicking the server
+	defer func() {
+		if recvErr := recover(); recvErr != nil {
+			srv.errorLog.Printf("request handler panic: %v", recvErr)
+			srv.failMsg(con, msg, nil)
+		}
+		srv.deregisterHandler(con)
+	}()
+
+	// Execute user-space hook
 	replyPayload, returnedErr := srv.impl.OnRequest(
 		context.Background(),
-		conn,
+		con,
 		msg,
 	)
+
+	// Handle returned error
 	switch returnedErr.(type) {
 	case nil:
-		srv.fulfillMsg(
-			conn,
-			msg,
-			replyPayload,
-		)
+		srv.fulfillMsg(con, msg, replyPayload)
 	case wwrerr.RequestErr:
-		srv.failMsg(conn, msg, returnedErr)
+		srv.failMsg(con, msg, returnedErr)
 	case *wwrerr.RequestErr:
-		srv.failMsg(conn, msg, returnedErr)
+		srv.failMsg(con, msg, returnedErr)
 	default:
 		srv.errorLog.Printf(
-			"Internal error during request handling: %s",
+			"request handler internal error: %v",
 			returnedErr,
 		)
-		srv.failMsg(conn, msg, returnedErr)
+		srv.failMsg(con, msg, nil)
 	}
 }
