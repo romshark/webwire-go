@@ -8,7 +8,7 @@ import (
 // sessionRegistry represents a thread safe registry
 // of all currently active sessions
 type sessionRegistry struct {
-	lock     sync.RWMutex
+	lock     *sync.RWMutex
 	maxConns uint
 	registry map[string]map[*connection]struct{}
 }
@@ -18,7 +18,7 @@ type sessionRegistry struct {
 // for a single session while zero stands for unlimited
 func newSessionRegistry(maxConns uint) *sessionRegistry {
 	return &sessionRegistry{
-		lock:     sync.RWMutex{},
+		lock:     &sync.RWMutex{},
 		maxConns: maxConns,
 		registry: make(map[string]map[*connection]struct{}),
 	}
