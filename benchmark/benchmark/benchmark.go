@@ -109,7 +109,7 @@ func (bc *Benchmark) Start() {
 					time.Sleep(interval)
 				}
 
-				// Capture time of request begining
+				// Capture time of request beginning
 				start := time.Now()
 
 				// Generate payload data
