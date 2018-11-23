@@ -220,7 +220,7 @@ type SessionManager interface {
 	// OnSessionClosed is invoked when the session associated with the given key
 	// is closed (thus destroyed) either by the server or the client. A closed
 	// session is permanently deleted and becomes undiscoverable in the
-	// OnSessionLookup hook. If an error is returned then the it is logged.
+	// OnSessionLookup hook. A returned error is logged to the wwr error log.
 	//
 	// This hook is invoked by either a goroutine calling the method
 	// connection.CloseSession(), or the goroutine serving the associated
