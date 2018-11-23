@@ -92,7 +92,7 @@ func (op *Options) Prepare() error {
 
 	// Verify the message buffer size
 	if op.MessageBufferSize == 0 {
-		op.MessageBufferSize = minMsgBufferSize
+		op.MessageBufferSize = 8192 // Default buffer size: 8K
 	} else if op.MessageBufferSize < minMsgBufferSize {
 		return fmt.Errorf(
 			"message buffer size too small: %d bytes (min: %d bytes)",

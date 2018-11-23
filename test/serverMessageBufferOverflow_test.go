@@ -7,7 +7,7 @@ import (
 
 	"github.com/qbeon/tmdwg-go"
 	wwr "github.com/qbeon/webwire-go"
-	wwrclt "github.com/qbeon/webwire-go/client"
+	"github.com/qbeon/webwire-go/message"
 	"github.com/stretchr/testify/require"
 )
 
@@ -15,7 +15,7 @@ import (
 // bigger than the servers message buffer
 func TestServerMessageBufferOverflow(t *testing.T) {
 	const messageBufferSize = uint32(2048)
-	const messageHeaderSize = uint32(18) // type, identifier, name len, name
+	const messageHeaderSize = uint32(10) // type, identifier, name len
 
 	// Determine the maximum payload length based on the message buffer size and
 	// the size of the expected message header
@@ -52,51 +52,32 @@ func TestServerMessageBufferOverflow(t *testing.T) {
 		nil, // Use the default transport implementation
 	)
 
-	// Initialize client
-	client := setup.newClient(
-		wwrclt.Options{
-			// Disable autoconnect to avoid auto-reconnection on kick
-			Autoconnect: wwr.Disabled,
+	socket := setup.newClientSocket()
 
-			DefaultRequestTimeout: 2 * time.Second,
-			// Use bigger buffers on the client
-			MessageBufferSize: messageBufferSize * 2,
-		},
-		nil, // Use the default transport implementation
-		testClientHooks{},
-	)
-
-	// Wait until connected
-	require.NoError(t, client.connection.Connect())
-
-	// Send a perfectly sized request message and expect a reply
-	replyCorrect, errCorrect := client.connection.Request(
-		context.Background(),
-		[]byte("nooverfl"),
-		wwr.Payload{Data: make([]byte, maxPayloadSize)},
-	)
-	require.NotNil(t, replyCorrect)
-	require.Nil(t, replyCorrect.Payload())
-	require.NoError(t, errCorrect)
-	replyCorrect.Close()
-
-	require.NoError(t, correctRequestTriggeredHandler.Wait())
+	// Await the server configuration push message
+	confMsg := message.NewMessage(64)
+	require.NoError(t, socket.Read(confMsg, time.Time{}))
 
 	// Send an overflowing request message and expect the server to close the
 	// connection
-	reply, err := client.connection.Request(
-		context.Background(),
-		[]byte("overflow"),
-		maliciousPayload,
-	)
-	require.Nil(t, reply)
-	require.Error(t, err)
+	writer, err := socket.GetWriter()
+	require.NoError(t, err)
+	require.NotNil(t, writer)
+
+	require.NoError(t, message.WriteMsgRequest(
+		writer,
+		[]byte{0, 0, 0, 0, 0, 0, 0, 0},
+		[]byte{},
+		maliciousPayload.Encoding,
+		maliciousPayload.Data,
+		true,
+	))
 
 	switch *argTransport {
 	case "memchan":
-		require.Equal(t, wwrclt.StatusConnected, client.connection.Status())
 	default:
-		require.Equal(t, wwrclt.StatusDisconnected, client.connection.Status())
+		require.Error(t, socket.Read(confMsg, time.Time{}))
+		require.False(t, socket.IsConnected())
 	}
 
 	// Expect the request handler not to be called
