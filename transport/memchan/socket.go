@@ -108,11 +108,7 @@ func (sock *Socket) Dial(serverAddr url.URL, deadline time.Time) error {
 	sock.remote.resetReader()
 
 	// Execute server callback
-	if err := sock.server.onConnect(sock); err != nil {
-		return err
-	}
-
-	return nil
+	return sock.server.onConnect(sock)
 }
 
 // GetWriter implements the transport.Socket interface

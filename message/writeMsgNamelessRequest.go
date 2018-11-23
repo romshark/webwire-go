@@ -46,8 +46,5 @@ func WriteMsgNamelessRequest(
 		}
 	}
 
-	if err := writer.Close(); err != nil {
-		return err
-	}
-	return nil
+	return writer.Close()
 }

@@ -50,8 +50,5 @@ func WriteMsgSpecialRequestReply(
 		return err
 	}
 
-	if err := writer.Close(); err != nil {
-		return err
-	}
-	return nil
+	return writer.Close()
 }

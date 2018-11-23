@@ -69,8 +69,5 @@ func WriteMsgReply(
 		return err
 	}
 
-	if err := writer.Close(); err != nil {
-		return fmt.Errorf("%s: %s", err, err)
-	}
-	return nil
+	return writer.Close()
 }
