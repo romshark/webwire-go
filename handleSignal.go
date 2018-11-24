@@ -15,6 +15,9 @@ func (srv *server) handleSignal(con *connection, msg *message.Message) {
 			srv.errorLog.Printf("signal handler failed: %v", recvErr)
 		}
 		srv.deregisterHandler(con)
+
+		// Release message buffer
+		msg.Close()
 	}()
 
 	srv.impl.OnSignal(context.Background(), con, msg)

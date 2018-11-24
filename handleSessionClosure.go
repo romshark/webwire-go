@@ -21,6 +21,9 @@ func (srv *server) handleSessionClosure(
 			srv.failMsg(con, msg, nil)
 		}
 		srv.deregisterHandler(con)
+
+		// Release message buffer
+		msg.Close()
 	}()
 
 	if !srv.sessionsEnabled {

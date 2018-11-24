@@ -92,6 +92,5 @@ func (srv *server) handleConnection(
 		if err := srv.handleMessage(connection, msg); err != nil {
 			srv.errorLog.Print("message handler failed: ", err)
 		}
-		msg.Close()
 	}
 }

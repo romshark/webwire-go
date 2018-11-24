@@ -12,13 +12,18 @@ func (srv *server) handleMessage(
 	// TODO: probably this check should include any message type that's not
 	// handled by handleMessage to avoid registering a handler
 	if msg.MsgType == message.MsgHeartbeat {
+		// Release message buffer
+		msg.Close()
 		return nil
 	}
 
 	if !srv.registerHandler(con, msg) {
+		// Release message buffer
+		msg.Close()
 		return nil
 	}
 
+	// Message buffers are released by the individual handlers
 	switch msg.MsgType {
 	case message.MsgSignalBinary,
 		message.MsgSignalUtf8,
@@ -44,9 +49,13 @@ func (srv *server) handleMessage(
 		srv.handleSessionRestore(con, msg)
 	case message.MsgCloseSession:
 		srv.handleSessionClosure(con, msg)
+
 	default:
 		// Immediately deregister handlers for unexpected message types
 		srv.deregisterHandler(con)
+
+		// Release message buffer
+		msg.Close()
 	}
 
 	return nil

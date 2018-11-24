@@ -17,6 +17,9 @@ func (srv *server) handleRequest(con *connection, msg *message.Message) {
 			srv.failMsg(con, msg, nil)
 		}
 		srv.deregisterHandler(con)
+
+		// Release message buffer
+		msg.Close()
 	}()
 
 	// Execute user-space hook
