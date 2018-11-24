@@ -37,8 +37,9 @@ func (srv *server) handleSessionClosure(
 		return
 	}
 
-	// Deregister session from active sessions registry
-	srv.sessionRegistry.deregister(con)
+	// Deregister session from active sessions registry destroying it if it's
+	// the last connection left
+	srv.sessionRegistry.deregister(con, true)
 
 	// Synchronize session destruction to the client
 	if err := con.notifySessionClosed(); err != nil {

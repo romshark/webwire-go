@@ -8,19 +8,25 @@ import (
 // sessionRegistry represents a thread safe registry
 // of all currently active sessions
 type sessionRegistry struct {
-	lock     *sync.RWMutex
-	maxConns uint
-	registry map[string]map[*connection]struct{}
+	server           *server
+	lock             *sync.RWMutex
+	maxConns         uint
+	registry         map[string]map[*connection]struct{}
+	onSessionDestroy func(sessionKey string)
 }
 
 // newSessionRegistry returns a new instance of a session registry.
 // maxConns defines the maximum number of concurrent connections
 // for a single session while zero stands for unlimited
-func newSessionRegistry(maxConns uint) *sessionRegistry {
+func newSessionRegistry(
+	maxConns uint,
+	onSessionDestroy func(sessionKey string),
+) *sessionRegistry {
 	return &sessionRegistry{
-		lock:     &sync.RWMutex{},
-		maxConns: maxConns,
-		registry: make(map[string]map[*connection]struct{}),
+		lock:             &sync.RWMutex{},
+		maxConns:         maxConns,
+		registry:         make(map[string]map[*connection]struct{}),
+		onSessionDestroy: onSessionDestroy,
 	}
 }
 
@@ -54,21 +60,43 @@ func (asr *sessionRegistry) register(con *connection) error {
 }
 
 // deregister removes a connection from the list of connections of a session
-// returns the number of connections left.
+// and returns the number of connections left.
 // If there's only one connection left then the entire session will be removed
-// from the register and 0 will be returned.
+// from the register and 0 will be returned. If destroy is set to true then the
+// session manager hook OnSessionClosed is executed destroying the session,
+// otherwise the session will be deregistered but left untouched in the storage.
 // If the given connection is not in the register -1 is returned
-func (asr *sessionRegistry) deregister(conn *connection) int {
+func (asr *sessionRegistry) deregister(
+	conn *connection,
+	destroy bool,
+) int {
 	if conn.session == nil {
 		return -1
 	}
 
 	asr.lock.Lock()
 	if connSet, exists := asr.registry[conn.session.Key]; exists {
-		// If a single connection is left then remove the session
+		// If a single connection is left then remove or destroy the session
 		if len(connSet) < 2 {
 			delete(asr.registry, conn.session.Key)
 			asr.lock.Unlock()
+
+			// Destroy the session
+			if destroy {
+				// Recover potential user-space hook panics
+				// to avoid panicking the server
+				defer func() {
+					if recvErr := recover(); recvErr != nil {
+						asr.server.errorLog.Printf(
+							"session closure hook panic: %v",
+							recvErr,
+						)
+					}
+				}()
+
+				asr.onSessionDestroy(conn.session.Key)
+			}
+
 			return 0
 		}
 

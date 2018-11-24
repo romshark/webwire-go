@@ -12,7 +12,7 @@ import (
 
 // TestSessRegRegistration tests registration
 func TestSessRegRegistration(t *testing.T) {
-	reg := newSessionRegistry(0)
+	reg := newSessionRegistry(0, nil)
 
 	// Register connection with session
 	clt := newConnection(nil, nil, nil, ConnectionOptions{})
@@ -31,7 +31,7 @@ func TestSessRegRegistration(t *testing.T) {
 // TestSessRegActiveSessionsNum tests the ActiveSessionsNum method
 func TestSessRegActiveSessionsNum(t *testing.T) {
 	expectedSessionsNum := 2
-	reg := newSessionRegistry(0)
+	reg := newSessionRegistry(0, nil)
 
 	// Register 2 connections on two separate sessions
 	cltA1 := newConnection(nil, nil, nil, ConnectionOptions{})
@@ -56,7 +56,7 @@ func TestSessRegActiveSessionsNum(t *testing.T) {
 // TestSessRegsessionConnectionsNum tests the sessionConnectionsNum method
 func TestSessRegsessionConnectionsNum(t *testing.T) {
 	expectedSessionsNum := 1
-	reg := newSessionRegistry(0)
+	reg := newSessionRegistry(0, nil)
 
 	// Register first connection on session A
 	cltA1 := newConnection(nil, nil, nil, ConnectionOptions{})
@@ -83,7 +83,7 @@ func TestSessRegsessionConnectionsNum(t *testing.T) {
 // when the maximum number of concurrent connections of a session was reached
 func TestSessRegSessionMaxConns(t *testing.T) {
 	// Set the maximum number of concurrent session connection to 1
-	reg := newSessionRegistry(1)
+	reg := newSessionRegistry(1, nil)
 
 	// Register first connection on session A
 	cltA1 := newConnection(nil, nil, nil, ConnectionOptions{})
@@ -106,7 +106,7 @@ func TestSessRegSessionMaxConns(t *testing.T) {
 
 // TestSessRegDeregistration tests deregistration
 func TestSessRegDeregistration(t *testing.T) {
-	reg := newSessionRegistry(0)
+	reg := newSessionRegistry(0, nil)
 
 	// Register 2 connections on two separate sessions
 	cltA1 := newConnection(nil, nil, nil, ConnectionOptions{})
@@ -128,7 +128,7 @@ func TestSessRegDeregistration(t *testing.T) {
 	require.Equal(t, 1, reg.sessionConnectionsNum("testkey_B"))
 
 	// Deregister first connection, expect 0 because session was removed
-	require.Equal(t, 0, reg.deregister(cltA1))
+	require.Equal(t, 0, reg.deregister(cltA1, false))
 
 	// Expect 1 active session after deregistration of the first connection
 	require.Equal(t, 1, reg.activeSessionsNum())
@@ -138,7 +138,7 @@ func TestSessRegDeregistration(t *testing.T) {
 	require.Equal(t, 1, reg.sessionConnectionsNum("testkey_B"))
 
 	// Deregister second connection, expect 0 because session was removed
-	require.Equal(t, 0, reg.deregister(cltB1))
+	require.Equal(t, 0, reg.deregister(cltB1, false))
 
 	// Expect no active sessions after deregistration of the second connection
 	require.Equal(t, 0, reg.activeSessionsNum())
@@ -151,7 +151,7 @@ func TestSessRegDeregistration(t *testing.T) {
 // TestSessRegDeregistrationMultiple tests deregistration of multiple
 // connections of a single session
 func TestSessRegDeregistrationMultiple(t *testing.T) {
-	reg := newSessionRegistry(0)
+	reg := newSessionRegistry(0, nil)
 
 	// Register 2 connections on the same session
 	cltA1 := newConnection(nil, nil, nil, ConnectionOptions{})
@@ -171,7 +171,7 @@ func TestSessRegDeregistrationMultiple(t *testing.T) {
 	require.Equal(t, 2, reg.sessionConnectionsNum("testkey_A"))
 
 	// Deregister first connection, expect 1
-	require.Equal(t, 1, reg.deregister(cltA1))
+	require.Equal(t, 1, reg.deregister(cltA1, false))
 
 	// Still expect 1 active session
 	// after deregistration of the first connection
@@ -181,7 +181,7 @@ func TestSessRegDeregistrationMultiple(t *testing.T) {
 	require.Equal(t, 1, reg.sessionConnectionsNum("testkey_A"))
 
 	// Deregister second connection, expect 0 because session was removed
-	require.Equal(t, 0, reg.deregister(cltA2))
+	require.Equal(t, 0, reg.deregister(cltA2, false))
 
 	// Expect no active sessions after deregistration of the second connection
 	require.Equal(t, 0, reg.activeSessionsNum())
@@ -192,7 +192,7 @@ func TestSessRegDeregistrationMultiple(t *testing.T) {
 
 // TestSessRegConcurrentAccess tests concurrent (de)registration
 func TestSessRegConcurrentAccess(t *testing.T) {
-	reg := newSessionRegistry(0)
+	reg := newSessionRegistry(0, nil)
 	connsToRegister := uint(16)
 	registeredConns := make([]*connection, connsToRegister)
 	var awaitRegistration sync.WaitGroup
@@ -236,7 +236,7 @@ func TestSessRegConcurrentAccess(t *testing.T) {
 		index := i
 		go func() {
 			// Deregister one of the connections
-			result := reg.deregister(registeredConns[index])
+			result := reg.deregister(registeredConns[index], false)
 			if result == -1 {
 				atomic.AddUint32(&negativeReturnCounter, 1)
 			}
@@ -259,7 +259,7 @@ func TestSessRegConcurrentAccess(t *testing.T) {
 // TestSessRegSessionConnections tests the sessionConnections method
 func TestSessRegSessionConnections(t *testing.T) {
 	expectedSessionsNum := 1
-	reg := newSessionRegistry(0)
+	reg := newSessionRegistry(0, nil)
 
 	// Register first connection on session A
 	cltA1 := newConnection(nil, []byte("A1"), nil, ConnectionOptions{})
@@ -283,4 +283,42 @@ func TestSessRegSessionConnections(t *testing.T) {
 	require.Len(t, list, 2)
 	require.Contains(t, list, cltA1)
 	require.Contains(t, list, cltA2)
+}
+
+// TestSessRegDestruction tests deregistration
+func TestSessRegDestruction(t *testing.T) {
+	cb := [2]bool{false, false}
+	reg := newSessionRegistry(0, func(sessionKey string) {
+		if sessionKey == "testkey_A" {
+			cb[0] = true
+		} else if sessionKey == "testkey_B" {
+			cb[1] = true
+		}
+	})
+
+	// Register 2 connections on session A, and 1 on session B
+	cltA1 := newConnection(nil, nil, nil, ConnectionOptions{})
+	sessA := NewSession(nil, func() string { return "testkey_A" })
+	cltA1.session = &sessA
+
+	cltA2 := newConnection(nil, nil, nil, ConnectionOptions{})
+	cltA2.session = &sessA
+
+	cltB1 := newConnection(nil, nil, nil, ConnectionOptions{})
+	sessB := NewSession(nil, func() string { return "testkey_B" })
+	cltB1.session = &sessB
+
+	require.NoError(t, reg.register(cltA1))
+	require.NoError(t, reg.register(cltA2))
+	require.NoError(t, reg.register(cltB1))
+
+	// Deregister both
+	reg.deregister(cltA1, true)
+	require.Equal(t, [2]bool{false, false}, cb)
+
+	reg.deregister(cltA2, true)
+	require.Equal(t, [2]bool{true, false}, cb)
+
+	reg.deregister(cltB1, true)
+	require.Equal(t, [2]bool{true, true}, cb)
 }

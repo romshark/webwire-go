@@ -66,11 +66,21 @@ func NewServer(
 		connections:       make([]*connection, 0),
 		connectionsLock:   &sync.Mutex{},
 		sessionsEnabled:   sessionsEnabled,
-		sessionRegistry:   newSessionRegistry(opts.MaxSessionConnections),
 		messagePool:       message.NewSyncPool(opts.MessageBufferSize, 1024),
 		warnLog:           opts.WarnLog,
 		errorLog:          opts.ErrorLog,
 	}
+
+	srv.sessionRegistry = newSessionRegistry(
+		opts.MaxSessionConnections,
+		func(sessionKey string) {
+			if err := srv.sessionManager.OnSessionClosed(
+				sessionKey,
+			); err != nil {
+				srv.errorLog.Printf("session registry ")
+			}
+		},
+	)
 
 	// Initialize the transport layer
 	if err := transport.Initialize(

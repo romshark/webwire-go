@@ -128,8 +128,8 @@ func (con *connection) setSession(newSess *Session) {
 // unlink resets the connection and marks it as disconnected
 // preparing it for garbage collection
 func (con *connection) unlink() {
-	// Deregister session from active sessions registry
-	con.srv.sessionRegistry.deregister(con)
+	// Deregister session from active sessions registry, but don't destroy it
+	con.srv.sessionRegistry.deregister(con, false)
 
 	con.sessionLock.Lock()
 	con.session = nil
@@ -263,8 +263,9 @@ func (con *connection) CloseSession() error {
 		return nil
 	}
 
-	// Deregister session from active sessions registry
-	con.srv.sessionRegistry.deregister(con)
+	// Deregister session from active sessions registry destroying it if it's
+	// the last connection left
+	con.srv.sessionRegistry.deregister(con, true)
 	con.session = nil
 	con.sessionLock.Unlock()
 
