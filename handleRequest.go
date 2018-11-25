@@ -10,18 +10,6 @@ import (
 // handleRequest handles incoming requests
 // and returns an error if the ongoing connection cannot be proceeded
 func (srv *server) handleRequest(con *connection, msg *message.Message) {
-	// Recover potential user-space hook panics to avoid panicking the server
-	defer func() {
-		if recvErr := recover(); recvErr != nil {
-			srv.errorLog.Printf("request handler panic: %v", recvErr)
-			srv.failMsg(con, msg, nil)
-		}
-		srv.deregisterHandler(con)
-
-		// Release message buffer
-		msg.Close()
-	}()
-
 	// Execute user-space hook
 	replyPayload, returnedErr := srv.impl.OnRequest(
 		context.Background(),
@@ -44,4 +32,9 @@ func (srv *server) handleRequest(con *connection, msg *message.Message) {
 		)
 		srv.failMsg(con, msg, nil)
 	}
+
+	srv.deregisterHandler(con)
+
+	// Release message buffer
+	msg.Close()
 }

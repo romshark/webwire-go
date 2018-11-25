@@ -11,29 +11,23 @@ func (srv *server) handleSessionClosure(
 	con *connection,
 	msg *message.Message,
 ) {
-	// Recover potential user-space hook panics to avoid panicking the server
-	defer func() {
-		if recvErr := recover(); recvErr != nil {
-			srv.errorLog.Printf(
-				"session closure handler panic: %v",
-				recvErr,
-			)
-			srv.failMsg(con, msg, nil)
-		}
+	finalize := func() {
 		srv.deregisterHandler(con)
 
 		// Release message buffer
 		msg.Close()
-	}()
+	}
 
 	if !srv.sessionsEnabled {
 		srv.failMsg(con, msg, wwrerr.SessionsDisabledErr{})
+		finalize()
 		return
 	}
 
 	if !con.HasSession() {
 		// Send confirmation even though no session was closed
 		srv.fulfillMsg(con, msg, Payload{})
+		finalize()
 		return
 	}
 
@@ -44,6 +38,7 @@ func (srv *server) handleSessionClosure(
 	// Synchronize session destruction to the client
 	if err := con.notifySessionClosed(); err != nil {
 		srv.failMsg(con, msg, nil)
+		finalize()
 		srv.errorLog.Printf("internal server error: "+
 			"couldn't notify client about the session destruction: %s",
 			err,
@@ -56,4 +51,5 @@ func (srv *server) handleSessionClosure(
 
 	// Send confirmation
 	srv.fulfillMsg(con, msg, Payload{})
+	finalize()
 }
