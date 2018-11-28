@@ -1,7 +1,6 @@
 package memchan
 
 import (
-	"errors"
 	"time"
 
 	wwr "github.com/qbeon/webwire-go"
@@ -16,11 +15,9 @@ type ClientTransport struct {
 func (cltTrans *ClientTransport) NewSocket(
 	dialTimeout time.Duration,
 ) (wwr.ClientSocket, error) {
-	// Verify server reference
 	if cltTrans.Server == nil {
-		return nil, errors.New(
-			"missing a reference to the memchan server in the client transport",
-		)
+		// Create a disconnected socket instance
+		return newDisconnectedSocket(), nil
 	}
 
 	// Create a new entangled socket pair

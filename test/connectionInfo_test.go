@@ -1,7 +1,6 @@
 package test
 
 import (
-	"regexp"
 	"testing"
 	"time"
 
@@ -28,51 +27,6 @@ func TestConnectionInfo(t *testing.T) {
 					info.ConnectionTime,
 					1*time.Second,
 				)
-
-				switch *argTransport {
-				case "fasthttp/websocket":
-					// Check user agent string
-					match, err := regexp.Match(
-						"^Go-http-client/1\\.1$",
-						info.UserAgent,
-					)
-					assert.NoError(t, err)
-					assert.True(t, match)
-
-					// Check remote address
-					assert.NotNil(t, info.RemoteAddr)
-
-				case "gorilla/websocket":
-					// Check user agent string
-					match, err := regexp.Match(
-						"^Go-http-client/1\\.1$",
-						info.UserAgent,
-					)
-					assert.NoError(t, err)
-					assert.True(t, match)
-
-					// Check remote address
-					assert.NotNil(t, info.RemoteAddr)
-
-				case "memchan":
-					// Check user agent string
-					match, err := regexp.Match(
-						"^webwire memchan client \\(0x[A-Fa-f0-9]{6,12}\\)$",
-						info.UserAgent,
-					)
-					assert.NoError(t, err)
-					assert.True(t, match)
-
-					// Check remote address
-					assert.NotNil(t, info.RemoteAddr)
-
-				default:
-					t.Fatalf(
-						"unexpected server transport implementation: %s",
-						*argTransport,
-					)
-				}
-
 				handlerFinished.Progress(1)
 			},
 		},

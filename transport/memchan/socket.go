@@ -92,6 +92,12 @@ func (sock *Socket) Dial(serverAddr url.URL, deadline time.Time) error {
 		return errors.New("cannot dial on a non-client socket")
 	}
 
+	if sock.server == nil {
+		return wwrerr.DisconnectedErr{
+			Cause: fmt.Errorf("server unreachable"),
+		}
+	}
+
 	if sock.server.ConnectionOptions.Connection != connopt.Accept {
 		return errors.New("connection refused")
 	}

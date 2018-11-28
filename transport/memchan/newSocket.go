@@ -34,3 +34,33 @@ func newSocket(server *Transport, bufferSize uint32) *Socket {
 
 	return socket
 }
+
+// newDisconnectedSocket creates a new disconnected socket instance
+func newDisconnectedSocket() *Socket {
+	// Setup a new inactive timer
+	readTimer := time.NewTimer(0)
+	<-readTimer.C
+
+	status := statusDisconnected
+
+	socket := &Socket{
+		sockType:   SocketClient,
+		readLock:   &sync.Mutex{},
+		writerLock: &sync.Mutex{},
+		reader:     make(chan []byte, 1),
+		readerLock: &sync.Mutex{},
+		readerErr:  make(chan error),
+		readTimer:  readTimer,
+		remote:     nil,
+		status:     &status,
+	}
+
+	// Allocate the outbound buffer
+	socket.outboundBuffer = NewBuffer(
+		make([]byte, 1),
+		// Connect the onFlush callback to the corresponding slot method
+		socket.onBufferFlush,
+	)
+
+	return socket
+}

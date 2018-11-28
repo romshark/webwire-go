@@ -8,7 +8,7 @@ import (
 
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
-	wwrfasthttp "github.com/qbeon/webwire-go/transport/fasthttp"
+	"github.com/qbeon/webwire-go/transport/memchan"
 	"github.com/stretchr/testify/require"
 )
 
@@ -17,13 +17,12 @@ import (
 func TestClientReqDisconnTimeout(t *testing.T) {
 	// Initialize client
 	client, err := newClient(
-		url.URL{Host: "127.0.0.1:65000"},
-		&wwrfasthttp.Transport{},
+		url.URL{},
 		wwrclt.Options{
 			ReconnectionInterval:  5 * time.Millisecond,
 			DefaultRequestTimeout: 50 * time.Millisecond,
 		},
-		nil, // Use the default transport implementation
+		&memchan.ClientTransport{},
 		testClientHooks{},
 	)
 	require.NoError(t, err)

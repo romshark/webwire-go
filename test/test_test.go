@@ -2,25 +2,17 @@ package test
 
 import (
 	"context"
-	"flag"
 	"fmt"
-	"log"
 	"net/url"
-	"os"
 	"reflect"
 	"testing"
 	"time"
 
-	fhttpws "github.com/fasthttp/websocket"
-	gorillaws "github.com/gorilla/websocket"
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
-	wwrfasthttp "github.com/qbeon/webwire-go/transport/fasthttp"
-	wwrgorilla "github.com/qbeon/webwire-go/transport/gorilla"
-	wwrmemchan "github.com/qbeon/webwire-go/transport/memchan"
+	"github.com/qbeon/webwire-go/transport/memchan"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/valyala/fasthttp"
 )
 
 type serverSetup struct {
@@ -74,48 +66,9 @@ func setupServer(
 	opts.Host = "127.0.0.1:0"
 
 	// Use the transport layer implementation specified by the CLI arguments
-	switch *argTransport {
-	case "fasthttp/websocket":
-		if trans == nil {
-			// Use default configuration
-			trans = &wwrfasthttp.Transport{
-				HTTPServer: &fasthttp.Server{
-					ReadBufferSize:  1024 * 8,
-					WriteBufferSize: 1024 * 8,
-				},
-			}
-		} else {
-			if _, isType := trans.(*wwrfasthttp.Transport); !isType {
-				return serverSetup{}, fmt.Errorf(
-					"unexpected server transport implementation: %s",
-					reflect.TypeOf(trans),
-				)
-			}
-		}
-	case "gorilla/websocket":
-		if trans == nil {
-			// Use default configuration
-			trans = &wwrgorilla.Transport{}
-		} else {
-			if _, isType := trans.(*wwrgorilla.Transport); !isType {
-				return serverSetup{}, fmt.Errorf(
-					"unexpected server transport implementation: %s",
-					reflect.TypeOf(trans),
-				)
-			}
-		}
-	case "memchan":
-		if trans == nil {
-			// Use default configuration
-			trans = &wwrmemchan.Transport{}
-		} else {
-			if _, isType := trans.(*wwrmemchan.Transport); !isType {
-				return serverSetup{}, fmt.Errorf(
-					"unexpected server transport implementation: %s",
-					reflect.TypeOf(trans),
-				)
-			}
-		}
+	if trans == nil {
+		// Use default configuration
+		trans = &memchan.Transport{}
 	}
 
 	// Initialize webwire server
@@ -162,7 +115,6 @@ func (setup *serverSetup) newClient(
 ) (*testClient, error) {
 	return newClient(
 		setup.Server.Address(),
-		setup.Transport,
 		options,
 		transport,
 		hooks,
@@ -175,9 +127,14 @@ func (setup *testServerSetup) newClient(
 	transport wwr.ClientTransport,
 	hooks testClientHooks,
 ) *testClient {
+	if transport == nil {
+		transport = &memchan.ClientTransport{
+			Server: setup.Transport.(*memchan.Transport),
+		}
+	}
+
 	clt, err := newClient(
 		setup.Server.Address(),
-		setup.Transport,
 		options,
 		transport,
 		hooks,
@@ -189,67 +146,10 @@ func (setup *testServerSetup) newClient(
 // newClient sets up a new test client instance
 func newClient(
 	serverAddr url.URL,
-	transport wwr.Transport,
 	options wwrclt.Options,
 	clientTransport wwr.ClientTransport,
 	hooks testClientHooks,
 ) (*testClient, error) {
-	// Prepare transport layer
-	switch transport.(type) {
-	case *wwrfasthttp.Transport:
-		if clientTransport == nil {
-			// Use default configuration
-			clientTransport = &wwrfasthttp.ClientTransport{}
-		} else {
-			_, isType := clientTransport.(*wwrfasthttp.ClientTransport)
-			if !isType {
-				return nil, fmt.Errorf(
-					"unexpected client transport implementation: %s",
-					reflect.TypeOf(clientTransport),
-				)
-			}
-		}
-
-	case *wwrgorilla.Transport:
-		if clientTransport == nil {
-			// Use default configuration
-			clientTransport = &wwrgorilla.ClientTransport{}
-		} else {
-			_, isType := clientTransport.(*wwrgorilla.ClientTransport)
-			if !isType {
-				return nil, fmt.Errorf(
-					"unexpected client transport implementation: %s",
-					reflect.TypeOf(clientTransport),
-				)
-			}
-		}
-
-	case *wwrmemchan.Transport:
-		if clientTransport == nil {
-			// Use default configuration
-			clientTransport = &wwrmemchan.ClientTransport{
-				Server: transport.(*wwrmemchan.Transport),
-			}
-		} else {
-			_, isType := clientTransport.(*wwrmemchan.ClientTransport)
-			if !isType {
-				return nil, fmt.Errorf(
-					"unexpected client transport implementation: %s",
-					reflect.TypeOf(clientTransport),
-				)
-			}
-		}
-		// Rewrite server reference
-		clientTransport.(*wwrmemchan.ClientTransport).Server =
-			transport.(*wwrmemchan.Transport)
-
-	default:
-		return nil, fmt.Errorf(
-			"unexpected server transport implementation: %s",
-			reflect.TypeOf(transport),
-		)
-	}
-
 	newClt := &testClient{
 		hooks: hooks,
 	}
@@ -268,40 +168,8 @@ func newClient(
 // newClientSocket creates a new raw client socket connected to the server
 func (setup *serverSetup) newClientSocket() (wwr.Socket, error) {
 	switch srvTrans := setup.Transport.(type) {
-	case *wwrfasthttp.Transport:
-		// Setup a regular websocket connection
-		serverAddr := setup.Server.Address()
-		if serverAddr.Scheme == "https" {
-			serverAddr.Scheme = "wss"
-		} else {
-			serverAddr.Scheme = "ws"
-		}
-
-		conn, _, err := fhttpws.DefaultDialer.Dial(serverAddr.String(), nil)
-		if err != nil {
-			return nil, fmt.Errorf("dialing failed: %s", err)
-		}
-
-		return wwrfasthttp.NewConnectedSocket(conn), nil
-
-	case *wwrgorilla.Transport:
-		// Setup a regular websocket connection
-		serverAddr := setup.Server.Address()
-		if serverAddr.Scheme == "https" {
-			serverAddr.Scheme = "wss"
-		} else {
-			serverAddr.Scheme = "ws"
-		}
-
-		conn, _, err := gorillaws.DefaultDialer.Dial(serverAddr.String(), nil)
-		if err != nil {
-			return nil, fmt.Errorf("dialing failed: %s", err)
-		}
-
-		return wwrgorilla.NewConnectedSocket(conn), nil
-
-	case *wwrmemchan.Transport:
-		_, sock := wwrmemchan.NewEntangledSockets(srvTrans)
+	case *memchan.Transport:
+		_, sock := memchan.NewEntangledSockets(srvTrans)
 		if err := sock.Dial(url.URL{}, time.Time{}); err != nil {
 			return nil, fmt.Errorf("memchan dial failed: %s", err)
 		}
@@ -329,35 +197,4 @@ func compareSessions(t *testing.T, expected, actual *wwr.Session) {
 	assert.NotNil(t, actual)
 	assert.Equal(t, expected.Key, actual.Key)
 	assert.Equal(t, expected.Creation.Unix(), actual.Creation.Unix())
-}
-
-var argTransport = flag.String(
-	"wwr-transport",
-	"gorilla/websocket",
-	"determines the webwire transport layer implementation",
-)
-
-// parseArgs parses and validates the CLI argument
-func parseArgs() {
-	flag.Parse()
-
-	switch *argTransport {
-	case "gorilla/websocket":
-	case "fasthttp/websocket":
-	case "memchan":
-	default:
-		log.Fatalf(
-			"unknown transport layer implementation: '%s'",
-			*argTransport,
-		)
-	}
-}
-
-// TestMain executes the tests
-func TestMain(m *testing.M) {
-	parseArgs()
-
-	fmt.Printf("transport: %s\n", *argTransport)
-
-	os.Exit(m.Run())
 }

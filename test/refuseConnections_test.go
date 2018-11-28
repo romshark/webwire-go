@@ -2,17 +2,13 @@ package test
 
 import (
 	"context"
-	"net/http"
 	"testing"
 	"time"
 
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
-	wwrfasthttp "github.com/qbeon/webwire-go/transport/fasthttp"
-	wwrgorilla "github.com/qbeon/webwire-go/transport/gorilla"
-	wwrmemchan "github.com/qbeon/webwire-go/transport/memchan"
+	"github.com/qbeon/webwire-go/transport/memchan"
 	"github.com/stretchr/testify/require"
-	"github.com/valyala/fasthttp"
 )
 
 // TestRefuseConnections tests refusal of connection before their upgrade to a
@@ -22,35 +18,11 @@ func TestRefuseConnections(t *testing.T) {
 
 	// Prepare transport layer implementation parameters
 	var transImpl wwr.Transport
-	switch *argTransport {
-	case "fasthttp/websocket":
-		transImpl = &wwrfasthttp.Transport{
-			BeforeUpgrade: func(
-				_ *fasthttp.RequestCtx,
-			) wwr.ConnectionOptions {
-				// Refuse all incoming connections
-				return wwr.ConnectionOptions{Connection: wwr.Refuse}
-			},
-		}
-	case "gorilla/websocket":
-		transImpl = &wwrgorilla.Transport{
-			BeforeUpgrade: func(
-				resp http.ResponseWriter,
-				req *http.Request,
-			) wwr.ConnectionOptions {
-				// Refuse all incoming connections
-				return wwr.ConnectionOptions{Connection: wwr.Refuse}
-			},
-		}
-	case "memchan":
-		transImpl = &wwrmemchan.Transport{
-			// Refuse all incoming connections
-			ConnectionOptions: wwr.ConnectionOptions{
-				Connection: wwr.Refuse,
-			},
-		}
-	default:
-		t.Fatalf("unexpected transport implementation: %s", *argTransport)
+	transImpl = &memchan.Transport{
+		// Refuse all incoming connections
+		ConnectionOptions: wwr.ConnectionOptions{
+			Connection: wwr.Refuse,
+		},
 	}
 
 	// Initialize server
