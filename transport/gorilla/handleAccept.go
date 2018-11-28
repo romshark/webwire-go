@@ -6,8 +6,6 @@ import (
 	"github.com/qbeon/webwire-go/connopt"
 )
 
-var methodNameOptions = []byte("OPTIONS")
-
 func (srv *Transport) handleAccept(
 	resp http.ResponseWriter,
 	req *http.Request,
