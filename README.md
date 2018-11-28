@@ -15,6 +15,7 @@
 	<a href="https://coveralls.io/github/qbeon/webwire-go?branch=master">
 		<img src="https://coveralls.io/repos/github/qbeon/webwire-go/badge.svg?branch=master" alt="Coveralls: Test Coverage">
 	</a>
+<a href="https://app.fossa.io/projects/git%2Bgithub.com%2Fqbeon%2Fwebwire-go?ref=badge_shield" alt="FOSSA Status"><img src="https://app.fossa.io/api/projects/git%2Bgithub.com%2Fqbeon%2Fwebwire-go.svg?type=shield"/></a>
 	<a href="https://goreportcard.com/report/github.com/qbeon/webwire-go">
 		<img src="https://goreportcard.com/badge/github.com/qbeon/webwire-go" alt="GoReportCard">
 	</a>
@@ -425,3 +426,7 @@ This library is used internally to abstract away the underlying websockets imple
 ----
 
 © 2018 Roman Sharkov <roman.sharkov@qbeon.com>
+
+
+## License
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fqbeon%2Fwebwire-go.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Fqbeon%2Fwebwire-go?ref=badge_large)
