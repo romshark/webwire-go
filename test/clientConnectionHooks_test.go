@@ -1,37 +1,29 @@
 package test
 
 import (
-	"sync"
 	"testing"
 	"time"
 
 	tmdwg "github.com/qbeon/tmdwg-go"
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 // TestClientDisconnectedHook verifies the server is calling the
-// onClientDisconnected hook properly
+// onClientConnected and onClientDisconnected hooks properly
 func TestClientDisconnectedHook(t *testing.T) {
+	connectedHookCalled := tmdwg.NewTimedWaitGroup(1, 1*time.Second)
 	disconnectedHookCalled := tmdwg.NewTimedWaitGroup(1, 1*time.Second)
-	var clientConn wwr.Connection
-	connectedClientLock := sync.Mutex{}
 
 	// Initialize webwire server given only the request
 	setup := setupTestServer(
 		t,
 		&serverImpl{
 			onClientConnected: func(conn wwr.Connection) {
-				connectedClientLock.Lock()
-				clientConn = conn
-				connectedClientLock.Unlock()
+				connectedHookCalled.Progress(1)
 			},
 			onClientDisconnected: func(conn wwr.Connection, _ error) {
-				connectedClientLock.Lock()
-				assert.Equal(t, clientConn, conn)
-				connectedClientLock.Unlock()
 				disconnectedHookCalled.Progress(1)
 			},
 		},
@@ -50,6 +42,12 @@ func TestClientDisconnectedHook(t *testing.T) {
 
 	// Connect to the server
 	require.NoError(t, client.connection.Connect())
+
+	// Await the onClientDisconnected hook to be called on the server
+	require.NoError(t,
+		connectedHookCalled.Wait(),
+		"server.OnClientConnected hook not called",
+	)
 
 	// Disconnect the client
 	client.connection.Close()
