@@ -11,10 +11,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/fasthttp/websocket"
+	fhttpws "github.com/fasthttp/websocket"
+	gorillaws "github.com/gorilla/websocket"
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
 	wwrfasthttp "github.com/qbeon/webwire-go/transport/fasthttp"
+	wwrgorilla "github.com/qbeon/webwire-go/transport/gorilla"
 	wwrmemchan "github.com/qbeon/webwire-go/transport/memchan"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -84,6 +86,18 @@ func setupServer(
 			}
 		} else {
 			if _, isType := trans.(*wwrfasthttp.Transport); !isType {
+				return serverSetup{}, fmt.Errorf(
+					"unexpected server transport implementation: %s",
+					reflect.TypeOf(trans),
+				)
+			}
+		}
+	case "gorilla/websocket":
+		if trans == nil {
+			// Use default configuration
+			trans = &wwrgorilla.Transport{}
+		} else {
+			if _, isType := trans.(*wwrgorilla.Transport); !isType {
 				return serverSetup{}, fmt.Errorf(
 					"unexpected server transport implementation: %s",
 					reflect.TypeOf(trans),
@@ -196,6 +210,20 @@ func newClient(
 			}
 		}
 
+	case *wwrgorilla.Transport:
+		if clientTransport == nil {
+			// Use default configuration
+			clientTransport = &wwrgorilla.ClientTransport{}
+		} else {
+			_, isType := clientTransport.(*wwrgorilla.ClientTransport)
+			if !isType {
+				return nil, fmt.Errorf(
+					"unexpected client transport implementation: %s",
+					reflect.TypeOf(clientTransport),
+				)
+			}
+		}
+
 	case *wwrmemchan.Transport:
 		if clientTransport == nil {
 			// Use default configuration
@@ -249,12 +277,28 @@ func (setup *serverSetup) newClientSocket() (wwr.Socket, error) {
 			serverAddr.Scheme = "ws"
 		}
 
-		conn, _, err := websocket.DefaultDialer.Dial(serverAddr.String(), nil)
+		conn, _, err := fhttpws.DefaultDialer.Dial(serverAddr.String(), nil)
 		if err != nil {
 			return nil, fmt.Errorf("dialing failed: %s", err)
 		}
 
 		return wwrfasthttp.NewConnectedSocket(conn), nil
+
+	case *wwrgorilla.Transport:
+		// Setup a regular websocket connection
+		serverAddr := setup.Server.Address()
+		if serverAddr.Scheme == "https" {
+			serverAddr.Scheme = "wss"
+		} else {
+			serverAddr.Scheme = "ws"
+		}
+
+		conn, _, err := gorillaws.DefaultDialer.Dial(serverAddr.String(), nil)
+		if err != nil {
+			return nil, fmt.Errorf("dialing failed: %s", err)
+		}
+
+		return wwrgorilla.NewConnectedSocket(conn), nil
 
 	case *wwrmemchan.Transport:
 		_, sock := wwrmemchan.NewEntangledSockets(srvTrans)
@@ -289,7 +333,7 @@ func compareSessions(t *testing.T, expected, actual *wwr.Session) {
 
 var argTransport = flag.String(
 	"wwr-transport",
-	"fasthttp/websocket",
+	"gorilla/websocket",
 	"determines the webwire transport layer implementation",
 )
 
@@ -298,6 +342,7 @@ func parseArgs() {
 	flag.Parse()
 
 	switch *argTransport {
+	case "gorilla/websocket":
 	case "fasthttp/websocket":
 	case "memchan":
 	default:

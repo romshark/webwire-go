@@ -42,6 +42,18 @@ func TestConnectionInfo(t *testing.T) {
 					// Check remote address
 					assert.NotNil(t, info.RemoteAddr)
 
+				case "gorilla/websocket":
+					// Check user agent string
+					match, err := regexp.Match(
+						"^Go-http-client/1\\.1$",
+						info.UserAgent,
+					)
+					assert.NoError(t, err)
+					assert.True(t, match)
+
+					// Check remote address
+					assert.NotNil(t, info.RemoteAddr)
+
 				case "memchan":
 					// Check user agent string
 					match, err := regexp.Match(

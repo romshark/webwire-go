@@ -2,12 +2,14 @@ package test
 
 import (
 	"context"
+	"net/http"
 	"testing"
 	"time"
 
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
 	wwrfasthttp "github.com/qbeon/webwire-go/transport/fasthttp"
+	wwrgorilla "github.com/qbeon/webwire-go/transport/gorilla"
 	wwrmemchan "github.com/qbeon/webwire-go/transport/memchan"
 	"github.com/stretchr/testify/require"
 	"github.com/valyala/fasthttp"
@@ -25,6 +27,16 @@ func TestRefuseConnections(t *testing.T) {
 		transImpl = &wwrfasthttp.Transport{
 			BeforeUpgrade: func(
 				_ *fasthttp.RequestCtx,
+			) wwr.ConnectionOptions {
+				// Refuse all incoming connections
+				return wwr.ConnectionOptions{Connection: wwr.Refuse}
+			},
+		}
+	case "gorilla/websocket":
+		transImpl = &wwrgorilla.Transport{
+			BeforeUpgrade: func(
+				resp http.ResponseWriter,
+				req *http.Request,
 			) wwr.ConnectionOptions {
 				// Refuse all incoming connections
 				return wwr.ConnectionOptions{Connection: wwr.Refuse}
