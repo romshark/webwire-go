@@ -28,6 +28,9 @@
 	<a href="https://opensource.org/licenses/MIT">
 		<img src="https://img.shields.io/badge/License-MIT-green.svg" alt="Licence: MIT">
 	</a>
+	<a href="https://app.fossa.io/projects/git%2Bgithub.com%2Fqbeon%2Fwebwire-go?ref=badge_shield" alt="FOSSA Status">
+		<img src="https://app.fossa.io/api/projects/git%2Bgithub.com%2Fqbeon%2Fwebwire-go.svg?type=shield"/>
+	</a>
 	<a href="https://godoc.org/github.com/qbeon/webwire-go">
 		<img src="https://godoc.org/github.com/qbeon/webwire-go?status.svg" alt="GoDoc">
 	</a>
