@@ -3,7 +3,6 @@ package test
 import (
 	"context"
 	"fmt"
-	"net/url"
 	"reflect"
 	"testing"
 	"time"
@@ -62,9 +61,6 @@ func setupServer(
 		opts.SessionManager = newInMemSessManager()
 	}
 
-	// Use default address
-	opts.Host = "127.0.0.1:0"
-
 	// Use the transport layer implementation specified by the CLI arguments
 	if trans == nil {
 		// Use default configuration
@@ -114,7 +110,6 @@ func (setup *serverSetup) newClient(
 	hooks testClientHooks,
 ) (*testClient, error) {
 	return newClient(
-		setup.Server.Address(),
 		options,
 		transport,
 		hooks,
@@ -134,7 +129,6 @@ func (setup *testServerSetup) newClient(
 	}
 
 	clt, err := newClient(
-		setup.Server.Address(),
 		options,
 		transport,
 		hooks,
@@ -145,7 +139,6 @@ func (setup *testServerSetup) newClient(
 
 // newClient sets up a new test client instance
 func newClient(
-	serverAddr url.URL,
 	options wwrclt.Options,
 	clientTransport wwr.ClientTransport,
 	hooks testClientHooks,
@@ -155,7 +148,7 @@ func newClient(
 	}
 
 	// Initialize connection
-	conn, err := wwrclt.NewClient(serverAddr, newClt, options, clientTransport)
+	conn, err := wwrclt.NewClient(newClt, options, clientTransport)
 	if err != nil {
 		return nil, fmt.Errorf("failed setting up client instance: %s", err)
 	}
@@ -170,7 +163,7 @@ func (setup *serverSetup) newClientSocket() (wwr.Socket, error) {
 	switch srvTrans := setup.Transport.(type) {
 	case *memchan.Transport:
 		_, sock := memchan.NewEntangledSockets(srvTrans)
-		if err := sock.Dial(url.URL{}, time.Time{}); err != nil {
+		if err := sock.Dial(time.Time{}); err != nil {
 			return nil, fmt.Errorf("memchan dial failed: %s", err)
 		}
 		return sock, nil

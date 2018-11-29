@@ -24,16 +24,9 @@ func (clt *client) dial() (srvConf message.ServerConfiguration, err error) {
 	result := make(chan dialResult, 1)
 	abortAwait := uint32(0)
 
-	serverAddr := clt.serverAddr
-	if serverAddr.Scheme == "https" {
-		serverAddr.Scheme = "wss"
-	} else {
-		serverAddr.Scheme = "ws"
-	}
-
 	go func() {
 		// Dial
-		if err := clt.conn.Dial(serverAddr, deadline); err != nil {
+		if err := clt.conn.Dial(deadline); err != nil {
 			result <- dialResult{err: err}
 			return
 		}

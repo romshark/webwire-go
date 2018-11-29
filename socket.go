@@ -3,7 +3,6 @@ package webwire
 import (
 	"io"
 	"net"
-	"net/url"
 	"time"
 
 	"github.com/qbeon/webwire-go/message"
@@ -37,8 +36,8 @@ type Socket interface {
 
 // ClientSocket defines the abstract client socket implementation interface
 type ClientSocket interface {
-	// Dial connects the socket to the specified server
-	Dial(serverAddr url.URL, deadline time.Time) error
+	// Dial connects the socket to the server
+	Dial(deadline time.Time) error
 
 	Socket
 }

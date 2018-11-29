@@ -2,7 +2,6 @@ package test
 
 import (
 	"context"
-	"net/url"
 	"testing"
 	"time"
 
@@ -17,7 +16,6 @@ import (
 func TestClientRestSessDisconnTimeout(t *testing.T) {
 	// Initialize client
 	client, err := newClient(
-		url.URL{},
 		wwrclt.Options{
 			ReconnectionInterval:  5 * time.Millisecond,
 			DefaultRequestTimeout: 50 * time.Millisecond,

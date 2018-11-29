@@ -3,7 +3,6 @@ package client
 import (
 	"context"
 	"fmt"
-	"net/url"
 	"sync"
 	"time"
 
@@ -15,7 +14,6 @@ import (
 // NewClient creates a new client instance.
 // The new client will immediately begin connecting if autoconnect is enabled
 func NewClient(
-	serverAddress url.URL,
 	implementation Implementation,
 	options Options,
 	transport webwire.ClientTransport,
@@ -26,11 +24,6 @@ func NewClient(
 
 	if transport == nil {
 		return nil, fmt.Errorf("missing client transport layer implementation")
-	}
-
-	// Prepare server address
-	if serverAddress.Scheme != "https" {
-		serverAddress.Scheme = "http"
 	}
 
 	// Prepare configuration
@@ -55,7 +48,6 @@ func NewClient(
 
 	// Initialize new client
 	newClt := &client{
-		serverAddr:     serverAddress,
 		options:        options,
 		impl:           implementation,
 		dialingTimer:   dialingTimer,

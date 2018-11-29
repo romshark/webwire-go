@@ -4,7 +4,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"net/url"
 	"sync"
 
 	webwire "github.com/qbeon/webwire-go"
@@ -42,7 +41,6 @@ const (
 
 // client represents an instance of one of the servers clients
 type client struct {
-	serverAddr   url.URL
 	options      Options
 	impl         Implementation
 	dialingTimer *time.Timer

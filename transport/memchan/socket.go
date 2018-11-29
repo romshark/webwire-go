@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"net/url"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -87,7 +86,7 @@ func (sock *Socket) onBufferFlush(data []byte) (err error) {
 }
 
 // Dial implements the transport.Socket interface
-func (sock *Socket) Dial(serverAddr url.URL, deadline time.Time) error {
+func (sock *Socket) Dial(deadline time.Time) error {
 	if sock.sockType != SocketClient {
 		return errors.New("cannot dial on a non-client socket")
 	}

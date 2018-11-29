@@ -2,7 +2,6 @@ package test
 
 import (
 	"context"
-	"net/url"
 	"testing"
 	"time"
 
@@ -18,7 +17,6 @@ import (
 func TestClientReqDisconnNoAutoconn(t *testing.T) {
 	// Initialize client
 	client, err := newClient(
-		url.URL{},
 		wwrclt.Options{
 			Autoconnect:           wwr.Disabled,
 			ReconnectionInterval:  5 * time.Millisecond,

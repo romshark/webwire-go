@@ -24,7 +24,6 @@ const (
 // ServerOptions represents the options
 // used during the creation of a new WebWire server instance
 type ServerOptions struct {
-	Host                  string
 	Sessions              OptionValue
 	SessionManager        SessionManager
 	SessionKeyGenerator   SessionKeyGenerator
