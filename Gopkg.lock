@@ -10,42 +10,6 @@
   version = "v1.1.1"
 
 [[projects]]
-  digest = "1:c0a566b3f376c6a2266930f91bba26b20ef1973940d0de2b361a05a964f299fe"
-  name = "github.com/fasthttp/websocket"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "cefc411b142525c927e2656b34a08f15a37da650"
-  version = "v1.4.0"
-
-[[projects]]
-  digest = "1:7b5c6e2eeaa9ae5907c391a91c132abfd5c9e8a784a341b5625e750c67e6825d"
-  name = "github.com/gorilla/websocket"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "66b9c49e59c6c48f0ffce28c2d8b8a5678502c6d"
-  version = "v1.4.0"
-
-[[projects]]
-  digest = "1:cdbed6a7b574b13bbabcd8c36c5be56d6444789bab21fcd37d39655eab0b2141"
-  name = "github.com/klauspost/compress"
-  packages = [
-    "flate",
-    "gzip",
-    "zlib",
-  ]
-  pruneopts = "UT"
-  revision = "b939724e787a27c0005cabe3f78e7ed7987ac74f"
-  version = "v1.4.0"
-
-[[projects]]
-  digest = "1:4ea0668d490ca32a38366453a486e2e8c60fbdaf1f2607c96b4a093d8a5c8de7"
-  name = "github.com/klauspost/cpuid"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "ae7887de9fa5d2db4eaa8174a7eff2c1ac00f2da"
-  version = "v1.1"
-
-[[projects]]
   digest = "1:0028cb19b2e4c3112225cd871870f2d9cf49b9b4276531f03438a88e94be86fe"
   name = "github.com/pmezard/go-difflib"
   packages = ["difflib"]
@@ -74,26 +38,6 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:f52b91ab1b58aa5217d6094865dda519f75296c3884380526cd127bc19f02461"
-  name = "github.com/valyala/bytebufferpool"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "cdfbe9377474227bb42120c1e22fd4433e7f69bf"
-
-[[projects]]
-  branch = "master"
-  digest = "1:9eb359482bfc924955a901d1a3b702569c266892d8c88660c629b3e62832a1bf"
-  name = "github.com/valyala/fasthttp"
-  packages = [
-    ".",
-    "fasthttputil",
-    "stackless",
-  ]
-  pruneopts = "UT"
-  revision = "192515395f6fe387bdbdc8105358f4d890413951"
-
-[[projects]]
-  branch = "master"
   digest = "1:76ee51c3f468493aff39dbacc401e8831fbb765104cbf613b89bef01cf4bad70"
   name = "golang.org/x/net"
   packages = ["context"]
@@ -112,12 +56,9 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
-    "github.com/fasthttp/websocket",
-    "github.com/gorilla/websocket",
     "github.com/qbeon/tmdwg-go",
     "github.com/stretchr/testify/assert",
     "github.com/stretchr/testify/require",
-    "github.com/valyala/fasthttp",
     "golang.org/x/sync/semaphore",
   ]
   solver-name = "gps-cdcl"

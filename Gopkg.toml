@@ -9,15 +9,3 @@
 [[constraint]]
   name = "github.com/stretchr/testify"
   version = "1.2.2"
-
-[[constraint]]
-  name = "github.com/valyala/fasthttp"
-  branch = "master"
-
-[[constraint]]
-  name = "github.com/fasthttp/websocket"
-  version = "1.4.0"
-
-[[constraint]]
-  name = "github.com/gorilla/websocket"
-  version = "1.4.0"
