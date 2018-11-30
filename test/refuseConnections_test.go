@@ -16,15 +16,6 @@ import (
 func TestRefuseConnections(t *testing.T) {
 	numClients := 5
 
-	// Prepare transport layer implementation parameters
-	var transImpl wwr.Transport
-	transImpl = &memchan.Transport{
-		// Refuse all incoming connections
-		ConnectionOptions: wwr.ConnectionOptions{
-			Connection: wwr.Refuse,
-		},
-	}
-
 	// Initialize server
 	setup := setupTestServer(
 		t,
@@ -40,7 +31,14 @@ func TestRefuseConnections(t *testing.T) {
 			},
 		},
 		wwr.ServerOptions{},
-		transImpl,
+		&memchan.Transport{
+			OnBeforeCreation: func() wwr.ConnectionOptions {
+				// Refuse all incoming connections
+				return wwr.ConnectionOptions{
+					Connection: wwr.Refuse,
+				}
+			},
+		},
 	)
 
 	clients := make([]*testClient, numClients)

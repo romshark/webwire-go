@@ -16,7 +16,10 @@ func TestOverridingConnectionSession(t *testing.T) {
 	setup := setupTestServer(
 		t,
 		&serverImpl{
-			onClientConnected: func(conn wwr.Connection) {
+			onClientConnected: func(
+				_ wwr.ConnectionOptions,
+				conn wwr.Connection,
+			) {
 				assert.NoError(t, conn.CreateSession(nil))
 				sessionKey := conn.SessionKey()
 

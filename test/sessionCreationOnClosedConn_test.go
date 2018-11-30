@@ -17,7 +17,10 @@ func TestSessionCreationOnClosedConn(t *testing.T) {
 	setup := setupTestServer(
 		t,
 		&serverImpl{
-			onClientConnected: func(conn wwr.Connection) {
+			onClientConnected: func(
+				_ wwr.ConnectionOptions,
+				conn wwr.Connection,
+			) {
 				conn.Close()
 				err := conn.CreateSession(nil)
 				assert.Error(t, err)

@@ -17,7 +17,10 @@ func TestConnectionSessionGetters(t *testing.T) {
 	setup := setupTestServer(
 		t,
 		&serverImpl{
-			onClientConnected: func(conn wwr.Connection) {
+			onClientConnected: func(
+				_ wwr.ConnectionOptions,
+				conn wwr.Connection,
+			) {
 				// Before session creation
 				assert.Nil(t, conn.Session())
 				assert.Equal(t, time.Time{}, conn.SessionCreation())

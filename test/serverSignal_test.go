@@ -22,7 +22,10 @@ func TestServerSignal(t *testing.T) {
 	setup := setupTestServer(
 		t,
 		&serverImpl{
-			onClientConnected: func(conn wwr.Connection) {
+			onClientConnected: func(
+				_ wwr.ConnectionOptions,
+				conn wwr.Connection,
+			) {
 				// Send signal
 				assert.NoError(t, conn.Signal(
 					nil,

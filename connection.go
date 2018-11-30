@@ -12,11 +12,11 @@ import (
 	"golang.org/x/sync/semaphore"
 )
 
-// ClientInfo represents basic information about a client connection
-type ClientInfo struct {
-	ConnectionTime time.Time
-	UserAgent      []byte
-	RemoteAddr     net.Addr
+// info represents basic information about a client connection
+type info struct {
+	Options    ConnectionOptions
+	Creation   time.Time
+	RemoteAddr net.Addr
 }
 
 // connection represents a connected client connected to the server
@@ -47,13 +47,12 @@ type connection struct {
 	session *Session
 
 	// info represents overall connection information
-	info ClientInfo
+	info info
 }
 
 // newConnection creates and returns a new client connection instance
 func newConnection(
 	socket Socket,
-	userAgent []byte,
 	srv *server,
 	options ConnectionOptions,
 ) *connection {
@@ -76,10 +75,10 @@ func newConnection(
 		sock:         socket,
 		sessionLock:  sync.RWMutex{},
 		session:      nil,
-		info: ClientInfo{
-			time.Now(),
-			userAgent,
-			remoteAddr,
+		info: info{
+			Options:    options,
+			Creation:   time.Now(),
+			RemoteAddr: remoteAddr,
 		},
 	}
 }
@@ -140,8 +139,21 @@ func (con *connection) unlink() {
 }
 
 // Info implements the Connection interface
-func (con *connection) Info() ClientInfo {
-	return con.info
+func (con *connection) Info(key int) interface{} {
+	if con.info.Options.Info == nil {
+		return nil
+	}
+	return con.info.Options.Info[key]
+}
+
+// Creation implements the Connection interface
+func (con *connection) Creation() time.Time {
+	return con.info.Creation
+}
+
+// RemoteAddr implements the Connection interface
+func (con *connection) RemoteAddr() net.Addr {
+	return con.info.RemoteAddr
 }
 
 // Signal implements the Connection interface

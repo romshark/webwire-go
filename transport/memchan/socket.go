@@ -97,7 +97,9 @@ func (sock *Socket) Dial(deadline time.Time) error {
 		}
 	}
 
-	if sock.server.ConnectionOptions.Connection != connopt.Accept {
+	// Call the connection creation hook
+	connOpts := sock.server.OnBeforeCreation()
+	if connOpts.Connection != connopt.Accept {
 		return errors.New("connection refused")
 	}
 
@@ -113,7 +115,7 @@ func (sock *Socket) Dial(deadline time.Time) error {
 	sock.remote.resetReader()
 
 	// Execute server callback
-	return sock.server.onConnect(sock)
+	return sock.server.onConnect(sock, connOpts)
 }
 
 // GetWriter implements the transport.Socket interface

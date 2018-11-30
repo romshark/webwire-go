@@ -15,7 +15,6 @@ type IsShuttingDown func() bool
 // webwire server
 type OnNewConnection func(
 	connectionOptions connopt.ConnectionOptions,
-	clientAgentString []byte,
 	socket Socket,
 )
 

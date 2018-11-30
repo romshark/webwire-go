@@ -22,7 +22,10 @@ func TestClientConnIsConnected(t *testing.T) {
 	setup := setupTestServer(
 		t,
 		&serverImpl{
-			onClientConnected: func(newConn wwr.Connection) {
+			onClientConnected: func(
+				_ wwr.ConnectionOptions,
+				newConn wwr.Connection,
+			) {
 				assert.True(t,
 					newConn.IsActive(),
 					"Expected connection to be active",

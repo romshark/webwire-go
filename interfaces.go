@@ -2,6 +2,7 @@ package webwire
 
 import (
 	"context"
+	"net"
 	"net/url"
 	"time"
 
@@ -77,7 +78,7 @@ type ServerImplementation interface {
 	// starting to listen for incoming messages.
 	// To prevent blocking the initialization process it is advised to move
 	// any time consuming work to a separate goroutine
-	OnClientConnected(client Connection)
+	OnClientConnected(connectionOptions ConnectionOptions, client Connection)
 
 	// OnClientDisconnected is invoked when a client closes the connection
 	// to the server.
@@ -124,9 +125,16 @@ type Connection interface {
 	// ready to accept incoming messages, otherwise returns false
 	IsActive() bool
 
-	// Info returns information about this connection including the
-	// client agent string, the remote address and the time of creation
-	Info() ClientInfo
+	// RemoteAddr returns the remote address
+	RemoteAddr() net.Addr
+
+	// Creation returns the time of connection establishment
+	Creation() time.Time
+
+	// Info returns arbitrary information by key which was assigned by the
+	// transport layer implementation during the connection establishment.
+	// Returns nil if the provided key was not found
+	Info(key int) interface{}
 
 	// Signal sends a named signal containing the given payload to the client
 	Signal(name []byte, payload Payload) error

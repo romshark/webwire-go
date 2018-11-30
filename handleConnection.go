@@ -34,7 +34,6 @@ func (srv *server) writeConfMessage(sock Socket) error {
 
 func (srv *server) handleConnection(
 	connectionOptions ConnectionOptions,
-	userAgent []byte,
 	sock Socket,
 ) {
 	// Send server configuration message
@@ -49,7 +48,6 @@ func (srv *server) handleConnection(
 	// Register connected client
 	connection := newConnection(
 		sock,
-		userAgent,
 		srv,
 		connectionOptions,
 	)
@@ -59,7 +57,7 @@ func (srv *server) handleConnection(
 	srv.connectionsLock.Unlock()
 
 	// Call hook on successful connection
-	srv.impl.OnClientConnected(connection)
+	srv.impl.OnClientConnected(connectionOptions, connection)
 
 	for {
 		// Get a message buffer

@@ -8,7 +8,10 @@ import (
 
 // serverImpl implements the webwire.ServerImplementation interface
 type serverImpl struct {
-	onClientConnected    func(connection wwr.Connection)
+	onClientConnected func(
+		connectionOptions wwr.ConnectionOptions,
+		connection wwr.Connection,
+	)
 	onClientDisconnected func(connection wwr.Connection, reason error)
 	onSignal             func(
 		ctx context.Context,
@@ -23,8 +26,11 @@ type serverImpl struct {
 }
 
 // OnClientConnected implements the webwire.ServerImplementation interface
-func (srv *serverImpl) OnClientConnected(conn wwr.Connection) {
-	srv.onClientConnected(conn)
+func (srv *serverImpl) OnClientConnected(
+	opts wwr.ConnectionOptions,
+	conn wwr.Connection,
+) {
+	srv.onClientConnected(opts, conn)
 }
 
 // OnClientDisconnected implements the webwire.ServerImplementation interface

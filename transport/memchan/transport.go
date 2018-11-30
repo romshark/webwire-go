@@ -17,7 +17,9 @@ const serverActive = 1
 
 // Transport implements the Transport
 type Transport struct {
-	ConnectionOptions connopt.ConnectionOptions
+	// OnBeforeCreation is called before the creation of a new connection and
+	// must return the options to be assigned to the new connection
+	OnBeforeCreation func() connopt.ConnectionOptions
 
 	onNewConnection wwr.OnNewConnection
 	isShuttingdown  wwr.IsShuttingDown
@@ -44,6 +46,13 @@ func (srv *Transport) Initialize(
 	srv.connectionsLock = &sync.Mutex{}
 	srv.shutdown = make(chan struct{})
 	srv.status = serverActive
+
+	if srv.OnBeforeCreation == nil {
+		srv.OnBeforeCreation = func() wwr.ConnectionOptions {
+			return wwr.ConnectionOptions{}
+		}
+	}
+
 	return nil
 }
 
@@ -88,7 +97,10 @@ func (srv *Transport) Address() url.URL {
 }
 
 // onConnect is called in Socket.Dial by a client-type socket on connection
-func (srv *Transport) onConnect(clientSocket *Socket) error {
+func (srv *Transport) onConnect(
+	clientSocket *Socket,
+	connectionOptions wwr.ConnectionOptions,
+) error {
 	// Reject incoming connections during server shutdown
 	if srv.isShuttingdown() {
 		return errors.New("server is shutting down")
@@ -107,8 +119,7 @@ func (srv *Transport) onConnect(clientSocket *Socket) error {
 	srv.connectionsLock.Unlock()
 
 	go srv.onNewConnection(
-		srv.ConnectionOptions,
-		[]byte(fmt.Sprintf("webwire memchan client (%p)", clientSocket)),
+		connectionOptions,
 		clientSocket.remote,
 	)
 

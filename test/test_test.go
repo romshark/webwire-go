@@ -33,7 +33,11 @@ func setupServer(
 ) (serverSetup, error) {
 	// Setup headed server on arbitrary port
 	if impl.onClientConnected == nil {
-		impl.onClientConnected = func(_ wwr.Connection) {}
+		impl.onClientConnected = func(
+			_ wwr.ConnectionOptions,
+			_ wwr.Connection,
+		) {
+		}
 	}
 	if impl.onClientDisconnected == nil {
 		impl.onClientDisconnected = func(_ wwr.Connection, _ error) {}

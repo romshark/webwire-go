@@ -4,6 +4,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/qbeon/webwire-go/transport/memchan"
+
 	tmdwg "github.com/qbeon/tmdwg-go"
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
@@ -19,19 +21,34 @@ func TestConnectionInfo(t *testing.T) {
 	setup := setupTestServer(
 		t,
 		&serverImpl{
-			onClientConnected: func(conn wwr.Connection) {
-				info := conn.Info()
+			onClientConnected: func(
+				_ wwr.ConnectionOptions,
+				conn wwr.Connection,
+			) {
+				assert.Equal(t, "samplestring", conn.Info(1).(string))
+				assert.Equal(t, uint64(42), conn.Info(2).(uint64))
+				assert.Nil(t, conn.Info(3))
 				assert.WithinDuration(
 					t,
 					time.Now(),
-					info.ConnectionTime,
+					conn.Creation(),
 					1*time.Second,
 				)
 				handlerFinished.Progress(1)
 			},
 		},
 		wwr.ServerOptions{},
-		nil, // Use the default transport implementation
+		&memchan.Transport{
+			OnBeforeCreation: func() wwr.ConnectionOptions {
+				return wwr.ConnectionOptions{
+					Connection: wwr.Accept,
+					Info: map[int]interface{}{
+						1: "samplestring",
+						2: uint64(42),
+					},
+				}
+			},
+		},
 	)
 
 	// Initialize client

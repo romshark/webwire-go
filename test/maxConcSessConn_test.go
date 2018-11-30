@@ -25,7 +25,10 @@ func TestMaxConcSessConn(t *testing.T) {
 	setup := setupTestServer(
 		t,
 		&serverImpl{
-			onClientConnected: func(conn wwr.Connection) {
+			onClientConnected: func(
+				_ wwr.ConnectionOptions,
+				conn wwr.Connection,
+			) {
 				// Created the session for the first connecting client only
 				sessionKeyLock.Lock()
 				defer sessionKeyLock.Unlock()

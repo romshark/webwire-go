@@ -20,10 +20,13 @@ func TestClientDisconnectedHook(t *testing.T) {
 	setup := setupTestServer(
 		t,
 		&serverImpl{
-			onClientConnected: func(conn wwr.Connection) {
+			onClientConnected: func(
+				_ wwr.ConnectionOptions,
+				_ wwr.Connection,
+			) {
 				connectedHookCalled.Progress(1)
 			},
-			onClientDisconnected: func(conn wwr.Connection, _ error) {
+			onClientDisconnected: func(_ wwr.Connection, _ error) {
 				disconnectedHookCalled.Progress(1)
 			},
 		},
