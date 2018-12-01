@@ -76,7 +76,7 @@ func (sock *Socket) onBufferFlush(data []byte) (err error) {
 	}
 
 	// Notify the remote reader about the new message
-	sock.remote.getReader() <- data
+	sock.remote.writeReader(data)
 
 	// Wait for the remote reader to finish reading
 	err = <-sock.remote.readerErr
@@ -140,6 +140,12 @@ func (sock *Socket) getReader() chan []byte {
 	reader := sock.reader
 	sock.readerLock.Unlock()
 	return reader
+}
+
+func (sock *Socket) writeReader(data []byte) {
+	sock.readerLock.Lock()
+	sock.reader <- data
+	sock.readerLock.Unlock()
 }
 
 // closeReader closes the current reader
