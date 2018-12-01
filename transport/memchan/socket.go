@@ -278,6 +278,12 @@ func (sock *Socket) Close() error {
 	// Close remote reader and writer
 	sock.remote.closeReader()
 
+	// Fail any currently active writer
+	select {
+	case sock.remote.readerErr <- errors.New("socket closed"):
+	default:
+	}
+
 	// Send reader confirmation if any remote writer is currently awaiting
 	// the local reader to finish
 	select {
