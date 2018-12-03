@@ -35,3 +35,26 @@ script:
 
   # one last linter
   - golint -set_exit_status $(go list ./...)
+
+after_success:
+  - "curl -s -X POST
+    -H \"Content-Type: application/json\"
+    -H \"Accept: application/json\"
+    -H \"Travis-API-Version: 3\"
+    -H \"Authorization: token $TRAVIS_API_TOKEN\"
+    -d '{\"request\": {\"branch\":\"master\"}}'
+    https://api.travis-ci.org/repo/qbeon%2Fwebwire-go-gorilla/requests"
+  - "curl -s -X POST
+    -H \"Content-Type: application/json\"
+    -H \"Accept: application/json\"
+    -H \"Travis-API-Version: 3\"
+    -H \"Authorization: token $TRAVIS_API_TOKEN\"
+    -d '{\"request\": {\"branch\":\"master\"}}'
+    https://api.travis-ci.org/repo/qbeon%2Fwebwire-go-fasthttp/requests"
+  - "curl -s -X POST
+    -H \"Content-Type: application/json\"
+    -H \"Accept: application/json\"
+    -H \"Travis-API-Version: 3\"
+    -H \"Authorization: token $TRAVIS_API_TOKEN\"
+    -d '{\"request\": {\"branch\":\"master\"}}'
+    https://api.travis-ci.org/repo/qbeon%2Fwebwire-go-examples/requests"
