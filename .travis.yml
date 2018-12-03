@@ -16,7 +16,7 @@ notifications:
 
 before_script:
   - GO_FILES=$(find . -iname '*.go' -type f | grep -v /vendor/) # All the .go files, excluding vendor/
-  #- go get github.com/golang/lint/golint                       # Linter # Uncomment when fixed in upstream
+  - go get github.com/golang/lint/golint                       # Linter
   - go get honnef.co/go/tools/cmd/megacheck                     # Badass static analyzer/linter
   - go get golang.org/x/tools/cmd/cover
   - go get github.com/mattn/goveralls
@@ -34,4 +34,4 @@ script:
   - megacheck ./...
 
   # one last linter
-  #- golint -set_exit_status $(go list ./...) # Uncomment when fixed in upstream
+  - golint -set_exit_status $(go list ./...)
