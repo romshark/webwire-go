@@ -26,10 +26,10 @@ func TestServerSideSessionClosure(t *testing.T) {
 	)
 
 	// Initialize webwire server
-	setup := setupTestServer(
+	setup := SetupTestServer(
 		t,
-		&serverImpl{
-			onRequest: func(
+		&ServerImpl{
+			Request: func(
 				_ context.Context,
 				conn wwr.Connection,
 				_ wwr.Message,
@@ -46,32 +46,32 @@ func TestServerSideSessionClosure(t *testing.T) {
 	)
 
 	// Initialize clients
-	clients := make([]*testClient, simultaneousClients)
+	clients := make([]*TestClient, simultaneousClients)
 	for i := 0; i < simultaneousClients; i++ {
-		client := setup.newClient(
+		client := setup.NewClient(
 			wwrclt.Options{
 				DefaultRequestTimeout: 2 * time.Second,
 				Autoconnect:           wwr.Disabled,
 			},
 			nil, // Use the default transport implementation
-			testClientHooks{
+			TestClientHooks{
 				OnSessionClosed: func() {
 					onSessionClosedHooksExecuted.Progress(1)
 				},
 			},
 		)
-		defer client.connection.Close()
+		defer client.Connection.Close()
 		clients[i] = client
 	}
 
 	// Connect clients
 	for _, client := range clients {
-		require.NoError(t, client.connection.Connect())
+		require.NoError(t, client.Connection.Connect())
 	}
 
 	// Authenticate first client to get the session key
 	firstClient := clients[0]
-	reply, err := firstClient.connection.Request(
+	reply, err := firstClient.Connection.Request(
 		context.Background(),
 		[]byte("auth"),
 		wwr.Payload{},
@@ -80,14 +80,14 @@ func TestServerSideSessionClosure(t *testing.T) {
 	reply.Close()
 
 	// Extract session key
-	createdSession = firstClient.connection.Session()
+	createdSession = firstClient.Connection.Session()
 	sessionKey = createdSession.Key
 	require.NotNil(t, createdSession)
 
 	// Apply the session to other remaining clients
 	for i := 1; i < len(clients); i++ {
 		clt := clients[i]
-		require.NoError(t, clt.connection.RestoreSession(
+		require.NoError(t, clt.Connection.RestoreSession(
 			context.Background(),
 			[]byte(sessionKey),
 		))
@@ -95,9 +95,9 @@ func TestServerSideSessionClosure(t *testing.T) {
 
 	// Ensure all clients are logged into 1 session
 	for _, client := range clients {
-		session := client.connection.Session()
+		session := client.Connection.Session()
 		require.Equal(t, sessionKey, session.Key)
-		compareSessions(t, createdSession, session)
+		CompareSessions(t, createdSession, session)
 	}
 
 	// Close the session
@@ -119,6 +119,6 @@ func TestServerSideSessionClosure(t *testing.T) {
 
 	// Ensure the session was properly closed for all affected connections
 	for _, client := range clients {
-		require.Nil(t, client.connection.Session())
+		require.Nil(t, client.Connection.Session())
 	}
 }

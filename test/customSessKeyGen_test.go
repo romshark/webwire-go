@@ -16,10 +16,10 @@ func TestCustomSessKeyGen(t *testing.T) {
 	expectedSessionKey := "customkey123"
 
 	// Initialize webwire server
-	setup := setupTestServer(
+	setup := SetupTestServer(
 		t,
-		&serverImpl{
-			onRequest: func(
+		&ServerImpl{
+			Request: func(
 				_ context.Context,
 				conn wwr.Connection,
 				_ wwr.Message,
@@ -40,8 +40,8 @@ func TestCustomSessKeyGen(t *testing.T) {
 			},
 		},
 		wwr.ServerOptions{
-			SessionKeyGenerator: &sessionKeyGen{
-				generate: func() string {
+			SessionKeyGenerator: &SessionKeyGen{
+				OnGenerate: func() string {
 					return expectedSessionKey
 				},
 			},
@@ -50,22 +50,21 @@ func TestCustomSessKeyGen(t *testing.T) {
 	)
 
 	// Initialize client
-	client := setup.newClient(
+	client := setup.NewClient(
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
 		nil, // Use the default transport implementation
-		testClientHooks{},
+		TestClientHooks{},
 	)
-	defer client.connection.Close()
 
 	// Send authentication request and await reply
-	_, err := client.connection.Request(
+	_, err := client.Connection.Request(
 		context.Background(),
 		[]byte("login"),
 		wwr.Payload{Data: []byte("testdata")},
 	)
 	require.NoError(t, err)
 
-	require.Equal(t, expectedSessionKey, client.connection.Session().Key)
+	require.Equal(t, expectedSessionKey, client.Connection.Session().Key)
 }

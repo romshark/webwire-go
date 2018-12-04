@@ -20,12 +20,12 @@ func TestMaxConcSessConn(t *testing.T) {
 	sessionCreation := time.Now()
 
 	// Initialize server
-	setup := setupTestServer(
+	setup := SetupTestServer(
 		t,
-		&serverImpl{},
+		&ServerImpl{},
 		wwr.ServerOptions{
 			MaxSessionConnections: concurrentConns,
-			SessionManager: &callbackPoweredSessionManager{
+			SessionManager: &SessionManager{
 				SessionLookup: func(key string) (
 					webwire.SessionLookupResult,
 					error,
@@ -50,36 +50,34 @@ func TestMaxConcSessConn(t *testing.T) {
 	}
 
 	// Initialize clients
-	clients := make([]*testClient, concurrentConns)
+	clients := make([]*TestClient, concurrentConns)
 	for i := uint(0); i < concurrentConns; i++ {
-		client := setup.newClient(
+		client := setup.NewClient(
 			clientOptions,
 			nil, // Use the default transport implementation
-			testClientHooks{},
+			TestClientHooks{},
 		)
 		clients[i] = client
 
-		assert.NoError(t, client.connection.Connect())
-
 		// Restore the session for all clients
-		assert.NoError(t, client.connection.RestoreSession(
+		assert.NoError(t, client.Connection.RestoreSession(
 			context.Background(),
 			[]byte(sessionKey),
 		))
 	}
 
 	// Ensure that the last superfluous client is rejected
-	superfluousClient := setup.newClient(
+	superfluousClient := setup.NewClient(
 		clientOptions,
 		nil, // Use the default transport implementation
-		testClientHooks{},
+		TestClientHooks{},
 	)
 
-	require.NoError(t, superfluousClient.connection.Connect())
+	require.NoError(t, superfluousClient.Connection.Connect())
 
 	// Try to restore the session and expect this operation to fail
 	// due to reached limit
-	sessionRestorationError := superfluousClient.connection.RestoreSession(
+	sessionRestorationError := superfluousClient.Connection.RestoreSession(
 		context.Background(),
 		[]byte(sessionKey),
 	)

@@ -19,10 +19,10 @@ func TestClientOfflineSessionClosure(t *testing.T) {
 	var createdSession *wwr.Session
 
 	// Initialize webwire server
-	setup := setupTestServer(
+	setup := SetupTestServer(
 		t,
-		&serverImpl{
-			onRequest: func(
+		&ServerImpl{
+			Request: func(
 				_ context.Context,
 				conn wwr.Connection,
 				_ wwr.Message,
@@ -43,7 +43,7 @@ func TestClientOfflineSessionClosure(t *testing.T) {
 			},
 		},
 		wwr.ServerOptions{
-			SessionManager: &callbackPoweredSessionManager{
+			SessionManager: &SessionManager{
 				// Saves the session
 				SessionCreated: func(conn wwr.Connection) error {
 					session := conn.Session()
@@ -73,22 +73,20 @@ func TestClientOfflineSessionClosure(t *testing.T) {
 	)
 
 	// Initialize client
-	client := setup.newClient(
+	client := setup.NewClient(
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
 		nil, // Use the default transport implementation
-		testClientHooks{},
+		TestClientHooks{},
 	)
-
-	require.NoError(t, client.connection.Connect())
 
 	/*****************************************************************\
 		Step 1 - Create session and disconnect
 	\*****************************************************************/
 
 	// Create a new session
-	reply, err := client.connection.Request(
+	reply, err := client.Connection.Request(
 		context.Background(),
 		[]byte("login"),
 		wwr.Payload{
@@ -99,18 +97,18 @@ func TestClientOfflineSessionClosure(t *testing.T) {
 	require.NoError(t, err)
 	reply.Close()
 
-	createdSession = client.connection.Session()
+	createdSession = client.Connection.Session()
 
 	// Disconnect client without closing the session
-	client.connection.Close()
+	client.Connection.Close()
 
 	// Ensure the session isn't lost
 	require.NotEqual(t,
-		wwrclt.StatusConnected, client.connection.Status(),
+		wwrclt.StatusConnected, client.Connection.Status(),
 		"Client is expected to be disconnected",
 	)
 	require.NotEqual(t,
-		"", client.connection.Session().Key,
+		"", client.Connection.Session().Key,
 		"Session lost after disconnection",
 	)
 
@@ -120,18 +118,18 @@ func TestClientOfflineSessionClosure(t *testing.T) {
 	currentStep = 2
 
 	require.NoError(t,
-		client.connection.CloseSession(),
+		client.Connection.CloseSession(),
 		"Offline session closure failed",
 	)
 
 	// Ensure the session is removed locally
-	require.Nil(t, client.connection.Session(), "Session not removed")
+	require.Nil(t, client.Connection.Session(), "Session not removed")
 
 	// Reconnect
-	require.NoError(t, client.connection.Connect())
+	require.NoError(t, client.Connection.Connect())
 
 	// Ensure the client is anonymous
-	reply, err = client.connection.Request(
+	reply, err = client.Connection.Request(
 		context.Background(),
 		[]byte("verify-restored"),
 		wwr.Payload{

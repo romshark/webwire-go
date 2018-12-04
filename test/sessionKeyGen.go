@@ -1,11 +1,14 @@
 package test
 
-// sessionKeyGen implements the webwire.SessionKeyGenerator interface
-type sessionKeyGen struct {
-	generate func() string
+// SessionKeyGen implements the webwire.SessionKeyGenerator interface
+type SessionKeyGen struct {
+	OnGenerate func() string
 }
 
 // Generate implements the webwire.SessionKeyGenerator interface
-func (gen *sessionKeyGen) Generate() string {
-	return gen.generate()
+func (gen *SessionKeyGen) Generate() string {
+	if gen.OnGenerate != nil {
+		return gen.OnGenerate()
+	}
+	return ""
 }

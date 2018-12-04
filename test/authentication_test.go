@@ -45,10 +45,10 @@ func (sinf *testAuthenticationSessInfo) Value(fieldName string) interface{} {
 	return nil
 }
 
-// TestAuthentication tests session creation and client authentication
-// during request- and signal handling
+// TestAuthentication tests session creation and client authentication during
+// request- and signal handling
 func TestAuthentication(t *testing.T) {
-	// Because compareSessions doesn't compare the sessions attached info:
+	// Because CompareSessions doesn't compare the sessions attached info:
 	compareSessionInfo := func(actual *wwr.Session) {
 		// Check uid
 		expectedUserIdent := "clientidentifiergoeshere"
@@ -84,20 +84,20 @@ func TestAuthentication(t *testing.T) {
 	currentStep := 1
 
 	// Initialize webwire server
-	setup := setupTestServer(
+	setup := SetupTestServer(
 		t,
-		&serverImpl{
-			onSignal: func(
+		&ServerImpl{
+			Signal: func(
 				_ context.Context,
 				conn wwr.Connection,
 				_ wwr.Message,
 			) {
 				defer clientSignalReceived.Progress(1)
 				sess := conn.Session()
-				compareSessions(t, createdSession, sess)
+				CompareSessions(t, createdSession, sess)
 				compareSessionInfo(sess)
 			},
-			onRequest: func(
+			Request: func(
 				_ context.Context,
 				conn wwr.Connection,
 				_ wwr.Message,
@@ -105,7 +105,7 @@ func TestAuthentication(t *testing.T) {
 				// If already authenticated then check session
 				if currentStep > 1 {
 					sess := conn.Session()
-					compareSessions(t, createdSession, sess)
+					CompareSessions(t, createdSession, sess)
 					compareSessionInfo(sess)
 					return expectedConfirmation, nil
 				}
@@ -130,7 +130,7 @@ func TestAuthentication(t *testing.T) {
 	)
 
 	// Initialize client
-	client := setup.newClient(
+	client := setup.NewClient(
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 			SessionInfoParser: func(
@@ -143,7 +143,7 @@ func TestAuthentication(t *testing.T) {
 			},
 		},
 		nil, // Use the default transport implementation
-		testClientHooks{
+		TestClientHooks{
 			OnSessionCreated: func(session *wwr.Session) {
 				// The session info object won't be of initial structure type
 				// because of intermediate JSON encoding
@@ -153,19 +153,16 @@ func TestAuthentication(t *testing.T) {
 			},
 		},
 	)
-	defer client.connection.Close()
-
-	require.NoError(t, client.connection.Connect())
 
 	// Send authentication request and await reply
-	authReqReply, err := client.connection.Request(
+	authReqReply, err := client.Connection.Request(
 		context.Background(),
 		[]byte("login"),
 		expectedCredentials,
 	)
 	require.NoError(t, err)
 
-	createdSession = client.connection.Session()
+	createdSession = client.Connection.Session()
 
 	// Verify reply
 	require.Equal(t, wwr.EncodingBinary, authReqReply.PayloadEncoding())
@@ -174,7 +171,7 @@ func TestAuthentication(t *testing.T) {
 
 	// Send a test-request to verify the session on the server
 	// and await response
-	testReqReply, err := client.connection.Request(
+	testReqReply, err := client.Connection.Request(
 		context.Background(),
 		[]byte("test"),
 		expectedCredentials,
@@ -194,7 +191,7 @@ func TestAuthentication(t *testing.T) {
 	)
 
 	// Send a test-signal to verify the session on the server
-	require.NoError(t, client.connection.Signal(
+	require.NoError(t, client.Connection.Signal(
 		context.Background(),
 		[]byte("test"),
 		expectedCredentials,

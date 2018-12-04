@@ -15,10 +15,10 @@ import (
 // TestConnectionClose tests closing a client connection on the server-side
 func TestConnectionClose(t *testing.T) {
 	// Initialize webwire server
-	setup := setupTestServer(
+	setup := SetupTestServer(
 		t,
-		&serverImpl{
-			onRequest: func(
+		&ServerImpl{
+			Request: func(
 				_ context.Context,
 				conn wwr.Connection,
 				msg wwr.Message,
@@ -55,27 +55,27 @@ func TestConnectionClose(t *testing.T) {
 	require.Equal(t, 0, actSess, "Unexpected number of active sessions")
 
 	// Initialize client A
-	clientA := setup.newClient(
+	clientA := setup.NewClient(
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 			// Disable autoconnect to prevent automatic reconnection
 			Autoconnect: wwr.Disabled,
 		},
 		nil, // Use the default transport implementation
-		testClientHooks{},
+		TestClientHooks{},
 	)
 
-	require.NoError(t, clientA.connection.Connect())
+	require.NoError(t, clientA.Connection.Connect())
 
 	// Authenticate and create session
-	authReqReply, err := clientA.connection.Request(
+	authReqReply, err := clientA.Connection.Request(
 		context.Background(),
 		[]byte("login"),
 		wwr.Payload{Data: []byte("bla")},
 	)
 	require.NoError(t, err)
 
-	session := clientA.connection.Session()
+	session := clientA.Connection.Session()
 	require.Equal(t,
 		session.Key, string(authReqReply.Payload()),
 		"Unexpected session key",
@@ -98,21 +98,21 @@ func TestConnectionClose(t *testing.T) {
 	)
 
 	// Initialize client B
-	clientB := setup.newClient(
+	clientB := setup.NewClient(
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 			// Disable autoconnect to prevent automatic reconnection
 			Autoconnect: wwr.Disabled,
 		},
 		nil, // Use the default transport implementation
-		testClientHooks{},
+		TestClientHooks{},
 	)
 
-	if err := clientB.connection.Connect(); err != nil {
+	if err := clientB.Connection.Connect(); err != nil {
 		t.Fatal(err)
 	}
 
-	require.NoError(t, clientB.connection.RestoreSession(
+	require.NoError(t, clientB.Connection.RestoreSession(
 		context.Background(),
 		authReqReply.Payload(),
 	))
@@ -134,7 +134,7 @@ func TestConnectionClose(t *testing.T) {
 	)
 
 	// Close first connection
-	_, err = clientA.connection.Request(
+	_, err = clientA.Connection.Request(
 		context.Background(),
 		[]byte("closeA"),
 		wwr.Payload{Data: []byte("a")},
@@ -146,7 +146,7 @@ func TestConnectionClose(t *testing.T) {
 	time.Sleep(10 * time.Millisecond)
 
 	// Test connectivity
-	_, err = clientA.connection.Request(
+	_, err = clientA.Connection.Request(
 		context.Background(),
 		[]byte("testA"),
 		wwr.Payload{Data: []byte("testA")},
@@ -170,7 +170,7 @@ func TestConnectionClose(t *testing.T) {
 	)
 
 	// Close second connection
-	_, err = clientB.connection.Request(
+	_, err = clientB.Connection.Request(
 		context.Background(),
 		[]byte("closeB"),
 		wwr.Payload{Data: []byte("b")},
@@ -182,7 +182,7 @@ func TestConnectionClose(t *testing.T) {
 	time.Sleep(10 * time.Millisecond)
 
 	// Test connectivity
-	_, err = clientB.connection.Request(
+	_, err = clientB.Connection.Request(
 		context.Background(),
 		[]byte("testB"),
 		wwr.Payload{Data: []byte("testB")},

@@ -5,43 +5,43 @@ import (
 	wwrclt "github.com/qbeon/webwire-go/client"
 )
 
-type testClientHooks struct {
+type TestClientHooks struct {
 	OnSessionCreated func(*wwr.Session)
 	OnSessionClosed  func()
 	OnDisconnected   func()
 	OnSignal         func(wwr.Message)
 }
 
-// testClient implements the wwrclt.Implementation interface
-type testClient struct {
-	connection wwrclt.Client
-	hooks      testClientHooks
+// TestClient implements the wwrclt.Implementation interface
+type TestClient struct {
+	Connection wwrclt.Client
+	Hooks      TestClientHooks
 }
 
 // OnSessionCreated implements the wwrclt.Implementation interface
-func (clt *testClient) OnSessionCreated(newSession *wwr.Session) {
-	if clt.hooks.OnSessionCreated != nil {
-		clt.hooks.OnSessionCreated(newSession)
+func (clt *TestClient) OnSessionCreated(newSession *wwr.Session) {
+	if clt.Hooks.OnSessionCreated != nil {
+		clt.Hooks.OnSessionCreated(newSession)
 	}
 }
 
 // OnSessionClosed implements the wwrclt.Implementation interface
-func (clt *testClient) OnSessionClosed() {
-	if clt.hooks.OnSessionClosed != nil {
-		clt.hooks.OnSessionClosed()
+func (clt *TestClient) OnSessionClosed() {
+	if clt.Hooks.OnSessionClosed != nil {
+		clt.Hooks.OnSessionClosed()
 	}
 }
 
 // OnDisconnected implements the wwrclt.Implementation interface
-func (clt *testClient) OnDisconnected() {
-	if clt.hooks.OnDisconnected != nil {
-		clt.hooks.OnDisconnected()
+func (clt *TestClient) OnDisconnected() {
+	if clt.Hooks.OnDisconnected != nil {
+		clt.Hooks.OnDisconnected()
 	}
 }
 
 // OnSignal implements the wwrclt.Implementation interface
-func (clt *testClient) OnSignal(msg wwr.Message) {
-	if clt.hooks.OnSignal != nil {
-		clt.hooks.OnSignal(msg)
+func (clt *TestClient) OnSignal(msg wwr.Message) {
+	if clt.Hooks.OnSignal != nil {
+		clt.Hooks.OnSignal(msg)
 	}
 }

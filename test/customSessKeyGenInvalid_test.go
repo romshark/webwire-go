@@ -1,45 +1,44 @@
 package test
 
 import (
-	"context"
+	"errors"
+	"sync"
 	"testing"
-	"time"
 
 	wwr "github.com/qbeon/webwire-go"
-	wwrclt "github.com/qbeon/webwire-go/client"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
-// TestCustomSessKeyGenInvalid tests custom session key generators
-// returning invalid keys
+// TestCustomSessKeyGenInvalid tests custom session key generators returning
+// invalid keys
 func TestCustomSessKeyGenInvalid(t *testing.T) {
+	done := sync.WaitGroup{}
+	done.Add(1)
+
 	// Initialize webwire server
-	setup := setupTestServer(
+	setup := SetupTestServer(
 		t,
-		&serverImpl{
-			onRequest: func(
-				_ context.Context,
+		&ServerImpl{
+			ClientConnected: func(
+				_ wwr.ConnectionOptions,
 				conn wwr.Connection,
-				_ wwr.Message,
-			) (wwr.Payload, error) {
+			) {
 				defer func() {
-					if err := recover(); err == nil {
-						t.Errorf("Expected server to panic " +
-							"on invalid session key",
-						)
-					}
+					recoveredErr := recover()
+					assert.NotNil(t, recoveredErr)
+					assert.IsType(t, errors.New(""), recoveredErr)
+
+					done.Done()
 				}()
 
 				// Try to create a new session
 				err := conn.CreateSession(nil)
 				assert.NoError(t, err)
-				return wwr.Payload{}, err
 			},
 		},
 		wwr.ServerOptions{
-			SessionKeyGenerator: &sessionKeyGen{
-				generate: func() string {
+			SessionKeyGenerator: &SessionKeyGen{
+				OnGenerate: func() string {
 					// Return invalid session key
 					return ""
 				},
@@ -49,20 +48,7 @@ func TestCustomSessKeyGenInvalid(t *testing.T) {
 	)
 
 	// Initialize client
-	client := setup.newClient(
-		wwrclt.Options{
-			DefaultRequestTimeout: 2 * time.Second,
-		},
-		nil, // Use the default transport implementation
-		testClientHooks{},
-	)
-	defer client.connection.Close()
+	setup.NewClientSocket()
 
-	// Send authentication request and await reply
-	_, err := client.connection.Request(
-		context.Background(),
-		[]byte("login"),
-		wwr.Payload{Data: []byte("testdata")},
-	)
-	require.NoError(t, err)
+	done.Wait()
 }

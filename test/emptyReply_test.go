@@ -10,13 +10,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestEmptyReply verifies empty binary reply acceptance
+// TestEmptyReply tests returning empty binary replies from the request handler
 func TestEmptyReply(t *testing.T) {
 	// Initialize webwire server given only the request
-	setup := setupTestServer(
+	setup := SetupTestServer(
 		t,
-		&serverImpl{
-			onRequest: func(
+		&ServerImpl{
+			Request: func(
 				_ context.Context,
 				_ wwr.Connection,
 				_ wwr.Message,
@@ -30,18 +30,16 @@ func TestEmptyReply(t *testing.T) {
 	)
 
 	// Initialize client
-	client := setup.newClient(
+	client := setup.NewClient(
 		webwireClient.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
 		nil, // Use the default transport implementation
-		testClientHooks{},
+		TestClientHooks{},
 	)
 
-	require.NoError(t, client.connection.Connect())
-
 	// Send request and await reply
-	reply, err := client.connection.Request(
+	reply, err := client.Connection.Request(
 		context.Background(),
 		nil,
 		wwr.Payload{Data: []byte("test")},

@@ -6,19 +6,19 @@ import (
 	wwr "github.com/qbeon/webwire-go"
 )
 
-// serverImpl implements the webwire.ServerImplementation interface
-type serverImpl struct {
-	onClientConnected func(
+// ServerImpl implements the webwire.ServerImplementation interface
+type ServerImpl struct {
+	ClientConnected func(
 		connectionOptions wwr.ConnectionOptions,
 		connection wwr.Connection,
 	)
-	onClientDisconnected func(connection wwr.Connection, reason error)
-	onSignal             func(
+	ClientDisconnected func(connection wwr.Connection, reason error)
+	Signal             func(
 		ctx context.Context,
 		connection wwr.Connection,
 		message wwr.Message,
 	)
-	onRequest func(
+	Request func(
 		ctx context.Context,
 		connection wwr.Connection,
 		message wwr.Message,
@@ -26,32 +26,41 @@ type serverImpl struct {
 }
 
 // OnClientConnected implements the webwire.ServerImplementation interface
-func (srv *serverImpl) OnClientConnected(
+func (srv *ServerImpl) OnClientConnected(
 	opts wwr.ConnectionOptions,
 	conn wwr.Connection,
 ) {
-	srv.onClientConnected(opts, conn)
+	if srv.ClientConnected != nil {
+		srv.ClientConnected(opts, conn)
+	}
 }
 
 // OnClientDisconnected implements the webwire.ServerImplementation interface
-func (srv *serverImpl) OnClientDisconnected(conn wwr.Connection, reason error) {
-	srv.onClientDisconnected(conn, reason)
+func (srv *ServerImpl) OnClientDisconnected(conn wwr.Connection, reason error) {
+	if srv.ClientDisconnected != nil {
+		srv.ClientDisconnected(conn, reason)
+	}
 }
 
 // OnSignal implements the webwire.ServerImplementation interface
-func (srv *serverImpl) OnSignal(
+func (srv *ServerImpl) OnSignal(
 	ctx context.Context,
 	clt wwr.Connection,
 	msg wwr.Message,
 ) {
-	srv.onSignal(ctx, clt, msg)
+	if srv.Signal != nil {
+		srv.Signal(ctx, clt, msg)
+	}
 }
 
 // OnRequest implements the webwire.ServerImplementation interface
-func (srv *serverImpl) OnRequest(
+func (srv *ServerImpl) OnRequest(
 	ctx context.Context,
 	clt wwr.Connection,
 	msg wwr.Message,
 ) (response wwr.Payload, err error) {
-	return srv.onRequest(ctx, clt, msg)
+	if srv.Request != nil {
+		return srv.Request(ctx, clt, msg)
+	}
+	return wwr.Payload{}, nil
 }

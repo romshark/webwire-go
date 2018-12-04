@@ -12,9 +12,9 @@ import (
 // TestProtocolViolation tests sending messages that violate the protocol
 func TestProtocolViolation(t *testing.T) {
 	// Initialize webwire server
-	setup := setupTestServer(
+	setup := SetupTestServer(
 		t,
-		&serverImpl{},
+		&ServerImpl{},
 		wwr.ServerOptions{},
 		nil, // Use the default transport implementation
 	)
@@ -23,14 +23,7 @@ func TestProtocolViolation(t *testing.T) {
 
 	// Setup a regular websocket connection
 	try := func(m []byte) {
-		socket := setup.newClientSocket()
-
-		// Ignore the server configuration push-message
-		confMsg := message.NewMessage(256)
-		require.NoError(t, socket.Read(
-			confMsg,
-			time.Now().Add(defaultReadTimeout),
-		))
+		socket, _ := setup.NewClientSocket()
 
 		// Get writer
 		writer, err := socket.GetWriter()

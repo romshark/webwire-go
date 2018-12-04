@@ -18,10 +18,10 @@ func TestConnectionInfo(t *testing.T) {
 	handlerFinished := tmdwg.NewTimedWaitGroup(1, 1*time.Second)
 
 	// Initialize server
-	setup := setupTestServer(
+	setup := SetupTestServer(
 		t,
-		&serverImpl{
-			onClientConnected: func(
+		&ServerImpl{
+			ClientConnected: func(
 				_ wwr.ConnectionOptions,
 				conn wwr.Connection,
 			) {
@@ -52,10 +52,10 @@ func TestConnectionInfo(t *testing.T) {
 	)
 
 	// Initialize client
-	setup.newClient(
+	setup.NewClient(
 		wwrclt.Options{},
 		nil, // Use the default transport implementation
-		testClientHooks{},
+		TestClientHooks{},
 	)
 
 	require.NoError(t, handlerFinished.Wait())

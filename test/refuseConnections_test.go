@@ -11,16 +11,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestRefuseConnections tests refusal of connection before their upgrade to a
-// websocket connection
+// TestRefuseConnections tests refusing connections on the transport level
 func TestRefuseConnections(t *testing.T) {
 	numClients := 5
 
 	// Initialize server
-	setup := setupTestServer(
+	setup := SetupTestServer(
 		t,
-		&serverImpl{
-			onRequest: func(
+		&ServerImpl{
+			Request: func(
 				_ context.Context,
 				_ wwr.Connection,
 				msg wwr.Message,
@@ -41,27 +40,22 @@ func TestRefuseConnections(t *testing.T) {
 		},
 	)
 
-	clients := make([]*testClient, numClients)
+	clients := make([]*TestClient, numClients)
 	for i := 0; i < numClients; i++ {
-		clt := setup.newClient(
+		clt := setup.NewClient(
 			wwrclt.Options{
 				DefaultRequestTimeout: 2 * time.Second,
 				Autoconnect:           wwr.Disabled,
 			},
 			nil, // Use the default transport implementation
-			testClientHooks{},
+			TestClientHooks{},
 		)
-		defer clt.connection.Close()
 		clients[i] = clt
-
-		// Try connect
-		require.Error(t, clt.connection.Connect())
 	}
 
 	// Try sending requests
-	for i := 0; i < numClients; i++ {
-		clt := clients[i]
-		_, err := clt.connection.Request(
+	for _, clt := range clients {
+		_, err := clt.Connection.Request(
 			context.Background(),
 			[]byte("q"),
 			wwr.Payload{},

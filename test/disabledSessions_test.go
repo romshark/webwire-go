@@ -11,14 +11,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestDisabledSessions tests errors returned by CreateSession, CloseSession
-// and client.RestoreSession when sessions are disabled
+// TestDisabledSessions tests errors returned by CreateSession, CloseSession and
+// client.RestoreSession when sessions are disabled
 func TestDisabledSessions(t *testing.T) {
 	// Initialize webwire server
-	setup := setupTestServer(
+	setup := SetupTestServer(
 		t,
-		&serverImpl{
-			onRequest: func(
+		&ServerImpl{
+			Request: func(
 				_ context.Context,
 				conn wwr.Connection,
 				_ wwr.Message,
@@ -41,30 +41,27 @@ func TestDisabledSessions(t *testing.T) {
 	)
 
 	// Initialize client
-	client := setup.newClient(
+	client := setup.NewClient(
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
 		nil, // Use the default transport implementation
-		testClientHooks{
+		TestClientHooks{
 			OnSessionCreated: func(*wwr.Session) {
 				t.Errorf("OnSessionCreated was not expected to be called")
 			},
 		},
 	)
-	defer client.connection.Close()
-
-	require.NoError(t, client.connection.Connect())
 
 	// Send authentication request and await reply
-	_, err := client.connection.Request(
+	_, err := client.Connection.Request(
 		context.Background(),
 		[]byte("login"),
 		wwr.Payload{Data: []byte("testdata")},
 	)
 	require.NoError(t, err)
 
-	sessRestErr := client.connection.RestoreSession(
+	sessRestErr := client.Connection.RestoreSession(
 		context.Background(),
 		[]byte("testkey"),
 	)

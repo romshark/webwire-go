@@ -82,9 +82,9 @@ func (mng *inMemSessManager) OnSessionClosed(sessionKey string) error {
 	return nil
 }
 
-// callbackPoweredSessionManager represents a callback-powered session manager
+// SessionManager represents a callback-powered session manager
 // for testing purposes
-type callbackPoweredSessionManager struct {
+type SessionManager struct {
 	SessionCreated func(client wwr.Connection) error
 	SessionLookup  func(key string) (
 		wwr.SessionLookupResult,
@@ -95,7 +95,7 @@ type callbackPoweredSessionManager struct {
 
 // OnSessionCreated implements the session manager interface
 // calling the configured callback
-func (mng *callbackPoweredSessionManager) OnSessionCreated(
+func (mng *SessionManager) OnSessionCreated(
 	client wwr.Connection,
 ) error {
 	if mng.SessionCreated == nil {
@@ -106,7 +106,7 @@ func (mng *callbackPoweredSessionManager) OnSessionCreated(
 
 // OnSessionLookup implements the session manager interface
 // calling the configured callback
-func (mng *callbackPoweredSessionManager) OnSessionLookup(
+func (mng *SessionManager) OnSessionLookup(
 	key string,
 ) (wwr.SessionLookupResult, error) {
 	if mng.SessionLookup == nil {
@@ -117,7 +117,7 @@ func (mng *callbackPoweredSessionManager) OnSessionLookup(
 
 // OnSessionClosed implements the session manager interface
 // calling the configured callback
-func (mng *callbackPoweredSessionManager) OnSessionClosed(
+func (mng *SessionManager) OnSessionClosed(
 	sessionKey string,
 ) error {
 	if mng.SessionClosed == nil {

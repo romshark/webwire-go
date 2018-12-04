@@ -19,10 +19,10 @@ func TestServerSignal(t *testing.T) {
 	signalProcessed := tmdwg.NewTimedWaitGroup(1, 1*time.Second)
 
 	// Initialize webwire server
-	setup := setupTestServer(
+	setup := SetupTestServer(
 		t,
-		&serverImpl{
-			onClientConnected: func(
+		&ServerImpl{
+			ClientConnected: func(
 				_ wwr.ConnectionOptions,
 				conn wwr.Connection,
 			) {
@@ -38,12 +38,12 @@ func TestServerSignal(t *testing.T) {
 	)
 
 	// Initialize client
-	client := setup.newClient(
+	setup.NewClient(
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
 		nil, // Use the default transport implementation
-		testClientHooks{
+		TestClientHooks{
 			OnSignal: func(msg wwr.Message) {
 				// Verify server signal payload
 				require.Equal(
@@ -62,10 +62,6 @@ func TestServerSignal(t *testing.T) {
 			},
 		},
 	)
-	defer client.connection.Close()
-
-	// Connect client
-	require.NoError(t, client.connection.Connect())
 
 	// Synchronize, await signal arrival
 	require.NoError(t,

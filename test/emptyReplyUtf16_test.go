@@ -10,13 +10,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestEmptyReplyUtf16 verifies empty UTF16 encoded reply acceptance
+// TestEmptyReplyUtf16 tests returning empty UTF16 encoded replies from the
+// request handler
 func TestEmptyReplyUtf16(t *testing.T) {
 	// Initialize webwire server given only the request
-	setup := setupTestServer(
+	setup := SetupTestServer(
 		t,
-		&serverImpl{
-			onRequest: func(
+		&ServerImpl{
+			Request: func(
 				_ context.Context,
 				_ wwr.Connection,
 				_ wwr.Message,
@@ -33,18 +34,16 @@ func TestEmptyReplyUtf16(t *testing.T) {
 	)
 
 	// Initialize client
-	client := setup.newClient(
+	client := setup.NewClient(
 		webwireClient.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
 		nil, // Use the default transport implementation
-		testClientHooks{},
+		TestClientHooks{},
 	)
 
-	require.NoError(t, client.connection.Connect())
-
 	// Send request and await reply
-	reply, err := client.connection.Request(
+	reply, err := client.Connection.Request(
 		context.Background(),
 		nil,
 		wwr.Payload{Data: []byte("test")},

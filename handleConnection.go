@@ -63,13 +63,6 @@ func (srv *server) handleConnection(
 		// Get a message buffer
 		msg := srv.messagePool.Get()
 
-		if !connection.IsActive() {
-			msg.Close()
-			connection.Close()
-			srv.impl.OnClientDisconnected(connection, nil)
-			break
-		}
-
 		// Await message
 		if err := sock.Read(
 			msg,

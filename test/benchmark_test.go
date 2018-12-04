@@ -22,9 +22,9 @@ func BenchmarkRequestC1_P16(b *testing.B) {
 	}
 
 	// Initialize a webwire server
-	setup, err := setupServer(
-		&serverImpl{
-			onRequest: func(
+	setup, err := SetupServer(
+		&ServerImpl{
+			Request: func(
 				_ context.Context,
 				conn wwr.Connection,
 				msg wwr.Message,
@@ -45,26 +45,26 @@ func BenchmarkRequestC1_P16(b *testing.B) {
 	}
 
 	// Initialize client
-	client, err := setup.newClient(
+	client, err := setup.NewClient(
 		wwrclt.Options{
 			MessageBufferSize: 1024,
 		},
 		nil, // Use the default transport implementation
-		testClientHooks{},
+		TestClientHooks{},
 	)
 	if err != nil {
 		log.Fatalf("couldn't setup client: %s", err)
 	}
 
 	// Ensure the client is connected
-	if err := client.connection.Connect(); err != nil {
+	if err := client.Connection.Connect(); err != nil {
 		panic(err)
 	}
 
 	b.ResetTimer()
 
 	for n := 0; n < b.N; n++ {
-		reply, err := client.connection.Request(context.Background(), nil, msg)
+		reply, err := client.Connection.Request(context.Background(), nil, msg)
 		if err != nil {
 			panic(err)
 		}
@@ -83,9 +83,9 @@ func BenchmarkRequestC1_P1K(b *testing.B) {
 	}
 
 	// Initialize a webwire server
-	setup, err := setupServer(
-		&serverImpl{
-			onRequest: func(
+	setup, err := SetupServer(
+		&ServerImpl{
+			Request: func(
 				_ context.Context,
 				conn wwr.Connection,
 				msg wwr.Message,
@@ -106,26 +106,26 @@ func BenchmarkRequestC1_P1K(b *testing.B) {
 	}
 
 	// Initialize client
-	client, err := setup.newClient(
+	client, err := setup.NewClient(
 		wwrclt.Options{
 			MessageBufferSize: 2048,
 		},
 		nil, // Use the default transport implementation
-		testClientHooks{},
+		TestClientHooks{},
 	)
 	if err != nil {
 		log.Fatalf("couldn't setup client: %s", err)
 	}
 
 	// Ensure the client is connected
-	if err := client.connection.Connect(); err != nil {
+	if err := client.Connection.Connect(); err != nil {
 		panic(err)
 	}
 
 	b.ResetTimer()
 
 	for n := 0; n < b.N; n++ {
-		reply, err := client.connection.Request(context.Background(), nil, msg)
+		reply, err := client.Connection.Request(context.Background(), nil, msg)
 		if err != nil {
 			panic(err)
 		}
@@ -144,9 +144,9 @@ func BenchmarkRequestC1_P1M(b *testing.B) {
 	}
 
 	// Initialize a webwire server
-	setup, err := setupServer(
-		&serverImpl{
-			onRequest: func(
+	setup, err := SetupServer(
+		&ServerImpl{
+			Request: func(
 				_ context.Context,
 				conn wwr.Connection,
 				msg wwr.Message,
@@ -167,26 +167,26 @@ func BenchmarkRequestC1_P1M(b *testing.B) {
 	}
 
 	// Initialize client
-	client, err := setup.newClient(
+	client, err := setup.NewClient(
 		wwrclt.Options{
 			MessageBufferSize: 1024*1024 + 1024,
 		},
 		nil, // Use the default transport implementation
-		testClientHooks{},
+		TestClientHooks{},
 	)
 	if err != nil {
 		log.Fatalf("couldn't setup client: %s", err)
 	}
 
 	// Ensure the client is connected
-	if err := client.connection.Connect(); err != nil {
+	if err := client.Connection.Connect(); err != nil {
 		panic(err)
 	}
 
 	b.ResetTimer()
 
 	for n := 0; n < b.N; n++ {
-		reply, err := client.connection.Request(context.Background(), nil, msg)
+		reply, err := client.Connection.Request(context.Background(), nil, msg)
 		if err != nil {
 			panic(err)
 		}
@@ -207,9 +207,9 @@ func BenchmarkRequestC1K_P1K(b *testing.B) {
 	}
 
 	// Initialize a webwire server
-	setup, err := setupServer(
-		&serverImpl{
-			onRequest: func(
+	setup, err := SetupServer(
+		&ServerImpl{
+			Request: func(
 				_ context.Context,
 				conn wwr.Connection,
 				msg wwr.Message,
@@ -230,14 +230,14 @@ func BenchmarkRequestC1K_P1K(b *testing.B) {
 	}
 
 	// Initialize client
-	clients := make([]*testClient, concurrentConnections)
+	clients := make([]*TestClient, concurrentConnections)
 	for i := 0; i < concurrentConnections; i++ {
-		client, err := setup.newClient(
+		client, err := setup.NewClient(
 			wwrclt.Options{
 				MessageBufferSize: 2048,
 			},
 			nil, // Use the default transport implementation
-			testClientHooks{},
+			TestClientHooks{},
 		)
 		if err != nil {
 			log.Fatalf("couldn't setup client: %s", err)
@@ -246,7 +246,7 @@ func BenchmarkRequestC1K_P1K(b *testing.B) {
 		clients[i] = client
 
 		// Ensure the client is connected
-		if err := client.connection.Connect(); err != nil {
+		if err := client.Connection.Connect(); err != nil {
 			panic(err)
 		}
 	}
@@ -257,7 +257,7 @@ func BenchmarkRequestC1K_P1K(b *testing.B) {
 		for _, c := range clients {
 			client := c
 			go func() {
-				reply, err := client.connection.Request(context.Background(), nil, msg)
+				reply, err := client.Connection.Request(context.Background(), nil, msg)
 				if err != nil {
 					panic(err)
 				}
@@ -289,9 +289,9 @@ func BenchmarkRequestSock_C1_P16(b *testing.B) {
 	}
 
 	// Initialize a webwire server
-	setup, err := setupServer(
-		&serverImpl{
-			onRequest: func(
+	setup, err := SetupServer(
+		&ServerImpl{
+			Request: func(
 				_ context.Context,
 				conn wwr.Connection,
 				msg wwr.Message,
@@ -312,17 +312,13 @@ func BenchmarkRequestSock_C1_P16(b *testing.B) {
 	}
 
 	// Setup client socket
-	socket, err := setup.newClientSocket()
+	socket, _, err := setup.NewClientSocket()
 	if err != nil {
 		panic(err)
 	}
 
 	// Ignore the server configuration push-message
 	replyMsg := message.NewMessage(1024)
-	confMsg := message.NewMessage(1024)
-	if err := socket.Read(confMsg, time.Time{}); err != nil {
-		panic(err)
-	}
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {

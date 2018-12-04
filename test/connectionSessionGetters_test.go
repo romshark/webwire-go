@@ -13,11 +13,14 @@ import (
 // TestConnectionSessionGetters tests the connection session information
 // getter methods such as SessionCreation, SessionKey, SessionInfo and Session
 func TestConnectionSessionGetters(t *testing.T) {
+	// TODO: fix test, wait until the server finished processing
+	// OnClientConnected before returning from the test function
+
 	// Initialize server
-	setup := setupTestServer(
+	setup := SetupTestServer(
 		t,
-		&serverImpl{
-			onClientConnected: func(
+		&ServerImpl{
+			ClientConnected: func(
 				_ wwr.ConnectionOptions,
 				conn wwr.Connection,
 			) {
@@ -57,13 +60,13 @@ func TestConnectionSessionGetters(t *testing.T) {
 	)
 
 	// Initialize client
-	client := setup.newClient(
+	client := setup.NewClient(
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
 		nil, // Use the default transport implementation
-		testClientHooks{},
+		TestClientHooks{},
 	)
 
-	require.NoError(t, client.connection.Connect())
+	require.NoError(t, client.Connection.Connect())
 }

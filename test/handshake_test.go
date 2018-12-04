@@ -13,12 +13,12 @@ import (
 // configuration push message
 func TestHandshake(t *testing.T) {
 	serverReadTimeout := 3 * time.Second
-	messageBufferSize := uint32(1024 * 64)
+	messageBufferSize := uint32(1024 * 8)
 
 	// Initialize webwire server
-	setup := setupTestServer(
+	setup := SetupTestServer(
 		t,
-		&serverImpl{},
+		&ServerImpl{},
 		wwr.ServerOptions{
 			ReadTimeout:       serverReadTimeout,
 			MessageBufferSize: messageBufferSize,
@@ -28,7 +28,10 @@ func TestHandshake(t *testing.T) {
 
 	readTimeout := 5 * time.Second
 
-	socket := setup.newClientSocket()
+	socket, err := setup.NewDisconnectedClientSocket()
+	require.NoError(t, err)
+
+	require.NoError(t, socket.Dial(time.Time{}))
 
 	// Await the server configuration push message
 	msg := message.NewMessage(messageBufferSize)

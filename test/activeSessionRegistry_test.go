@@ -15,10 +15,10 @@ import (
 // of currently active sessions is properly updated
 func TestActiveSessionRegistry(t *testing.T) {
 	// Initialize webwire server
-	setup := setupTestServer(
+	setup := SetupTestServer(
 		t,
-		&serverImpl{
-			onRequest: func(
+		&ServerImpl{
+			Request: func(
 				_ context.Context,
 				conn wwr.Connection,
 				msg wwr.Message,
@@ -49,19 +49,19 @@ func TestActiveSessionRegistry(t *testing.T) {
 	)
 
 	// Initialize client
-	client := setup.newClient(
+	client := setup.NewClient(
 		wwrclt.Options{
 			DefaultRequestTimeout: time.Second * 2,
 		},
 		nil, // Use the default transport implementation
-		testClientHooks{},
+		TestClientHooks{},
 	)
-	defer client.connection.Close()
+	defer client.Connection.Close()
 
-	require.NoError(t, client.connection.Connect())
+	require.NoError(t, client.Connection.Connect())
 
 	// Send authentication request
-	reply, err := client.connection.Request(
+	reply, err := client.Connection.Request(
 		context.Background(),
 		[]byte("login"),
 		wwr.Payload{
@@ -79,7 +79,7 @@ func TestActiveSessionRegistry(t *testing.T) {
 	)
 
 	// Send logout request
-	reply, err = client.connection.Request(
+	reply, err = client.Connection.Request(
 		context.Background(),
 		[]byte("logout"),
 		wwr.Payload{

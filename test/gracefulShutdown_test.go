@@ -35,10 +35,10 @@ func TestGracefulShutdown(t *testing.T) {
 	)
 
 	// Initialize webwire server
-	setup := setupTestServer(
+	setup := SetupTestServer(
 		t,
-		&serverImpl{
-			onSignal: func(
+		&ServerImpl{
+			Signal: func(
 				_ context.Context,
 				_ wwr.Connection,
 				msg wwr.Message,
@@ -50,7 +50,7 @@ func TestGracefulShutdown(t *testing.T) {
 				time.Sleep(handlerExecutionDuration)
 				handlersFinished.Progress(1)
 			},
-			onRequest: func(
+			Request: func(
 				_ context.Context,
 				_ wwr.Connection,
 				msg wwr.Message,
@@ -74,47 +74,47 @@ func TestGracefulShutdown(t *testing.T) {
 		DefaultRequestTimeout: 5 * time.Second,
 		Autoconnect:           wwr.Disabled,
 	}
-	clientSig := setup.newClient(
+	clientSig := setup.NewClient(
 		cltOpts,
 		nil, // Use the default transport implementation
-		testClientHooks{},
+		TestClientHooks{},
 	)
-	clientReq := setup.newClient(
+	clientReq := setup.NewClient(
 		cltOpts,
 		nil, // Use the default transport implementation
-		testClientHooks{},
+		TestClientHooks{},
 	)
-	clientLateReq := setup.newClient(
+	clientLateReq := setup.NewClient(
 		cltOpts,
 		nil, // Use the default transport implementation
-		testClientHooks{},
+		TestClientHooks{},
 	)
 
-	require.NoError(t, clientSig.connection.Connect())
-	require.NoError(t, clientReq.connection.Connect())
-	require.NoError(t, clientLateReq.connection.Connect())
+	require.NoError(t, clientSig.Connection.Connect())
+	require.NoError(t, clientReq.Connection.Connect())
+	require.NoError(t, clientLateReq.Connection.Connect())
 
 	// Disable autoconnect for the late client to enable immediate errors
-	clientLateConn := setup.newClient(
+	clientLateConn := setup.NewClient(
 		wwrclt.Options{
 			Autoconnect: wwr.Disabled,
 		},
 		nil, // Use the default transport implementation
-		testClientHooks{},
+		TestClientHooks{},
 	)
 
 	// Send signal and request in another parallel goroutine
 	// to avoid blocking the main test goroutine when awaiting the request reply
 	go func() {
 		// (SIGNAL)
-		assert.NoError(t, clientSig.connection.Signal(
+		assert.NoError(t, clientSig.Connection.Signal(
 			context.Background(),
 			[]byte("1"),
 			wwr.Payload{Data: []byte("test")},
 		))
 
 		// (REQUEST)
-		rep, err := clientReq.connection.Request(
+		rep, err := clientReq.Connection.Request(
 			context.Background(),
 			[]byte("1"),
 			wwr.Payload{Data: []byte("test")},
@@ -156,13 +156,13 @@ func TestGracefulShutdown(t *testing.T) {
 
 		// Verify connection establishment during shutdown (LATE CONN)
 		assert.Error(t,
-			clientLateConn.connection.Connect(),
+			clientLateConn.Connection.Connect(),
 			"Expected late connection to be rejected, "+
 				"though it still was accepted",
 		)
 
 		// Verify request rejection during shutdown (LATE REQ)
-		_, lateReqErr := clientLateReq.connection.Request(
+		_, lateReqErr := clientLateReq.Connection.Request(
 			context.Background(),
 			nil,
 			wwr.Payload{Data: []byte("test")},

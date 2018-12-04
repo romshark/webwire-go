@@ -13,10 +13,10 @@ import (
 // TestSessionStatus tests session monitoring methods
 func TestSessionStatus(t *testing.T) {
 	// Initialize webwire server
-	setup := setupTestServer(
+	setup := SetupTestServer(
 		t,
-		&serverImpl{
-			onRequest: func(
+		&ServerImpl{
+			Request: func(
 				_ context.Context,
 				conn wwr.Connection,
 				_ wwr.Message,
@@ -38,23 +38,23 @@ func TestSessionStatus(t *testing.T) {
 	require.Equal(t, 0, setup.Server.ActiveSessionsNum())
 
 	// Initialize client A
-	clientA := setup.newClient(
+	clientA := setup.NewClient(
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
 		nil, // Use the default transport implementation
-		testClientHooks{},
+		TestClientHooks{},
 	)
 
 	// Authenticate and create session
-	authReqReply, err := clientA.connection.Request(
+	authReqReply, err := clientA.Connection.Request(
 		context.Background(),
 		[]byte("login"),
 		wwr.Payload{Data: []byte("bla")},
 	)
 	require.NoError(t, err)
 
-	session := clientA.connection.Session()
+	session := clientA.Connection.Session()
 	require.Equal(t, session.Key, string(authReqReply.Payload()))
 
 	// Check status, expect 1 session with 1 connection
@@ -63,15 +63,15 @@ func TestSessionStatus(t *testing.T) {
 	require.Len(t, setup.Server.SessionConnections(session.Key), 1)
 
 	// Initialize client B
-	clientB := setup.newClient(
+	clientB := setup.NewClient(
 		wwrclt.Options{
 			DefaultRequestTimeout: 2 * time.Second,
 		},
 		nil, // Use the default transport implementation
-		testClientHooks{},
+		TestClientHooks{},
 	)
 
-	require.NoError(t, clientB.connection.RestoreSession(
+	require.NoError(t, clientB.Connection.RestoreSession(
 		context.Background(),
 		authReqReply.Payload(),
 	))
@@ -82,7 +82,7 @@ func TestSessionStatus(t *testing.T) {
 	require.Len(t, setup.Server.SessionConnections(session.Key), 2)
 
 	// Close first connection
-	require.NoError(t, clientA.connection.CloseSession())
+	require.NoError(t, clientA.Connection.CloseSession())
 
 	// Check status, expect 1 session with 1 connection
 	require.Equal(t, 1, setup.Server.ActiveSessionsNum())
@@ -90,7 +90,7 @@ func TestSessionStatus(t *testing.T) {
 	require.Len(t, setup.Server.SessionConnections(session.Key), 1)
 
 	// Close second connection
-	require.NoError(t, clientB.connection.CloseSession())
+	require.NoError(t, clientB.Connection.CloseSession())
 
 	// Check status, expect 0 sessions
 	require.Equal(t, 0, setup.Server.ActiveSessionsNum())

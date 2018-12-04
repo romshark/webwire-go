@@ -13,24 +13,23 @@ func TestSimpleShutdown(t *testing.T) {
 	connectedClientsNum := 5
 
 	// Initialize webwire server
-	setup := setupTestServer(
+	setup := SetupTestServer(
 		t,
-		&serverImpl{},
+		&ServerImpl{},
 		wwr.ServerOptions{},
 		nil, // Use the default transport implementation
 	)
 
-	clients := make([]*testClient, connectedClientsNum)
+	clients := make([]*TestClient, connectedClientsNum)
 	for i := 0; i < connectedClientsNum; i++ {
-		client := setup.newClient(
+		client := setup.NewClient(
 			wwrclt.Options{
 				Autoconnect: wwr.Disabled,
 			},
 			nil, // Use the default transport implementation
-			testClientHooks{},
+			TestClientHooks{},
 		)
-		require.NoError(t, client.connection.Connect())
-		defer client.connection.Close()
+		require.NoError(t, client.Connection.Connect())
 		clients[i] = client
 	}
 
