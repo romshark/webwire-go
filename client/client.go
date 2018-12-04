@@ -147,14 +147,14 @@ func (clt *client) Close() {
 	// Apply exclusive lock
 	clt.apiLock.Lock()
 
-	clt.close()
-
 	// Disable autoconnect and set status to disabled
 	atomic.CompareAndSwapInt32(
 		&clt.autoconnect,
 		autoconnectEnabled,
 		autoconnectDeactivated,
 	)
+
+	clt.close()
 
 	clt.apiLock.Unlock()
 }
