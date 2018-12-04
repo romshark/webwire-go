@@ -2,10 +2,10 @@ package test
 
 import (
 	"context"
+	"sync"
 	"testing"
 	"time"
 
-	tmdwg "github.com/qbeon/tmdwg-go"
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
 	"github.com/stretchr/testify/require"
@@ -17,7 +17,8 @@ func TestSignalUtf8(t *testing.T) {
 		Encoding: wwr.EncodingUtf8,
 		Data:     []byte("webwire_test_SIGNAL_payload"),
 	}
-	signalArrived := tmdwg.NewTimedWaitGroup(1, 1*time.Second)
+	signalArrived := sync.WaitGroup{}
+	signalArrived.Add(1)
 
 	// Initialize webwire server given only the signal handler
 	setup := SetupTestServer(
@@ -41,7 +42,7 @@ func TestSignalUtf8(t *testing.T) {
 				)
 
 				// Synchronize, notify signal arrival
-				signalArrived.Progress(1)
+				signalArrived.Done()
 			},
 		},
 		wwr.ServerOptions{},
@@ -67,5 +68,5 @@ func TestSignalUtf8(t *testing.T) {
 	))
 
 	// Synchronize, await signal arrival
-	require.NoError(t, signalArrived.Wait(), "Signal wasn't processed")
+	signalArrived.Wait()
 }

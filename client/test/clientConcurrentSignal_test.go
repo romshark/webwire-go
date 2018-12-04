@@ -2,10 +2,10 @@ package client_test
 
 import (
 	"context"
+	"sync"
 	"testing"
 	"time"
 
-	tmdwg "github.com/qbeon/tmdwg-go"
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
 	wwrtst "github.com/qbeon/webwire-go/test"
@@ -16,7 +16,8 @@ import (
 // TestConcurrentSignal tests concurrent calling of Client.Signal
 func TestConcurrentSignal(t *testing.T) {
 	concurrentAccessors := 16
-	finished := tmdwg.NewTimedWaitGroup(concurrentAccessors*2, 2*time.Second)
+	finished := sync.WaitGroup{}
+	finished.Add(concurrentAccessors * 2)
 
 	// Initialize webwire server
 	setup := wwrtst.SetupTestServer(
@@ -27,7 +28,7 @@ func TestConcurrentSignal(t *testing.T) {
 				_ wwr.Connection,
 				_ wwr.Message,
 			) {
-				finished.Progress(1)
+				finished.Done()
 			},
 		},
 		wwr.ServerOptions{},
@@ -47,7 +48,7 @@ func TestConcurrentSignal(t *testing.T) {
 	require.NoError(t, client.Connection.Connect())
 
 	sendSignal := func() {
-		defer finished.Progress(1)
+		defer finished.Done()
 		assert.NoError(t, client.Connection.Signal(
 			context.Background(),
 			[]byte("sample"),
@@ -62,5 +63,5 @@ func TestConcurrentSignal(t *testing.T) {
 		go sendSignal()
 	}
 
-	require.NoError(t, finished.Wait(), "Expectation timed out")
+	finished.Wait()
 }

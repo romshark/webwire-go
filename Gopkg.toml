@@ -3,9 +3,5 @@
   unused-packages = true
 
 [[constraint]]
-  name = "github.com/qbeon/tmdwg-go"
-  version = "1.0.0"
-
-[[constraint]]
   name = "github.com/stretchr/testify"
   version = "1.2.2"

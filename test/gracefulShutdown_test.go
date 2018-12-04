@@ -2,10 +2,10 @@ package test
 
 import (
 	"context"
+	"sync"
 	"testing"
 	"time"
 
-	tmdwg "github.com/qbeon/tmdwg-go"
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
 	"github.com/stretchr/testify/assert"
@@ -25,14 +25,14 @@ import (
 func TestGracefulShutdown(t *testing.T) {
 	expectedReqReply := []byte("i_finished")
 	handlerExecutionDuration := 100 * time.Millisecond
-	maxTestDuration := handlerExecutionDuration * 4
-	firstReqAndSigSent := tmdwg.NewTimedWaitGroup(2, maxTestDuration)
-	serverShuttingDown := tmdwg.NewTimedWaitGroup(1, maxTestDuration)
-	handlersFinished := tmdwg.NewTimedWaitGroup(2, maxTestDuration)
-	serverShutDown := tmdwg.NewTimedWaitGroup(
-		1,
-		2*time.Second,
-	)
+	firstReqAndSigSent := sync.WaitGroup{}
+	firstReqAndSigSent.Add(2)
+	serverShuttingDown := sync.WaitGroup{}
+	serverShuttingDown.Add(1)
+	handlersFinished := sync.WaitGroup{}
+	handlersFinished.Add(2)
+	serverShutDown := sync.WaitGroup{}
+	serverShutDown.Add(1)
 
 	// Initialize webwire server
 	setup := SetupTestServer(
@@ -44,11 +44,11 @@ func TestGracefulShutdown(t *testing.T) {
 				msg wwr.Message,
 			) {
 				if string(msg.Name()) == "1" {
-					firstReqAndSigSent.Progress(1)
+					firstReqAndSigSent.Done()
 				}
 				// Sleep after the first signal was marked as done
 				time.Sleep(handlerExecutionDuration)
-				handlersFinished.Progress(1)
+				handlersFinished.Done()
 			},
 			Request: func(
 				_ context.Context,
@@ -56,7 +56,7 @@ func TestGracefulShutdown(t *testing.T) {
 				msg wwr.Message,
 			) (wwr.Payload, error) {
 				if string(msg.Name()) == "1" {
-					firstReqAndSigSent.Progress(1)
+					firstReqAndSigSent.Done()
 				}
 				time.Sleep(handlerExecutionDuration)
 				return wwr.Payload{Data: expectedReqReply}, nil
@@ -121,7 +121,7 @@ func TestGracefulShutdown(t *testing.T) {
 		)
 		assert.NoError(t, err)
 		assert.Equal(t, string(rep.Payload()), string(expectedReqReply))
-		handlersFinished.Progress(1)
+		handlersFinished.Done()
 		rep.Close()
 	}()
 
@@ -131,16 +131,12 @@ func TestGracefulShutdown(t *testing.T) {
 	go func() {
 		// Wait for the signal and request to arrive and get handled,
 		// then request the shutdown
-		assert.NoError(t,
-			firstReqAndSigSent.Wait(),
-			"First request and signal were not sent within %s",
-			handlerExecutionDuration,
-		)
+		firstReqAndSigSent.Wait()
 
 		// (SRV SHUTDWN)
-		serverShuttingDown.Progress(1)
+		serverShuttingDown.Done()
 		setup.Server.Shutdown()
-		serverShutDown.Progress(1)
+		serverShutDown.Done()
 	}()
 
 	// Wait for the server to start shutting down and fire late requests
@@ -148,11 +144,7 @@ func TestGracefulShutdown(t *testing.T) {
 	// to avoid blocking the main test goroutine when performing them
 	go func() {
 		// Wait for the server to start shutting down
-		assert.NoError(t,
-			serverShuttingDown.Wait(),
-			"Server not shutting down after %s",
-			maxTestDuration,
-		)
+		serverShuttingDown.Wait()
 
 		// Verify connection establishment during shutdown (LATE CONN)
 		assert.Error(t,
@@ -183,15 +175,8 @@ func TestGracefulShutdown(t *testing.T) {
 	}()
 
 	// Await server shutdown, timeout if necessary
-	require.NoError(t,
-		serverShutDown.Wait(),
-		"Expected server to shut down within %s",
-		maxTestDuration,
-	)
+	serverShutDown.Wait()
 
 	// Expect both the signal and the request to have completed properly
-	require.NoError(t,
-		handlersFinished.Wait(),
-		"Expected signal and request to have finished processing",
-	)
+	handlersFinished.Wait()
 }

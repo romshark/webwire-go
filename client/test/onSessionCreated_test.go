@@ -2,10 +2,10 @@ package client_test
 
 import (
 	"context"
+	"sync"
 	"testing"
 	"time"
 
-	tmdwg "github.com/qbeon/tmdwg-go"
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
 	wwrtst "github.com/qbeon/webwire-go/test"
@@ -15,7 +15,8 @@ import (
 
 // TestOnSessionCreated tests the OnSessionCreated hook
 func TestOnSessionCreated(t *testing.T) {
-	hookCalled := tmdwg.NewTimedWaitGroup(1, 1*time.Second)
+	hookCalled := sync.WaitGroup{}
+	hookCalled.Add(1)
 	var createdSession *wwr.Session
 	var sessionFromHook *wwr.Session
 
@@ -47,7 +48,7 @@ func TestOnSessionCreated(t *testing.T) {
 		wwrtst.TestClientHooks{
 			OnSessionCreated: func(newSession *wwr.Session) {
 				sessionFromHook = newSession
-				hookCalled.Progress(1)
+				hookCalled.Done()
 			},
 		},
 	)
@@ -70,7 +71,7 @@ func TestOnSessionCreated(t *testing.T) {
 	createdSession = client.Connection.Session()
 
 	// Verify client session
-	require.NoError(t, hookCalled.Wait(), "Hook not called")
+	hookCalled.Wait()
 
 	// Compare the actual created session with the session received in the hook
 	wwrtst.CompareSessions(t, createdSession, sessionFromHook)

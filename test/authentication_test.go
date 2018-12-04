@@ -2,10 +2,10 @@ package test
 
 import (
 	"context"
+	"sync"
 	"testing"
 	"time"
 
-	tmdwg "github.com/qbeon/tmdwg-go"
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
 	"github.com/stretchr/testify/assert"
@@ -66,8 +66,10 @@ func TestAuthentication(t *testing.T) {
 		assert.Equal(t, expectedNumber, actualNumber)
 	}
 
-	onSessionCreatedHookExecuted := tmdwg.NewTimedWaitGroup(1, 1*time.Second)
-	clientSignalReceived := tmdwg.NewTimedWaitGroup(1, 1*time.Second)
+	onSessionCreatedHookExecuted := sync.WaitGroup{}
+	onSessionCreatedHookExecuted.Add(1)
+	clientSignalReceived := sync.WaitGroup{}
+	clientSignalReceived.Add(1)
 	var createdSession *wwr.Session
 	sessionInfo := &testAuthenticationSessInfo{
 		UserIdent:  "clientidentifiergoeshere",
@@ -92,7 +94,7 @@ func TestAuthentication(t *testing.T) {
 				conn wwr.Connection,
 				_ wwr.Message,
 			) {
-				defer clientSignalReceived.Progress(1)
+				defer clientSignalReceived.Done()
 				sess := conn.Session()
 				CompareSessions(t, createdSession, sess)
 				compareSessionInfo(sess)
@@ -149,7 +151,7 @@ func TestAuthentication(t *testing.T) {
 				// because of intermediate JSON encoding
 				// it'll be a map of arbitrary values with string keys
 				compareSessionInfo(session)
-				onSessionCreatedHookExecuted.Progress(1)
+				onSessionCreatedHookExecuted.Done()
 			},
 		},
 	)
@@ -197,14 +199,8 @@ func TestAuthentication(t *testing.T) {
 		expectedCredentials,
 	))
 
-	require.NoError(t,
-		clientSignalReceived.Wait(),
-		"Client signal not received",
-	)
+	clientSignalReceived.Wait()
 
 	// Expect the session creation hook to be executed in the client
-	require.NoError(t,
-		onSessionCreatedHookExecuted.Wait(),
-		"client.OnSessionCreated hook wasn't executed",
-	)
+	onSessionCreatedHookExecuted.Wait()
 }

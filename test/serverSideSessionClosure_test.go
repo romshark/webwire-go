@@ -2,10 +2,10 @@ package test
 
 import (
 	"context"
+	"sync"
 	"testing"
 	"time"
 
-	tmdwg "github.com/qbeon/tmdwg-go"
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
 	"github.com/stretchr/testify/assert"
@@ -20,10 +20,8 @@ func TestServerSideSessionClosure(t *testing.T) {
 	var sessionKey string
 	var createdSession *wwr.Session
 
-	onSessionClosedHooksExecuted := tmdwg.NewTimedWaitGroup(
-		simultaneousClients,
-		10*time.Second,
-	)
+	onSessionClosedHooksExecuted := sync.WaitGroup{}
+	onSessionClosedHooksExecuted.Add(simultaneousClients)
 
 	// Initialize webwire server
 	setup := SetupTestServer(
@@ -56,7 +54,7 @@ func TestServerSideSessionClosure(t *testing.T) {
 			nil, // Use the default transport implementation
 			TestClientHooks{
 				OnSessionClosed: func() {
-					onSessionClosedHooksExecuted.Progress(1)
+					onSessionClosedHooksExecuted.Done()
 				},
 			},
 		)
@@ -112,10 +110,7 @@ func TestServerSideSessionClosure(t *testing.T) {
 	}
 
 	// Expect the session creation hook to be executed in the client
-	require.NoError(t,
-		onSessionClosedHooksExecuted.Wait(),
-		"client.OnSessionClosed hook wasn't executed",
-	)
+	onSessionClosedHooksExecuted.Wait()
 
 	// Ensure the session was properly closed for all affected connections
 	for _, client := range clients {

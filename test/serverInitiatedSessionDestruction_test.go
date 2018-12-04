@@ -2,10 +2,10 @@ package test
 
 import (
 	"context"
+	"sync"
 	"testing"
 	"time"
 
-	tmdwg "github.com/qbeon/tmdwg-go"
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
 	"github.com/stretchr/testify/assert"
@@ -15,11 +15,10 @@ import (
 // TestServerInitiatedSessionDestruction verifies
 // server-initiated session destruction
 func TestServerInitiatedSessionDestruction(t *testing.T) {
-	sessionCreationCallbackCalled := tmdwg.NewTimedWaitGroup(1, 1*time.Second)
-	sessionDestructionCallbackCalled := tmdwg.NewTimedWaitGroup(
-		1,
-		1*time.Second,
-	)
+	sessionCreationCallbackCalled := sync.WaitGroup{}
+	sessionCreationCallbackCalled.Add(1)
+	sessionDestructionCallbackCalled := sync.WaitGroup{}
+	sessionDestructionCallbackCalled.Add(1)
 	var createdSession *wwr.Session
 	expectedCredentials := wwr.Payload{
 		Encoding: wwr.EncodingUtf8,
@@ -99,7 +98,7 @@ func TestServerInitiatedSessionDestruction(t *testing.T) {
 		TestClientHooks{
 			OnSessionCreated: func(_ *wwr.Session) {
 				// Mark the client-side session creation callback executed
-				sessionCreationCallbackCalled.Progress(1)
+				sessionCreationCallbackCalled.Done()
 			},
 			OnSessionClosed: func() {
 				// Ensure this callback is called during the
@@ -108,7 +107,7 @@ func TestServerInitiatedSessionDestruction(t *testing.T) {
 					"Client-side session destruction callback "+
 						"called at wrong step",
 				)
-				sessionDestructionCallbackCalled.Progress(1)
+				sessionDestructionCallbackCalled.Done()
 			},
 		},
 	)
@@ -132,10 +131,7 @@ func TestServerInitiatedSessionDestruction(t *testing.T) {
 	authReqReply.Close()
 
 	// Wait for the client-side session creation callback to be executed
-	require.NoError(t,
-		sessionCreationCallbackCalled.Wait(),
-		"Session creation callback not called",
-	)
+	sessionCreationCallbackCalled.Wait()
 
 	// Ensure the session was locally created
 	require.NotEqual(t,
@@ -171,10 +167,7 @@ func TestServerInitiatedSessionDestruction(t *testing.T) {
 	require.NoError(t, err)
 
 	// Wait for the client-side session destruction callback to be called
-	require.NoError(t,
-		sessionDestructionCallbackCalled.Wait(),
-		"Session destruction callback not called",
-	)
+	sessionDestructionCallbackCalled.Wait()
 
 	/*****************************************************************\
 		Step 4 - Destruction Verification

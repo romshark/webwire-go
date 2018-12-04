@@ -2,10 +2,10 @@ package client_test
 
 import (
 	"context"
+	"sync"
 	"testing"
 	"time"
 
-	"github.com/qbeon/tmdwg-go"
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
 	wwrtst "github.com/qbeon/webwire-go/test"
@@ -15,7 +15,8 @@ import (
 
 // TestReqCancel tests canceling of fired requests
 func TestReqCancel(t *testing.T) {
-	requestFinished := tmdwg.NewTimedWaitGroup(1, 1*time.Second)
+	requestFinished := sync.WaitGroup{}
+	requestFinished.Add(1)
 
 	// Initialize webwire server given only the request
 	setup := wwrtst.SetupTestServer(
@@ -60,7 +61,7 @@ func TestReqCancel(t *testing.T) {
 		assert.IsType(t, wwr.CanceledErr{}, err)
 		assert.True(t, wwr.IsCanceledErr(err))
 		assert.False(t, wwr.IsTimeoutErr(err))
-		requestFinished.Progress(1)
+		requestFinished.Done()
 	}()
 
 	// Cancel the context some time after sending the request
@@ -68,5 +69,5 @@ func TestReqCancel(t *testing.T) {
 	cancel()
 
 	// Wait for the requestor goroutine to finish
-	require.NoError(t, requestFinished.Wait(), "Test timed out")
+	requestFinished.Wait()
 }

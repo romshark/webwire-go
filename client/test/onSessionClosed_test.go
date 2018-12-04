@@ -2,10 +2,10 @@ package client_test
 
 import (
 	"context"
+	"sync"
 	"testing"
 	"time"
 
-	tmdwg "github.com/qbeon/tmdwg-go"
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
 	wwrtst "github.com/qbeon/webwire-go/test"
@@ -15,8 +15,10 @@ import (
 
 // TestOnSessionClosed tests the OnSessionClosed hook
 func TestOnSessionClosed(t *testing.T) {
-	authenticated := tmdwg.NewTimedWaitGroup(1, 1*time.Second)
-	hookCalled := tmdwg.NewTimedWaitGroup(1, 1*time.Second)
+	authenticated := sync.WaitGroup{}
+	authenticated.Add(1)
+	hookCalled := sync.WaitGroup{}
+	hookCalled.Add(1)
 
 	// Initialize webwire server
 	setup := wwrtst.SetupTestServer(
@@ -36,10 +38,7 @@ func TestOnSessionClosed(t *testing.T) {
 
 				go func() {
 					// Wait until the authentication request is finished
-					assert.NoError(t,
-						authenticated.Wait(),
-						"Authentication timed out",
-					)
+					authenticated.Wait()
 
 					// Close the session
 					assert.NoError(t, conn.CloseSession())
@@ -60,7 +59,7 @@ func TestOnSessionClosed(t *testing.T) {
 		nil, // Use the default transport implementation
 		wwrtst.TestClientHooks{
 			OnSessionClosed: func() {
-				hookCalled.Progress(1)
+				hookCalled.Done()
 			},
 		},
 	)
@@ -77,8 +76,8 @@ func TestOnSessionClosed(t *testing.T) {
 		},
 	)
 	require.NoError(t, err)
-	authenticated.Progress(1)
+	authenticated.Done()
 
 	// Verify client session
-	require.NoError(t, hookCalled.Wait(), "Hook not called")
+	hookCalled.Wait()
 }

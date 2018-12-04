@@ -1,21 +1,21 @@
 package test
 
 import (
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/qbeon/webwire-go/transport/memchan"
 
-	tmdwg "github.com/qbeon/tmdwg-go"
 	wwr "github.com/qbeon/webwire-go"
 	wwrclt "github.com/qbeon/webwire-go/client"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 // TestConnectionInfo tests the connection.Info method
 func TestConnectionInfo(t *testing.T) {
-	handlerFinished := tmdwg.NewTimedWaitGroup(1, 1*time.Second)
+	handlerFinished := sync.WaitGroup{}
+	handlerFinished.Add(1)
 
 	// Initialize server
 	setup := SetupTestServer(
@@ -34,7 +34,7 @@ func TestConnectionInfo(t *testing.T) {
 					conn.Creation(),
 					1*time.Second,
 				)
-				handlerFinished.Progress(1)
+				handlerFinished.Done()
 			},
 		},
 		wwr.ServerOptions{},
@@ -58,5 +58,5 @@ func TestConnectionInfo(t *testing.T) {
 		TestClientHooks{},
 	)
 
-	require.NoError(t, handlerFinished.Wait())
+	handlerFinished.Wait()
 }

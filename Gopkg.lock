@@ -18,14 +18,6 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:1a47eb54fc9efc569bfa0ceb7ddc06f40c9ad5df4c4e8a077823937bebbef000"
-  name = "github.com/qbeon/tmdwg-go"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "5a395400ac2fef4f213d83424937195af0005a03"
-  version = "1.0.0"
-
-[[projects]]
   digest = "1:c40d65817cdd41fac9aa7af8bed56927bb2d6d47e4fea566a74880f5c2b1c41e"
   name = "github.com/stretchr/testify"
   packages = [
@@ -56,7 +48,6 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
-    "github.com/qbeon/tmdwg-go",
     "github.com/stretchr/testify/assert",
     "github.com/stretchr/testify/require",
     "golang.org/x/sync/semaphore",

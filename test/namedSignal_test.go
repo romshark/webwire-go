@@ -2,10 +2,10 @@ package test
 
 import (
 	"context"
+	"sync"
 	"testing"
 	"time"
 
-	tmdwg "github.com/qbeon/tmdwg-go"
 	webwire "github.com/qbeon/webwire-go"
 	webwireClient "github.com/qbeon/webwire-go/client"
 	"github.com/stretchr/testify/assert"
@@ -14,9 +14,12 @@ import (
 
 // TestNamedSignal tests correct handling of named signals
 func TestNamedSignal(t *testing.T) {
-	unnamedSignalArrived := tmdwg.NewTimedWaitGroup(1, 1*time.Second)
-	shortestNameSignalArrived := tmdwg.NewTimedWaitGroup(1, 1*time.Second)
-	longestNameSignalArrived := tmdwg.NewTimedWaitGroup(1, 1*time.Second)
+	unnamedSignalArrived := sync.WaitGroup{}
+	unnamedSignalArrived.Add(1)
+	shortestNameSignalArrived := sync.WaitGroup{}
+	shortestNameSignalArrived.Add(1)
+	longestNameSignalArrived := sync.WaitGroup{}
+	longestNameSignalArrived.Add(1)
 	currentStep := 1
 
 	shortestPossibleName := []byte("s")
@@ -38,13 +41,13 @@ func TestNamedSignal(t *testing.T) {
 				switch currentStep {
 				case 1:
 					assert.Nil(t, msgName)
-					unnamedSignalArrived.Progress(1)
+					unnamedSignalArrived.Done()
 				case 2:
 					assert.Equal(t, shortestPossibleName, msgName)
-					shortestNameSignalArrived.Progress(1)
+					shortestNameSignalArrived.Done()
 				case 3:
 					assert.Equal(t, longestPossibleName, msgName)
-					longestNameSignalArrived.Progress(1)
+					longestNameSignalArrived.Done()
 				}
 			},
 		},
@@ -67,10 +70,7 @@ func TestNamedSignal(t *testing.T) {
 		nil, // No name
 		webwire.Payload{Data: []byte("dummy")},
 	))
-	require.NoError(t,
-		unnamedSignalArrived.Wait(),
-		"Unnamed signal didn't arrive",
-	)
+	unnamedSignalArrived.Wait()
 
 	// Send request with the shortest possible name
 	currentStep = 2
@@ -79,10 +79,7 @@ func TestNamedSignal(t *testing.T) {
 		shortestPossibleName,
 		webwire.Payload{Data: []byte("dummy")},
 	))
-	require.NoError(t,
-		shortestNameSignalArrived.Wait(),
-		"Signal with shortest name didn't arrive",
-	)
+	shortestNameSignalArrived.Wait()
 
 	// Send request with the longest possible name
 	currentStep = 3
@@ -91,8 +88,5 @@ func TestNamedSignal(t *testing.T) {
 		longestPossibleName,
 		webwire.Payload{Data: []byte("dummy")},
 	))
-	require.NoError(t,
-		longestNameSignalArrived.Wait(),
-		"Signal with longest name didn't arrive",
-	)
+	longestNameSignalArrived.Wait()
 }
