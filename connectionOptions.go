@@ -1,4 +1,4 @@
-package connopt
+package webwire
 
 // ConnectionAcceptance defines whether a connection is to be accepted
 type ConnectionAcceptance byte

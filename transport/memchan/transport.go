@@ -9,7 +9,6 @@ import (
 	"time"
 
 	wwr "github.com/qbeon/webwire-go"
-	"github.com/qbeon/webwire-go/connopt"
 )
 
 const serverClosed = 0
@@ -19,7 +18,7 @@ const serverActive = 1
 type Transport struct {
 	// OnBeforeCreation is called before the creation of a new connection and
 	// must return the options to be assigned to the new connection
-	OnBeforeCreation func() connopt.ConnectionOptions
+	OnBeforeCreation func() wwr.ConnectionOptions
 
 	onNewConnection wwr.OnNewConnection
 	isShuttingdown  wwr.IsShuttingDown

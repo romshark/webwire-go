@@ -5,22 +5,7 @@ import (
 	"net"
 	"net/url"
 	"time"
-
-	"github.com/qbeon/webwire-go/connopt"
 )
-
-// ConnectionAcceptance defines whether a connection is to be accepted
-type ConnectionAcceptance = connopt.ConnectionAcceptance
-
-// Accept instructs the server to accept the incoming connection
-const Accept = connopt.Accept
-
-// Refuse instructs the server to refuse the incoming connection
-const Refuse = connopt.Refuse
-
-// ConnectionOptions represents the options applied to an individual connection
-// during accept
-type ConnectionOptions = connopt.ConnectionOptions
 
 // HeadlessServer defines the interface of a headless webwire server instance
 type HeadlessServer interface {

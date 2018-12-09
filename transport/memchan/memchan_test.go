@@ -10,7 +10,6 @@ import (
 	"github.com/qbeon/webwire-go/message"
 
 	wwr "github.com/qbeon/webwire-go"
-	"github.com/qbeon/webwire-go/connopt"
 	"github.com/qbeon/webwire-go/transport/memchan"
 	"github.com/stretchr/testify/require"
 )
@@ -29,7 +28,7 @@ func testNewServer(serverOptions ...wwr.ServerOptions) *memchan.Transport {
 	server.Initialize(
 		serverOptions[0],
 		func() bool { return false },
-		func(_ connopt.ConnectionOptions, _ wwr.Socket) {},
+		func(_ wwr.ConnectionOptions, _ wwr.Socket) {},
 	)
 	return server
 }

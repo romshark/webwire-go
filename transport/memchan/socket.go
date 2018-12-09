@@ -9,7 +9,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/qbeon/webwire-go/connopt"
+	wwr "github.com/qbeon/webwire-go"
 	"github.com/qbeon/webwire-go/message"
 	"github.com/qbeon/webwire-go/wwrerr"
 )
@@ -99,7 +99,7 @@ func (sock *Socket) Dial(deadline time.Time) error {
 
 	// Call the connection creation hook
 	connOpts := sock.server.OnBeforeCreation()
-	if connOpts.Connection != connopt.Accept {
+	if connOpts.Connection != wwr.Accept {
 		return errors.New("connection refused")
 	}
 

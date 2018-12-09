@@ -3,8 +3,6 @@ package webwire
 import (
 	"net/url"
 	"time"
-
-	"github.com/qbeon/webwire-go/connopt"
 )
 
 // IsShuttingDown must be called when the server is accepting a new connection
@@ -14,7 +12,7 @@ type IsShuttingDown func() bool
 // OnNewConnection must be called when the connection is ready to be used by the
 // webwire server
 type OnNewConnection func(
-	connectionOptions connopt.ConnectionOptions,
+	connectionOptions ConnectionOptions,
 	socket Socket,
 )
 
