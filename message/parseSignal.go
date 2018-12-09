@@ -9,7 +9,7 @@ import (
 
 // parseSignal parses MsgSignalBinary and MsgSignalUtf8 messages
 func (msg *Message) parseSignal() error {
-	if msg.MsgBuffer.len < MsgMinLenSignal {
+	if msg.MsgBuffer.len < MinLenSignal {
 		return errors.New("invalid signal message, too short")
 	}
 

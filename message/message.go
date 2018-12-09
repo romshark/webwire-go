@@ -7,16 +7,16 @@ import (
 )
 
 const (
-	// MsgMinLenSignal represents the minimum length
+	// MinLenSignal represents the minimum length
 	// of binary/UTF8 encoded signal messages.
 	// binary/UTF8 signal message structure:
 	//  1. message type (1 byte)
 	//  2. name length flag (1 byte)
 	//  3. name (n bytes, optional if name length flag is 0)
 	//  4. payload (n bytes, at least 1 byte)
-	MsgMinLenSignal = int(3)
+	MinLenSignal = int(3)
 
-	// MsgMinLenSignalUtf16 represents the minimum length
+	// MinLenSignalUtf16 represents the minimum length
 	// of UTF16 encoded signal messages.
 	// UTF16 signal message structure:
 	//  1. message type (1 byte)
@@ -24,9 +24,9 @@ const (
 	//  3. name (n bytes, optional if name length flag is 0)
 	//  4. header padding (1 byte, required if name length flag is odd)
 	//  5. payload (n bytes, at least 2 bytes)
-	MsgMinLenSignalUtf16 = int(4)
+	MinLenSignalUtf16 = int(4)
 
-	// MsgMinLenRequest represents the minimum length
+	// MinLenRequest represents the minimum length
 	// of binary/UTF8 encoded request messages.
 	// binary/UTF8 request message structure:
 	//  1. message type (1 byte)
@@ -34,9 +34,9 @@ const (
 	//  3. name length flag (1 byte)
 	//  4. name (from 0 to 255 bytes, optional if name length flag is 0)
 	//  5. payload (n bytes, at least 1 byte or optional if name len > 0)
-	MsgMinLenRequest = int(11)
+	MinLenRequest = int(11)
 
-	// MsgMinLenRequestUtf16 represents the minimum length
+	// MinLenRequestUtf16 represents the minimum length
 	// of UTF16 encoded request messages.
 	// UTF16 request message structure:
 	//  1. message type (1 byte)
@@ -45,26 +45,26 @@ const (
 	//  4. name (n bytes, optional if name length flag is 0)
 	//  5. header padding (1 byte, required if name length flag is odd)
 	//  6. payload (n bytes, at least 2 bytes)
-	MsgMinLenRequestUtf16 = int(11)
+	MinLenRequestUtf16 = int(11)
 
-	// MsgMinLenReply represents the minimum length
+	// MinLenReply represents the minimum length
 	// of binary/UTF8 encoded reply messages.
 	// binary/UTF8 reply message structure:
 	//  1. message type (1 byte)
 	//  2. message id (8 bytes)
 	//  3. payload (n bytes, optional or at least 1 byte)
-	MsgMinLenReply = int(9)
+	MinLenReply = int(9)
 
-	// MsgMinLenReplyUtf16 represents the minimum length
+	// MinLenReplyUtf16 represents the minimum length
 	// of UTF16 encoded reply messages.
 	// UTF16 reply message structure:
 	//  1. message type (1 byte)
 	//  2. message id (8 bytes)
 	//  3. header padding (1 byte)
 	//  4. payload (n bytes, optional or at least 2 bytes)
-	MsgMinLenReplyUtf16 = int(10)
+	MinLenReplyUtf16 = int(10)
 
-	// MsgMinLenErrorReply represents the minimum length
+	// MinLenReplyError represents the minimum length
 	// of error reply messages.
 	// Error reply message structure:
 	//  1. message type (1 byte)
@@ -75,44 +75,44 @@ const (
 	//    length must correspond to the length flag
 	//  )
 	//  5. error message (n bytes, UTF8 encoded, optional)
-	MsgMinLenErrorReply = int(11)
+	MinLenReplyError = int(11)
 
-	// MsgMinLenRestoreSession represents the minimum length
+	// MinLenRequestRestoreSession represents the minimum length
 	// of session restoration request messages.
 	// Session restoration request message structure:
 	//  1. message type (1 byte)
 	//  2. message id (8 bytes)
 	//  3. session key (n bytes, 7-bit ASCII encoded, at least 1 byte)
-	MsgMinLenRestoreSession = int(10)
+	MinLenRequestRestoreSession = int(10)
 
-	// MsgMinLenCloseSession represents the minimum length
+	// MinLenDoCloseSession represents the minimum length
 	// of session destruction request messages.
 	// Session destruction request message structure:
 	//  1. message type (1 byte)
 	//  2. message id (8 bytes)
-	MsgMinLenCloseSession = int(9)
+	MinLenDoCloseSession = int(9)
 
-	// MsgMinLenSessionCreated represents the minimum length
+	// MinLenNotifySessionCreated represents the minimum length
 	// of session creation notification messages.
 	// Session creation notification message structure:
 	//  1. message type (1 byte)
 	//  2. session key (n bytes, 7-bit ASCII encoded, at least 1 byte)
-	MsgMinLenSessionCreated = int(2)
+	MinLenNotifySessionCreated = int(2)
 
-	// MsgMinLenSessionClosed represents the minimum length
+	// MinLenNotifySessionClosed represents the minimum length
 	// of session creation notification messages.
 	// Session destruction notification message structure:
 	//  1. message type (1 byte)
-	MsgMinLenSessionClosed = int(1)
+	MinLenNotifySessionClosed = int(1)
 
-	// MsgMinLenConf represents the minimum length
+	// MinLenAcceptConf represents the minimum length
 	// of an endpoint metadata message.
 	//  1. message type (1 byte)
 	//  2. major protocol version (1 byte)
 	//  3. minor protocol version (1 byte)
 	//  4. read timeout in milliseconds (4 byte)
 	//  5. message buffer size in bytes (4 byte)
-	MsgMinLenConf = int(11)
+	MinLenAcceptConf = int(11)
 )
 
 const (

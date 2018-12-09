@@ -6,7 +6,7 @@ import (
 
 // parseCloseSession parses MsgDoCloseSession messages
 func (msg *Message) parseCloseSession() error {
-	if msg.MsgBuffer.len != MsgMinLenCloseSession {
+	if msg.MsgBuffer.len != MinLenDoCloseSession {
 		return errors.New(
 			"invalid session destruction request message, too short",
 		)

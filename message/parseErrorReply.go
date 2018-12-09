@@ -10,7 +10,7 @@ import (
 // parseErrorReply parses MsgReplyError messages writing the error code into the
 // name field and the UTF8 encoded error message into the payload
 func (msg *Message) parseErrorReply() error {
-	if msg.MsgBuffer.len < MsgMinLenErrorReply {
+	if msg.MsgBuffer.len < MinLenReplyError {
 		return errors.New("invalid error reply message, too short")
 	}
 
@@ -35,8 +35,8 @@ func (msg *Message) parseErrorReply() error {
 	// caused by inconsistent flags. This could happen if the specified
 	// error code length doesn't correspond to the actual length
 	// of the provided error code.
-	// Subtract 1 character already taken into account by MsgMinLenErrorReply
-	if msg.MsgBuffer.len < MsgMinLenErrorReply+errCodeLen-1 {
+	// Subtract 1 character already taken into account by MinLenReplyError
+	if msg.MsgBuffer.len < MinLenReplyError+errCodeLen-1 {
 		return fmt.Errorf(
 			"invalid error reply message, "+
 				"too short for specified code length (%d)",

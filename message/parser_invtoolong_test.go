@@ -13,7 +13,7 @@ import (
 // TestMsgParseInvalidSessionClosedTooLong tests parsing of an invalid
 // session closed notification message which is too long to be considered valid
 func TestMsgParseInvalidSessionClosedTooLong(t *testing.T) {
-	lenTooLong := MsgMinLenSessionClosed + 1
+	lenTooLong := MinLenNotifySessionClosed + 1
 	invalidMessage := make([]byte, lenTooLong)
 
 	invalidMessage[0] = MsgNotifySessionClosed

@@ -8,7 +8,7 @@ import (
 
 // parseConf parses MsgAcceptConf messages
 func (msg *Message) parseConf() error {
-	if msg.MsgBuffer.len < MsgMinLenConf {
+	if msg.MsgBuffer.len < MinLenAcceptConf {
 		return errors.New("invalid msg length, too short")
 	}
 	msg.ServerConfiguration = ServerConfiguration{

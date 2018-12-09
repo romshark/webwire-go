@@ -27,7 +27,7 @@ func TestMsgParseInvalidMessageTooShort(t *testing.T) {
 // TestMsgParseInvalidReplyTooShort tests parsing of an invalid
 // binary/UTF8 reply message which is too short to be considered valid
 func TestMsgParseInvalidReplyTooShort(t *testing.T) {
-	lenTooShort := MsgMinLenReply - 1
+	lenTooShort := MinLenReply - 1
 	invalidMessage := make([]byte, lenTooShort)
 
 	invalidMessage[0] = MsgReplyBinary
@@ -43,7 +43,7 @@ func TestMsgParseInvalidReplyTooShort(t *testing.T) {
 // TestMsgParseInvalidReplyUtf16TooShort tests parsing of an invalid
 // UTF16 reply message which is too short to be considered valid
 func TestMsgParseInvalidReplyUtf16TooShort(t *testing.T) {
-	lenTooShort := MsgMinLenReplyUtf16 - 1
+	lenTooShort := MinLenReplyUtf16 - 1
 	invalidMessage := make([]byte, lenTooShort)
 
 	invalidMessage[0] = MsgReplyUtf16
@@ -60,7 +60,7 @@ func TestMsgParseInvalidReplyUtf16TooShort(t *testing.T) {
 // TestMsgParseInvalidRequestTooShort tests parsing of an invalid
 // binary/UTF8 request message which is too short to be considered valid
 func TestMsgParseInvalidRequestTooShort(t *testing.T) {
-	lenTooShort := MsgMinLenRequest - 1
+	lenTooShort := MinLenRequest - 1
 	invalidMessage := make([]byte, lenTooShort)
 
 	invalidMessage[0] = MsgRequestBinary
@@ -76,7 +76,7 @@ func TestMsgParseInvalidRequestTooShort(t *testing.T) {
 // TestMsgParseInvalidRequestUtf16TooShort tests parsing of an invalid
 // UTF16 request message which is too short to be considered valid
 func TestMsgParseInvalidRequestUtf16TooShort(t *testing.T) {
-	lenTooShort := MsgMinLenRequestUtf16 - 1
+	lenTooShort := MinLenRequestUtf16 - 1
 	invalidMessage := make([]byte, lenTooShort)
 
 	invalidMessage[0] = MsgRequestUtf16
@@ -94,7 +94,7 @@ func TestMsgParseInvalidRequestUtf16TooShort(t *testing.T) {
 // session restoration request message which is too short
 // to be considered valid
 func TestMsgParseInvalidRestrSessReqTooShort(t *testing.T) {
-	lenTooShort := MsgMinLenRestoreSession - 1
+	lenTooShort := MinLenRequestRestoreSession - 1
 	invalidMessage := make([]byte, lenTooShort)
 
 	invalidMessage[0] = MsgRequestRestoreSession
@@ -112,7 +112,7 @@ func TestMsgParseInvalidRestrSessReqTooShort(t *testing.T) {
 // session destruction request message which is too short
 // to be considered valid
 func TestMsgParseInvalidSessCloseReqTooShort(t *testing.T) {
-	lenTooShort := MsgMinLenCloseSession - 1
+	lenTooShort := MinLenDoCloseSession - 1
 	invalidMessage := make([]byte, lenTooShort)
 
 	invalidMessage[0] = MsgDoCloseSession
@@ -130,7 +130,7 @@ func TestMsgParseInvalidSessCloseReqTooShort(t *testing.T) {
 // session creation notification message which is too short
 // to be considered valid
 func TestMsgParseInvalidSessCreatedSigTooShort(t *testing.T) {
-	lenTooShort := MsgMinLenSessionCreated - 1
+	lenTooShort := MinLenNotifySessionCreated - 1
 	invalidMessage := make([]byte, lenTooShort)
 
 	invalidMessage[0] = MsgNotifySessionCreated
@@ -147,7 +147,7 @@ func TestMsgParseInvalidSessCreatedSigTooShort(t *testing.T) {
 // TestMsgParseInvalidSignalTooShort tests parsing of an invalid
 // binary/UTF8 signal message which is too short to be considered valid
 func TestMsgParseInvalidSignalTooShort(t *testing.T) {
-	lenTooShort := MsgMinLenSignal - 1
+	lenTooShort := MinLenSignal - 1
 	invalidMessage := make([]byte, lenTooShort)
 
 	invalidMessage[0] = MsgSignalBinary
@@ -163,7 +163,7 @@ func TestMsgParseInvalidSignalTooShort(t *testing.T) {
 // TestMsgParseInvalidSignalUtf16TooShort tests parsing of an invalid
 // UTF16 signal message which is too short to be considered valid
 func TestMsgParseInvalidSignalUtf16TooShort(t *testing.T) {
-	lenTooShort := MsgMinLenSignalUtf16 - 1
+	lenTooShort := MinLenSignalUtf16 - 1
 	invalidMessage := make([]byte, lenTooShort)
 
 	invalidMessage[0] = MsgSignalUtf16
@@ -180,7 +180,7 @@ func TestMsgParseInvalidSignalUtf16TooShort(t *testing.T) {
 // TestMsgParseInvalidErrorReplyTooShort tests parsing of an invalid
 // error reply message which is too short to be considered valid
 func TestMsgParseInvalidErrorReplyTooShort(t *testing.T) {
-	lenTooShort := MsgMinLenErrorReply - 1
+	lenTooShort := MinLenReplyError - 1
 	invalidMessage := make([]byte, lenTooShort)
 
 	invalidMessage[0] = MsgReplyError

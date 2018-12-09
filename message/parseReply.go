@@ -8,7 +8,7 @@ import (
 
 // parseReply parses MsgReplyBinary and MsgReplyUtf8 messages
 func (msg *Message) parseReply() error {
-	if msg.MsgBuffer.len < MsgMinLenReply {
+	if msg.MsgBuffer.len < MinLenReply {
 		return errors.New("invalid reply message, too short")
 	}
 
@@ -19,7 +19,7 @@ func (msg *Message) parseReply() error {
 	copy(msg.MsgIdentifier[:], msg.MsgIdentifierBytes)
 
 	// Skip payload if there's none
-	if msg.MsgBuffer.len == MsgMinLenReply {
+	if msg.MsgBuffer.len == MinLenReply {
 		return nil
 	}
 

@@ -9,7 +9,7 @@ import (
 
 // parseRequest parses MsgRequestBinary and MsgRequestUtf8 messages
 func (msg *Message) parseRequest() error {
-	if msg.MsgBuffer.len < MsgMinLenRequest {
+	if msg.MsgBuffer.len < MinLenRequest {
 		return errors.New("invalid request message, too short")
 	}
 
@@ -28,7 +28,7 @@ func (msg *Message) parseRequest() error {
 	// doesn't correspond to the actual name length
 	if nameLen > 0 {
 		// Subtract one to not require the payload but at least the name
-		if msg.MsgBuffer.len < MsgMinLenRequest+nameLen-1 {
+		if msg.MsgBuffer.len < MinLenRequest+nameLen-1 {
 			return fmt.Errorf(
 				"invalid request message, too short for full name (%d)",
 				nameLen,
@@ -39,7 +39,7 @@ func (msg *Message) parseRequest() error {
 		msg.MsgName = dat[10 : 10+nameLen]
 
 		// Read payload if any
-		if msg.MsgBuffer.len > MsgMinLenRequest+nameLen-1 {
+		if msg.MsgBuffer.len > MinLenRequest+nameLen-1 {
 			msg.MsgPayload = pld.Payload{
 				Data: dat[payloadOffset:],
 			}

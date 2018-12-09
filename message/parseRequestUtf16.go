@@ -9,7 +9,7 @@ import (
 
 // parseRequestUtf16 parses MsgRequestUtf16 messages
 func (msg *Message) parseRequestUtf16() error {
-	if msg.MsgBuffer.len < MsgMinLenRequestUtf16 {
+	if msg.MsgBuffer.len < MinLenRequestUtf16 {
 		return errors.New("invalid request message, too short")
 	}
 

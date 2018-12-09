@@ -9,7 +9,7 @@ import (
 
 // parseSignalUtf16 parses MsgSignalUtf16 messages
 func (msg *Message) parseSignalUtf16() error {
-	if msg.MsgBuffer.len < MsgMinLenSignalUtf16 {
+	if msg.MsgBuffer.len < MinLenSignalUtf16 {
 		return errors.New("invalid signal message, too short")
 	}
 
@@ -26,7 +26,7 @@ func (msg *Message) parseSignalUtf16() error {
 	nameLen := int(dat[1])
 
 	// Determine minimum required message length
-	minMsgSize := MsgMinLenSignalUtf16 + nameLen
+	minMsgSize := MinLenSignalUtf16 + nameLen
 	payloadOffset := 2 + nameLen
 
 	// Check whether a name padding byte is to be expected

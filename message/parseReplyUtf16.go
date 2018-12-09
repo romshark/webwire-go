@@ -7,7 +7,7 @@ import (
 )
 
 func (msg *Message) parseReplyUtf16() error {
-	if msg.MsgBuffer.len < MsgMinLenReplyUtf16 {
+	if msg.MsgBuffer.len < MinLenReplyUtf16 {
 		return errors.New("invalid UTF16 reply message, too short")
 	}
 
@@ -25,7 +25,7 @@ func (msg *Message) parseReplyUtf16() error {
 	copy(msg.MsgIdentifier[:], msg.MsgIdentifierBytes)
 
 	// Skip payload if there's none
-	if msg.MsgBuffer.len == MsgMinLenReplyUtf16 {
+	if msg.MsgBuffer.len == MinLenReplyUtf16 {
 		msg.MsgPayload = pld.Payload{
 			Encoding: pld.Utf16,
 		}
