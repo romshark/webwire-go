@@ -81,12 +81,14 @@ func WriteMsgSignal(
 		return err
 	}
 
-	// Write name
-	if _, err := writer.Write(name); err != nil {
-		if closeErr := writer.Close(); closeErr != nil {
-			return fmt.Errorf("%s: %s", err, closeErr)
+	// Write name (if any)
+	if len(name) > 0 {
+		if _, err := writer.Write(name); err != nil {
+			if closeErr := writer.Close(); closeErr != nil {
+				return fmt.Errorf("%s: %s", err, closeErr)
+			}
+			return err
 		}
-		return err
 	}
 
 	// Write header padding byte if the payload requires proper alignment
