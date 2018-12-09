@@ -17,12 +17,12 @@ func (msg *Message) parseSignal() error {
 
 	// Read name length
 	nameLen := int(dat[1])
-	payloadOffset := 2 + nameLen
+	minMsgLen := 2 + nameLen
 
 	// Verify total message size to prevent segmentation faults
 	// caused by inconsistent flags. This could happen if the specified
 	// name length doesn't correspond to the actual name length
-	if msg.MsgBuffer.len < MsgMinLenSignal+nameLen {
+	if msg.MsgBuffer.len < minMsgLen {
 		return fmt.Errorf(
 			"invalid signal message, too short for full name (%d) "+
 				"and the minimum payload (1)",
@@ -32,9 +32,9 @@ func (msg *Message) parseSignal() error {
 
 	if nameLen > 0 {
 		// Take name into account
-		msg.MsgName = dat[2:payloadOffset]
+		msg.MsgName = dat[2:minMsgLen]
 		msg.MsgPayload = pld.Payload{
-			Data: dat[payloadOffset:],
+			Data: dat[minMsgLen:],
 		}
 	} else {
 		// No name present, just payload
