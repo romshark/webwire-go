@@ -7,7 +7,7 @@ import (
 	pld "github.com/qbeon/webwire-go/payload"
 )
 
-// parseErrorReply parses MsgErrorReply messages writing the error code into the
+// parseErrorReply parses MsgReplyError messages writing the error code into the
 // name field and the UTF8 encoded error message into the payload
 func (msg *Message) parseErrorReply() error {
 	if msg.MsgBuffer.len < MsgMinLenErrorReply {

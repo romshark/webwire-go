@@ -19,7 +19,7 @@ func TestWriteMsgNamelessReq(t *testing.T) {
 
 	// Compose encoded message
 	// Add type flag
-	expected := []byte{MsgRestoreSession}
+	expected := []byte{MsgRequestRestoreSession}
 	// Add identifier
 	expected = append(expected, id[:]...)
 	// Add session key to payload
@@ -28,7 +28,7 @@ func TestWriteMsgNamelessReq(t *testing.T) {
 	writer := &testWriter{}
 	require.NoError(t, WriteMsgNamelessRequest(
 		writer,
-		MsgRestoreSession,
+		MsgRequestRestoreSession,
 		id,
 		[]byte(sessionKey),
 	))
@@ -395,16 +395,16 @@ func TestWriteMsgSigUtf16OddNameLen(t *testing.T) {
 	require.True(t, writer.closed)
 }
 
-// TestWriteMsgSessionCreated tests WriteMsgSessionCreated
-func TestWriteMsgSessionCreated(t *testing.T) {
+// TestWriteMsgNotifySessionCreated tests WriteMsgNotifySessionCreated
+func TestWriteMsgNotifySessionCreated(t *testing.T) {
 	// Compose encoded message
 	// Write type flag
-	expected := []byte{MsgSessionCreated}
+	expected := []byte{MsgNotifySessionCreated}
 	// Write session info payload
 	expected = append(expected, []byte("session info")...)
 
 	writer := &testWriter{}
-	require.NoError(t, WriteMsgSessionCreated(
+	require.NoError(t, WriteMsgNotifySessionCreated(
 		writer,
 		[]byte("session info"),
 	))
@@ -412,13 +412,13 @@ func TestWriteMsgSessionCreated(t *testing.T) {
 	require.True(t, writer.closed)
 }
 
-// TestWriteMsgSessionClosed tests WriteMsgSessionClosed
-func TestWriteMsgSessionClosed(t *testing.T) {
+// TestWriteMsgNotifySessionClosed tests WriteMsgNotifySessionClosed
+func TestWriteMsgNotifySessionClosed(t *testing.T) {
 	// Compose expected message
-	expected := []byte{MsgSessionClosed}
+	expected := []byte{MsgNotifySessionClosed}
 
 	writer := &testWriter{}
-	require.NoError(t, WriteMsgSessionClosed(writer))
+	require.NoError(t, WriteMsgNotifySessionClosed(writer))
 	require.Equal(t, expected, writer.buf)
 	require.True(t, writer.closed)
 }

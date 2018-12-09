@@ -37,7 +37,7 @@ func TestRequestInternalError(t *testing.T) {
 	sock, _ := setup.NewClientSocket()
 
 	rep := request(t, sock, 192, []byte("r"), payload.Payload{})
-	require.Equal(t, message.MsgInternalError, rep.MsgType)
+	require.Equal(t, message.MsgReplyInternalError, rep.MsgType)
 	require.Nil(t, rep.MsgName)
 	require.Equal(t, payload.Binary, rep.MsgPayload.Encoding)
 	require.Nil(t, rep.MsgPayload.Data)

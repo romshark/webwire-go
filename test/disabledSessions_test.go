@@ -63,5 +63,5 @@ func TestDisabledSessions(t *testing.T) {
 
 	// Try to restore a session
 	reply := requestRestoreSession(t, sock, []byte("testsessionkey"))
-	require.Equal(t, message.MsgSessionsDisabled, reply.MsgType)
+	require.Equal(t, message.MsgReplySessionsDisabled, reply.MsgType)
 }

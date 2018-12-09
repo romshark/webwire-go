@@ -28,7 +28,7 @@ func (srv *server) failMsg(
 
 	switch err := reqErr.(type) {
 	case ErrRequest:
-		if err := message.WriteMsgErrorReply(
+		if err := message.WriteMsgReplyError(
 			writer,
 			msg.MsgIdentifierBytes,
 			[]byte(err.Code),
@@ -39,7 +39,7 @@ func (srv *server) failMsg(
 			return
 		}
 	case *ErrRequest:
-		if err := message.WriteMsgErrorReply(
+		if err := message.WriteMsgReplyError(
 			writer,
 			msg.MsgIdentifierBytes,
 			[]byte(err.Code),
@@ -52,7 +52,7 @@ func (srv *server) failMsg(
 	case ErrMaxSessConnsReached:
 		if err := message.WriteMsgSpecialRequestReply(
 			writer,
-			message.MsgMaxSessConnsReached,
+			message.MsgReplyMaxSessConnsReached,
 			msg.MsgIdentifierBytes,
 		); err != nil {
 			srv.errorLog.Println(
@@ -64,7 +64,7 @@ func (srv *server) failMsg(
 	case ErrSessionNotFound:
 		if err := message.WriteMsgSpecialRequestReply(
 			writer,
-			message.MsgSessionNotFound,
+			message.MsgReplySessionNotFound,
 			msg.MsgIdentifierBytes,
 		); err != nil {
 			srv.errorLog.Println(
@@ -76,7 +76,7 @@ func (srv *server) failMsg(
 	case ErrSessionsDisabled:
 		if err := message.WriteMsgSpecialRequestReply(
 			writer,
-			message.MsgSessionsDisabled,
+			message.MsgReplySessionsDisabled,
 			msg.MsgIdentifierBytes,
 		); err != nil {
 			srv.errorLog.Println(
@@ -88,7 +88,7 @@ func (srv *server) failMsg(
 	default:
 		if err := message.WriteMsgSpecialRequestReply(
 			writer,
-			message.MsgInternalError,
+			message.MsgReplyInternalError,
 			msg.MsgIdentifierBytes,
 		); err != nil {
 			srv.errorLog.Println(

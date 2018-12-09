@@ -247,7 +247,7 @@ func (con *connection) notifySessionCreated(newSession *Session) error {
 	if err != nil {
 		return err
 	}
-	return message.WriteMsgSessionCreated(
+	return message.WriteMsgNotifySessionCreated(
 		writer,
 		encodedSessionInfo,
 	)
@@ -259,7 +259,7 @@ func (con *connection) notifySessionClosed() error {
 	if err != nil {
 		return err
 	}
-	return message.WriteMsgSessionClosed(writer)
+	return message.WriteMsgNotifySessionClosed(writer)
 }
 
 // CloseSession implements the Connection interface

@@ -5,9 +5,9 @@ import (
 	"io"
 )
 
-// WriteMsgErrorReply writes an error reply message to the given writer
+// WriteMsgReplyError writes an error reply message to the given writer
 // closing it eventually
-func WriteMsgErrorReply(
+func WriteMsgReplyError(
 	writer io.WriteCloser,
 	requestIdent []byte,
 	code,

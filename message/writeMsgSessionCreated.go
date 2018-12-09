@@ -5,9 +5,9 @@ import (
 	"io"
 )
 
-// WriteMsgSessionCreated writes a session creation notification message to
+// WriteMsgNotifySessionCreated writes a session creation notification message to
 // the given writer closing it eventually
-func WriteMsgSessionCreated(
+func WriteMsgNotifySessionCreated(
 	writer io.WriteCloser,
 	sessionInfo []byte,
 ) error {

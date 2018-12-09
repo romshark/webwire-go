@@ -118,61 +118,61 @@ const (
 const (
 	// SERVER
 
-	// MsgErrorReply is sent by the server
-	// and represents an error-reply to a previously sent request
-	MsgErrorReply = byte(0)
+	// MsgReplyError is a request reply sent only by the server and represents
+	// an error-reply to a previously sent request
+	MsgReplyError = byte(0)
 
-	// MsgReplyShutdown is sent by the server when a request is received
-	// during server shutdown and can't therefore be processed
+	// MsgReplyShutdown is a request reply sent only by the server when a
+	// request is received during server shutdown and can't therefore be
+	// processed
 	MsgReplyShutdown = byte(1)
 
-	// MsgInternalError is sent by the server if an unexpected internal error
-	// arose during the processing of a request
-	MsgInternalError = byte(2)
+	// MsgReplyInternalError is a request reply sent only by the server if an
+	// unexpected internal error arose during the processing of a request
+	MsgReplyInternalError = byte(2)
 
-	// MsgSessionNotFound is sent by the server in response to an unfulfilled
-	// session restoration request due to the session not being found
-	MsgSessionNotFound = byte(3)
+	// MsgReplySessionNotFound is a session restoration request reply sent only
+	// by the server when the requested session was not found
+	MsgReplySessionNotFound = byte(3)
 
-	// MsgMaxSessConnsReached is sent by the server in response to
-	// an authentication request when the maximum number
-	// of concurrent connections for a certain session was reached
-	MsgMaxSessConnsReached = byte(4)
+	// MsgReplyMaxSessConnsReached is session restoration request reply sent
+	// only by the server when the maximum number of concurrent connections for
+	// a the requested session was reached
+	MsgReplyMaxSessConnsReached = byte(4)
 
-	// MsgSessionsDisabled is sent by the server in response to
-	// a session restoration request
-	// if sessions are disabled for the target server
-	MsgSessionsDisabled = byte(5)
+	// MsgReplySessionsDisabled is session restoration request reply sent only
+	// by the server when sessions are disabled
+	MsgReplySessionsDisabled = byte(5)
 
-	// MsgSessionCreated is sent by the server
-	// to notify the client about the session creation
-	MsgSessionCreated = byte(21)
+	// MsgNotifySessionCreated is a notification signal sent only by the server
+	// to notify the client about the creation of a session
+	MsgNotifySessionCreated = byte(21)
 
-	// MsgSessionClosed is sent by the server
-	// to notify the client about the session destruction
-	MsgSessionClosed = byte(22)
+	// MsgNotifySessionClosed is a notification signal sent only by the server
+	// to notify the client about the closure of the currently active session
+	MsgNotifySessionClosed = byte(22)
 
-	// MsgConf is sent by the server right after the handshake and includes
-	// the server exposed configurations
-	MsgConf = byte(23)
+	// MsgAcceptConf is a connection approval push-message sent only by the
+	// server right after the handshake and includes the server configurations
+	MsgAcceptConf = byte(23)
 
 	// CLIENT
 
-	// MsgCloseSession is sent by the client
-	// and represents a request for the destruction
-	// of the currently active session
-	MsgCloseSession = byte(31)
+	// MsgDoCloseSession is session closure command sent only by the client to
+	// make the server close the currently active session
+	MsgDoCloseSession = byte(31)
 
-	// MsgRestoreSession is sent by the client
-	// to request session restoration
-	MsgRestoreSession = byte(32)
+	// MsgRequestRestoreSession is a session restoration request sent only by
+	// the client
+	MsgRequestRestoreSession = byte(32)
 
-	// MsgHeartbeat is sent by the client to acknowledge the server about the
-	// activity of the connection to prevent it from shutting the connection
+	// MsgHeartbeat is sent only by the client to acknowledge the server about
+	// the activity of the connection to prevent it from shutting the connection
 	// down on read timeout
 	MsgHeartbeat = byte(33)
 
 	// SIGNAL
+
 	// Signals are sent by both the client and the server
 	// and represents a one-way signal message that doesn't require a reply
 
@@ -212,7 +212,7 @@ const (
 	MsgReplyUtf16 = byte(193)
 )
 
-// ServerConfiguration represents the MsgConf payload data
+// ServerConfiguration represents the MsgAcceptConf payload data
 type ServerConfiguration struct {
 	MajorProtocolVersion byte
 	MinorProtocolVersion byte
@@ -229,7 +229,7 @@ type Message struct {
 	MsgName            []byte
 	MsgPayload         pld.Payload
 
-	// ServerConfiguration is only initialized for MsgConf type messages
+	// ServerConfiguration is only initialized for MsgAcceptConf type messages
 	ServerConfiguration ServerConfiguration
 
 	onClose func()
@@ -239,9 +239,9 @@ type Message struct {
 // otherwise returns false.
 func (msg *Message) RequiresReply() bool {
 	switch msg.MsgType {
-	case MsgCloseSession:
+	case MsgDoCloseSession:
 		fallthrough
-	case MsgRestoreSession:
+	case MsgRequestRestoreSession:
 		fallthrough
 	case MsgRequestBinary:
 		fallthrough

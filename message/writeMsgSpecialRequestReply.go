@@ -14,12 +14,12 @@ func WriteMsgSpecialRequestReply(
 ) error {
 	msgType := msgTypeReplyInternalError
 	switch reqType {
-	case MsgInternalError:
-	case MsgMaxSessConnsReached:
+	case MsgReplyInternalError:
+	case MsgReplyMaxSessConnsReached:
 		msgType = msgTypeReplyMaxSessConnsReached
-	case MsgSessionNotFound:
+	case MsgReplySessionNotFound:
 		msgType = msgTypeReplySessionNotFound
-	case MsgSessionsDisabled:
+	case MsgReplySessionsDisabled:
 		msgType = msgTypeSessionsDisabled
 	case MsgReplyShutdown:
 		msgType = msgTypeReplyShutdown

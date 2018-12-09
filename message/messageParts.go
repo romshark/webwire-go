@@ -1,30 +1,30 @@
 package message
 
 var msgTypeHeartbeat = []byte{MsgHeartbeat}
-var msgTypeSessionCreated = []byte{MsgSessionCreated}
-var msgTypeSessionClosed = []byte{MsgSessionClosed}
+var msgTypeSessionCreated = []byte{MsgNotifySessionCreated}
+var msgTypeSessionClosed = []byte{MsgNotifySessionClosed}
 
 var msgTypeSignalBinary = []byte{MsgSignalBinary}
 var msgTypeSignalUtf8 = []byte{MsgSignalUtf8}
 var msgTypeSignalUtf16 = []byte{MsgSignalUtf16}
 
-var msgTypeRequestCloseSession = []byte{MsgCloseSession}
-var msgTypeRequestRestoreSession = []byte{MsgRestoreSession}
+var msgTypeRequestCloseSession = []byte{MsgDoCloseSession}
+var msgTypeRequestRestoreSession = []byte{MsgRequestRestoreSession}
 
 var msgTypeRequestBinary = []byte{MsgRequestBinary}
 var msgTypeRequestUtf8 = []byte{MsgRequestUtf8}
 var msgTypeRequestUtf16 = []byte{MsgRequestUtf16}
 
-var msgTypeReplyError = []byte{MsgErrorReply}
+var msgTypeReplyError = []byte{MsgReplyError}
 
 var msgTypeReplyBinary = []byte{MsgReplyBinary}
 var msgTypeReplyUtf8 = []byte{MsgReplyUtf8}
 var msgTypeReplyUtf16 = []byte{MsgReplyUtf16}
 
-var msgTypeReplyInternalError = []byte{MsgInternalError}
-var msgTypeReplyMaxSessConnsReached = []byte{MsgMaxSessConnsReached}
-var msgTypeReplySessionNotFound = []byte{MsgSessionNotFound}
-var msgTypeSessionsDisabled = []byte{MsgSessionsDisabled}
+var msgTypeReplyInternalError = []byte{MsgReplyInternalError}
+var msgTypeReplyMaxSessConnsReached = []byte{MsgReplyMaxSessConnsReached}
+var msgTypeReplySessionNotFound = []byte{MsgReplySessionNotFound}
+var msgTypeSessionsDisabled = []byte{MsgReplySessionsDisabled}
 var msgTypeReplyShutdown = []byte{MsgReplyShutdown}
 
 var msgHeaderPadding = []byte{0}

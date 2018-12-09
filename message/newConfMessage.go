@@ -11,7 +11,7 @@ import (
 func NewConfMessage(conf ServerConfiguration) ([]byte, error) {
 	buf := make([]byte, 11)
 
-	buf[0] = byte(MsgConf)
+	buf[0] = byte(MsgAcceptConf)
 	buf[1] = byte(conf.MajorProtocolVersion)
 	buf[2] = byte(conf.MinorProtocolVersion)
 

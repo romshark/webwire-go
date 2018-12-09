@@ -37,7 +37,7 @@ func TestSessionNotFound(t *testing.T) {
 
 	// Skip manual connection establishment and rely on autoconnect instead
 	reply := requestRestoreSession(t, sock, []byte("inexistentkey"))
-	require.Equal(t, message.MsgSessionNotFound, reply.MsgType)
+	require.Equal(t, message.MsgReplySessionNotFound, reply.MsgType)
 
 	lookupTriggered.Wait()
 }

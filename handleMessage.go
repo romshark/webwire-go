@@ -45,9 +45,9 @@ func (srv *server) handleMessage(
 			srv.handleRequest(con, msg)
 		}
 
-	case message.MsgRestoreSession:
+	case message.MsgRequestRestoreSession:
 		srv.handleSessionRestore(con, msg)
-	case message.MsgCloseSession:
+	case message.MsgDoCloseSession:
 		srv.handleSessionClosure(con, msg)
 
 	default:

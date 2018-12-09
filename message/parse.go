@@ -19,7 +19,7 @@ func (msg *Message) parse() (parsedMsgType bool, err error) {
 	switch msgType {
 
 	// Server Configuration
-	case MsgConf:
+	case MsgAcceptConf:
 		err = msg.parseConf()
 
 	// Heartbeat
@@ -27,19 +27,19 @@ func (msg *Message) parse() (parsedMsgType bool, err error) {
 		err = msg.parseHeartbeat()
 
 	// Request error reply message
-	case MsgErrorReply:
+	case MsgReplyError:
 		err = msg.parseErrorReply()
 
 	// Session creation notification message
-	case MsgSessionCreated:
+	case MsgNotifySessionCreated:
 		err = msg.parseSessionCreated()
 
 	// Session closure notification message
-	case MsgSessionClosed:
+	case MsgNotifySessionClosed:
 		err = msg.parseSessionClosed()
 
 	// Session destruction request message
-	case MsgCloseSession:
+	case MsgDoCloseSession:
 		err = msg.parseCloseSession()
 
 	// Signal messages
@@ -76,19 +76,19 @@ func (msg *Message) parse() (parsedMsgType bool, err error) {
 		err = msg.parseReplyUtf16()
 
 	// Session restoration request message
-	case MsgRestoreSession:
+	case MsgRequestRestoreSession:
 		err = msg.parseRestoreSession()
 
 	// Special reply messages
 	case MsgReplyShutdown:
 		err = msg.parseSpecialReplyMessage()
-	case MsgInternalError:
+	case MsgReplyInternalError:
 		err = msg.parseSpecialReplyMessage()
-	case MsgSessionNotFound:
+	case MsgReplySessionNotFound:
 		err = msg.parseSpecialReplyMessage()
-	case MsgMaxSessConnsReached:
+	case MsgReplyMaxSessConnsReached:
 		err = msg.parseSpecialReplyMessage()
-	case MsgSessionsDisabled:
+	case MsgReplySessionsDisabled:
 		err = msg.parseSpecialReplyMessage()
 
 	// Ignore messages of invalid message type

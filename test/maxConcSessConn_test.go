@@ -59,5 +59,5 @@ func TestMaxConcSessConn(t *testing.T) {
 	// Try to restore the session one more time and expect this request to fail
 	// due to reached limit
 	reply := requestRestoreSession(t, superfluousClient, []byte(sessionKey))
-	require.Equal(t, message.MsgMaxSessConnsReached, reply.MsgType)
+	require.Equal(t, message.MsgReplyMaxSessConnsReached, reply.MsgType)
 }

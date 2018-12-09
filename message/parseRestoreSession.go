@@ -6,7 +6,7 @@ import (
 	pld "github.com/qbeon/webwire-go/payload"
 )
 
-// parseRestoreSession parses MsgRestoreSession messages
+// parseRestoreSession parses MsgRequestRestoreSession messages
 func (msg *Message) parseRestoreSession() error {
 	if msg.MsgBuffer.len < MsgMinLenRestoreSession {
 		return errors.New(

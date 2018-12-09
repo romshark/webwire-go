@@ -37,7 +37,7 @@ func TestErrRequestor(t *testing.T) {
 	sock, _ := setup.NewClientSocket()
 
 	rep := request(t, sock, 192, []byte("r"), payload.Payload{})
-	require.Equal(t, message.MsgErrorReply, rep.MsgType)
+	require.Equal(t, message.MsgReplyError, rep.MsgType)
 	require.Equal(t, []byte("SAMPLE_ERROR"), rep.MsgName)
 	require.Equal(t, payload.Binary, rep.MsgPayload.Encoding)
 	require.Equal(t, []byte("Sample error message"), rep.MsgPayload.Data)

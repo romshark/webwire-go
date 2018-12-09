@@ -6,7 +6,7 @@ import (
 	pld "github.com/qbeon/webwire-go/payload"
 )
 
-// parseSessionCreated parses MsgSessionCreated messages
+// parseSessionCreated parses MsgNotifySessionCreated messages
 func (msg *Message) parseSessionCreated() error {
 	if msg.MsgBuffer.len < MsgMinLenSessionCreated {
 		return errors.New(

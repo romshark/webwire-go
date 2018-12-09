@@ -16,7 +16,7 @@ func TestMsgParseInvalidSessionClosedTooLong(t *testing.T) {
 	lenTooLong := MsgMinLenSessionClosed + 1
 	invalidMessage := make([]byte, lenTooLong)
 
-	invalidMessage[0] = MsgSessionClosed
+	invalidMessage[0] = MsgNotifySessionClosed
 
 	_, err := tryParse(t, invalidMessage)
 	require.Error(t,

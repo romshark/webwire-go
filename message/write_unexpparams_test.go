@@ -137,11 +137,11 @@ func TestWriteMsgSigInvalidCharsetAboveAscii126(t *testing.T) {
 // WriteMsgSpecialRequestReply with non-special reply message types
 func TestWriteMsgSpecialRequestReplyInvalidType(t *testing.T) {
 	allTypes := []byte{
-		MsgErrorReply,
-		MsgSessionCreated,
-		MsgSessionClosed,
-		MsgCloseSession,
-		MsgRestoreSession,
+		MsgReplyError,
+		MsgNotifySessionCreated,
+		MsgNotifySessionClosed,
+		MsgDoCloseSession,
+		MsgRequestRestoreSession,
 		MsgSignalBinary,
 		MsgSignalUtf8,
 		MsgSignalUtf16,
@@ -165,11 +165,11 @@ func TestWriteMsgSpecialRequestReplyInvalidType(t *testing.T) {
 	}
 }
 
-// TestWriteMsgErrorReplyNoCode tests WriteMsgErrorReply
+// TestWriteMsgReplyErrorNoCode tests WriteMsgReplyError
 // with no error code which is invalid.
-func TestWriteMsgErrorReplyNoCode(t *testing.T) {
+func TestWriteMsgReplyErrorNoCode(t *testing.T) {
 	writer := &testWriter{}
-	require.Error(t, WriteMsgErrorReply(
+	require.Error(t, WriteMsgReplyError(
 		writer,
 		genRndMsgIdentifier(),
 		[]byte(""),
@@ -180,16 +180,16 @@ func TestWriteMsgErrorReplyNoCode(t *testing.T) {
 	require.Nil(t, writer.buf)
 }
 
-// TestWriteMsgErrorReplyCodeTooLong tests WriteMsgErrorReply
+// TestWriteMsgReplyErrorCodeTooLong tests WriteMsgReplyError
 // with an error code that's surpassing the 255 character limit.
-func TestWriteMsgErrorReplyCodeTooLong(t *testing.T) {
+func TestWriteMsgReplyErrorCodeTooLong(t *testing.T) {
 	tooLongCode := make([]byte, 256)
 	for i := 0; i < 256; i++ {
 		tooLongCode[i] = 'a'
 	}
 
 	writer := &testWriter{}
-	require.Error(t, WriteMsgErrorReply(
+	require.Error(t, WriteMsgReplyError(
 		writer,
 		genRndMsgIdentifier(),
 		tooLongCode,
@@ -200,16 +200,16 @@ func TestWriteMsgErrorReplyCodeTooLong(t *testing.T) {
 	require.Nil(t, writer.buf)
 }
 
-// TestWriteMsgErrorReplyCodeCharsetBelowAscii32 tests WriteMsgErrorReply
+// TestWriteMsgReplyErrorCodeCharsetBelowAscii32 tests WriteMsgReplyError
 // with an invalid character input below the ASCII 7 bit 32nd character
-func TestWriteMsgErrorReplyCodeCharsetBelowAscii32(t *testing.T) {
+func TestWriteMsgReplyErrorCodeCharsetBelowAscii32(t *testing.T) {
 	// Generate invalid error code using a character
 	// below the ASCII 7 bit 32nd character
 	invalidCodeBytes := make([]byte, 1)
 	invalidCodeBytes[0] = byte(31)
 
 	writer := &testWriter{}
-	require.Error(t, WriteMsgErrorReply(
+	require.Error(t, WriteMsgReplyError(
 		writer,
 		genRndMsgIdentifier(),
 		invalidCodeBytes,
@@ -220,17 +220,17 @@ func TestWriteMsgErrorReplyCodeCharsetBelowAscii32(t *testing.T) {
 	require.Nil(t, writer.buf)
 }
 
-// TestWriteMsgErrorReplyCodeCharsetAboveAscii126 tests
-// WriteMsgErrorReply with an invalid character input
+// TestWriteMsgReplyErrorCodeCharsetAboveAscii126 tests
+// WriteMsgReplyError with an invalid character input
 // above the ASCII 7 bit 126th character
-func TestWriteMsgErrorReplyCodeCharsetAboveAscii126(t *testing.T) {
+func TestWriteMsgReplyErrorCodeCharsetAboveAscii126(t *testing.T) {
 	// Generate invalid error code using a character
 	// above the ASCII 7 bit 126th character
 	invalidCodeBytes := make([]byte, 1)
 	invalidCodeBytes[0] = byte(127)
 
 	writer := &testWriter{}
-	require.Error(t, WriteMsgErrorReply(
+	require.Error(t, WriteMsgReplyError(
 		writer,
 		genRndMsgIdentifier(),
 		invalidCodeBytes,

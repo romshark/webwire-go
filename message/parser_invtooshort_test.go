@@ -97,7 +97,7 @@ func TestMsgParseInvalidRestrSessReqTooShort(t *testing.T) {
 	lenTooShort := MsgMinLenRestoreSession - 1
 	invalidMessage := make([]byte, lenTooShort)
 
-	invalidMessage[0] = MsgRestoreSession
+	invalidMessage[0] = MsgRequestRestoreSession
 
 	_, err := tryParse(t, invalidMessage)
 	require.Error(t,
@@ -115,7 +115,7 @@ func TestMsgParseInvalidSessCloseReqTooShort(t *testing.T) {
 	lenTooShort := MsgMinLenCloseSession - 1
 	invalidMessage := make([]byte, lenTooShort)
 
-	invalidMessage[0] = MsgCloseSession
+	invalidMessage[0] = MsgDoCloseSession
 
 	_, err := tryParse(t, invalidMessage)
 	require.Error(t,
@@ -133,7 +133,7 @@ func TestMsgParseInvalidSessCreatedSigTooShort(t *testing.T) {
 	lenTooShort := MsgMinLenSessionCreated - 1
 	invalidMessage := make([]byte, lenTooShort)
 
-	invalidMessage[0] = MsgSessionCreated
+	invalidMessage[0] = MsgNotifySessionCreated
 
 	_, err := tryParse(t, invalidMessage)
 	require.Error(t,
@@ -183,7 +183,7 @@ func TestMsgParseInvalidErrorReplyTooShort(t *testing.T) {
 	lenTooShort := MsgMinLenErrorReply - 1
 	invalidMessage := make([]byte, lenTooShort)
 
-	invalidMessage[0] = MsgErrorReply
+	invalidMessage[0] = MsgReplyError
 
 	_, err := tryParse(t, invalidMessage)
 	require.Error(t,
@@ -200,7 +200,7 @@ func TestMsgParseInvalidSpecialReplyTooShort(t *testing.T) {
 	invalidMessage := make([]byte, 8)
 
 	// Internal error is a special reply message type
-	invalidMessage[0] = MsgInternalError
+	invalidMessage[0] = MsgReplyInternalError
 
 	_, err := tryParse(t, invalidMessage)
 	require.Error(t,

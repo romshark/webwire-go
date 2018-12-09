@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-// parseConf parses MsgConf messages
+// parseConf parses MsgAcceptConf messages
 func (msg *Message) parseConf() error {
 	if msg.MsgBuffer.len < MsgMinLenConf {
 		return errors.New("invalid msg length, too short")

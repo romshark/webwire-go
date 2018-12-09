@@ -19,7 +19,7 @@ func TestMsgParseCloseSessReq(t *testing.T) {
 
 	// Compose encoded message
 	// Add type flag
-	encoded := []byte{MsgCloseSession}
+	encoded := []byte{MsgDoCloseSession}
 	// Add identifier
 	encoded = append(encoded, id[:]...)
 
@@ -28,7 +28,7 @@ func TestMsgParseCloseSessReq(t *testing.T) {
 
 	// Compare
 	require.NotNil(t, actual.MsgBuffer)
-	require.Equal(t, MsgCloseSession, actual.MsgType)
+	require.Equal(t, MsgDoCloseSession, actual.MsgType)
 	require.Equal(t, id, actual.MsgIdentifier[:])
 	require.Equal(t, id, actual.MsgIdentifierBytes)
 	require.Nil(t, actual.MsgName)
@@ -48,7 +48,7 @@ func TestMsgParseRestrSessReq(t *testing.T) {
 
 	// Compose encoded message
 	// Add type flag
-	encoded := []byte{MsgRestoreSession}
+	encoded := []byte{MsgRequestRestoreSession}
 	// Add identifier
 	encoded = append(encoded, id[:]...)
 	// Add session key to payload
@@ -59,7 +59,7 @@ func TestMsgParseRestrSessReq(t *testing.T) {
 
 	// Compare
 	require.NotNil(t, actual.MsgBuffer)
-	require.Equal(t, MsgRestoreSession, actual.MsgType)
+	require.Equal(t, MsgRequestRestoreSession, actual.MsgType)
 	require.Equal(t, id, actual.MsgIdentifier[:])
 	require.Equal(t, id, actual.MsgIdentifierBytes)
 	require.Nil(t, actual.MsgName)
@@ -275,7 +275,7 @@ func TestMsgParseSessCreatedSig(t *testing.T) {
 
 	// Compose encoded message
 	// Add type flag
-	encoded := []byte{MsgSessionCreated}
+	encoded := []byte{MsgNotifySessionCreated}
 	// Add session payload
 	encoded = append(encoded, payload.Data...)
 
@@ -284,7 +284,7 @@ func TestMsgParseSessCreatedSig(t *testing.T) {
 
 	// Compare
 	require.NotNil(t, actual.MsgBuffer)
-	require.Equal(t, MsgSessionCreated, actual.MsgType)
+	require.Equal(t, MsgNotifySessionCreated, actual.MsgType)
 	require.Equal(t, []byte{0, 0, 0, 0, 0, 0, 0, 0}, actual.MsgIdentifierBytes)
 	require.Equal(t, [8]byte{}, actual.MsgIdentifier)
 	require.Nil(t, actual.MsgName)
@@ -296,14 +296,14 @@ func TestMsgParseSessCreatedSig(t *testing.T) {
 func TestMsgParseSessClosedSig(t *testing.T) {
 	// Compose encoded message
 	// Add type flag
-	encoded := []byte{MsgSessionClosed}
+	encoded := []byte{MsgNotifySessionClosed}
 
 	// Parse
 	actual := tryParseNoErr(t, encoded)
 
 	// Compare
 	require.NotNil(t, actual.MsgBuffer)
-	require.Equal(t, MsgSessionClosed, actual.MsgType)
+	require.Equal(t, MsgNotifySessionClosed, actual.MsgType)
 	require.Equal(t, []byte{0, 0, 0, 0, 0, 0, 0, 0}, actual.MsgIdentifierBytes)
 	require.Equal(t, [8]byte{}, actual.MsgIdentifier)
 	require.Nil(t, actual.MsgName)
@@ -349,7 +349,7 @@ func TestMsgParseConf(t *testing.T) {
 
 	// Compare
 	require.NotNil(t, actual.MsgBuffer)
-	require.Equal(t, MsgConf, actual.MsgType)
+	require.Equal(t, MsgAcceptConf, actual.MsgType)
 	require.Equal(t, []byte{0, 0, 0, 0, 0, 0, 0, 0}, actual.MsgIdentifierBytes)
 	require.Equal(t, [8]byte{}, actual.MsgIdentifier)
 	require.Nil(t, actual.MsgName)

@@ -242,7 +242,7 @@ func requestRestoreSession(
 
 	require.NoError(t, message.WriteMsgNamelessRequest(
 		writer,
-		message.MsgRestoreSession,
+		message.MsgRequestRestoreSession,
 		[]byte{0, 0, 0, 0, 0, 0, 0, 0},
 		sessionKey,
 	))
@@ -275,7 +275,7 @@ func requestCloseSession(t *testing.T, socket wwr.Socket) *message.Message {
 
 	require.NoError(t, message.WriteMsgNamelessRequest(
 		writer,
-		message.MsgCloseSession,
+		message.MsgDoCloseSession,
 		[]byte{0, 0, 0, 0, 0, 0, 0, 0},
 		nil,
 	))
@@ -301,7 +301,7 @@ func readSessionCreated(t *testing.T, sock wwr.Socket) *message.Message {
 	// Expect session creation notification message
 	msg := message.NewMessage(1024)
 	require.Nil(t, sock.Read(msg, time.Time{}))
-	require.Equal(t, message.MsgSessionCreated, msg.MsgType)
+	require.Equal(t, message.MsgNotifySessionCreated, msg.MsgType)
 	return msg
 }
 
@@ -310,6 +310,6 @@ func readSessionClosed(t *testing.T, sock wwr.Socket) *message.Message {
 	// Expect session creation notification message
 	msg := message.NewMessage(1024)
 	require.Nil(t, sock.Read(msg, time.Time{}))
-	require.Equal(t, message.MsgSessionClosed, msg.MsgType)
+	require.Equal(t, message.MsgNotifySessionClosed, msg.MsgType)
 	return msg
 }

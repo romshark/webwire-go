@@ -4,7 +4,7 @@ import (
 	"errors"
 )
 
-// parseCloseSession parses MsgCloseSession messages
+// parseCloseSession parses MsgDoCloseSession messages
 func (msg *Message) parseCloseSession() error {
 	if msg.MsgBuffer.len != MsgMinLenCloseSession {
 		return errors.New(
