@@ -4,7 +4,7 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/qbeon/webwire-go/wwrerr"
+	wwr "github.com/qbeon/webwire-go"
 )
 
 // Buffer represents a reactive outbound buffer implementation
@@ -43,7 +43,7 @@ func (buf *Buffer) Write(p []byte) (int, error) {
 		// Buffer overflow
 		buf.reset()
 		buf.lock.Unlock()
-		return 0, wwrerr.BufferOverflowErr{}
+		return 0, wwr.BufferOverflowErr{}
 	}
 	copy(buf.buf[buf.len:], p)
 	buf.len += len(p)

@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/qbeon/webwire-go/message"
-	"github.com/qbeon/webwire-go/wwrerr"
 )
 
 // Socket defines the abstract socket implementation interface
@@ -20,7 +19,7 @@ type Socket interface {
 	// Read blocks the calling goroutine and awaits an incoming message. If
 	// deadline is 0 then Read will never timeout. In case of concurrent use
 	// Read will block until the previous call finished
-	Read(into *message.Message, deadline time.Time) wwrerr.SockReadErr
+	Read(into *message.Message, deadline time.Time) SockReadErr
 
 	// IsConnected returns true if the given socket maintains an open connection
 	// or otherwise return false

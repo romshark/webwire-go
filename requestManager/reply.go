@@ -1,7 +1,7 @@
 package requestmanager
 
 import (
-	webwire "github.com/qbeon/webwire-go"
+	"github.com/qbeon/webwire-go"
 	"github.com/qbeon/webwire-go/message"
 )
 

@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/qbeon/webwire-go/message"
-	"github.com/qbeon/webwire-go/wwrerr"
 )
 
 // handleRequest handles incoming requests
@@ -21,9 +20,9 @@ func (srv *server) handleRequest(con *connection, msg *message.Message) {
 	switch returnedErr.(type) {
 	case nil:
 		srv.fulfillMsg(con, msg, replyPayload)
-	case wwrerr.RequestErr:
+	case RequestErr:
 		srv.failMsg(con, msg, returnedErr)
-	case *wwrerr.RequestErr:
+	case *RequestErr:
 		srv.failMsg(con, msg, returnedErr)
 	default:
 		srv.errorLog.Printf(

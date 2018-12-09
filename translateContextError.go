@@ -1,4 +1,4 @@
-package wwrerr
+package webwire
 
 import (
 	"context"

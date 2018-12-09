@@ -2,7 +2,6 @@ package webwire
 
 import (
 	"github.com/qbeon/webwire-go/message"
-	"github.com/qbeon/webwire-go/wwrerr"
 )
 
 // failMsg fails the message returning an error reply
@@ -28,7 +27,7 @@ func (srv *server) failMsg(
 	}
 
 	switch err := reqErr.(type) {
-	case wwrerr.RequestErr:
+	case RequestErr:
 		if err := message.WriteMsgErrorReply(
 			writer,
 			msg.MsgIdentifierBytes,
@@ -39,7 +38,7 @@ func (srv *server) failMsg(
 			srv.errorLog.Println("couldn't write error reply message: ", err)
 			return
 		}
-	case *wwrerr.RequestErr:
+	case *RequestErr:
 		if err := message.WriteMsgErrorReply(
 			writer,
 			msg.MsgIdentifierBytes,
@@ -50,7 +49,7 @@ func (srv *server) failMsg(
 			srv.errorLog.Println("couldn't write error reply message: ", err)
 			return
 		}
-	case wwrerr.MaxSessConnsReachedErr:
+	case MaxSessConnsReachedErr:
 		if err := message.WriteMsgSpecialRequestReply(
 			writer,
 			message.MsgMaxSessConnsReached,
@@ -62,7 +61,7 @@ func (srv *server) failMsg(
 			)
 			return
 		}
-	case wwrerr.SessionNotFoundErr:
+	case SessionNotFoundErr:
 		if err := message.WriteMsgSpecialRequestReply(
 			writer,
 			message.MsgSessionNotFound,
@@ -74,7 +73,7 @@ func (srv *server) failMsg(
 			)
 			return
 		}
-	case wwrerr.SessionsDisabledErr:
+	case SessionsDisabledErr:
 		if err := message.WriteMsgSpecialRequestReply(
 			writer,
 			message.MsgSessionsDisabled,

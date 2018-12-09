@@ -11,7 +11,6 @@ import (
 
 	wwr "github.com/qbeon/webwire-go"
 	"github.com/qbeon/webwire-go/message"
-	"github.com/qbeon/webwire-go/wwrerr"
 )
 
 const statusConnected uint32 = 1
@@ -92,7 +91,7 @@ func (sock *Socket) Dial(deadline time.Time) error {
 	}
 
 	if sock.server == nil {
-		return wwrerr.DisconnectedErr{
+		return wwr.DisconnectedErr{
 			Cause: fmt.Errorf("server unreachable"),
 		}
 	}
@@ -125,7 +124,7 @@ func (sock *Socket) GetWriter() (io.WriteCloser, error) {
 	// Check connection status
 	if !sock.IsConnected() {
 		sock.writerLock.Unlock()
-		return nil, wwrerr.DisconnectedErr{
+		return nil, wwr.DisconnectedErr{
 			Cause: fmt.Errorf("can't write to a closed socket"),
 		}
 	}
@@ -164,7 +163,7 @@ func (sock *Socket) resetReader() {
 
 func (sock *Socket) readWithoutDeadline() (
 	data []byte,
-	err wwrerr.SockReadErr,
+	err wwr.SockReadErr,
 ) {
 	// Await either a message or remote/local socket closure
 	data = <-sock.getReader()
@@ -179,7 +178,7 @@ func (sock *Socket) readWithoutDeadline() (
 
 func (sock *Socket) readWithDeadline(deadline time.Time) (
 	data []byte,
-	err wwrerr.SockReadErr,
+	err wwr.SockReadErr,
 ) {
 	sock.readTimer.Reset(time.Until(deadline))
 
@@ -207,7 +206,7 @@ func (sock *Socket) readWithDeadline(deadline time.Time) (
 func (sock *Socket) Read(
 	msg *message.Message,
 	deadline time.Time,
-) (err wwrerr.SockReadErr) {
+) (err wwr.SockReadErr) {
 	// Set reader lock to ensure there's only one concurrent reader
 	sock.readLock.Lock()
 

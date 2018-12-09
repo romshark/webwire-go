@@ -3,9 +3,8 @@ package requestmanager
 import (
 	"context"
 
-	webwire "github.com/qbeon/webwire-go"
+	"github.com/qbeon/webwire-go"
 	"github.com/qbeon/webwire-go/message"
-	"github.com/qbeon/webwire-go/wwrerr"
 )
 
 // TODO: The request identifier should remain a uint64 until it's converted into
@@ -40,7 +39,7 @@ func (req *Request) AwaitReply(ctx context.Context) (webwire.Reply, error) {
 	select {
 	case <-ctx.Done():
 		req.manager.deregister(req.Identifier)
-		return nil, wwrerr.TranslateContextError(ctx.Err())
+		return nil, webwire.TranslateContextError(ctx.Err())
 
 	case rp := <-req.Reply:
 		if rp.Error != nil {
