@@ -35,17 +35,6 @@ func (srv *server) handleSessionClosure(
 	// the last connection left
 	srv.sessionRegistry.deregister(con, true)
 
-	// Synchronize session destruction to the client
-	if err := con.notifySessionClosed(); err != nil {
-		srv.failMsg(con, msg, nil)
-		finalize()
-		srv.errorLog.Printf("internal server error: "+
-			"couldn't notify client about the session destruction: %s",
-			err,
-		)
-		return
-	}
-
 	// Reset the session on the connection
 	con.setSession(nil)
 
