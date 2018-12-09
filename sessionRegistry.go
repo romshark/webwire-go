@@ -134,11 +134,17 @@ func (asr *sessionRegistry) sessionConnectionsNum(sessionKey string) int {
 // sessionConnections implements the sessionRegistry interface
 func (asr *sessionRegistry) sessionConnections(
 	sessionKey string,
-) map[*connection]struct{} {
+) []Connection {
 	asr.lock.RLock()
 	if connSet, exists := asr.registry[sessionKey]; exists {
+		list := make([]Connection, len(connSet))
+		index := 0
+		for conn := range connSet {
+			list[index] = conn
+			index++
+		}
 		asr.lock.RUnlock()
-		return connSet
+		return list
 	}
 	asr.lock.RUnlock()
 	return nil

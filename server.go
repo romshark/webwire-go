@@ -82,17 +82,7 @@ func (srv *server) SessionConnectionsNum(sessionKey string) int {
 
 // SessionConnections implements the Server interface
 func (srv *server) SessionConnections(sessionKey string) []Connection {
-	connections := srv.sessionRegistry.sessionConnections(sessionKey)
-	if connections == nil {
-		return nil
-	}
-	list := make([]Connection, len(connections))
-	i := 0
-	for connection := range connections {
-		list[i] = connection
-		i++
-	}
-	return list
+	return srv.sessionRegistry.sessionConnections(sessionKey)
 }
 
 // CloseSession implements the Server interface
@@ -110,7 +100,7 @@ func (srv *server) CloseSession(sessionKey string) (
 	affectedConnections = make([]Connection, len(connections))
 	i := 0
 	errNum := 0
-	for connection := range connections {
+	for _, connection := range connections {
 		affectedConnections[i] = connection
 		err := connection.CloseSession()
 		if err != nil {
