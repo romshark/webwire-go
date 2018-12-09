@@ -20,8 +20,8 @@ type ServerSetup struct {
 	Server    wwr.Server
 }
 
-// TestServerSetup represents a webwire server testing setup
-type TestServerSetup struct {
+// ServerSetupTest represents a webwire server testing setup
+type ServerSetupTest struct {
 	t *testing.T
 	ServerSetup
 }
@@ -74,10 +74,10 @@ func SetupTestServer(
 	impl *ServerImpl,
 	opts wwr.ServerOptions,
 	trans wwr.Transport,
-) TestServerSetup {
+) ServerSetupTest {
 	setup, err := SetupServer(impl, opts, trans)
 	require.NoError(t, err)
-	return TestServerSetup{t, setup}
+	return ServerSetupTest{t, setup}
 }
 
 // NewDisconnectedClientSocket creates a new raw disconnected client socket
@@ -129,7 +129,7 @@ func (setup *ServerSetup) NewClientSocket() (
 }
 
 // NewClientSocket creates a new raw client socket connected to the server
-func (setup *TestServerSetup) NewClientSocket() (
+func (setup *ServerSetupTest) NewClientSocket() (
 	wwr.Socket,
 	message.ServerConfiguration,
 ) {
