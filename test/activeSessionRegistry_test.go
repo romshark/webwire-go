@@ -2,11 +2,11 @@ package test
 
 import (
 	"context"
+	"sync"
 	"testing"
-	"time"
 
 	wwr "github.com/qbeon/webwire-go"
-	wwrclt "github.com/qbeon/webwire-go/client"
+	"github.com/qbeon/webwire-go/payload"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -14,85 +14,58 @@ import (
 // TestActiveSessionRegistry verifies that the session registry
 // of currently active sessions is properly updated
 func TestActiveSessionRegistry(t *testing.T) {
+	sessionCreated := sync.WaitGroup{}
+	sessionCreated.Add(1)
+	sessionClosed := sync.WaitGroup{}
+	sessionClosed.Add(1)
+
 	// Initialize webwire server
 	setup := SetupTestServer(
 		t,
 		&ServerImpl{
-			Request: func(
-				_ context.Context,
-				conn wwr.Connection,
-				msg wwr.Message,
-			) (wwr.Payload, error) {
-				// Close session on logout
-				if string(msg.Name()) == "logout" {
-					assert.NoError(t, conn.CloseSession())
-					return wwr.Payload{}, nil
-				}
-
+			ClientConnected: func(_ wwr.ConnectionOptions, c wwr.Connection) {
 				// Try to create a new session
-				err := conn.CreateSession(nil)
-				assert.NoError(t, err)
-				if err != nil {
-					return wwr.Payload{}, err
-				}
+				assert.NoError(t, c.CreateSession(nil))
+				sessionCreated.Done()
+			},
+			Signal: func(
+				_ context.Context,
+				c wwr.Connection,
+				msg wwr.Message,
+			) {
+				// Close session on logout
+				assert.NoError(t, c.CloseSession())
 
-				// Return the key of the newly created session
-				// (use default binary encoding)
-				return wwr.Payload{
-					Encoding: wwr.EncodingBinary,
-					Data:     []byte(conn.SessionKey()),
-				}, nil
+				sessionClosed.Done()
 			},
 		},
-		wwr.ServerOptions{},
+		wwr.ServerOptions{
+			SessionManager: &SessionManager{
+				SessionCreated: func(c wwr.Connection) error {
+					return nil
+				},
+			},
+		},
 		nil, // Use the default transport implementation
 	)
+
+	require.Equal(t, 0, setup.Server.ActiveSessionsNum())
 
 	// Initialize client
-	client := setup.NewClient(
-		wwrclt.Options{
-			DefaultRequestTimeout: time.Second * 2,
-		},
-		nil, // Use the default transport implementation
-		TestClientHooks{},
-	)
-	defer client.Connection.Close()
+	sock, _ := setup.NewClientSocket()
 
-	require.NoError(t, client.Connection.Connect())
+	readSessionCreated(t, sock)
 
-	// Send authentication request
-	reply, err := client.Connection.Request(
-		context.Background(),
-		[]byte("login"),
-		wwr.Payload{
-			Encoding: wwr.EncodingUtf8,
-			Data:     []byte("nothing"),
-		},
-	)
-	require.NoError(t, err)
-	reply.Close()
+	sessionCreated.Wait()
 
-	activeSessionNumberBefore := setup.Server.ActiveSessionsNum()
-	require.Equal(t,
-		1, activeSessionNumberBefore,
-		"Unexpected active session number after authentication",
-	)
+	require.Equal(t, 1, setup.Server.ActiveSessionsNum())
 
-	// Send logout request
-	reply, err = client.Connection.Request(
-		context.Background(),
-		[]byte("logout"),
-		wwr.Payload{
-			Encoding: wwr.EncodingUtf8,
-			Data:     []byte("nothing"),
-		},
-	)
-	require.NoError(t, err)
-	reply.Close()
+	// Close session
+	signal(t, sock, []byte("s"), payload.Payload{})
 
-	activeSessionNumberAfter := setup.Server.ActiveSessionsNum()
-	require.Equal(t,
-		0, activeSessionNumberAfter,
-		"Unexpected active session number after logout",
-	)
+	readSessionClosed(t, sock)
+
+	sessionClosed.Wait()
+
+	require.Equal(t, 0, setup.Server.ActiveSessionsNum())
 }

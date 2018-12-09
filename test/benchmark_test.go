@@ -3,11 +3,11 @@ package test
 import (
 	"context"
 	"log"
+	"sync"
 	"testing"
 	"time"
 
 	wwr "github.com/qbeon/webwire-go"
-	wwrclt "github.com/qbeon/webwire-go/client"
 	"github.com/qbeon/webwire-go/message"
 )
 
@@ -16,7 +16,7 @@ import (
 func BenchmarkRequestC1_P16(b *testing.B) {
 	// Preallocate the payload
 	payloadData := make([]byte, 16)
-	msg := wwr.Payload{
+	msgPayload := wwr.Payload{
 		Encoding: wwr.EncodingUtf8,
 		Data:     payloadData,
 	}
@@ -45,30 +45,34 @@ func BenchmarkRequestC1_P16(b *testing.B) {
 	}
 
 	// Initialize client
-	client, err := setup.NewClient(
-		wwrclt.Options{
-			MessageBufferSize: 1024,
-		},
-		nil, // Use the default transport implementation
-		TestClientHooks{},
-	)
+	sock, _, err := setup.NewClientSocket()
 	if err != nil {
-		log.Fatalf("couldn't setup client: %s", err)
-	}
-
-	// Ensure the client is connected
-	if err := client.Connection.Connect(); err != nil {
 		panic(err)
 	}
+	ident := []byte{0, 0, 0, 0, 0, 0, 0, 0}
+	reply := message.NewMessage(32)
 
 	b.ResetTimer()
-
 	for n := 0; n < b.N; n++ {
-		reply, err := client.Connection.Request(context.Background(), nil, msg)
+		// Write request
+		writer, err := sock.GetWriter()
 		if err != nil {
 			panic(err)
 		}
-		reply.Close()
+
+		message.WriteMsgRequest(
+			writer,
+			ident,
+			nil, // No name
+			msgPayload.Encoding,
+			msgPayload.Data,
+			false,
+		)
+
+		// Await reply
+		if err := sock.Read(reply, time.Time{}); err != nil {
+			panic(err)
+		}
 	}
 }
 
@@ -77,7 +81,7 @@ func BenchmarkRequestC1_P16(b *testing.B) {
 func BenchmarkRequestC1_P1K(b *testing.B) {
 	// Preallocate the payload
 	payloadData := make([]byte, 1024)
-	msg := wwr.Payload{
+	msgPayload := wwr.Payload{
 		Encoding: wwr.EncodingUtf8,
 		Data:     payloadData,
 	}
@@ -106,30 +110,34 @@ func BenchmarkRequestC1_P1K(b *testing.B) {
 	}
 
 	// Initialize client
-	client, err := setup.NewClient(
-		wwrclt.Options{
-			MessageBufferSize: 2048,
-		},
-		nil, // Use the default transport implementation
-		TestClientHooks{},
-	)
+	sock, _, err := setup.NewClientSocket()
 	if err != nil {
-		log.Fatalf("couldn't setup client: %s", err)
-	}
-
-	// Ensure the client is connected
-	if err := client.Connection.Connect(); err != nil {
 		panic(err)
 	}
+	ident := []byte{0, 0, 0, 0, 0, 0, 0, 0}
+	reply := message.NewMessage(1024 + 32)
 
 	b.ResetTimer()
-
 	for n := 0; n < b.N; n++ {
-		reply, err := client.Connection.Request(context.Background(), nil, msg)
+		// Write request
+		writer, err := sock.GetWriter()
 		if err != nil {
 			panic(err)
 		}
-		reply.Close()
+
+		message.WriteMsgRequest(
+			writer,
+			ident,
+			nil, // No name
+			msgPayload.Encoding,
+			msgPayload.Data,
+			false,
+		)
+
+		// Await reply
+		if err := sock.Read(reply, time.Time{}); err != nil {
+			panic(err)
+		}
 	}
 }
 
@@ -138,7 +146,7 @@ func BenchmarkRequestC1_P1K(b *testing.B) {
 func BenchmarkRequestC1_P1M(b *testing.B) {
 	// Preallocate the payload
 	payloadData := make([]byte, 1024*1024)
-	msg := wwr.Payload{
+	msgPayload := wwr.Payload{
 		Encoding: wwr.EncodingUtf8,
 		Data:     payloadData,
 	}
@@ -158,7 +166,7 @@ func BenchmarkRequestC1_P1M(b *testing.B) {
 			},
 		},
 		wwr.ServerOptions{
-			MessageBufferSize: 1024*1024 + 1024,
+			MessageBufferSize: 1024*1024 + 32,
 		},
 		nil, // Use default transport implementation
 	)
@@ -167,30 +175,34 @@ func BenchmarkRequestC1_P1M(b *testing.B) {
 	}
 
 	// Initialize client
-	client, err := setup.NewClient(
-		wwrclt.Options{
-			MessageBufferSize: 1024*1024 + 1024,
-		},
-		nil, // Use the default transport implementation
-		TestClientHooks{},
-	)
+	sock, _, err := setup.NewClientSocket()
 	if err != nil {
-		log.Fatalf("couldn't setup client: %s", err)
-	}
-
-	// Ensure the client is connected
-	if err := client.Connection.Connect(); err != nil {
 		panic(err)
 	}
+	ident := []byte{0, 0, 0, 0, 0, 0, 0, 0}
+	reply := message.NewMessage(1024*1024 + 32)
 
 	b.ResetTimer()
-
 	for n := 0; n < b.N; n++ {
-		reply, err := client.Connection.Request(context.Background(), nil, msg)
+		// Write request
+		writer, err := sock.GetWriter()
 		if err != nil {
 			panic(err)
 		}
-		reply.Close()
+
+		message.WriteMsgRequest(
+			writer,
+			ident,
+			nil, // No name
+			msgPayload.Encoding,
+			msgPayload.Data,
+			false,
+		)
+
+		// Await reply
+		if err := sock.Read(reply, time.Time{}); err != nil {
+			panic(err)
+		}
 	}
 }
 
@@ -200,8 +212,9 @@ func BenchmarkRequestC1K_P1K(b *testing.B) {
 	concurrentConnections := 1000
 
 	// Preallocate the payload
-	payloadData := make([]byte, 1024)
-	msg := wwr.Payload{
+	payloadSize := uint32(1024)
+	payloadData := make([]byte, payloadSize)
+	msgPayload := wwr.Payload{
 		Encoding: wwr.EncodingUtf8,
 		Data:     payloadData,
 	}
@@ -221,7 +234,7 @@ func BenchmarkRequestC1K_P1K(b *testing.B) {
 			},
 		},
 		wwr.ServerOptions{
-			MessageBufferSize: 2048,
+			MessageBufferSize: payloadSize + 32,
 		},
 		nil, // Use default transport implementation
 	)
@@ -229,41 +242,60 @@ func BenchmarkRequestC1K_P1K(b *testing.B) {
 		log.Fatalf("couldn't setup server: %s", err)
 	}
 
-	// Initialize client
-	clients := make([]*TestClient, concurrentConnections)
-	for i := 0; i < concurrentConnections; i++ {
-		client, err := setup.NewClient(
-			wwrclt.Options{
-				MessageBufferSize: 2048,
-			},
-			nil, // Use the default transport implementation
-			TestClientHooks{},
-		)
-		if err != nil {
-			log.Fatalf("couldn't setup client: %s", err)
-		}
-
-		clients[i] = client
-
-		// Ensure the client is connected
-		if err := client.Connection.Connect(); err != nil {
-			panic(err)
-		}
+	type Client struct {
+		sock  wwr.Socket
+		reply *message.Message
 	}
 
-	b.ResetTimer()
+	// Initialize clients
+	clients := make([]Client, concurrentConnections)
+	for i := 0; i < concurrentConnections; i++ {
+		sock, _, err := setup.NewClientSocket()
+		if err != nil {
+			panic(err)
+		}
+		clients[i] = Client{
+			sock:  sock,
+			reply: message.NewMessage(payloadSize + 32),
+		}
+	}
+	ident := []byte{0, 0, 0, 0, 0, 0, 0, 0}
 
+	wg := sync.WaitGroup{}
+
+	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
+		wg.Add(concurrentConnections)
 		for _, c := range clients {
 			client := c
 			go func() {
-				reply, err := client.Connection.Request(context.Background(), nil, msg)
+				// Write request
+				writer, err := client.sock.GetWriter()
 				if err != nil {
 					panic(err)
 				}
-				reply.Close()
+
+				message.WriteMsgRequest(
+					writer,
+					ident,
+					nil, // No name
+					msgPayload.Encoding,
+					msgPayload.Data,
+					false,
+				)
+
+				// Await reply
+				if err := client.sock.Read(
+					client.reply,
+					time.Time{},
+				); err != nil {
+					panic(err)
+				}
+
+				wg.Done()
 			}()
 		}
+		wg.Wait()
 	}
 }
 

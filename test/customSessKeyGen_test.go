@@ -1,42 +1,29 @@
 package test
 
 import (
-	"context"
+	"sync"
 	"testing"
-	"time"
 
 	wwr "github.com/qbeon/webwire-go"
-	wwrclt "github.com/qbeon/webwire-go/client"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 // TestCustomSessKeyGen tests custom session key generators
 func TestCustomSessKeyGen(t *testing.T) {
+	finished := sync.WaitGroup{}
+	finished.Add(1)
 	expectedSessionKey := "customkey123"
 
 	// Initialize webwire server
 	setup := SetupTestServer(
 		t,
 		&ServerImpl{
-			Request: func(
-				_ context.Context,
-				conn wwr.Connection,
-				_ wwr.Message,
-			) (wwr.Payload, error) {
+			ClientConnected: func(_ wwr.ConnectionOptions, c wwr.Connection) {
+				defer finished.Done()
+
 				// Try to create a new session
-				err := conn.CreateSession(nil)
-				assert.NoError(t, err)
-				if err != nil {
-					return wwr.Payload{}, err
-				}
-
-				key := conn.SessionKey()
-				assert.Equal(t, expectedSessionKey, key)
-
-				// Return the key of the newly created session
-				// (use default binary encoding)
-				return wwr.Payload{Data: []byte(key)}, nil
+				assert.NoError(t, c.CreateSession(nil))
+				assert.Equal(t, expectedSessionKey, c.SessionKey())
 			},
 		},
 		wwr.ServerOptions{
@@ -50,21 +37,9 @@ func TestCustomSessKeyGen(t *testing.T) {
 	)
 
 	// Initialize client
-	client := setup.NewClient(
-		wwrclt.Options{
-			DefaultRequestTimeout: 2 * time.Second,
-		},
-		nil, // Use the default transport implementation
-		TestClientHooks{},
-	)
+	sock, _ := setup.NewClientSocket()
 
-	// Send authentication request and await reply
-	_, err := client.Connection.Request(
-		context.Background(),
-		[]byte("login"),
-		wwr.Payload{Data: []byte("testdata")},
-	)
-	require.NoError(t, err)
+	readSessionCreated(t, sock)
 
-	require.Equal(t, expectedSessionKey, client.Connection.Session().Key)
+	finished.Wait()
 }

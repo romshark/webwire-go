@@ -3,21 +3,15 @@ package test
 import (
 	"context"
 	"testing"
-	"time"
 
 	wwr "github.com/qbeon/webwire-go"
-	wwrclt "github.com/qbeon/webwire-go/client"
+	"github.com/qbeon/webwire-go/payload"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 // TestRequestUtf16 tests requests with UTF16 encoded payloads
 func TestRequestUtf16(t *testing.T) {
-	testPayload := wwr.Payload{
-		Encoding: wwr.EncodingUtf16,
-		Data:     []byte{00, 115, 00, 97, 00, 109, 00, 112, 00, 108, 00, 101},
-	}
-
 	// Initialize webwire server given only the request
 	setup := SetupTestServer(
 		t,
@@ -27,15 +21,12 @@ func TestRequestUtf16(t *testing.T) {
 				_ wwr.Connection,
 				msg wwr.Message,
 			) (wwr.Payload, error) {
+				// Verify request payload
 				assert.Equal(t, wwr.EncodingUtf16, msg.PayloadEncoding())
-				assert.Equal(t, testPayload.Data, msg.Payload())
-
+				assert.Equal(t, []byte{11, 20, 31, 40, 51, 60}, msg.Payload())
 				return wwr.Payload{
 					Encoding: wwr.EncodingUtf16,
-					Data: []byte{
-						00, 115, 00, 97, 00, 109,
-						00, 112, 00, 108, 00, 101,
-					},
+					Data:     []byte{80, 91, 100, 111, 120, 131},
 				}, nil
 			},
 		},
@@ -44,30 +35,15 @@ func TestRequestUtf16(t *testing.T) {
 	)
 
 	// Initialize client
-	client := setup.NewClient(
-		wwrclt.Options{
-			DefaultRequestTimeout: 2 * time.Second,
-		},
-		nil, // Use the default transport implementation
-		TestClientHooks{},
-	)
+	sock, _ := setup.NewClientSocket()
 
 	// Send request and await reply
-	reply, err := client.Connection.Request(
-		context.Background(),
-		nil,
-		wwr.Payload{
-			Encoding: wwr.EncodingUtf16,
-			Data: []byte{
-				00, 115, 00, 97, 00, 109,
-				00, 112, 00, 108, 00, 101,
-			},
-		},
-	)
-	require.NoError(t, err)
+	reply := requestSuccess(t, sock, 32, nil, payload.Payload{
+		Encoding: wwr.EncodingUtf16,
+		Data:     []byte{11, 20, 31, 40, 51, 60},
+	})
 
 	// Verify reply
-	assert.Equal(t, wwr.EncodingUtf16, reply.PayloadEncoding())
-	assert.Equal(t, testPayload.Data, reply.Payload())
-	reply.Close()
+	require.Equal(t, wwr.EncodingUtf16, reply.MsgPayload.Encoding)
+	require.Equal(t, []byte{80, 91, 100, 111, 120, 131}, reply.Payload())
 }

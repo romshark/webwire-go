@@ -4,17 +4,17 @@ import (
 	"context"
 	"fmt"
 	"testing"
-	"time"
 
 	wwr "github.com/qbeon/webwire-go"
-	wwrclt "github.com/qbeon/webwire-go/client"
+	"github.com/qbeon/webwire-go/message"
+	"github.com/qbeon/webwire-go/payload"
 	"github.com/stretchr/testify/require"
 )
 
 // TestRequestInternalError tests returning non-ReqErr errors from the request
 // handler
 func TestRequestInternalError(t *testing.T) {
-	// Initialize webwire server given only the request
+	// Initialize server
 	setup := SetupTestServer(
 		t,
 		&ServerImpl{
@@ -24,7 +24,7 @@ func TestRequestInternalError(t *testing.T) {
 				_ wwr.Message,
 			) (wwr.Payload, error) {
 				// Fail the request by returning a non-ReqErr error
-				return wwr.Payload{}, fmt.Errorf(
+				return wwr.Payload{Data: []byte("garbage")}, fmt.Errorf(
 					"don't worry, this internal error is expected",
 				)
 			},
@@ -34,23 +34,11 @@ func TestRequestInternalError(t *testing.T) {
 	)
 
 	// Initialize client
-	client := setup.NewClient(
-		wwrclt.Options{
-			DefaultRequestTimeout: 2 * time.Second,
-		},
-		nil, // Use the default transport implementation
-		TestClientHooks{},
-	)
+	sock, _ := setup.NewClientSocket()
 
-	// Send request and await reply
-	reply, reqErr := client.Connection.Request(
-		context.Background(),
-		[]byte("test"),
-		wwr.Payload{},
-	)
-
-	// Verify returned error
-	require.Error(t, reqErr)
-	require.IsType(t, wwr.InternalErr{}, reqErr)
-	require.Nil(t, reply)
+	rep := request(t, sock, 192, []byte("r"), payload.Payload{})
+	require.Equal(t, message.MsgInternalError, rep.MsgType)
+	require.Nil(t, rep.MsgName)
+	require.Equal(t, payload.Binary, rep.MsgPayload.Encoding)
+	require.Nil(t, rep.MsgPayload.Data)
 }

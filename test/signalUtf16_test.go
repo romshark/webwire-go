@@ -4,20 +4,14 @@ import (
 	"context"
 	"sync"
 	"testing"
-	"time"
 
 	wwr "github.com/qbeon/webwire-go"
-	wwrclt "github.com/qbeon/webwire-go/client"
+	"github.com/qbeon/webwire-go/payload"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 // TestSignalUtf16 tests client-side signals with UTF16 encoded payloads
 func TestSignalUtf16(t *testing.T) {
-	testPayload := wwr.Payload{
-		Encoding: wwr.EncodingUtf16,
-		Data:     []byte{00, 115, 00, 97, 00, 109, 00, 112, 00, 108, 00, 101},
-	}
 	signalArrived := sync.WaitGroup{}
 	signalArrived.Add(1)
 
@@ -31,7 +25,10 @@ func TestSignalUtf16(t *testing.T) {
 				msg wwr.Message,
 			) {
 				assert.Equal(t, wwr.EncodingUtf16, msg.PayloadEncoding())
-				assert.Equal(t, testPayload.Data, msg.Payload())
+				assert.Equal(t, []byte{
+					00, 115, 00, 97, 00, 109,
+					00, 112, 00, 108, 00, 101,
+				}, msg.Payload())
 
 				// Synchronize, notify signal arrival
 				signalArrived.Done()
@@ -42,28 +39,15 @@ func TestSignalUtf16(t *testing.T) {
 	)
 
 	// Initialize client
-	client := setup.NewClient(
-		wwrclt.Options{
-			DefaultRequestTimeout: 2 * time.Second,
-		},
-		nil, // Use the default transport implementation
-		TestClientHooks{},
-	)
+	sock, _ := setup.NewClientSocket()
 
-	require.NoError(t, client.Connection.Connect())
-
-	// Send signal
-	require.NoError(t, client.Connection.Signal(
-		context.Background(),
-		nil,
-		wwr.Payload{
-			Encoding: wwr.EncodingUtf16,
-			Data: []byte{
-				00, 115, 00, 97, 00, 109,
-				00, 112, 00, 108, 00, 101,
-			},
+	signal(t, sock, []byte("utf16_sig"), payload.Payload{
+		Encoding: wwr.EncodingUtf16,
+		Data: []byte{
+			00, 115, 00, 97, 00, 109,
+			00, 112, 00, 108, 00, 101,
 		},
-	))
+	})
 
 	// Synchronize, await signal arrival
 	signalArrived.Wait()

@@ -3,12 +3,10 @@ package test
 import (
 	"context"
 	"testing"
-	"time"
 
-	webwire "github.com/qbeon/webwire-go"
-	webwireClient "github.com/qbeon/webwire-go/client"
+	wwr "github.com/qbeon/webwire-go"
+	"github.com/qbeon/webwire-go/payload"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 // TestRequestNameOnly tests named requests without a payload
@@ -19,62 +17,40 @@ func TestRequestNameOnly(t *testing.T) {
 		&ServerImpl{
 			Request: func(
 				_ context.Context,
-				_ webwire.Connection,
-				msg webwire.Message,
-			) (webwire.Payload, error) {
+				_ wwr.Connection,
+				msg wwr.Message,
+			) (wwr.Payload, error) {
 				// Expect a named request
-				msgName := msg.Name()
-				assert.Equal(t, []byte("n"), msgName)
+				assert.Equal(t, []byte("name"), msg.Name())
 
 				// Expect no payload to arrive
-				assert.Len(t, msg.Payload(), 0)
+				assert.Equal(t, 0, len(msg.Payload()))
 
-				return webwire.Payload{}, nil
+				switch msg.PayloadEncoding() {
+				case wwr.EncodingUtf8:
+					return wwr.Payload{Encoding: wwr.EncodingUtf8}, nil
+				case wwr.EncodingUtf16:
+					return wwr.Payload{Encoding: wwr.EncodingUtf16}, nil
+				}
+				return wwr.Payload{}, nil
 			},
 		},
-		webwire.ServerOptions{},
+		wwr.ServerOptions{},
 		nil, // Use the default transport implementation
 	)
 
 	// Initialize client
-	client := setup.NewClient(
-		webwireClient.Options{
-			DefaultRequestTimeout: 2 * time.Second,
-		},
-		nil, // Use the default transport implementation
-		TestClientHooks{},
-	)
+	sock, _ := setup.NewClientSocket()
 
-	// Send a named binary request without a payload and await reply
-	_, err := client.Connection.Request(
-		context.Background(),
-		[]byte("n"),
-		webwire.Payload{
-			Encoding: webwire.EncodingBinary,
-			Data:     nil,
-		},
-	)
-	require.NoError(t, err)
+	requestSuccess(t, sock, 32, []byte("name"), payload.Payload{})
 
 	// Send a named UTF8 encoded request without a payload and await reply
-	_, err = client.Connection.Request(
-		context.Background(),
-		[]byte("n"),
-		webwire.Payload{
-			Encoding: webwire.EncodingUtf8,
-			Data:     nil,
-		},
-	)
-	require.NoError(t, err)
+	requestSuccess(t, sock, 32, []byte("name"), payload.Payload{
+		Encoding: payload.Utf8,
+	})
 
 	// Send a UTF16 encoded named binary request without a payload
-	_, err = client.Connection.Request(
-		context.Background(),
-		[]byte("n"),
-		webwire.Payload{
-			Encoding: webwire.EncodingUtf16,
-			Data:     nil,
-		},
-	)
-	require.NoError(t, err)
+	requestSuccess(t, sock, 32, []byte("name"), payload.Payload{
+		Encoding: payload.Utf16,
+	})
 }

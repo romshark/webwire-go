@@ -1,36 +1,34 @@
 package test
 
 import (
+	"sync"
 	"testing"
-	"time"
 
 	wwr "github.com/qbeon/webwire-go"
-	wwrclt "github.com/qbeon/webwire-go/client"
 	"github.com/stretchr/testify/assert"
 )
 
-// TestConnSessionNoOverride tests overriding of a connection session
+// TestSessionNoOverride tests overriding of a connection session
 // expecting it to fail
-func TestConnSessionNoOverride(t *testing.T) {
-	// TODO: fix test, wait for the server to finish OnClientConnected before
-	// returning from the test function
+func TestSessionNoOverride(t *testing.T) {
+	finished := sync.WaitGroup{}
+	finished.Add(1)
 
 	// Initialize server
 	setup := SetupTestServer(
 		t,
 		&ServerImpl{
-			ClientConnected: func(
-				_ wwr.ConnectionOptions,
-				conn wwr.Connection,
-			) {
-				assert.NoError(t, conn.CreateSession(nil))
-				sessionKey := conn.SessionKey()
+			ClientConnected: func(_ wwr.ConnectionOptions, c wwr.Connection) {
+				defer finished.Done()
+
+				assert.NoError(t, c.CreateSession(nil))
+				sessionKey := c.SessionKey()
 
 				// Try to override the previous session
-				assert.Error(t, conn.CreateSession(nil))
+				assert.Error(t, c.CreateSession(nil))
 
 				// Ensure the session didn't change
-				assert.Equal(t, sessionKey, conn.SessionKey())
+				assert.Equal(t, sessionKey, c.SessionKey())
 			},
 		},
 		wwr.ServerOptions{},
@@ -38,11 +36,9 @@ func TestConnSessionNoOverride(t *testing.T) {
 	)
 
 	// Initialize client
-	setup.NewClient(
-		wwrclt.Options{
-			DefaultRequestTimeout: 2 * time.Second,
-		},
-		nil, // Use the default transport implementation
-		TestClientHooks{},
-	)
+	sock, _ := setup.NewClientSocket()
+
+	readSessionCreated(t, sock)
+
+	finished.Wait()
 }

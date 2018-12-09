@@ -17,7 +17,7 @@ type session struct {
 // inMemSessManager is a default in-memory session manager for testing purposes
 type inMemSessManager struct {
 	sessions map[string]session
-	lock     sync.Mutex
+	lock     *sync.Mutex
 }
 
 // newInMemSessManager constructs a new default session manager instance
@@ -25,7 +25,7 @@ type inMemSessManager struct {
 func newInMemSessManager() *inMemSessManager {
 	return &inMemSessManager{
 		sessions: make(map[string]session),
-		lock:     sync.Mutex{},
+		lock:     &sync.Mutex{},
 	}
 }
 
@@ -33,6 +33,7 @@ func newInMemSessManager() *inMemSessManager {
 // It writes the created session into a file using the session key as file name
 func (mng *inMemSessManager) OnSessionCreated(conn wwr.Connection) error {
 	mng.lock.Lock()
+	defer mng.lock.Unlock()
 	sess := conn.Session()
 	var sessInfo wwr.SessionInfo
 	if sess.Info != nil {
@@ -43,7 +44,6 @@ func (mng *inMemSessManager) OnSessionCreated(conn wwr.Connection) error {
 		Creation: sess.Creation,
 		Info:     sessInfo,
 	}
-	mng.lock.Unlock()
 	return nil
 }
 
@@ -54,13 +54,13 @@ func (mng *inMemSessManager) OnSessionLookup(key string) (
 	error,
 ) {
 	mng.lock.Lock()
+	defer mng.lock.Unlock()
 	if session, exists := mng.sessions[key]; exists {
 		// Update last lookup field
 		session.LastLookup = time.Now().UTC()
 		mng.sessions[key] = session
 
 		// Session found
-		mng.lock.Unlock()
 		return wwr.NewSessionLookupResult(
 			session.Creation,                      // Creation
 			session.LastLookup,                    // LastLookup
@@ -69,7 +69,6 @@ func (mng *inMemSessManager) OnSessionLookup(key string) (
 	}
 
 	// Session not found
-	mng.lock.Unlock()
 	return nil, nil
 }
 
@@ -77,8 +76,8 @@ func (mng *inMemSessManager) OnSessionLookup(key string) (
 // It closes the session by deleting the according session file
 func (mng *inMemSessManager) OnSessionClosed(sessionKey string) error {
 	mng.lock.Lock()
+	defer mng.lock.Unlock()
 	delete(mng.sessions, sessionKey)
-	mng.lock.Unlock()
 	return nil
 }
 

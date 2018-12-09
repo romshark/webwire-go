@@ -6,10 +6,12 @@ import (
 	"testing"
 	"time"
 
-	wwr "github.com/qbeon/webwire-go"
-	wwrclt "github.com/qbeon/webwire-go/client"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	wwr "github.com/qbeon/webwire-go"
+	"github.com/qbeon/webwire-go/message"
+	"github.com/qbeon/webwire-go/payload"
+	"github.com/stretchr/testify/assert"
 )
 
 // TestGracefulShutdown tests the ability of the server to delay shutdown
@@ -23,10 +25,12 @@ import (
 // LATE CONN:    |||------->|------------------- (must be rejected)
 // LATE REQ:     ||||------->|------------------ (must be rejected)
 func TestGracefulShutdown(t *testing.T) {
-	expectedReqReply := []byte("i_finished")
-	handlerExecutionDuration := 100 * time.Millisecond
-	firstReqAndSigSent := sync.WaitGroup{}
-	firstReqAndSigSent.Add(2)
+	releaseReqHandler := sync.WaitGroup{}
+	releaseReqHandler.Add(1)
+	releaseSigHandler := sync.WaitGroup{}
+	releaseSigHandler.Add(1)
+	firstReqAndSigReceived := sync.WaitGroup{}
+	firstReqAndSigReceived.Add(2)
 	serverShuttingDown := sync.WaitGroup{}
 	serverShuttingDown.Add(1)
 	handlersFinished := sync.WaitGroup{}
@@ -43,23 +47,26 @@ func TestGracefulShutdown(t *testing.T) {
 				_ wwr.Connection,
 				msg wwr.Message,
 			) {
+				defer handlersFinished.Done()
+
 				if string(msg.Name()) == "1" {
-					firstReqAndSigSent.Done()
+					firstReqAndSigReceived.Done()
 				}
 				// Sleep after the first signal was marked as done
-				time.Sleep(handlerExecutionDuration)
-				handlersFinished.Done()
+				releaseSigHandler.Wait()
 			},
 			Request: func(
 				_ context.Context,
 				_ wwr.Connection,
 				msg wwr.Message,
 			) (wwr.Payload, error) {
+				defer handlersFinished.Done()
+
 				if string(msg.Name()) == "1" {
-					firstReqAndSigSent.Done()
+					firstReqAndSigReceived.Done()
 				}
-				time.Sleep(handlerExecutionDuration)
-				return wwr.Payload{Data: expectedReqReply}, nil
+				releaseReqHandler.Wait()
+				return wwr.Payload{}, nil
 			},
 		},
 		wwr.ServerOptions{},
@@ -70,59 +77,22 @@ func TestGracefulShutdown(t *testing.T) {
 	// the request and the late request and conn
 	// to avoid serializing them because every client
 	// is handled in a separate goroutine
-	cltOpts := wwrclt.Options{
-		DefaultRequestTimeout: 5 * time.Second,
-		Autoconnect:           wwr.Disabled,
-	}
-	clientSig := setup.NewClient(
-		cltOpts,
-		nil, // Use the default transport implementation
-		TestClientHooks{},
-	)
-	clientReq := setup.NewClient(
-		cltOpts,
-		nil, // Use the default transport implementation
-		TestClientHooks{},
-	)
-	clientLateReq := setup.NewClient(
-		cltOpts,
-		nil, // Use the default transport implementation
-		TestClientHooks{},
-	)
-
-	require.NoError(t, clientSig.Connection.Connect())
-	require.NoError(t, clientReq.Connection.Connect())
-	require.NoError(t, clientLateReq.Connection.Connect())
+	clientSig, _ := setup.NewClientSocket()
+	clientReq, _ := setup.NewClientSocket()
+	clientLateReq, _ := setup.NewClientSocket()
 
 	// Disable autoconnect for the late client to enable immediate errors
-	clientLateConn := setup.NewClient(
-		wwrclt.Options{
-			Autoconnect: wwr.Disabled,
-		},
-		nil, // Use the default transport implementation
-		TestClientHooks{},
-	)
+	clientLateConn, err := setup.NewDisconnectedClientSocket()
+	require.NoError(t, err)
 
 	// Send signal and request in another parallel goroutine
 	// to avoid blocking the main test goroutine when awaiting the request reply
 	go func() {
 		// (SIGNAL)
-		assert.NoError(t, clientSig.Connection.Signal(
-			context.Background(),
-			[]byte("1"),
-			wwr.Payload{Data: []byte("test")},
-		))
+		signal(t, clientSig, []byte("1"), payload.Payload{})
 
 		// (REQUEST)
-		rep, err := clientReq.Connection.Request(
-			context.Background(),
-			[]byte("1"),
-			wwr.Payload{Data: []byte("test")},
-		)
-		assert.NoError(t, err)
-		assert.Equal(t, string(rep.Payload()), string(expectedReqReply))
-		handlersFinished.Done()
-		rep.Close()
+		requestSuccess(t, clientReq, 32, []byte("1"), payload.Payload{})
 	}()
 
 	// Request server shutdown in another parallel goroutine
@@ -131,11 +101,16 @@ func TestGracefulShutdown(t *testing.T) {
 	go func() {
 		// Wait for the signal and request to arrive and get handled,
 		// then request the shutdown
-		firstReqAndSigSent.Wait()
+		firstReqAndSigReceived.Wait()
 
-		// (SRV SHUTDWN)
-		serverShuttingDown.Done()
+		// Wait a little before claming that the server is shutting down
+		time.AfterFunc(50*time.Millisecond, func() {
+			serverShuttingDown.Done()
+		})
+
+		// (SRV SHUTDOWN)
 		setup.Server.Shutdown()
+
 		serverShutDown.Done()
 	}()
 
@@ -148,35 +123,24 @@ func TestGracefulShutdown(t *testing.T) {
 
 		// Verify connection establishment during shutdown (LATE CONN)
 		assert.Error(t,
-			clientLateConn.Connection.Connect(),
+			clientLateConn.Dial(time.Time{}),
 			"Expected late connection to be rejected, "+
 				"though it still was accepted",
 		)
 
 		// Verify request rejection during shutdown (LATE REQ)
-		_, lateReqErr := clientLateReq.Connection.Request(
-			context.Background(),
-			nil,
-			wwr.Payload{Data: []byte("test")},
-		)
-		switch err := lateReqErr.(type) {
-		case wwr.ServerShutdownErr:
-			break
-		case wwr.RequestErr:
-			t.Errorf("Expected special server shutdown error, "+
-				"got regular request error: %s",
-				err,
-			)
-		default:
-			t.Errorf("Expected request during shutdown to be rejected " +
-				"with special error type",
-			)
-		}
+		rep := request(t, clientLateReq, 32, []byte("r"), payload.Payload{})
+		assert.Equal(t, message.MsgReplyShutdown, rep.MsgType)
+		assert.Nil(t, rep.MsgPayload.Data)
+
+		// Release the handlers to allow the server to finally shutdown
+		releaseSigHandler.Done()
+		releaseReqHandler.Done()
 	}()
 
-	// Await server shutdown, timeout if necessary
+	// Await actual server shutdown
 	serverShutDown.Wait()
 
-	// Expect both the signal and the request to have completed properly
+	// Expect both the signal and the request handlers to have properly finished
 	handlersFinished.Wait()
 }

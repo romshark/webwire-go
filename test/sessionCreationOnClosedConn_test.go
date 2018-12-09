@@ -1,18 +1,20 @@
 package test
 
 import (
+	"sync"
 	"testing"
-	"time"
 
 	wwr "github.com/qbeon/webwire-go"
-	wwrclt "github.com/qbeon/webwire-go/client"
 	"github.com/stretchr/testify/assert"
 )
 
 // TestSessionCreationOnClosedConn tests the creation of a session on a
 // disconnected connection
 func TestSessionCreationOnClosedConn(t *testing.T) {
-	// TODO: fix test, wait for the server to finish executing the hooks
+	onConnectedFinished := sync.WaitGroup{}
+	onConnectedFinished.Add(1)
+	onDisconnectedFinished := sync.WaitGroup{}
+	onDisconnectedFinished.Add(1)
 
 	// Initialize server
 	setup := SetupTestServer(
@@ -22,12 +24,15 @@ func TestSessionCreationOnClosedConn(t *testing.T) {
 				_ wwr.ConnectionOptions,
 				conn wwr.Connection,
 			) {
+				defer onConnectedFinished.Done()
 				conn.Close()
+
 				err := conn.CreateSession(nil)
 				assert.Error(t, err)
 				assert.IsType(t, wwr.DisconnectedErr{}, err)
 			},
 			ClientDisconnected: func(conn wwr.Connection, _ error) {
+				defer onDisconnectedFinished.Done()
 				err := conn.CreateSession(nil)
 				assert.Error(t, err)
 				assert.IsType(t, wwr.DisconnectedErr{}, err)
@@ -38,11 +43,8 @@ func TestSessionCreationOnClosedConn(t *testing.T) {
 	)
 
 	// Initialize client
-	setup.NewClient(
-		wwrclt.Options{
-			DefaultRequestTimeout: 2 * time.Second,
-		},
-		nil, // Use the default transport implementation
-		TestClientHooks{},
-	)
+	setup.NewClientSocket()
+
+	onConnectedFinished.Wait()
+	onDisconnectedFinished.Wait()
 }

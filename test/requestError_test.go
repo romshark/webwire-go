@@ -3,22 +3,17 @@ package test
 import (
 	"context"
 	"testing"
-	"time"
 
 	wwr "github.com/qbeon/webwire-go"
-	wwrclt "github.com/qbeon/webwire-go/client"
+	"github.com/qbeon/webwire-go/message"
+	"github.com/qbeon/webwire-go/payload"
 	"github.com/stretchr/testify/require"
 )
 
 // TestRequestError tests server-side request errors properly failing the
 // client-side requests
 func TestRequestError(t *testing.T) {
-	expectedReplyError := wwr.RequestErr{
-		Code:    "SAMPLE_ERROR",
-		Message: "Sample error message",
-	}
-
-	// Initialize webwire server given only the request
+	// Initialize server
 	setup := SetupTestServer(
 		t,
 		&ServerImpl{
@@ -28,7 +23,10 @@ func TestRequestError(t *testing.T) {
 				_ wwr.Message,
 			) (wwr.Payload, error) {
 				// Fail the request by returning an error
-				return wwr.Payload{}, expectedReplyError
+				return wwr.Payload{Data: []byte("garbage")}, wwr.RequestErr{
+					Code:    "SAMPLE_ERROR",
+					Message: "Sample error message",
+				}
 			},
 		},
 		wwr.ServerOptions{},
@@ -36,28 +34,11 @@ func TestRequestError(t *testing.T) {
 	)
 
 	// Initialize client
-	client := setup.NewClient(
-		wwrclt.Options{
-			DefaultRequestTimeout: 2 * time.Second,
-		},
-		nil, // Use the default transport implementation
-		TestClientHooks{},
-	)
+	sock, _ := setup.NewClientSocket()
 
-	// Send request and await reply
-	reply, err := client.Connection.Request(
-		context.Background(),
-		nil,
-		wwr.Payload{
-			Encoding: wwr.EncodingUtf8,
-			Data:     []byte("webwire_test_REQUEST_payload"),
-		},
-	)
-
-	// Verify returned error
-	require.Error(t, err)
-	require.IsType(t, wwr.RequestErr{}, err)
-	require.Equal(t, err.(wwr.RequestErr).Code, expectedReplyError.Code)
-	require.Equal(t, err.(wwr.RequestErr).Message, expectedReplyError.Message)
-	require.Nil(t, reply)
+	rep := request(t, sock, 192, []byte("r"), payload.Payload{})
+	require.Equal(t, message.MsgErrorReply, rep.MsgType)
+	require.Equal(t, []byte("SAMPLE_ERROR"), rep.MsgName)
+	require.Equal(t, payload.Binary, rep.MsgPayload.Encoding)
+	require.Equal(t, []byte("Sample error message"), rep.MsgPayload.Data)
 }

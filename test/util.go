@@ -6,20 +6,21 @@ import (
 	"testing"
 	"time"
 
-	"github.com/qbeon/webwire-go/message"
-
 	wwr "github.com/qbeon/webwire-go"
-	wwrclt "github.com/qbeon/webwire-go/client"
+	"github.com/qbeon/webwire-go/message"
+	"github.com/qbeon/webwire-go/payload"
 	"github.com/qbeon/webwire-go/transport/memchan"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
+// ServerSetup represents a webwire server setup
 type ServerSetup struct {
 	Transport wwr.Transport
 	Server    wwr.Server
 }
 
+// TestServerSetup represents a webwire server testing setup
 type TestServerSetup struct {
 	t *testing.T
 	ServerSetup
@@ -77,59 +78,6 @@ func SetupTestServer(
 	setup, err := SetupServer(impl, opts, trans)
 	require.NoError(t, err)
 	return TestServerSetup{t, setup}
-}
-
-// NewClient sets up a new test client instance
-func (setup *ServerSetup) NewClient(
-	options wwrclt.Options,
-	transport wwr.ClientTransport,
-	hooks TestClientHooks,
-) (*TestClient, error) {
-	return NewClient(
-		options,
-		transport,
-		hooks,
-	)
-}
-
-// NewClient sets up a new test client instance
-func (setup *TestServerSetup) NewClient(
-	options wwrclt.Options,
-	transport wwr.ClientTransport,
-	hooks TestClientHooks,
-) *TestClient {
-	if transport == nil {
-		transport = &memchan.ClientTransport{
-			Server: setup.Transport.(*memchan.Transport),
-		}
-	}
-
-	clt, err := NewClient(
-		options,
-		transport,
-		hooks,
-	)
-	require.NoError(setup.t, err)
-	return clt
-}
-
-// NewClient sets up a new test client instance
-func NewClient(
-	options wwrclt.Options,
-	clientTransport wwr.ClientTransport,
-	hooks TestClientHooks,
-) (*TestClient, error) {
-	newClt := &TestClient{Hooks: hooks}
-
-	// Initialize connection
-	conn, err := wwrclt.NewClient(newClt, options, clientTransport)
-	if err != nil {
-		return nil, fmt.Errorf("failed setting up client instance: %s", err)
-	}
-
-	newClt.Connection = conn
-
-	return newClt, nil
 }
 
 // NewDisconnectedClientSocket creates a new raw disconnected client socket
@@ -200,4 +148,168 @@ func CompareSessions(t *testing.T, expected, actual *wwr.Session) {
 	assert.NotNil(t, actual)
 	assert.Equal(t, expected.Key, actual.Key)
 	assert.Equal(t, expected.Creation.Unix(), actual.Creation.Unix())
+}
+
+// signal sends a signal message
+func signal(
+	t *testing.T,
+	socket wwr.Socket,
+	name []byte,
+	payload payload.Payload,
+) {
+	writer, err := socket.GetWriter()
+	require.NoError(t, err)
+	require.NotNil(t, writer)
+
+	require.NoError(t, message.WriteMsgSignal(
+		writer,
+		name,
+		payload.Encoding,
+		payload.Data,
+		true,
+	))
+}
+
+// request performs a synchronous request. Blocks until a reply is received
+func request(
+	t *testing.T,
+	socket wwr.Socket,
+	replyBufferSize uint32,
+	name []byte,
+	payload payload.Payload,
+) *message.Message {
+	writer, err := socket.GetWriter()
+	require.NoError(t, err)
+	require.NotNil(t, writer)
+
+	reply := message.NewMessage(replyBufferSize)
+
+	require.NoError(t, message.WriteMsgRequest(
+		writer,
+		[]byte{0, 0, 0, 0, 0, 0, 0, 0},
+		name,
+		payload.Encoding,
+		payload.Data,
+		true,
+	))
+
+	require.Nil(t, socket.Read(reply, time.Time{}))
+
+	return reply
+}
+
+// requestSuccess performs a synchronous request and expects it to succeed.
+// Blocks until a reply is received
+func requestSuccess(
+	t *testing.T,
+	socket wwr.Socket,
+	replyBufferSize uint32,
+	name []byte,
+	pld payload.Payload,
+) *message.Message {
+	reply := request(t, socket, replyBufferSize, name, pld)
+
+	// Verify reply message type
+	switch pld.Encoding {
+	case payload.Binary:
+		require.Equal(t, message.MsgReplyBinary, reply.MsgType)
+		require.Equal(t, payload.Binary, reply.MsgPayload.Encoding)
+	case payload.Utf8:
+		require.Equal(t, message.MsgReplyUtf8, reply.MsgType)
+		require.Equal(t, payload.Utf8, reply.MsgPayload.Encoding)
+	case payload.Utf16:
+		require.Equal(t, message.MsgReplyUtf16, reply.MsgType)
+		require.Equal(t, payload.Utf16, reply.MsgPayload.Encoding)
+	default:
+		panic("unexpected payload encoding type")
+	}
+
+	return reply
+}
+
+// requestRestoreSession performs a synchronous session restoration request.
+// Blocks until a reply is received
+func requestRestoreSession(
+	t *testing.T,
+	socket wwr.Socket,
+	sessionKey []byte,
+) *message.Message {
+	writer, err := socket.GetWriter()
+	require.NoError(t, err)
+	require.NotNil(t, writer)
+
+	reply := message.NewMessage(1024)
+
+	require.NoError(t, message.WriteMsgNamelessRequest(
+		writer,
+		message.MsgRestoreSession,
+		[]byte{0, 0, 0, 0, 0, 0, 0, 0},
+		sessionKey,
+	))
+
+	require.Nil(t, socket.Read(reply, time.Time{}))
+
+	return reply
+}
+
+// requestRestoreSessionSuccess performs a synchronous session restoration
+// request and expects it to succeed. Blocks until a reply is received
+func requestRestoreSessionSuccess(
+	t *testing.T,
+	socket wwr.Socket,
+	sessionKey []byte,
+) *message.Message {
+	reply := requestRestoreSession(t, socket, sessionKey)
+	require.Equal(t, message.MsgReplyUtf8, reply.MsgType)
+	return reply
+}
+
+// requestCloseSession performs a synchronous session closure request. Blocks
+// until a reply is received
+func requestCloseSession(t *testing.T, socket wwr.Socket) *message.Message {
+	writer, err := socket.GetWriter()
+	require.NoError(t, err)
+	require.NotNil(t, writer)
+
+	reply := message.NewMessage(32)
+
+	require.NoError(t, message.WriteMsgNamelessRequest(
+		writer,
+		message.MsgCloseSession,
+		[]byte{0, 0, 0, 0, 0, 0, 0, 0},
+		nil,
+	))
+
+	require.Nil(t, socket.Read(reply, time.Time{}))
+
+	return reply
+}
+
+// requestCloseSessionSuccess performs a synchronous session closure request and
+// expects it to succeed. Blocks until a reply is received
+func requestCloseSessionSuccess(
+	t *testing.T,
+	socket wwr.Socket,
+) *message.Message {
+	reply := requestCloseSession(t, socket)
+	require.Equal(t, message.MsgReplyBinary, reply.MsgType)
+	return reply
+}
+
+// readSessionCreated reads a session creation notification message
+func readSessionCreated(t *testing.T, sock wwr.Socket) *message.Message {
+	// Expect session creation notification message
+	msg := message.NewMessage(1024)
+	require.Nil(t, sock.Read(msg, time.Time{}))
+	require.Equal(t, message.MsgSessionCreated, msg.MsgType)
+	return msg
+}
+
+// readSessionClosed reads a session closure notification message
+func readSessionClosed(t *testing.T, sock wwr.Socket) *message.Message {
+	// Expect session creation notification message
+	msg := message.NewMessage(1024)
+	require.Nil(t, sock.Read(msg, time.Time{}))
+	require.Equal(t, message.MsgSessionClosed, msg.MsgType)
+	return msg
 }

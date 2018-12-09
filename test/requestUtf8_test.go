@@ -3,25 +3,15 @@ package test
 import (
 	"context"
 	"testing"
-	"time"
 
 	wwr "github.com/qbeon/webwire-go"
-	wwrclt "github.com/qbeon/webwire-go/client"
+	"github.com/qbeon/webwire-go/payload"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 // TestRequestUtf8 tests requests with UTF8 encoded payloads
 func TestRequestUtf8(t *testing.T) {
-	expectedRequestPayload := wwr.Payload{
-		Encoding: wwr.EncodingUtf8,
-		Data:     []byte("webwire_test_REQUEST_payload"),
-	}
-	expectedReplyPayload := wwr.Payload{
-		Encoding: wwr.EncodingUtf8,
-		Data:     []byte("webwire_test_RESPONSE_message"),
-	}
-
 	// Initialize webwire server given only the request
 	setup := SetupTestServer(
 		t,
@@ -32,17 +22,12 @@ func TestRequestUtf8(t *testing.T) {
 				msg wwr.Message,
 			) (wwr.Payload, error) {
 				// Verify request payload
-				assert.Equal(
-					t,
-					expectedRequestPayload.Encoding,
-					msg.PayloadEncoding(),
-				)
-				assert.Equal(
-					t,
-					expectedRequestPayload.Data,
-					msg.Payload(),
-				)
-				return expectedReplyPayload, nil
+				assert.Equal(t, wwr.EncodingUtf8, msg.PayloadEncoding())
+				assert.Equal(t, []byte("sample data"), msg.Payload())
+				return wwr.Payload{
+					Encoding: wwr.EncodingUtf8,
+					Data:     []byte("sample reply"),
+				}, nil
 			},
 		},
 		wwr.ServerOptions{},
@@ -50,32 +35,15 @@ func TestRequestUtf8(t *testing.T) {
 	)
 
 	// Initialize client
-	client := setup.NewClient(
-		wwrclt.Options{
-			DefaultRequestTimeout: 2 * time.Second,
-		},
-		nil, // Use the default transport implementation
-		TestClientHooks{},
-	)
+	sock, _ := setup.NewClientSocket()
 
 	// Send request and await reply
-	reply, err := client.Connection.Request(
-		context.Background(),
-		nil,
-		expectedRequestPayload,
-	)
-	require.NoError(t, err)
+	reply := requestSuccess(t, sock, 32, nil, payload.Payload{
+		Encoding: wwr.EncodingUtf8,
+		Data:     []byte("sample data"),
+	})
 
 	// Verify reply
-	require.Equal(
-		t,
-		expectedReplyPayload.Encoding,
-		reply.PayloadEncoding(),
-	)
-	require.Equal(
-		t,
-		expectedReplyPayload.Data,
-		reply.Payload(),
-	)
-	reply.Close()
+	require.Equal(t, wwr.EncodingUtf8, reply.MsgPayload.Encoding)
+	require.Equal(t, []byte("sample reply"), reply.Payload())
 }

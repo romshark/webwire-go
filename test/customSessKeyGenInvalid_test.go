@@ -12,27 +12,24 @@ import (
 // TestCustomSessKeyGenInvalid tests custom session key generators returning
 // invalid keys
 func TestCustomSessKeyGenInvalid(t *testing.T) {
-	done := sync.WaitGroup{}
-	done.Add(1)
+	finished := sync.WaitGroup{}
+	finished.Add(1)
 
 	// Initialize webwire server
 	setup := SetupTestServer(
 		t,
 		&ServerImpl{
-			ClientConnected: func(
-				_ wwr.ConnectionOptions,
-				conn wwr.Connection,
-			) {
+			ClientConnected: func(_ wwr.ConnectionOptions, c wwr.Connection) {
 				defer func() {
 					recoveredErr := recover()
 					assert.NotNil(t, recoveredErr)
 					assert.IsType(t, errors.New(""), recoveredErr)
 
-					done.Done()
+					finished.Done()
 				}()
 
 				// Try to create a new session
-				err := conn.CreateSession(nil)
+				err := c.CreateSession(nil)
 				assert.NoError(t, err)
 			},
 		},
@@ -50,5 +47,5 @@ func TestCustomSessKeyGenInvalid(t *testing.T) {
 	// Initialize client
 	setup.NewClientSocket()
 
-	done.Wait()
+	finished.Wait()
 }

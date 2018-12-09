@@ -22,23 +22,20 @@ func TestConnIsConnected(t *testing.T) {
 	setup := SetupTestServer(
 		t,
 		&ServerImpl{
-			ClientConnected: func(
-				_ wwr.ConnectionOptions,
-				newConn wwr.Connection,
-			) {
-				assert.True(t, newConn.IsActive())
+			ClientConnected: func(_ wwr.ConnectionOptions, c wwr.Connection) {
+				assert.True(t, c.IsActive())
 
 				go func() {
 					ready.Done()
 					clientDisconnected.Wait()
 
-					assert.False(t, newConn.IsActive())
+					assert.False(t, c.IsActive())
 
 					finished.Done()
 				}()
 			},
-			ClientDisconnected: func(conn wwr.Connection, _ error) {
-				assert.False(t, conn.IsActive())
+			ClientDisconnected: func(c wwr.Connection, _ error) {
+				assert.False(t, c.IsActive())
 				clientDisconnected.Done()
 			},
 		},
@@ -47,14 +44,14 @@ func TestConnIsConnected(t *testing.T) {
 	)
 
 	// Initialize client
-	client, _ := setup.NewClientSocket()
+	sock, _ := setup.NewClientSocket()
 
 	// Wait for the connection to be set by the OnClientConnected handler
 	ready.Wait()
 
 	// Close the client connection and continue in the tester goroutine
 	// spawned in the OnClientConnected handler of the server
-	client.Close()
+	sock.Close()
 
 	// Wait for the tester goroutine to finish
 	finished.Wait()

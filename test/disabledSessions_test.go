@@ -1,12 +1,11 @@
 package test
 
 import (
-	"context"
+	"sync"
 	"testing"
-	"time"
 
 	wwr "github.com/qbeon/webwire-go"
-	wwrclt "github.com/qbeon/webwire-go/client"
+	"github.com/qbeon/webwire-go/message"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -14,56 +13,55 @@ import (
 // TestDisabledSessions tests errors returned by CreateSession, CloseSession and
 // client.RestoreSession when sessions are disabled
 func TestDisabledSessions(t *testing.T) {
+	finished := sync.WaitGroup{}
+	finished.Add(1)
+
 	// Initialize webwire server
 	setup := SetupTestServer(
 		t,
 		&ServerImpl{
-			Request: func(
-				_ context.Context,
-				conn wwr.Connection,
-				_ wwr.Message,
-			) (wwr.Payload, error) {
-				// Try to create a new session and expect an error
-				createErr := conn.CreateSession(nil)
+			ClientConnected: func(_ wwr.ConnectionOptions, c wwr.Connection) {
+				assert.Nil(t, c.Session())
+
+				// Try to create a new session
+				createErr := c.CreateSession(nil)
 				assert.IsType(t, wwr.SessionsDisabledErr{}, createErr)
 
-				// Try to create a new session and expect an error
-				closeErr := conn.CloseSession()
+				// Try to close a session
+				closeErr := c.CloseSession()
 				assert.IsType(t, wwr.SessionsDisabledErr{}, closeErr)
 
-				return wwr.Payload{}, nil
+				finished.Done()
 			},
 		},
 		wwr.ServerOptions{
 			Sessions: wwr.Disabled,
+			SessionManager: &SessionManager{
+				SessionCreated: func(c wwr.Connection) error {
+					t.Fatal("unexpected hook call")
+					return nil
+				},
+				SessionLookup: func(
+					sessionKey string,
+				) (wwr.SessionLookupResult, error) {
+					t.Fatal("unexpected hook call")
+					return nil, nil
+				},
+				SessionClosed: func(sessionKey string) error {
+					t.Fatal("unexpected hook call")
+					return nil
+				},
+			},
 		},
 		nil, // Use the default transport implementation
 	)
 
 	// Initialize client
-	client := setup.NewClient(
-		wwrclt.Options{
-			DefaultRequestTimeout: 2 * time.Second,
-		},
-		nil, // Use the default transport implementation
-		TestClientHooks{
-			OnSessionCreated: func(*wwr.Session) {
-				t.Errorf("OnSessionCreated was not expected to be called")
-			},
-		},
-	)
+	sock, _ := setup.NewClientSocket()
 
-	// Send authentication request and await reply
-	_, err := client.Connection.Request(
-		context.Background(),
-		[]byte("login"),
-		wwr.Payload{Data: []byte("testdata")},
-	)
-	require.NoError(t, err)
+	finished.Wait()
 
-	sessRestErr := client.Connection.RestoreSession(
-		context.Background(),
-		[]byte("testkey"),
-	)
-	assert.IsType(t, wwr.SessionsDisabledErr{}, sessRestErr)
+	// Try to restore a session
+	reply := requestRestoreSession(t, sock, []byte("testsessionkey"))
+	require.Equal(t, message.MsgSessionsDisabled, reply.MsgType)
 }

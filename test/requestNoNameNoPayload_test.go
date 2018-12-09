@@ -5,8 +5,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/qbeon/webwire-go/message"
+
 	wwr "github.com/qbeon/webwire-go"
-	wwrclt "github.com/qbeon/webwire-go/client"
 	"github.com/stretchr/testify/require"
 )
 
@@ -32,13 +33,7 @@ func TestRequestNoNameNoPayload(t *testing.T) {
 	)
 
 	// Initialize client
-	client := setup.NewClient(
-		wwrclt.Options{
-			DefaultRequestTimeout: 2 * time.Second,
-		},
-		nil, // Use the default transport implementation
-		TestClientHooks{},
-	)
+	sock, _ := setup.NewClientSocket()
 
 	// TODO: improve test by avoiding the use of the client but performing the
 	// request over a raw socket to ensure the client doesn't filter the request
@@ -46,12 +41,24 @@ func TestRequestNoNameNoPayload(t *testing.T) {
 
 	// Send request without a name and without a payload.
 	// Expect a protocol error in return not sending the invalid request off
-	reply, err := client.Connection.Request(
-		context.Background(),
-		nil,
-		wwr.Payload{},
-	)
-	require.Error(t, err)
-	require.IsType(t, wwr.ProtocolErr{}, err)
-	require.Nil(t, reply)
+	writer, err := sock.GetWriter()
+	require.NoError(t, err)
+	require.NotNil(t, writer)
+
+	bytesWritten, err := writer.Write([]byte{
+		message.MsgRequestBinary, // Type
+		0, 0, 0, 0, 0, 0, 0, 0,   // Identifier
+		0, // Name length
+	})
+	require.NoError(t, err)
+	require.Equal(t, 10, bytesWritten)
+
+	require.NoError(t, writer.Close())
+
+	// Expect the socket to be closed by the server due to protocol violation
+	msg := message.NewMessage(1024)
+	readErr := sock.Read(msg, time.Time{})
+	require.NotNil(t, readErr)
+	require.True(t, readErr.IsCloseErr())
+	require.False(t, sock.IsConnected())
 }

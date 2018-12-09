@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	wwr "github.com/qbeon/webwire-go"
-	wwrclt "github.com/qbeon/webwire-go/client"
 	"github.com/stretchr/testify/require"
 )
 
@@ -20,17 +19,10 @@ func TestSimpleShutdown(t *testing.T) {
 		nil, // Use the default transport implementation
 	)
 
-	clients := make([]*TestClient, connectedClientsNum)
+	clients := make([]wwr.Socket, connectedClientsNum)
 	for i := 0; i < connectedClientsNum; i++ {
-		client := setup.NewClient(
-			wwrclt.Options{
-				Autoconnect: wwr.Disabled,
-			},
-			nil, // Use the default transport implementation
-			TestClientHooks{},
-		)
-		require.NoError(t, client.Connection.Connect())
-		clients[i] = client
+		sock, _ := setup.NewClientSocket()
+		clients[i] = sock
 	}
 
 	require.NoError(t, setup.Server.Shutdown())

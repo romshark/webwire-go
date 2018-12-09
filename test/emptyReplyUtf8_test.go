@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestEmptyReplyUtf16 tests returning empty UTF16 replies
-func TestEmptyReplyUtf16(t *testing.T) {
+// TestEmptyReplyUtf8 tests returning empty UTF8 replies
+func TestEmptyReplyUtf8(t *testing.T) {
 	// Initialize webwire server given only the request
 	setup := SetupTestServer(
 		t,
@@ -22,7 +22,7 @@ func TestEmptyReplyUtf16(t *testing.T) {
 				_ wwr.Message,
 			) (wwr.Payload, error) {
 				// Return empty reply
-				return wwr.Payload{Encoding: wwr.EncodingUtf16}, nil
+				return wwr.Payload{Encoding: wwr.EncodingUtf8}, nil
 			},
 		},
 		wwr.ServerOptions{},
@@ -34,7 +34,7 @@ func TestEmptyReplyUtf16(t *testing.T) {
 
 	// Send request and await an empty binary reply
 	reply := request(t, sock, 64, []byte("r"), payload.Payload{})
-	require.Equal(t, message.MsgReplyUtf16, reply.MsgType)
-	require.Equal(t, payload.Utf16, reply.MsgPayload.Encoding)
+	require.Equal(t, message.MsgReplyUtf8, reply.MsgType)
+	require.Equal(t, payload.Utf8, reply.MsgPayload.Encoding)
 	require.Equal(t, []byte(nil), reply.MsgPayload.Data)
 }

@@ -3,25 +3,15 @@ package test
 import (
 	"context"
 	"testing"
-	"time"
 
 	wwr "github.com/qbeon/webwire-go"
-	wwrclt "github.com/qbeon/webwire-go/client"
+	"github.com/qbeon/webwire-go/payload"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-// TestRequestNoNameOnlyPayload tests requests without a name but only a payload
-func TestRequestNoNameOnlyPayload(t *testing.T) {
-	expectedRequestPayload := wwr.Payload{
-		Encoding: wwr.EncodingUtf8,
-		Data:     []byte("3"),
-	}
-	expectedRequestPayloadUtf16 := wwr.Payload{
-		Encoding: wwr.EncodingUtf16,
-		Data:     []byte("12"),
-	}
-
+// TestRequestPayloadOnly tests requests without a name but only a payload
+func TestRequestPayloadOnly(t *testing.T) {
 	// Initialize server
 	setup := SetupTestServer(
 		t,
@@ -35,31 +25,19 @@ func TestRequestNoNameOnlyPayload(t *testing.T) {
 				msgName := msg.Name()
 				assert.Nil(t, msgName)
 
-				if msg.PayloadEncoding() == wwr.EncodingUtf16 {
-					require.Equal(
-						t,
-						expectedRequestPayloadUtf16.Encoding,
-						msg.PayloadEncoding(),
-					)
-					require.Equal(
-						t,
-						expectedRequestPayloadUtf16.Data,
-						msg.Payload(),
-					)
-				} else {
-					require.Equal(
-						t,
-						expectedRequestPayload.Encoding,
-						msg.PayloadEncoding(),
-					)
-					require.Equal(
-						t,
-						expectedRequestPayload.Data,
-						msg.Payload(),
-					)
+				switch msg.PayloadEncoding() {
+				case wwr.EncodingBinary:
+					require.Equal(t, []byte("d"), msg.Payload())
+					return wwr.Payload{Encoding: wwr.EncodingBinary}, nil
+				case wwr.EncodingUtf8:
+					require.Equal(t, []byte("d"), msg.Payload())
+					return wwr.Payload{Encoding: wwr.EncodingUtf8}, nil
+				case wwr.EncodingUtf16:
+					require.Equal(t, []byte{32, 32}, msg.Payload())
+					return wwr.Payload{Encoding: wwr.EncodingUtf16}, nil
+				default:
+					panic("unexpected message payload encoding type")
 				}
-
-				return wwr.Payload{}, nil
 			},
 		},
 		wwr.ServerOptions{},
@@ -67,27 +45,20 @@ func TestRequestNoNameOnlyPayload(t *testing.T) {
 	)
 
 	// Initialize client
-	client := setup.NewClient(
-		wwrclt.Options{
-			DefaultRequestTimeout: 2 * time.Second,
-		},
-		nil, // Use the default transport implementation
-		TestClientHooks{},
-	)
+	sock, _ := setup.NewClientSocket()
 
 	// Send an unnamed binary request with a payload and await reply
-	_, err := client.Connection.Request(
-		context.Background(),
-		nil,
-		expectedRequestPayload,
-	)
-	require.NoError(t, err)
+	requestSuccess(t, sock, 32, nil, payload.Payload{Data: []byte("d")})
 
-	// Send an unnamed UTF16 encoded binary request with a payload
-	_, err = client.Connection.Request(
-		context.Background(),
-		nil,
-		expectedRequestPayloadUtf16,
-	)
-	require.NoError(t, err)
+	// Send an unnamed UTF8 encoded request with a payload
+	requestSuccess(t, sock, 32, nil, payload.Payload{
+		Encoding: payload.Utf8,
+		Data:     []byte("d"),
+	})
+
+	// Send an unnamed UTF16 encoded request with a payload
+	requestSuccess(t, sock, 32, nil, payload.Payload{
+		Encoding: payload.Utf16,
+		Data:     []byte{32, 32},
+	})
 }

@@ -5,10 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/qbeon/webwire-go/transport/memchan"
-
 	wwr "github.com/qbeon/webwire-go"
-	wwrclt "github.com/qbeon/webwire-go/client"
+	"github.com/qbeon/webwire-go/transport/memchan"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -21,20 +19,17 @@ func TestConnectionInfo(t *testing.T) {
 	setup := SetupTestServer(
 		t,
 		&ServerImpl{
-			ClientConnected: func(
-				_ wwr.ConnectionOptions,
-				conn wwr.Connection,
-			) {
-				assert.Equal(t, "samplestring", conn.Info(1).(string))
-				assert.Equal(t, uint64(42), conn.Info(2).(uint64))
-				assert.Nil(t, conn.Info(3))
+			ClientConnected: func(_ wwr.ConnectionOptions, c wwr.Connection) {
+				defer handlerFinished.Done()
+				assert.Equal(t, "samplestring", c.Info(1).(string))
+				assert.Equal(t, uint64(42), c.Info(2).(uint64))
+				assert.Nil(t, c.Info(3))
 				assert.WithinDuration(
 					t,
 					time.Now(),
-					conn.Creation(),
+					c.Creation(),
 					1*time.Second,
 				)
-				handlerFinished.Done()
 			},
 		},
 		wwr.ServerOptions{},
@@ -52,11 +47,7 @@ func TestConnectionInfo(t *testing.T) {
 	)
 
 	// Initialize client
-	setup.NewClient(
-		wwrclt.Options{},
-		nil, // Use the default transport implementation
-		TestClientHooks{},
-	)
+	setup.NewClientSocket()
 
 	handlerFinished.Wait()
 }

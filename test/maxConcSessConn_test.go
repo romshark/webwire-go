@@ -1,14 +1,13 @@
 package test
 
 import (
-	"context"
 	"testing"
 	"time"
 
+	"github.com/qbeon/webwire-go/message"
+
 	"github.com/qbeon/webwire-go"
 	wwr "github.com/qbeon/webwire-go"
-	wwrclt "github.com/qbeon/webwire-go/client"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -45,42 +44,20 @@ func TestMaxConcSessConn(t *testing.T) {
 		nil, // Use the default transport implementation
 	)
 
-	clientOptions := wwrclt.Options{
-		DefaultRequestTimeout: 2 * time.Second,
-	}
-
 	// Initialize clients
-	clients := make([]*TestClient, concurrentConns)
+	clients := make([]wwr.Socket, concurrentConns)
 	for i := uint(0); i < concurrentConns; i++ {
-		client := setup.NewClient(
-			clientOptions,
-			nil, // Use the default transport implementation
-			TestClientHooks{},
-		)
-		clients[i] = client
+		sock, _ := setup.NewClientSocket()
+		clients[i] = sock
 
-		// Restore the session for all clients
-		assert.NoError(t, client.Connection.RestoreSession(
-			context.Background(),
-			[]byte(sessionKey),
-		))
+		requestRestoreSessionSuccess(t, sock, []byte(sessionKey))
 	}
 
 	// Ensure that the last superfluous client is rejected
-	superfluousClient := setup.NewClient(
-		clientOptions,
-		nil, // Use the default transport implementation
-		TestClientHooks{},
-	)
+	superfluousClient, _ := setup.NewClientSocket()
 
-	require.NoError(t, superfluousClient.Connection.Connect())
-
-	// Try to restore the session and expect this operation to fail
+	// Try to restore the session one more time and expect this request to fail
 	// due to reached limit
-	sessionRestorationError := superfluousClient.Connection.RestoreSession(
-		context.Background(),
-		[]byte(sessionKey),
-	)
-	require.Error(t, sessionRestorationError)
-	require.IsType(t, wwr.MaxSessConnsReachedErr{}, sessionRestorationError)
+	reply := requestRestoreSession(t, superfluousClient, []byte(sessionKey))
+	require.Equal(t, message.MsgMaxSessConnsReached, reply.MsgType)
 }
