@@ -31,7 +31,7 @@ func TestBufferWriteOverflow(t *testing.T) {
 	bytesWritten, err := buffer.Write([]byte{1, 2, 3, 4, 5})
 	require.Equal(t, 0, bytesWritten)
 	require.Error(t, err)
-	require.IsType(t, wwr.BufferOverflowErr{}, err)
+	require.IsType(t, wwr.ErrBufferOverflow{}, err)
 
 	require.Equal(t, []byte{0, 0, 0, 0}, buf)
 }

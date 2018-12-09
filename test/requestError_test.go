@@ -10,9 +10,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestRequestError tests server-side request errors properly failing the
+// TestErrRequestor tests server-side request errors properly failing the
 // client-side requests
-func TestRequestError(t *testing.T) {
+func TestErrRequestor(t *testing.T) {
 	// Initialize server
 	setup := SetupTestServer(
 		t,
@@ -23,7 +23,7 @@ func TestRequestError(t *testing.T) {
 				_ wwr.Message,
 			) (wwr.Payload, error) {
 				// Fail the request by returning an error
-				return wwr.Payload{Data: []byte("garbage")}, wwr.RequestErr{
+				return wwr.Payload{Data: []byte("garbage")}, wwr.ErrRequest{
 					Code:    "SAMPLE_ERROR",
 					Message: "Sample error message",
 				}

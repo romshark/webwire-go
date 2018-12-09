@@ -174,11 +174,11 @@ func (con *connection) Signal(name []byte, payload Payload) (err error) {
 // CreateSession implements the Connection interface
 func (con *connection) CreateSession(attachment SessionInfo) error {
 	if !con.srv.sessionsEnabled {
-		return SessionsDisabledErr{}
+		return ErrSessionsDisabled{}
 	}
 
 	if !con.sock.IsConnected() {
-		return DisconnectedErr{
+		return ErrDisconnected{
 			Cause: fmt.Errorf(
 				"Can't create session on disconnected connection",
 			),
@@ -265,7 +265,7 @@ func (con *connection) notifySessionClosed() error {
 // CloseSession implements the Connection interface
 func (con *connection) CloseSession() error {
 	if !con.srv.sessionsEnabled {
-		return SessionsDisabledErr{}
+		return ErrSessionsDisabled{}
 	}
 
 	con.sessionLock.Lock()

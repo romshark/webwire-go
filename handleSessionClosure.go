@@ -18,7 +18,7 @@ func (srv *server) handleSessionClosure(
 	}
 
 	if !srv.sessionsEnabled {
-		srv.failMsg(con, msg, SessionsDisabledErr{})
+		srv.failMsg(con, msg, ErrSessionsDisabled{})
 		finalize()
 		return
 	}

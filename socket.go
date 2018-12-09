@@ -19,7 +19,7 @@ type Socket interface {
 	// Read blocks the calling goroutine and awaits an incoming message. If
 	// deadline is 0 then Read will never timeout. In case of concurrent use
 	// Read will block until the previous call finished
-	Read(into *message.Message, deadline time.Time) SockReadErr
+	Read(into *message.Message, deadline time.Time) ErrSockRead
 
 	// IsConnected returns true if the given socket maintains an open connection
 	// or otherwise return false

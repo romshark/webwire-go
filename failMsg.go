@@ -27,7 +27,7 @@ func (srv *server) failMsg(
 	}
 
 	switch err := reqErr.(type) {
-	case RequestErr:
+	case ErrRequest:
 		if err := message.WriteMsgErrorReply(
 			writer,
 			msg.MsgIdentifierBytes,
@@ -38,7 +38,7 @@ func (srv *server) failMsg(
 			srv.errorLog.Println("couldn't write error reply message: ", err)
 			return
 		}
-	case *RequestErr:
+	case *ErrRequest:
 		if err := message.WriteMsgErrorReply(
 			writer,
 			msg.MsgIdentifierBytes,
@@ -49,7 +49,7 @@ func (srv *server) failMsg(
 			srv.errorLog.Println("couldn't write error reply message: ", err)
 			return
 		}
-	case MaxSessConnsReachedErr:
+	case ErrMaxSessConnsReached:
 		if err := message.WriteMsgSpecialRequestReply(
 			writer,
 			message.MsgMaxSessConnsReached,
@@ -61,7 +61,7 @@ func (srv *server) failMsg(
 			)
 			return
 		}
-	case SessionNotFoundErr:
+	case ErrSessionNotFound:
 		if err := message.WriteMsgSpecialRequestReply(
 			writer,
 			message.MsgSessionNotFound,
@@ -73,7 +73,7 @@ func (srv *server) failMsg(
 			)
 			return
 		}
-	case SessionsDisabledErr:
+	case ErrSessionsDisabled:
 		if err := message.WriteMsgSpecialRequestReply(
 			writer,
 			message.MsgSessionsDisabled,

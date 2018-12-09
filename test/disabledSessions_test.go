@@ -25,11 +25,11 @@ func TestDisabledSessions(t *testing.T) {
 
 				// Try to create a new session
 				createErr := c.CreateSession(nil)
-				assert.IsType(t, wwr.SessionsDisabledErr{}, createErr)
+				assert.IsType(t, wwr.ErrSessionsDisabled{}, createErr)
 
 				// Try to close a session
 				closeErr := c.CloseSession()
-				assert.IsType(t, wwr.SessionsDisabledErr{}, closeErr)
+				assert.IsType(t, wwr.ErrSessionsDisabled{}, closeErr)
 
 				finished.Done()
 			},

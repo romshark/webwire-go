@@ -142,9 +142,9 @@ reply, err := client.Request(timedCtx, nil, wwr.Payload(
 ))
 // Investigate errors manually...
 switch err.(type) {
-  case wwr.CanceledErr:
+  case wwr.ErrCanceled:
     // Request was prematurely canceled by the sender
-  case wwr.DeadlineExceededErr:
+  case wwr.ErrDeadlineExceeded:
     // Request timed out, server didn't manage to reply
     // within the user-specified context deadline
   case wwr.TimeoutErr:
@@ -291,9 +291,9 @@ The WebWire client maintains the connection fully automatically to guarantee max
 
 The only things to remember are:
 - Client API methods such as `client.Request` and `client.RestoreSession` will timeout if the server is unavailable for the entire duration of the specified timeout and thus the client fails to reconnect.
-- `client.Signal` will immediately return a `DisconnectedErr` error if there's no connection at the time the signal was sent.
+- `client.Signal` will immediately return a `ErrDisconnected` error if there's no connection at the time the signal was sent.
 
-This feature is entirely optional and can be disabled at will which will cause `client.Request` and `client.RestoreSession` to immediately return a `DisconnectedErr` error when there's no connection at the time the request is made.
+This feature is entirely optional and can be disabled at will which will cause `client.Request` and `client.RestoreSession` to immediately return a `ErrDisconnected` error when there's no connection at the time the request is made.
 
 ### Concurrency
 Messages are parsed and handled concurrently in a separate goroutine by default. The total number of concurrently executed handlers can be independently throttled down for each individual connection, which is unlimited by default.

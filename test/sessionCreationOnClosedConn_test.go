@@ -29,13 +29,13 @@ func TestSessionCreationOnClosedConn(t *testing.T) {
 
 				err := conn.CreateSession(nil)
 				assert.Error(t, err)
-				assert.IsType(t, wwr.DisconnectedErr{}, err)
+				assert.IsType(t, wwr.ErrDisconnected{}, err)
 			},
 			ClientDisconnected: func(conn wwr.Connection, _ error) {
 				defer onDisconnectedFinished.Done()
 				err := conn.CreateSession(nil)
 				assert.Error(t, err)
-				assert.IsType(t, wwr.DisconnectedErr{}, err)
+				assert.IsType(t, wwr.ErrDisconnected{}, err)
 			},
 		},
 		wwr.ServerOptions{},

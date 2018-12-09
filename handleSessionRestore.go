@@ -21,7 +21,7 @@ func (srv *server) handleSessionRestore(
 	}
 
 	if !srv.sessionsEnabled {
-		srv.failMsg(con, msg, SessionsDisabledErr{})
+		srv.failMsg(con, msg, ErrSessionsDisabled{})
 		finalize()
 		return
 	}
@@ -31,7 +31,7 @@ func (srv *server) handleSessionRestore(
 	sessConsNum := srv.sessionRegistry.sessionConnectionsNum(key)
 	if sessConsNum >= 0 && srv.sessionRegistry.maxConns > 0 &&
 		uint(sessConsNum+1) > srv.sessionRegistry.maxConns {
-		srv.failMsg(con, msg, MaxSessConnsReachedErr{})
+		srv.failMsg(con, msg, ErrMaxSessConnsReached{})
 		finalize()
 		return
 	}
@@ -49,7 +49,7 @@ func (srv *server) handleSessionRestore(
 
 	if result == nil {
 		// Fail message with special error if the session wasn't found
-		srv.failMsg(con, msg, SessionNotFoundErr{})
+		srv.failMsg(con, msg, ErrSessionNotFound{})
 		finalize()
 		return
 	}

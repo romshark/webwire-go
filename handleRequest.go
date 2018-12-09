@@ -20,9 +20,9 @@ func (srv *server) handleRequest(con *connection, msg *message.Message) {
 	switch returnedErr.(type) {
 	case nil:
 		srv.fulfillMsg(con, msg, replyPayload)
-	case RequestErr:
+	case ErrRequest:
 		srv.failMsg(con, msg, returnedErr)
-	case *RequestErr:
+	case *ErrRequest:
 		srv.failMsg(con, msg, returnedErr)
 	default:
 		srv.errorLog.Printf(

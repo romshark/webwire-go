@@ -43,7 +43,7 @@ func (buf *Buffer) Write(p []byte) (int, error) {
 		// Buffer overflow
 		buf.reset()
 		buf.lock.Unlock()
-		return 0, wwr.BufferOverflowErr{}
+		return 0, wwr.ErrBufferOverflow{}
 	}
 	copy(buf.buf[buf.len:], p)
 	buf.len += len(p)

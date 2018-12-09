@@ -4,56 +4,56 @@ import (
 	"fmt"
 )
 
-// BufferOverflowErr represents a message buffer overflow error
-type BufferOverflowErr struct{}
+// ErrBufferOverflow represents a message buffer overflow error
+type ErrBufferOverflow struct{}
 
 // Error implements the error interface
-func (err BufferOverflowErr) Error() string {
+func (err ErrBufferOverflow) Error() string {
 	return "message buffer overflow"
 }
 
-// DeadlineExceededErr represents a failure due to an excess of a user-defined
+// ErrDeadlineExceeded represents a failure due to an excess of a user-defined
 // deadline
-type DeadlineExceededErr struct {
+type ErrDeadlineExceeded struct {
 	Cause error
 }
 
 // Error implements the error interface
-func (err DeadlineExceededErr) Error() string {
+func (err ErrDeadlineExceeded) Error() string {
 	return err.Cause.Error()
 }
 
-// DisconnectedErr represents an error indicating a disconnected connection
-type DisconnectedErr struct {
+// ErrDisconnected represents an error indicating a disconnected connection
+type ErrDisconnected struct {
 	Cause error
 }
 
 // Error implements the error interface
-func (err DisconnectedErr) Error() string {
+func (err ErrDisconnected) Error() string {
 	if err.Cause == nil {
 		return "disconnected"
 	}
 	return err.Cause.Error()
 }
 
-// DialTimeoutErr represents a dialing error caused by a timeout
-type DialTimeoutErr struct{}
+// ErrDialTimeout represents a dialing error caused by a timeout
+type ErrDialTimeout struct{}
 
 // Error implements the error interface
-func (err DialTimeoutErr) Error() string {
+func (err ErrDialTimeout) Error() string {
 	return "dial timed out"
 }
 
-// IncompatibleProtocolVersionErr represents a connection error indicating that
+// ErrIncompatibleProtocolVersion represents a connection error indicating that
 // the server requires an incompatible version of the protocol and can't
 // therefore be connected to
-type IncompatibleProtocolVersionErr struct {
+type ErrIncompatibleProtocolVersion struct {
 	RequiredVersion  string
 	SupportedVersion string
 }
 
 // Error implements the error interface
-func (err IncompatibleProtocolVersionErr) Error() string {
+func (err ErrIncompatibleProtocolVersion) Error() string {
 	return fmt.Sprintf(
 		"unsupported protocol version: %s (supported: %s)",
 		err.RequiredVersion,
@@ -61,133 +61,133 @@ func (err IncompatibleProtocolVersionErr) Error() string {
 	)
 }
 
-// InternalErr represents a server-side internal error
-type InternalErr struct{}
+// ErrInternal represents a server-side internal error
+type ErrInternal struct{}
 
 // Error implements the error interface
-func (err InternalErr) Error() string {
+func (err ErrInternal) Error() string {
 	return "internal server error"
 }
 
-// MaxSessConnsReachedErr represents an authentication error indicating that the
+// ErrMaxSessConnsReached represents an authentication error indicating that the
 // given session already reached the maximum number of concurrent connections
-type MaxSessConnsReachedErr struct{}
+type ErrMaxSessConnsReached struct{}
 
 // Error implements the error interface
-func (err MaxSessConnsReachedErr) Error() string {
+func (err ErrMaxSessConnsReached) Error() string {
 	return "reached maximum number of concurrent session connections"
 }
 
-// ProtocolErr represents a protocol error
-type ProtocolErr struct {
+// ErrProtocol represents a protocol error
+type ErrProtocol struct {
 	Cause error
 }
 
-// NewProtocolErr constructs a new ProtocolErr error based on the actual error
-func NewProtocolErr(err error) ProtocolErr {
-	return ProtocolErr{
+// ErrNewProtocol constructs a new ErrProtocol error based on the actual error
+func ErrNewProtocol(err error) ErrProtocol {
+	return ErrProtocol{
 		Cause: err,
 	}
 }
 
 // Error implements the error interface
-func (err ProtocolErr) Error() string {
+func (err ErrProtocol) Error() string {
 	return err.Cause.Error()
 }
 
-// RequestErr represents an error returned when a request couldn't be processed
-type RequestErr struct {
+// ErrRequest represents an error returned when a request couldn't be processed
+type ErrRequest struct {
 	Code    string
 	Message string
 }
 
 // Error implements the error interface
-func (err RequestErr) Error() string {
+func (err ErrRequest) Error() string {
 	return err.Message
 }
 
-// ServerShutdownErr represents a request error indicating that the request
+// ErrServerShutdown represents a request error indicating that the request
 // cannot be processed due to the server currently being shut down
-type ServerShutdownErr struct{}
+type ErrServerShutdown struct{}
 
 // Error implements the error interface
-func (err ServerShutdownErr) Error() string {
+func (err ErrServerShutdown) Error() string {
 	return "server is currently being shut down and won't process the request"
 }
 
-// SessionNotFoundErr represents a session restoration error indicating that the
+// ErrSessionNotFound represents a session restoration error indicating that the
 // server didn't find the session to be restored
-type SessionNotFoundErr struct{}
+type ErrSessionNotFound struct{}
 
 // Error implements the error interface
-func (err SessionNotFoundErr) Error() string {
+func (err ErrSessionNotFound) Error() string {
 	return "session not found"
 }
 
-// SessionsDisabledErr represents an error indicating that the server has
+// ErrSessionsDisabled represents an error indicating that the server has
 // sessions disabled
-type SessionsDisabledErr struct{}
+type ErrSessionsDisabled struct{}
 
 // Error implements the error interface
-func (err SessionsDisabledErr) Error() string {
+func (err ErrSessionsDisabled) Error() string {
 	return "sessions are disabled for this server"
 }
 
-// TimeoutErr represents a failure caused by a timeout
-type TimeoutErr struct {
+// ErrTimeout represents a failure caused by a timeout
+type ErrTimeout struct {
 	Cause error
 }
 
 // Error implements the error interface
-func (err TimeoutErr) Error() string {
+func (err ErrTimeout) Error() string {
 	return err.Cause.Error()
 }
 
-// TransmissionErr represents a connection error indicating a failed
+// ErrTransmission represents a connection error indicating a failed
 // transmission
-type TransmissionErr struct {
+type ErrTransmission struct {
 	Cause error
 }
 
 // Error implements the error interface
-func (err TransmissionErr) Error() string {
+func (err ErrTransmission) Error() string {
 	return fmt.Sprintf("message transmission failed: %s", err.Cause)
 }
 
-// CanceledErr represents a failure due to cancellation
-type CanceledErr struct {
+// ErrCanceled represents a failure due to cancellation
+type ErrCanceled struct {
 	Cause error
 }
 
 // Error implements the error interface
-func (err CanceledErr) Error() string {
+func (err ErrCanceled) Error() string {
 	return err.Cause.Error()
 }
 
-// IsTimeoutErr returns true if the given error is either a TimeoutErr
-// or a DeadlineExceededErr, otherwise returns false
-func IsTimeoutErr(err error) bool {
+// ErrIsTimeout returns true if the given error is either a ErrTimeout
+// or a ErrDeadlineExceeded, otherwise returns false
+func ErrIsTimeout(err error) bool {
 	switch err.(type) {
-	case TimeoutErr:
+	case ErrTimeout:
 		return true
-	case DeadlineExceededErr:
+	case ErrDeadlineExceeded:
 		return true
 	}
 	return false
 }
 
-// IsCanceledErr returns true if the given error is a CanceledErr,
+// IsErrCanceled returns true if the given error is a ErrCanceled,
 // otherwise returns false
-func IsCanceledErr(err error) bool {
+func IsErrCanceled(err error) bool {
 	switch err.(type) {
-	case CanceledErr:
+	case ErrCanceled:
 		return true
 	}
 	return false
 }
 
-// SockReadErr defines the interface of a webwire.Socket.Read error
-type SockReadErr interface {
+// ErrSockRead defines the interface of a webwire.Socket.Read error
+type ErrSockRead interface {
 	error
 
 	// IsCloseErr must return true if the error represents a closure error
