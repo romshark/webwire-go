@@ -1,0 +1,106 @@
+title webwire binary protocol
+
+# Connection establishment
+group connection establishment
+Client-->Server: connect
+Client<-Server: AcceptConf
+end
+
+# Request
+group request
+
+alt binary payload
+Client->Server: RequestBinary
+else UTF8 encoded payload
+Client->Server: RequestUtf8
+else UTF16 encoded payload
+Client->Server: RequestUtf16
+end
+
+alt success
+alt binary reply payload
+Client<-Server: ReplyBinary
+else UTF8 encoded reply payload
+Client<-Server: ReplyUtf8
+else UTF16 encoded reply payload
+Client<-Server: ReplyUtf16
+end
+else failure
+alt error
+Client<-Server: ReplyError
+else internal error
+Client<-Server: ReplyInternalError
+else server shutting down
+Client<-Server: ReplyShutdown
+end
+end
+
+end
+
+# Client-side signal
+group client-side signal
+alt binary payload
+Client->Server: SignalBinary
+else UTF8 encoded payload
+Client->Server: SignalUtf8
+else UTF16 encoded payload
+Client->Server: SignalUtf16
+end
+end
+
+# Server-side signal
+group server-side signal
+alt binary payload
+Client<-Server: SignalBinary
+else UTF8 encoded payload
+Client<-Server: SignalUtf8
+else UTF16 encoded payload
+Client<-Server: SignalUtf16
+end
+end
+
+# Session restoration request
+group restore session
+Client->Server: RequestRestoreSession
+
+alt success
+
+Client<-Server: ReplyBinary
+else failure
+alt session not found
+Client<-Server: ReplySessionNotFound
+else session connections limit reached
+Client<-Server: ReplyMaxSessConnsReached
+else server shutting down
+Client<-Server: ReplyShutdown
+else sessions disabled
+Client<-Server: ReplySessionsDisabled
+else internal error
+Client<-Server: ReplyInternalError
+end
+end
+end
+
+# Session closure request
+group session closure request
+Client->Server: RequestCloseSession
+box over Server: close active session
+Client<-Server: ReplyBinary
+end
+
+# Session creation notification
+group session creation notification
+box over Server: session created
+Client<-Server: NotifySessionCreated
+end
+
+# Session closure notification
+group session creation notification
+box over Server: session closed
+Client<-Server: NotifySessionClosed
+end
+
+# Heartbeat
+group heartbeat
+Client-->Server: Heartbeat
+end
