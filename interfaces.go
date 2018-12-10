@@ -87,14 +87,14 @@ type ServerImplementation interface {
 	// client. It must return either a response payload or an error. The
 	// invocation of OnRequest is potentially concurrent.
 	//
-	// A webwire.ErrReq error can be returned to reply with an error code and an
-	// error message, this is useful when the clients user code needs to be able
-	// to understand the error and react accordingly. If a non-webwire error
-	// type is returned such as an error created by fmt.Errorf() then a special
-	// kind of error (internal server error) is returned to the client as a
-	// reply, in this case the error will be logged and the error message will
-	// not be sent to the client for security reasons as this might accidentally
-	// leak sensitive information to the client.
+	// A webwire.ErrRequest error can be returned to reply with an error code
+	// and an error message, this is useful when the clients user code needs to
+	// be able to understand the error and react accordingly. If a non-webwire
+	// error type is returned such as an error created by fmt.Errorf() then a
+	// special kind of error (internal server error) is returned to the client
+	// as a reply, in this case the error will be logged and the error message
+	// will not be sent to the client for security reasons as this might
+	// accidentally leak sensitive information to the client.
 	//
 	// BEWARE: The byte-slice returned by message.Payload() references a
 	// potentially pooled buffer that's reused by another handler goroutine as
