@@ -327,30 +327,30 @@ The following libraries provide seamless support for various development environ
 - **JavaScript (client)**: An [official JavaScript library](https://github.com/qbeon/webwire-js) enables seamless support for various JavaScript environments ([93% of web-browsers](https://caniuse.com/#search=websockets) & [Node.js](https://nodejs.org/en/)) providing a fully compliant client implementation (requires a websocket-based transport implementation such as [qbeon/webwire-go-gorilla](https://github.com/qbeon/webwire-go-gorilla) or [qbeon/webwire-go-fasthttp](https://github.com/qbeon/webwire-go-fasthttp)).
 
 ### Security
-Webwire can be hosted by a [TLS](https://en.wikipedia.org/wiki/Transport_Layer_Security) protected HTTPS server to prevent [man-in-the-middle attacks](https://en.wikipedia.org/wiki/Man-in-the-middle_attack) as well as to verify the identity of the server. Setting up a TLS protected server is easy:
+A webwire server can be hosted by a [TLS](https://en.wikipedia.org/wiki/Transport_Layer_Security) protected server transport implementation to prevent [man-in-the-middle attacks](https://en.wikipedia.org/wiki/Man-in-the-middle_attack) as well as to verify the identity of the server during connection establishment. Setting up a TLS protected websocket server for example is easy:
 ```go
 // Setup a secure webwire server instance
 server, err := wwr.NewServer(
 	serverImplementation,
 	wwr.ServerOptions{
-    Host: "localhost:443",
-    // Use a TLS protected transport layer
-    Transport: &wwrgorilla.Transport{
-			TLS: &wwrfasthttp.TLS{
-        // Provide key and certificate
-				CertFilePath:       "path/to/certificate.crt",
-        PrivateKeyFilePath: "path/to/private.key",
-        // Specify TLS configs
-        Config: &tls.Config{
-          MinVersion:               tls.VersionTLS12,
-		      CurvePreferences:         []tls.CurveID{tls.X25519, tls.CurveP256},
-		      PreferServerCipherSuites: true,
-		      CipherSuites: []uint16{
-			      tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
-			      tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
-			      tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
-		      },
-        }
+		Host: "localhost:443",
+	},
+	// Use a TLS protected transport layer
+	&wwrgorilla.Transport{
+		TLS: &wwrgorilla.TLS{
+			// Provide key and certificate
+			CertFilePath:       "path/to/certificate.crt",
+			PrivateKeyFilePath: "path/to/private.key",
+			// Specify TLS configs
+			Config: &tls.Config{
+				MinVersion:               tls.VersionTLS12,
+				CurvePreferences:         []tls.CurveID{tls.X25519, tls.CurveP256},
+				PreferServerCipherSuites: true,
+				CipherSuites: []uint16{
+					tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
+					tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+					tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+				},
 			},
 		},
 	},
@@ -364,19 +364,6 @@ if err := server.Run(); err != nil {
 }
 ```
 The above code example is using the [webwire-go-gorilla](https://github.com/qbeon/webwire-go-gorilla) transport implementation.
-
-To connect the client to a TLS protected webwire server `"https"` must be used as the URL scheme:
-```go
-connection, err := wwrclt.NewClient(
-	url.URL{
-		Scheme: "https",
-		Host: "localhost:443",
-	},
-	clientImplementation,
-	wwrclt.Options{/*...*/},
-	nil, // Use default TLS configuration
-)
-```
 
 ----
 
