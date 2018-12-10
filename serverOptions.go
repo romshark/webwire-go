@@ -33,6 +33,10 @@ type ServerOptions struct {
 	ErrorLog              *log.Logger
 	ReadTimeout           time.Duration
 
+	// SubProtocolName defines the optional name of the hosted webwire
+	// sub-protocol
+	SubProtocolName []byte
+
 	// MessageBufferSize defines the size of the message buffer
 	MessageBufferSize uint32
 }

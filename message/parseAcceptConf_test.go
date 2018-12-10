@@ -17,7 +17,7 @@ func TestMsgParseAcceptNoSubprotoConf(t *testing.T) {
 		MinorProtocolVersion: 33,
 		ReadTimeout:          11 * time.Second,
 		MessageBufferSize:    8192,
-		SubprotocolName:      []byte(nil),
+		SubProtocolName:      []byte(nil),
 	}
 
 	// Compose encoded message
@@ -45,7 +45,7 @@ func TestMsgParseAcceptConf(t *testing.T) {
 		MinorProtocolVersion: 33,
 		ReadTimeout:          11 * time.Second,
 		MessageBufferSize:    8192,
-		SubprotocolName:      []byte("test - subprotocol name"),
+		SubProtocolName:      []byte("test - sub-protocol name"),
 	}
 
 	// Compose encoded message

@@ -40,6 +40,7 @@ func NewServer(
 			MinorProtocolVersion: 0,
 			ReadTimeout:          opts.ReadTimeout,
 			MessageBufferSize:    opts.MessageBufferSize,
+			SubProtocolName:      opts.SubProtocolName,
 		},
 	)
 	if err != nil {

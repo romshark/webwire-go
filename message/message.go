@@ -112,7 +112,7 @@ const (
 	//  3. minor protocol version (1 byte)
 	//  4. read timeout in milliseconds (4 byte)
 	//  5. message buffer size in bytes (4 byte)
-	//  6. subprotocol name (0+ bytes)
+	//  6. sub-protocol name (0+ bytes)
 	MinLenAcceptConf = int(11)
 )
 
@@ -217,7 +217,7 @@ const (
 type ServerConfiguration struct {
 	MajorProtocolVersion byte
 	MinorProtocolVersion byte
-	SubprotocolName      []byte
+	SubProtocolName      []byte
 	ReadTimeout          time.Duration
 	MessageBufferSize    uint32
 }

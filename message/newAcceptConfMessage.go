@@ -9,7 +9,7 @@ import (
 // NewAcceptConfMessage composes a server configuration message and writes it to the
 // given buffer
 func NewAcceptConfMessage(conf ServerConfiguration) ([]byte, error) {
-	buf := make([]byte, MinLenAcceptConf+len(conf.SubprotocolName))
+	buf := make([]byte, MinLenAcceptConf+len(conf.SubProtocolName))
 
 	buf[0] = byte(MsgAcceptConf)
 	buf[1] = byte(conf.MajorProtocolVersion)
@@ -31,7 +31,7 @@ func NewAcceptConfMessage(conf ServerConfiguration) ([]byte, error) {
 	binary.LittleEndian.PutUint32(buf[3:7], uint32(readTimeoutMs))
 	binary.LittleEndian.PutUint32(buf[7:11], conf.MessageBufferSize)
 
-	copy(buf[11:], conf.SubprotocolName)
+	copy(buf[11:], conf.SubProtocolName)
 
 	return buf, nil
 }

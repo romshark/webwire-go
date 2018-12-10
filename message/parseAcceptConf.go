@@ -13,9 +13,9 @@ func (msg *Message) parseAcceptConf() error {
 	}
 	dat := msg.MsgBuffer.Data()
 
-	subprotocolName := []byte(nil)
+	subProtocolName := []byte(nil)
 	if msg.MsgBuffer.len > MinLenAcceptConf {
-		subprotocolName = dat[11:]
+		subProtocolName = dat[11:]
 	}
 
 	msg.ServerConfiguration = ServerConfiguration{
@@ -25,7 +25,7 @@ func (msg *Message) parseAcceptConf() error {
 			binary.LittleEndian.Uint32(dat[3:7]),
 		) * time.Millisecond,
 		MessageBufferSize: binary.LittleEndian.Uint32(dat[7:11]),
-		SubprotocolName:   subprotocolName,
+		SubProtocolName:   subProtocolName,
 	}
 	return nil
 }
