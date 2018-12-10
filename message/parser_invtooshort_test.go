@@ -115,7 +115,7 @@ func TestMsgParseInvalidSessCloseReqTooShort(t *testing.T) {
 	lenTooShort := MinLenDoCloseSession - 1
 	invalidMessage := make([]byte, lenTooShort)
 
-	invalidMessage[0] = MsgDoCloseSession
+	invalidMessage[0] = MsgRequestCloseSession
 
 	_, err := tryParse(t, invalidMessage)
 	require.Error(t,

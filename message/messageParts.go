@@ -8,7 +8,7 @@ var msgTypeSignalBinary = []byte{MsgSignalBinary}
 var msgTypeSignalUtf8 = []byte{MsgSignalUtf8}
 var msgTypeSignalUtf16 = []byte{MsgSignalUtf16}
 
-var msgTypeRequestCloseSession = []byte{MsgDoCloseSession}
+var msgTypeRequestCloseSession = []byte{MsgRequestCloseSession}
 var msgTypeRequestRestoreSession = []byte{MsgRequestRestoreSession}
 
 var msgTypeRequestBinary = []byte{MsgRequestBinary}

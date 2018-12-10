@@ -39,7 +39,7 @@ func (msg *Message) parse() (parsedMsgType bool, err error) {
 		err = msg.parseSessionClosed()
 
 	// Session destruction request message
-	case MsgDoCloseSession:
+	case MsgRequestCloseSession:
 		err = msg.parseCloseSession()
 
 	// Signal messages

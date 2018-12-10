@@ -140,7 +140,7 @@ func TestWriteMsgSpecialRequestReplyInvalidType(t *testing.T) {
 		MsgReplyError,
 		MsgNotifySessionCreated,
 		MsgNotifySessionClosed,
-		MsgDoCloseSession,
+		MsgRequestCloseSession,
 		MsgRequestRestoreSession,
 		MsgSignalBinary,
 		MsgSignalUtf8,

@@ -13,7 +13,7 @@ func TestRequiresReplyCloseSession(t *testing.T) {
 	writer := &testWriter{}
 	require.NoError(t, WriteMsgNamelessRequest(
 		writer,
-		MsgDoCloseSession,
+		MsgRequestCloseSession,
 		genRndMsgIdentifier(),
 		[]byte{},
 	))
@@ -24,7 +24,7 @@ func TestRequiresReplyCloseSession(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, typeParsed)
 
-	require.Equal(t, MsgDoCloseSession, msg.MsgType)
+	require.Equal(t, MsgRequestCloseSession, msg.MsgType)
 	require.True(t,
 		msg.RequiresReply(),
 		"Expected a session closure request message to require a reply",

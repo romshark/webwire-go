@@ -275,7 +275,7 @@ func requestCloseSession(t *testing.T, socket wwr.Socket) *message.Message {
 
 	require.NoError(t, message.WriteMsgNamelessRequest(
 		writer,
-		message.MsgDoCloseSession,
+		message.MsgRequestCloseSession,
 		[]byte{0, 0, 0, 0, 0, 0, 0, 0},
 		nil,
 	))

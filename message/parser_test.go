@@ -19,7 +19,7 @@ func TestMsgParseCloseSessReq(t *testing.T) {
 
 	// Compose encoded message
 	// Add type flag
-	encoded := []byte{MsgDoCloseSession}
+	encoded := []byte{MsgRequestCloseSession}
 	// Add identifier
 	encoded = append(encoded, id[:]...)
 
@@ -28,7 +28,7 @@ func TestMsgParseCloseSessReq(t *testing.T) {
 
 	// Compare
 	require.NotNil(t, actual.MsgBuffer)
-	require.Equal(t, MsgDoCloseSession, actual.MsgType)
+	require.Equal(t, MsgRequestCloseSession, actual.MsgType)
 	require.Equal(t, id, actual.MsgIdentifier[:])
 	require.Equal(t, id, actual.MsgIdentifierBytes)
 	require.Nil(t, actual.MsgName)

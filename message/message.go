@@ -158,9 +158,9 @@ const (
 
 	// CLIENT
 
-	// MsgDoCloseSession is session closure command sent only by the client to
+	// MsgRequestCloseSession is session closure command sent only by the client to
 	// make the server close the currently active session
-	MsgDoCloseSession = byte(31)
+	MsgRequestCloseSession = byte(31)
 
 	// MsgRequestRestoreSession is a session restoration request sent only by
 	// the client
@@ -239,7 +239,7 @@ type Message struct {
 // otherwise returns false.
 func (msg *Message) RequiresReply() bool {
 	switch msg.MsgType {
-	case MsgDoCloseSession:
+	case MsgRequestCloseSession:
 		fallthrough
 	case MsgRequestRestoreSession:
 		fallthrough

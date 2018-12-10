@@ -16,7 +16,7 @@ func WriteMsgNamelessRequest(
 	msgType := msgTypeRequestCloseSession
 	if reqType == MsgRequestRestoreSession {
 		msgType = msgTypeRequestRestoreSession
-	} else if reqType != MsgDoCloseSession {
+	} else if reqType != MsgRequestCloseSession {
 		panic(fmt.Errorf("unexpected nameless request type: %d", reqType))
 	}
 
