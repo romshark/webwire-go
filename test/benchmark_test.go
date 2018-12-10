@@ -11,8 +11,8 @@ import (
 	"github.com/qbeon/webwire-go/message"
 )
 
-// BenchmarkRequestC1_P16 benchmarks a request with a 1 kb payload on a single
-// connection
+// BenchmarkRequestC1_P16 benchmarks a request with a 16 byte payload on a
+// single connection
 func BenchmarkRequestC1_P16(b *testing.B) {
 	// Preallocate the payload
 	payloadData := make([]byte, 16)
