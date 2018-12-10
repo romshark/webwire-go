@@ -61,8 +61,6 @@ The [webwire-go](https://github.com/qbeon/webwire-go) library provides a server 
   - [Server-side Signals](#server-side-signals)
   - [Namespaces](#namespaces)
   - [Sessions](#sessions)
-  - [Automatic Session Restoration](#automatic-session-restoration)
-  - [Automatic Connection Maintenance](#automatic-connection-maintenance)
   - [Concurrency](#concurrency)
   - [Hooks](#hooks)
     - [Server-side Hooks](#server-side-hooks)
@@ -280,28 +278,6 @@ func OnRequest(
 
 WebWire provides a basic file-based session manager implementation out of the box used by default when no custom session manager is defined. The default session manager creates a file with a .wwrsess extension for each opened session in the configured directory (which, by default, is the directory of the executable). During the restoration of a session the file is looked up by name using the session key, read and unmarshalled recreating the session object.
 
-### Automatic Session Restoration
-The client will automatically try to restore the previously opened session during connection establishment when getting disconnected without explicitly closing the session before.
-
-```go
-// Will automatically restore the previous session if there was any
-err := client.Connect()
-```
-
-The session can also be restored manually given its key assuming the server didn't yet delete it. Session restoration will fail and return an error if the provided key doesn't correspond to any active session on the server or else if there's another active session already assigned to this client.
-```go
-err := client.RestoreSession([]byte("yoursessionkeygoeshere"))
-```
-
-### Automatic Connection Maintenance
-The WebWire client maintains the connection fully automatically to guarantee maximum connection uptime. It will automatically reconnect in the background whenever the connection is lost.
-
-The only things to remember are:
-- Client API methods such as `client.Request` and `client.RestoreSession` will timeout if the server is unavailable for the entire duration of the specified timeout and thus the client fails to reconnect.
-- `client.Signal` will immediately return a `ErrDisconnected` error if there's no connection at the time the signal was sent.
-
-This feature is entirely optional and can be disabled at will which will cause `client.Request` and `client.RestoreSession` to immediately return a `ErrDisconnected` error when there's no connection at the time the request is made.
-
 ### Concurrency
 Messages are parsed and handled concurrently in a separate goroutine by default. The total number of concurrently executed handlers can be independently throttled down for each individual connection, which is unlimited by default.
 
@@ -359,7 +335,7 @@ server, err := wwr.NewServer(
 	wwr.ServerOptions{
     Host: "localhost:443",
     // Use a TLS protected transport layer
-    Transport: &wwrfasthttp.Transport{
+    Transport: &wwrgorilla.Transport{
 			TLS: &wwrfasthttp.TLS{
         // Provide key and certificate
 				CertFilePath:       "path/to/certificate.crt",
@@ -387,6 +363,7 @@ if err := server.Run(); err != nil {
 	panic(fmt.Errorf("wwr server failed: %s", err))
 }
 ```
+The above code example is using the [webwire-go-gorilla](https://github.com/qbeon/webwire-go-gorilla) transport implementation.
 
 To connect the client to a TLS protected webwire server `"https"` must be used as the URL scheme:
 ```go
@@ -400,31 +377,6 @@ connection, err := wwrclt.NewClient(
 	nil, // Use default TLS configuration
 )
 ```
-
-In case of a self-signed certificate used for testing purposes the client will fail to connect but TLS can be configured to skip the certificate verification (which **must be disabled in production!**):
-```go
-connection, err := wwrclt.NewClient(
-	url.URL{
-		Scheme: "https",
-		Host: "localhost:443",
-	},
-	clientImplementation,
-	wwrclt.Options{/*...*/},
-	/*
-		--------------------------------------------------------------
-		WARNING! NEVER DISABLE CERTIFICATE VERIFICATION IN PRODUCTION!
-		--------------------------------------------------------------
-		InsecureSkipVerify is enabled for testing purposes only
-		to allow the use of a self-signed localhost SSL certificate.
-		Enabling this option in production is dangerous and irresponsible.
-	*/
-	&tls.Config{
-		InsecureSkipVerify: true,
-	},
-)
-```
-
-An alternative, somewhat safer approach would be to install the root CA certificate on the test system to make clients accept the self-signed server ceretificate (which was signed using the installed root certificate) instead of enabling `InsecureSkipVerify`.
 
 ----
 
