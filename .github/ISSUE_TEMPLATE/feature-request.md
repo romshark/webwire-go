@@ -1,20 +1,17 @@
 ---
-name: Client Feature Request
-about: Propose a new feature for the webwire client implementation
+name: Feature Request
+about: Propose a new feature for the webwire protocol or server implementation
 title: ''
-labels: ''
+labels: feature request
 assignees: ''
 
 ---
 
-# Client Feature Request
+# Feature Request
+_Describe the feature you propose and how you expect the webwire server to behave in what case._
 
-## Proposed Behavior
-_Describe how you expect the webwire client implementation to behave in what case
-thereby describing your proposed feature._
-
-## Actual Behavior
-_Describe how the webwire client implementation actually behaves right now
+## Problem
+_Describe how the webwire server actually behaves right now
 and what exactly made you create this feature request._
 
 ## Proposed API
@@ -29,3 +26,9 @@ _If you already have ideas on how to implement your feature then please describe
 ## Additional information
 _**Optional section, remove when empty**_<br>
 _Optionally add any other relevant information if necessary._
+
+### Environment
+ - **OS**: _Windows 10, Ubuntu 16.04, Mac OS 11.5 ..._
+ - **Go version**: _Go 1.11.2_
+ - **webwire-go version**: _v1.0.0 rc1 / git revision_
+ - **System**: _CPU, RAM, Disk, Network (when necessary)_
