@@ -1,6 +1,9 @@
 ---
 name: Server Feature Request
 about: Propose a new feature for the webwire server implementation
+title: ''
+labels: ''
+assignees: ''
 
 ---
 

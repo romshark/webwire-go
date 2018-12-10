@@ -1,6 +1,9 @@
 ---
 name: Client Feature Request
 about: Propose a new feature for the webwire client implementation
+title: ''
+labels: ''
+assignees: ''
 
 ---
 

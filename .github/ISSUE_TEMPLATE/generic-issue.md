@@ -2,14 +2,15 @@
 name: Generic Issue
 about: Use this template in exceptional cases, when neither of the other templates
   suit your issue
+title: ''
+labels: ''
+assignees: ''
 
 ---
 
-# Generic Issue
-
-## Description
+## Generic Issue
 _Describe the problem you're facing using webwire-go or the improvement you're proposing._
-_Please use this template in exceptional cases, when neither of the other templates suit your issue_
+_Please use this template in exceptional cases when neither of the other templates suits your issue_
 
 ## Environment
 _**Optional section, remove when empty**_<br>

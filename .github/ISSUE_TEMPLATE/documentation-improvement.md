@@ -1,6 +1,9 @@
 ---
 name: Documentation Improvement
 about: Propose a documentation improvement
+title: ''
+labels: ''
+assignees: ''
 
 ---
 
