@@ -109,24 +109,27 @@ Fraudulent messages are recognized by analyzing the message length, out-of-range
 
 ## Features
 ### Request-Reply
-Clients can initiate multiple simultaneous requests and receive replies asynchronously. Requests are multiplexed through the connection similar to HTTP2 pipelining.
+Clients can initiate multiple simultaneous requests and receive replies asynchronously. Requests are multiplexed through the connection similar to HTTP2 pipelining. The below examples are using the [webwire Go client](https://github.com/qbeon-webwire-go-client).
 
 ```go
 // Send a request to the server,
 // this will block the goroutine until either a reply is received
 // or the default timeout triggers (if there is one)
-reply, err := client.Request(nil, nil, wwr.NewPayload(
-  wwr.EncodingBinary,
-  []byte("sudo rm -rf /"),
-))
+reply, err := client.Request(
+	context.Background(), // No cancelation, default timeout
+	nil,                  // No name
+	wwr.Payload{
+		Data: []byte("sudo rm -rf /"), // Binary request payload
+	},
+)
+defer reply.Close() // Close the reply
 if err != nil {
-  // Oh oh, request failed for some reason!
+	// Oh oh, the request failed for some reason!
 }
-defer reply.Close()
 reply.PayloadUtf8() // Here we go!
  ```
 
-Requests will respect cancelable contexts and provided deadlines
+Requests will respect cancelable contexts and deadlines
 
 ```go
 cancelableCtx, cancel := context.WithCancel(context.Background())
@@ -136,48 +139,49 @@ defer cancelTimed()
 
 // Send a cancelable request to the server with a 1 second deadline
 // will block the goroutine for 1 second at max
-reply, err := client.Request(timedCtx, nil, wwr.Payload(
-  wwr.EncodingUtf8,
-  []byte("hurry up!"),
-))
+reply, err := client.Request(timedCtx, nil, wwr.Payload{
+	Encoding: wwr.EncodingUtf8,
+	Data:     []byte("hurry up!"),
+})
+defer reply.Close()
+
 // Investigate errors manually...
 switch err.(type) {
-  case wwr.ErrCanceled:
-    // Request was prematurely canceled by the sender
-  case wwr.ErrDeadlineExceeded:
-    // Request timed out, server didn't manage to reply
-    // within the user-specified context deadline
-  case wwr.TimeoutErr:
-    // Request timed out, server didn't manage to reply
-    // within the specified default request timeout duration
-  case nil:
-    // Replied successfully
-    defer reply.Close()
+case wwr.ErrCanceled:
+	// Request was prematurely canceled by the sender
+case wwr.ErrDeadlineExceeded:
+	// Request timed out, server didn't manage to reply
+	// within the user-specified context deadline
+case wwr.TimeoutErr:
+	// Request timed out, server didn't manage to reply
+	// within the specified default request timeout duration
+case nil:
+	// Replied successfully
 }
 
 // ... or check for a timeout error the easier way:
 if err != nil {
-  if wwr.IsTimeoutErr(err) {
-    // Timed out due to deadline excess or default timeout
-  } else {
-    // Unexpected error
-  }
+	if wwr.IsTimeoutErr(err) {
+		// Timed out due to deadline excess or default timeout
+	} else {
+		// Unexpected error
+	}
 }
 
 reply // Just in time!
 ```
 
 ### Client-side Signals
-Individual clients can send signals to the server. Signals are one-way messages guaranteed to arrive, though they're not guaranteed to be processed like requests are. In cases such as when the server is being shut down, incoming signals are ignored by the server and dropped while requests will acknowledge the failure.
+Individual clients can send signals to the server. Signals are one-way messages guaranteed to arrive, though they're not guaranteed to be processed like requests are. In cases such as when the server is being shut down, incoming signals are ignored by the server and dropped while requests will acknowledge the failure. The below examples are using the [webwire Go client](https://github.com/qbeon-webwire-go-client).
 
 ```go
 // Send signal to server
 err := client.Signal(
-  "eventA",
-  wwr.NewPayload(
-    wwr.EncodingUtf8,
-    []byte("something"),
-  ),
+	[]byte("eventA"),
+	wwr.Payload{
+		Encoding: wwr.EncodingUtf8,
+		Data:     []byte("something"),
+	},
 )
 ```
 
@@ -190,14 +194,17 @@ func OnRequest(
   conn wwr.Connection,
   _ wwr.Message,
 ) (wwr.Payload, error) {
-  // Send a signal to the client before replying to the request
-  conn.Signal(
-    nil, // No message name
-    wwr.NewPayload(wwr.EncodingUtf8, []byte("example")),
-  )
+	// Send a signal to the client before replying to the request
+	conn.Signal(
+		nil, // No message name
+		wwr.Payload{
+			Encoding: wwr.EncodingUtf8,
+			Data:     []byte("example")),
+		},
+	)
 
-  // Reply nothing
-  return nil, nil
+	// Reply nothing
+	return wwr.Payload{}, nil
 }
 ```
 
@@ -206,41 +213,41 @@ Different kinds of requests and signals can be differentiated using the builtin 
 
 ```go
 func OnRequest(
-  _ context.Context,
-  _ wwr.Connection,
-  msg wwr.Message,
+	_ context.Context,
+	_ wwr.Connection,
+	msg wwr.Message,
 ) (wwr.Payload, error) {
-  switch msg.Name() {
-  case "auth":
-    // Authentication request
-    return wwr.NewPayload(
-      wwr.EncodingUtf8,
-      []byte("this is an auth request"),
-    )
-  case "query":
-    // Query request
-    return wwr.NewPayload(
-      wwr.EncodingUtf8,
-      []byte("this is a query request"),
-    )
-  }
+	switch msg.Name() {
+	case "auth":
+		// Authentication request
+		return wwr.Payload{
+			Encoding: wwr.EncodingUtf8,
+      			Data:     []byte("this is an auth request"),
+		}
+	case "query":
+		// Query request
+		return wwr.Payload{
+			Encoding: wwr.EncodingUtf8,
+			Data:     []byte("this is a query request"),
+		}
+	}
 
-  // Otherwise return nothing
-  return nil, nil
+	// Otherwise return nothing
+	return wwr.Payload{}, nil
 }
 ```
 ```go
 func OnSignal(
-  _ context.Context,
-  _ wwr.Connection,
-  msg wwr.Message,
+	_ context.Context,
+	_ wwr.Connection,
+	msg wwr.Message,
 ) {
-  switch msg.Name() {
-  case "event A":
-    // handle event A
-  case "event B":
-    // handle event B
-  }
+	switch string(msg.Name()) {
+	case "event A":
+		// handle event A
+	case "event B":
+		// handle event B
+	}
 }
 ```
 
@@ -249,25 +256,25 @@ Individual connections can get sessions assigned to identify them. The state of 
 
 ```go
 func OnRequest(
-  _ context.Context,
-  conn wwr.Connection,
-  msg wwr.Message,
+	_ context.Context,
+	conn wwr.Connection,
+	msg wwr.Message,
 ) (wwr.Payload, error) {
-  // Verify credentials
-  if string(msg.Payload().Data()) != "secret:pass" {
-    return nil, wwr.ReqErr {
-      Code: "WRONG_CREDENTIALS",
-      Message: "Incorrect username or password, try again"
-    }
-  }
-  // Create session (will automatically synchronize to the client)
-  err := conn.CreateSession(/*something that implements wwr.SessionInfo*/)
-  if err != nil {
-    return nil, fmt.Errorf("Couldn't create session for some reason")
-  }
+	// Verify credentials
+	if string(msg.Payload()) != "secret:pass" {
+		return wwr.Payload{}, wwr.ReqErr {
+			Code:    "WRONG_CREDENTIALS",
+			Message: "Incorrect username or password, try again",
+		}
+	}
+	// Create session (will automatically synchronize to the client)
+	err := conn.CreateSession(/*something that implements wwr.SessionInfo*/)
+	if err != nil {
+		return nil, fmt.Errorf("Couldn't create session for some reason")
+	}
 
-  // Complete request, reply nothing
-  return nil, nil
+	// Complete request, reply nothing
+	return wwr.Payload{}, nil
 }
 ```
 
