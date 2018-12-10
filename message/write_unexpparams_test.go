@@ -1,11 +1,11 @@
-package message
+package message_test
 
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
-
+	"github.com/qbeon/webwire-go/message"
 	pld "github.com/qbeon/webwire-go/payload"
+	"github.com/stretchr/testify/require"
 )
 
 /****************************************************************\
@@ -16,7 +16,7 @@ import (
 // without both the name and the payload
 func TestWriteMsgReqNoNameNoPayload(t *testing.T) {
 	writer := &testWriter{}
-	require.Error(t, WriteMsgRequest(
+	require.Error(t, message.WriteMsgRequest(
 		writer,
 		genRndMsgIdentifier(),
 		nil,
@@ -37,7 +37,7 @@ func TestWriteMsgReqNameTooLong(t *testing.T) {
 	}
 
 	writer := &testWriter{}
-	require.Error(t, WriteMsgRequest(
+	require.Error(t, message.WriteMsgRequest(
 		writer,
 		genRndMsgIdentifier(),
 		nameBuf,
@@ -58,7 +58,7 @@ func TestWriteMsgReqInvalidCharsetBelowAscii32(t *testing.T) {
 	invalidNameBytes[0] = byte(31)
 
 	writer := &testWriter{}
-	require.Error(t, WriteMsgRequest(
+	require.Error(t, message.WriteMsgRequest(
 		writer,
 		genRndMsgIdentifier(),
 		invalidNameBytes,
@@ -79,7 +79,7 @@ func TestWriteMsgReqInvalidCharsetAboveAscii126(t *testing.T) {
 	invalidNameBytes[0] = byte(127)
 
 	writer := &testWriter{}
-	require.Error(t, WriteMsgRequest(
+	require.Error(t, message.WriteMsgRequest(
 		writer,
 		genRndMsgIdentifier(),
 		invalidNameBytes,
@@ -100,7 +100,7 @@ func TestWriteMsgSigNameTooLong(t *testing.T) {
 	}
 
 	writer := &testWriter{}
-	require.Error(t, WriteMsgSignal(writer, nameBuf, 0, nil, true))
+	require.Error(t, message.WriteMsgSignal(writer, nameBuf, 0, nil, true))
 	require.True(t, writer.closed)
 	require.Nil(t, writer.buf)
 }
@@ -114,7 +114,13 @@ func TestWriteMsgSigInvalidCharsetBelowAscii32(t *testing.T) {
 	invalidNameBytes[0] = byte(31)
 
 	writer := &testWriter{}
-	require.Error(t, WriteMsgSignal(writer, invalidNameBytes, 0, nil, true))
+	require.Error(t, message.WriteMsgSignal(
+		writer,
+		invalidNameBytes,
+		0,
+		nil,
+		true,
+	))
 	require.True(t, writer.closed)
 	require.Nil(t, writer.buf)
 }
@@ -128,7 +134,13 @@ func TestWriteMsgSigInvalidCharsetAboveAscii126(t *testing.T) {
 	invalidNameBytes[0] = byte(127)
 
 	writer := &testWriter{}
-	require.Error(t, WriteMsgSignal(writer, invalidNameBytes, 0, nil, true))
+	require.Error(t, message.WriteMsgSignal(
+		writer,
+		invalidNameBytes,
+		0,
+		nil,
+		true,
+	))
 	require.True(t, writer.closed)
 	require.Nil(t, writer.buf)
 }
@@ -137,25 +149,25 @@ func TestWriteMsgSigInvalidCharsetAboveAscii126(t *testing.T) {
 // WriteMsgSpecialRequestReply with non-special reply message types
 func TestWriteMsgSpecialRequestReplyInvalidType(t *testing.T) {
 	allTypes := []byte{
-		MsgReplyError,
-		MsgNotifySessionCreated,
-		MsgNotifySessionClosed,
-		MsgRequestCloseSession,
-		MsgRequestRestoreSession,
-		MsgSignalBinary,
-		MsgSignalUtf8,
-		MsgSignalUtf16,
-		MsgRequestBinary,
-		MsgRequestUtf8,
-		MsgRequestUtf16,
-		MsgReplyBinary,
-		MsgReplyUtf8,
-		MsgReplyUtf16,
+		message.MsgReplyError,
+		message.MsgNotifySessionCreated,
+		message.MsgNotifySessionClosed,
+		message.MsgRequestCloseSession,
+		message.MsgRequestRestoreSession,
+		message.MsgSignalBinary,
+		message.MsgSignalUtf8,
+		message.MsgSignalUtf16,
+		message.MsgRequestBinary,
+		message.MsgRequestUtf8,
+		message.MsgRequestUtf16,
+		message.MsgReplyBinary,
+		message.MsgReplyUtf8,
+		message.MsgReplyUtf16,
 	}
 
 	for _, tp := range allTypes {
 		writer := &testWriter{}
-		require.Error(t, WriteMsgSpecialRequestReply(
+		require.Error(t, message.WriteMsgSpecialRequestReply(
 			writer,
 			tp,
 			genRndMsgIdentifier(),
@@ -169,7 +181,7 @@ func TestWriteMsgSpecialRequestReplyInvalidType(t *testing.T) {
 // with no error code which is invalid.
 func TestWriteMsgReplyErrorNoCode(t *testing.T) {
 	writer := &testWriter{}
-	require.Error(t, WriteMsgReplyError(
+	require.Error(t, message.WriteMsgReplyError(
 		writer,
 		genRndMsgIdentifier(),
 		[]byte(""),
@@ -189,7 +201,7 @@ func TestWriteMsgReplyErrorCodeTooLong(t *testing.T) {
 	}
 
 	writer := &testWriter{}
-	require.Error(t, WriteMsgReplyError(
+	require.Error(t, message.WriteMsgReplyError(
 		writer,
 		genRndMsgIdentifier(),
 		tooLongCode,
@@ -209,7 +221,7 @@ func TestWriteMsgReplyErrorCodeCharsetBelowAscii32(t *testing.T) {
 	invalidCodeBytes[0] = byte(31)
 
 	writer := &testWriter{}
-	require.Error(t, WriteMsgReplyError(
+	require.Error(t, message.WriteMsgReplyError(
 		writer,
 		genRndMsgIdentifier(),
 		invalidCodeBytes,
@@ -230,7 +242,7 @@ func TestWriteMsgReplyErrorCodeCharsetAboveAscii126(t *testing.T) {
 	invalidCodeBytes[0] = byte(127)
 
 	writer := &testWriter{}
-	require.Error(t, WriteMsgReplyError(
+	require.Error(t, message.WriteMsgReplyError(
 		writer,
 		genRndMsgIdentifier(),
 		invalidCodeBytes,

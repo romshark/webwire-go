@@ -1,8 +1,9 @@
-package message
+package message_test
 
 import (
 	"testing"
 
+	"github.com/qbeon/webwire-go/message"
 	pld "github.com/qbeon/webwire-go/payload"
 	"github.com/stretchr/testify/require"
 )
@@ -23,7 +24,7 @@ func TestMsgParseReplyUtf16CorruptInput(t *testing.T) {
 
 	// Compose encoded message
 	// Add type flag
-	encoded := []byte{MsgReplyUtf16}
+	encoded := []byte{message.MsgReplyUtf16}
 	// Add identifier
 	encoded = append(encoded, id[:]...)
 	// Add header padding byte due to UTF16 encoding
@@ -52,7 +53,7 @@ func TestMsgParseRequestUtf16CorruptInput(t *testing.T) {
 
 	// Compose encoded message
 	// Add type flag
-	encoded := []byte{MsgRequestUtf16}
+	encoded := []byte{message.MsgRequestUtf16}
 	// Add identifier
 	encoded = append(encoded, id[:]...)
 	// Add name length flag
@@ -86,7 +87,7 @@ func TestMsgParseSignalUtf16CorruptInput(t *testing.T) {
 
 	// Compose encoded message
 	// Add type flag
-	encoded := []byte{MsgSignalUtf16}
+	encoded := []byte{message.MsgSignalUtf16}
 	// Add name length flag
 	encoded = append(encoded, byte(len(name)))
 	// Add name

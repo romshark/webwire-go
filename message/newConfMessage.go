@@ -6,10 +6,10 @@ import (
 	"time"
 )
 
-// NewConfMessage composes a server configuration message and writes it to the
+// NewAcceptConfMessage composes a server configuration message and writes it to the
 // given buffer
-func NewConfMessage(conf ServerConfiguration) ([]byte, error) {
-	buf := make([]byte, 11)
+func NewAcceptConfMessage(conf ServerConfiguration) ([]byte, error) {
+	buf := make([]byte, MinLenAcceptConf+len(conf.SubprotocolName))
 
 	buf[0] = byte(MsgAcceptConf)
 	buf[1] = byte(conf.MajorProtocolVersion)
@@ -30,6 +30,8 @@ func NewConfMessage(conf ServerConfiguration) ([]byte, error) {
 
 	binary.LittleEndian.PutUint32(buf[3:7], uint32(readTimeoutMs))
 	binary.LittleEndian.PutUint32(buf[7:11], conf.MessageBufferSize)
+
+	copy(buf[11:], conf.SubprotocolName)
 
 	return buf, nil
 }

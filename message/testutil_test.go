@@ -1,4 +1,4 @@
-package message
+package message_test
 
 import (
 	"fmt"
@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/qbeon/webwire-go/message"
 	pld "github.com/qbeon/webwire-go/payload"
 	"github.com/stretchr/testify/require"
 )
@@ -37,14 +38,14 @@ func (tw *testWriter) Close() error {
 	return nil
 }
 
-func tryParse(t *testing.T, encoded []byte) (*Message, error) {
-	msg := NewMessage(uint32(len(encoded)))
+func tryParse(t *testing.T, encoded []byte) (*message.Message, error) {
+	msg := message.NewMessage(uint32(len(encoded)))
 	typeDetermined, err := msg.ReadBytes(encoded)
 	require.True(t, typeDetermined, "Couldn't determine message type")
 	return msg, err
 }
 
-func tryParseNoErr(t *testing.T, encoded []byte) *Message {
+func tryParseNoErr(t *testing.T, encoded []byte) *message.Message {
 	msg, err := tryParse(t, encoded)
 	require.NoError(t, err)
 	return msg
@@ -139,10 +140,10 @@ func rndRequestMsg(
 	messageLength := 10 + len(name) + len(payload.Data)
 	payloadEncoding := pld.Binary
 	switch messageType {
-	case MsgRequestBinary:
-	case MsgRequestUtf8:
+	case message.MsgRequestBinary:
+	case message.MsgRequestUtf8:
 		payloadEncoding = pld.Utf8
-	case MsgRequestUtf16:
+	case message.MsgRequestUtf16:
 		panic(fmt.Errorf(
 			"Consider using rndRequestMsgUtf16" +
 				"for UTF16 encoded request messages",
@@ -212,7 +213,7 @@ func rndRequestMsgUtf16(
 	encodedMessage = make([]byte, 0, messageLength)
 
 	// Add type flag
-	encodedMessage = append(encodedMessage, MsgRequestUtf16)
+	encodedMessage = append(encodedMessage, message.MsgRequestUtf16)
 
 	// Add identifier
 	encodedMessage = append(encodedMessage, id...)
@@ -250,10 +251,10 @@ func rndReplyMsg(
 	messageLength := 9 + len(payload.Data)
 	payloadEncoding := pld.Binary
 	switch messageType {
-	case MsgReplyBinary:
-	case MsgReplyUtf8:
+	case message.MsgReplyBinary:
+	case message.MsgReplyUtf8:
 		payloadEncoding = pld.Utf8
-	case MsgReplyUtf16:
+	case message.MsgReplyUtf16:
 		panic(fmt.Errorf(
 			"Consider using rndReplyMsgUtf16 for UTF16 encoded messages",
 		))
@@ -306,7 +307,7 @@ func rndReplyMsgUtf16(
 	encodedMessage = make([]byte, 0, messageLength)
 
 	// Add type flag
-	encodedMessage = append(encodedMessage, MsgReplyUtf16)
+	encodedMessage = append(encodedMessage, message.MsgReplyUtf16)
 
 	// Add identifier
 	encodedMessage = append(encodedMessage, id...)
@@ -338,10 +339,10 @@ func rndSignalMsg(
 	messageLength := 2 + len(name) + len(payload.Data)
 	payloadEncoding := pld.Binary
 	switch messageType {
-	case MsgSignalBinary:
-	case MsgSignalUtf8:
+	case message.MsgSignalBinary:
+	case message.MsgSignalUtf8:
 		payloadEncoding = pld.Utf8
-	case MsgSignalUtf16:
+	case message.MsgSignalUtf16:
 		panic(fmt.Errorf(
 			"Consider using rndSignalMsgUtf16" +
 				"for UTF16 encoded signal messages",
@@ -407,7 +408,7 @@ func rndSignalMsgUtf16(
 	encodedMessage = make([]byte, 0, messageLength)
 
 	// Add type flag
-	encodedMessage = append(encodedMessage, MsgSignalUtf16)
+	encodedMessage = append(encodedMessage, message.MsgSignalUtf16)
 
 	// Add name length flag
 	encodedMessage = append(encodedMessage, byte(len(name)))

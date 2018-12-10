@@ -20,7 +20,7 @@ func (msg *Message) parse() (parsedMsgType bool, err error) {
 
 	// Server Configuration
 	case MsgAcceptConf:
-		err = msg.parseConf()
+		err = msg.parseAcceptConf()
 
 	// Heartbeat
 	case MsgHeartbeat:

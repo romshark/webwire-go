@@ -1,8 +1,6 @@
 package message
 
-import (
-	"errors"
-)
+import "errors"
 
 // parseCloseSession parses MsgRequestCloseSession messages
 func (msg *Message) parseCloseSession() error {

@@ -1,6 +1,10 @@
-package message
+package message_test
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/qbeon/webwire-go/message"
+)
 
 // BenchmarkParseRequestBinary benchmarks parsing of
 // binary encoded request messages
@@ -9,11 +13,11 @@ func BenchmarkParseRequestBinary(b *testing.B) {
 	// with 1 KiB (binary) payload
 	// and a random name
 	encoded, _, _, _ := rndRequestMsg(
-		MsgRequestBinary,
+		message.MsgRequestBinary,
 		1, 255,
 		1024, 1024,
 	)
-	msg := NewMessage(uint32(len(encoded)))
+	msg := message.NewMessage(uint32(len(encoded)))
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
@@ -30,11 +34,11 @@ func BenchmarkParseRequestUtf8(b *testing.B) {
 	// with 1 KiB (UTF8) payload
 	// and a random name
 	encoded, _, _, _ := rndRequestMsg(
-		MsgRequestUtf8,
+		message.MsgRequestUtf8,
 		1, 255,
 		1024, 1024,
 	)
-	msg := NewMessage(uint32(len(encoded)))
+	msg := message.NewMessage(uint32(len(encoded)))
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
@@ -54,7 +58,7 @@ func BenchmarkParseRequestUtf16(b *testing.B) {
 		1, 255,
 		1024, 1024,
 	)
-	msg := NewMessage(uint32(len(encoded)))
+	msg := message.NewMessage(uint32(len(encoded)))
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
@@ -71,11 +75,11 @@ func BenchmarkParseRequestBinaryLarge(b *testing.B) {
 	// with 1 MiB (binary) payload
 	// and a random name of maximum possible length
 	encoded, _, _, _ := rndRequestMsg(
-		MsgRequestBinary,
+		message.MsgRequestBinary,
 		255, 255,
 		134217728, 134217728,
 	)
-	msg := NewMessage(uint32(len(encoded)))
+	msg := message.NewMessage(uint32(len(encoded)))
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
@@ -92,10 +96,10 @@ func BenchmarkParseReplyBinary(b *testing.B) {
 	// with 1 KiB (binary) payload
 	// and a random name
 	encoded, _, _ := rndReplyMsg(
-		MsgReplyBinary,
+		message.MsgReplyBinary,
 		1024, 1024,
 	)
-	msg := NewMessage(uint32(len(encoded)))
+	msg := message.NewMessage(uint32(len(encoded)))
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
@@ -112,10 +116,10 @@ func BenchmarkParseReplyUtf8(b *testing.B) {
 	// with 1 KiB (UTF8) payload
 	// and a random name
 	encoded, _, _ := rndReplyMsg(
-		MsgReplyUtf8,
+		message.MsgReplyUtf8,
 		1024, 1024,
 	)
-	msg := NewMessage(uint32(len(encoded)))
+	msg := message.NewMessage(uint32(len(encoded)))
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
@@ -134,7 +138,7 @@ func BenchmarkParseReplyUtf16(b *testing.B) {
 	encoded, _, _ := rndReplyMsgUtf16(
 		1024, 1024,
 	)
-	msg := NewMessage(uint32(len(encoded)))
+	msg := message.NewMessage(uint32(len(encoded)))
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
@@ -151,10 +155,10 @@ func BenchmarkParseReplyBinaryLarge(b *testing.B) {
 	// with 1 MiB (binary) payload
 	// and a random name of maximum possible length
 	encoded, _, _ := rndReplyMsg(
-		MsgReplyBinary,
+		message.MsgReplyBinary,
 		134217728, 134217728,
 	)
-	msg := NewMessage(uint32(len(encoded)))
+	msg := message.NewMessage(uint32(len(encoded)))
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
@@ -171,11 +175,11 @@ func BenchmarkParseSignalBinary(b *testing.B) {
 	// with 1 KiB (binary) payload
 	// and a random name
 	encoded, _, _ := rndSignalMsg(
-		MsgSignalBinary,
+		message.MsgSignalBinary,
 		1, 255,
 		1024, 1024,
 	)
-	msg := NewMessage(uint32(len(encoded)))
+	msg := message.NewMessage(uint32(len(encoded)))
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
@@ -192,11 +196,11 @@ func BenchmarkParseSignalUtf8(b *testing.B) {
 	// with 1 KiB (UTF8) payload
 	// and a random name
 	encoded, _, _ := rndSignalMsg(
-		MsgSignalUtf8,
+		message.MsgSignalUtf8,
 		1, 255,
 		1024, 1024,
 	)
-	msg := NewMessage(uint32(len(encoded)))
+	msg := message.NewMessage(uint32(len(encoded)))
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
@@ -216,7 +220,7 @@ func BenchmarkParseSignalUtf16(b *testing.B) {
 		1, 255,
 		1024, 1024,
 	)
-	msg := NewMessage(uint32(len(encoded)))
+	msg := message.NewMessage(uint32(len(encoded)))
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
@@ -233,11 +237,11 @@ func BenchmarkParseSignalBinaryLarge(b *testing.B) {
 	// with 128 MiB (binary) payload
 	// and a random name of maximum possible length
 	encoded, _, _ := rndSignalMsg(
-		MsgSignalBinary,
+		message.MsgSignalBinary,
 		255, 255,
 		134217728, 134217728,
 	)
-	msg := NewMessage(uint32(len(encoded)))
+	msg := message.NewMessage(uint32(len(encoded)))
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {

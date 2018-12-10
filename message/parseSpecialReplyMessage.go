@@ -1,8 +1,6 @@
 package message
 
-import (
-	"errors"
-)
+import "errors"
 
 // parseSpecialReplyMessage parses the following message types:
 // MsgReplyShutdown, MsgReplyInternalError, MsgReplySessionNotFound,

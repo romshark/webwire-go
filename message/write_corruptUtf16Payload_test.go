@@ -1,11 +1,11 @@
-package message
+package message_test
 
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
-
+	"github.com/qbeon/webwire-go/message"
 	pld "github.com/qbeon/webwire-go/payload"
+	"github.com/stretchr/testify/require"
 )
 
 /****************************************************************\
@@ -17,7 +17,7 @@ import (
 // encoded)
 func TestWriteMsgReplyUtf16CorruptPayload(t *testing.T) {
 	writer := &testWriter{}
-	require.Error(t, WriteMsgReply(
+	require.Error(t, message.WriteMsgReply(
 		writer,
 		genRndMsgIdentifier(),
 		pld.Utf16,
@@ -32,7 +32,7 @@ func TestWriteMsgReplyUtf16CorruptPayload(t *testing.T) {
 // encoded)
 func TestWriteMsgReqUtf16CorruptPayload(t *testing.T) {
 	writer := &testWriter{}
-	require.Error(t, WriteMsgRequest(
+	require.Error(t, message.WriteMsgRequest(
 		writer,
 		genRndMsgIdentifier(),
 		genRndName(1, 255),
@@ -49,7 +49,7 @@ func TestWriteMsgReqUtf16CorruptPayload(t *testing.T) {
 // UTF16 encoded)
 func TestWriteMsgSigUtf16CorruptPayload(t *testing.T) {
 	writer := &testWriter{}
-	require.Error(t, WriteMsgSignal(
+	require.Error(t, message.WriteMsgSignal(
 		writer,
 		genRndName(1, 255),
 		pld.Utf16,

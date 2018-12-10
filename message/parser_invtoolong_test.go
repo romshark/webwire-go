@@ -1,8 +1,9 @@
-package message
+package message_test
 
 import (
 	"testing"
 
+	"github.com/qbeon/webwire-go/message"
 	"github.com/stretchr/testify/require"
 )
 
@@ -13,10 +14,10 @@ import (
 // TestMsgParseInvalidSessionClosedTooLong tests parsing of an invalid
 // session closed notification message which is too long to be considered valid
 func TestMsgParseInvalidSessionClosedTooLong(t *testing.T) {
-	lenTooLong := MinLenNotifySessionClosed + 1
+	lenTooLong := message.MinLenNotifySessionClosed + 1
 	invalidMessage := make([]byte, lenTooLong)
 
-	invalidMessage[0] = MsgNotifySessionClosed
+	invalidMessage[0] = message.MsgNotifySessionClosed
 
 	_, err := tryParse(t, invalidMessage)
 	require.Error(t,
@@ -33,7 +34,7 @@ func TestMsgParseInvalidHeartbeatTooLong(t *testing.T) {
 	lenTooLong := 2
 	invalidMessage := make([]byte, lenTooLong)
 
-	invalidMessage[0] = MsgHeartbeat
+	invalidMessage[0] = message.MsgHeartbeat
 
 	_, err := tryParse(t, invalidMessage)
 	require.Error(t,

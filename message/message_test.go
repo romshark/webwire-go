@@ -1,8 +1,9 @@
-package message
+package message_test
 
 import (
 	"testing"
 
+	"github.com/qbeon/webwire-go/message"
 	pld "github.com/qbeon/webwire-go/payload"
 	"github.com/stretchr/testify/require"
 )
@@ -11,20 +12,20 @@ import (
 // with a session closure request message
 func TestRequiresReplyCloseSession(t *testing.T) {
 	writer := &testWriter{}
-	require.NoError(t, WriteMsgNamelessRequest(
+	require.NoError(t, message.WriteMsgNamelessRequest(
 		writer,
-		MsgRequestCloseSession,
+		message.MsgRequestCloseSession,
 		genRndMsgIdentifier(),
 		[]byte{},
 	))
 	require.True(t, writer.closed)
 
-	msg := NewMessage(2048)
+	msg := message.NewMessage(2048)
 	typeParsed, err := msg.ReadBytes(writer.buf)
 	require.NoError(t, err)
 	require.True(t, typeParsed)
 
-	require.Equal(t, MsgRequestCloseSession, msg.MsgType)
+	require.Equal(t, message.MsgRequestCloseSession, msg.MsgType)
 	require.True(t,
 		msg.RequiresReply(),
 		"Expected a session closure request message to require a reply",
@@ -35,15 +36,15 @@ func TestRequiresReplyCloseSession(t *testing.T) {
 // with a session restoration request message
 func TestRequiresReplyRestoreSession(t *testing.T) {
 	writer := &testWriter{}
-	require.NoError(t, WriteMsgNamelessRequest(
+	require.NoError(t, message.WriteMsgNamelessRequest(
 		writer,
-		MsgRequestRestoreSession,
+		message.MsgRequestRestoreSession,
 		genRndMsgIdentifier(),
 		[]byte("somesamplesessionkey"),
 	))
 	require.True(t, writer.closed)
 
-	msg := NewMessage(1024)
+	msg := message.NewMessage(1024)
 	typeParsed, err := msg.ReadBytes(writer.buf)
 	require.NoError(t, err)
 	require.True(t, typeParsed)
@@ -58,7 +59,7 @@ func TestRequiresReplyRestoreSession(t *testing.T) {
 // with a binary request message
 func TestRequiresReplyRequestBinary(t *testing.T) {
 	writer := &testWriter{}
-	require.NoError(t, WriteMsgRequest(
+	require.NoError(t, message.WriteMsgRequest(
 		writer,
 		genRndMsgIdentifier(),
 		[]byte("samplename"),
@@ -68,7 +69,7 @@ func TestRequiresReplyRequestBinary(t *testing.T) {
 	))
 	require.True(t, writer.closed)
 
-	msg := NewMessage(1024)
+	msg := message.NewMessage(1024)
 	typeParsed, err := msg.ReadBytes(writer.buf)
 	require.NoError(t, err)
 	require.True(t, typeParsed)
@@ -83,7 +84,7 @@ func TestRequiresReplyRequestBinary(t *testing.T) {
 // with a UTF8 encoded request message
 func TestRequiresReplyRequestUtf8(t *testing.T) {
 	writer := &testWriter{}
-	require.NoError(t, WriteMsgRequest(
+	require.NoError(t, message.WriteMsgRequest(
 		writer,
 		genRndMsgIdentifier(),
 		[]byte("samplename"),
@@ -93,7 +94,7 @@ func TestRequiresReplyRequestUtf8(t *testing.T) {
 	))
 	require.True(t, writer.closed)
 
-	msg := NewMessage(1024)
+	msg := message.NewMessage(1024)
 	typeParsed, err := msg.ReadBytes(writer.buf)
 	require.NoError(t, err)
 	require.True(t, typeParsed)
@@ -108,7 +109,7 @@ func TestRequiresReplyRequestUtf8(t *testing.T) {
 // with a UTF16 encoded request message
 func TestRequiresReplyRequestUtf16(t *testing.T) {
 	writer := &testWriter{}
-	require.NoError(t, WriteMsgRequest(
+	require.NoError(t, message.WriteMsgRequest(
 		writer,
 		genRndMsgIdentifier(),
 		[]byte("samplename"),
@@ -118,7 +119,7 @@ func TestRequiresReplyRequestUtf16(t *testing.T) {
 	))
 	require.True(t, writer.closed)
 
-	msg := NewMessage(1024)
+	msg := message.NewMessage(1024)
 	typeParsed, err := msg.ReadBytes(writer.buf)
 	require.NoError(t, err)
 	require.True(t, typeParsed)

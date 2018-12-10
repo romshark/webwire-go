@@ -1,9 +1,10 @@
-package message
+package message_test
 
 import (
 	"bytes"
 	"testing"
 
+	"github.com/qbeon/webwire-go/message"
 	pld "github.com/qbeon/webwire-go/payload"
 	"github.com/stretchr/testify/require"
 )
@@ -27,7 +28,7 @@ func TestMsgParseRequestCorruptNameLenFlag(t *testing.T) {
 	encoded.Grow(10 + len(payload.Data))
 
 	// Add type flag
-	encoded.WriteByte(MsgRequestBinary)
+	encoded.WriteByte(message.MsgRequestBinary)
 	// Add identifier
 	encoded.Write(id[:])
 
@@ -60,7 +61,7 @@ func TestMsgParseRequestUtf16CorruptNameLenFlag(t *testing.T) {
 	encoded.Grow(10 + len(payload.Data))
 
 	// Add type flag
-	encoded.WriteByte(MsgRequestUtf16)
+	encoded.WriteByte(message.MsgRequestUtf16)
 	// Add identifier
 	encoded.Write(id[:])
 
@@ -92,7 +93,7 @@ func TestMsgParseSignalCorruptNameLenFlag(t *testing.T) {
 	encoded.Grow(2 + len(payload.Data))
 
 	// Add type flag
-	encoded.WriteByte(MsgSignalBinary)
+	encoded.WriteByte(message.MsgSignalBinary)
 
 	// Add corrupt name length flag (too big) and skip the name field
 	encoded.WriteByte(255)
@@ -122,7 +123,7 @@ func TestMsgParseSignalUtf16CorruptNameLenFlag(t *testing.T) {
 	encoded.Grow(2 + len(payload.Data))
 
 	// Add type flag
-	encoded.WriteByte(MsgSignalUtf16)
+	encoded.WriteByte(message.MsgSignalUtf16)
 
 	// Add corrupt name length flag (too big) and skip the name field
 	encoded.WriteByte(255)

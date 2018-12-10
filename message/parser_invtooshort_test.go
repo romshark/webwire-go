@@ -1,8 +1,9 @@
-package message
+package message_test
 
 import (
 	"testing"
 
+	"github.com/qbeon/webwire-go/message"
 	"github.com/stretchr/testify/require"
 )
 
@@ -15,7 +16,7 @@ import (
 func TestMsgParseInvalidMessageTooShort(t *testing.T) {
 	invalidMessage := make([]byte, 0)
 
-	actual := NewMessage(1024)
+	actual := message.NewMessage(1024)
 	typeDetermined, _ := actual.ReadBytes(invalidMessage)
 	require.False(t,
 		typeDetermined,
@@ -27,10 +28,10 @@ func TestMsgParseInvalidMessageTooShort(t *testing.T) {
 // TestMsgParseInvalidReplyTooShort tests parsing of an invalid
 // binary/UTF8 reply message which is too short to be considered valid
 func TestMsgParseInvalidReplyTooShort(t *testing.T) {
-	lenTooShort := MinLenReply - 1
+	lenTooShort := message.MinLenReply - 1
 	invalidMessage := make([]byte, lenTooShort)
 
-	invalidMessage[0] = MsgReplyBinary
+	invalidMessage[0] = message.MsgReplyBinary
 
 	_, err := tryParse(t, invalidMessage)
 	require.Error(t,
@@ -43,10 +44,10 @@ func TestMsgParseInvalidReplyTooShort(t *testing.T) {
 // TestMsgParseInvalidReplyUtf16TooShort tests parsing of an invalid
 // UTF16 reply message which is too short to be considered valid
 func TestMsgParseInvalidReplyUtf16TooShort(t *testing.T) {
-	lenTooShort := MinLenReplyUtf16 - 1
+	lenTooShort := message.MinLenReplyUtf16 - 1
 	invalidMessage := make([]byte, lenTooShort)
 
-	invalidMessage[0] = MsgReplyUtf16
+	invalidMessage[0] = message.MsgReplyUtf16
 
 	_, err := tryParse(t, invalidMessage)
 	require.Error(t,
@@ -60,10 +61,10 @@ func TestMsgParseInvalidReplyUtf16TooShort(t *testing.T) {
 // TestMsgParseInvalidRequestTooShort tests parsing of an invalid
 // binary/UTF8 request message which is too short to be considered valid
 func TestMsgParseInvalidRequestTooShort(t *testing.T) {
-	lenTooShort := MinLenRequest - 1
+	lenTooShort := message.MinLenRequest - 1
 	invalidMessage := make([]byte, lenTooShort)
 
-	invalidMessage[0] = MsgRequestBinary
+	invalidMessage[0] = message.MsgRequestBinary
 
 	_, err := tryParse(t, invalidMessage)
 	require.Error(t,
@@ -76,10 +77,10 @@ func TestMsgParseInvalidRequestTooShort(t *testing.T) {
 // TestMsgParseInvalidRequestUtf16TooShort tests parsing of an invalid
 // UTF16 request message which is too short to be considered valid
 func TestMsgParseInvalidRequestUtf16TooShort(t *testing.T) {
-	lenTooShort := MinLenRequestUtf16 - 1
+	lenTooShort := message.MinLenRequestUtf16 - 1
 	invalidMessage := make([]byte, lenTooShort)
 
-	invalidMessage[0] = MsgRequestUtf16
+	invalidMessage[0] = message.MsgRequestUtf16
 
 	_, err := tryParse(t, invalidMessage)
 	require.Error(t,
@@ -94,10 +95,10 @@ func TestMsgParseInvalidRequestUtf16TooShort(t *testing.T) {
 // session restoration request message which is too short
 // to be considered valid
 func TestMsgParseInvalidRestrSessReqTooShort(t *testing.T) {
-	lenTooShort := MinLenRequestRestoreSession - 1
+	lenTooShort := message.MinLenRequestRestoreSession - 1
 	invalidMessage := make([]byte, lenTooShort)
 
-	invalidMessage[0] = MsgRequestRestoreSession
+	invalidMessage[0] = message.MsgRequestRestoreSession
 
 	_, err := tryParse(t, invalidMessage)
 	require.Error(t,
@@ -112,10 +113,10 @@ func TestMsgParseInvalidRestrSessReqTooShort(t *testing.T) {
 // session destruction request message which is too short
 // to be considered valid
 func TestMsgParseInvalidSessCloseReqTooShort(t *testing.T) {
-	lenTooShort := MinLenDoCloseSession - 1
+	lenTooShort := message.MinLenDoCloseSession - 1
 	invalidMessage := make([]byte, lenTooShort)
 
-	invalidMessage[0] = MsgRequestCloseSession
+	invalidMessage[0] = message.MsgRequestCloseSession
 
 	_, err := tryParse(t, invalidMessage)
 	require.Error(t,
@@ -130,10 +131,10 @@ func TestMsgParseInvalidSessCloseReqTooShort(t *testing.T) {
 // session creation notification message which is too short
 // to be considered valid
 func TestMsgParseInvalidSessCreatedSigTooShort(t *testing.T) {
-	lenTooShort := MinLenNotifySessionCreated - 1
+	lenTooShort := message.MinLenNotifySessionCreated - 1
 	invalidMessage := make([]byte, lenTooShort)
 
-	invalidMessage[0] = MsgNotifySessionCreated
+	invalidMessage[0] = message.MsgNotifySessionCreated
 
 	_, err := tryParse(t, invalidMessage)
 	require.Error(t,
@@ -147,10 +148,10 @@ func TestMsgParseInvalidSessCreatedSigTooShort(t *testing.T) {
 // TestMsgParseInvalidSignalTooShort tests parsing of an invalid
 // binary/UTF8 signal message which is too short to be considered valid
 func TestMsgParseInvalidSignalTooShort(t *testing.T) {
-	lenTooShort := MinLenSignal - 1
+	lenTooShort := message.MinLenSignal - 1
 	invalidMessage := make([]byte, lenTooShort)
 
-	invalidMessage[0] = MsgSignalBinary
+	invalidMessage[0] = message.MsgSignalBinary
 
 	_, err := tryParse(t, invalidMessage)
 	require.Error(t,
@@ -163,10 +164,10 @@ func TestMsgParseInvalidSignalTooShort(t *testing.T) {
 // TestMsgParseInvalidSignalUtf16TooShort tests parsing of an invalid
 // UTF16 signal message which is too short to be considered valid
 func TestMsgParseInvalidSignalUtf16TooShort(t *testing.T) {
-	lenTooShort := MinLenSignalUtf16 - 1
+	lenTooShort := message.MinLenSignalUtf16 - 1
 	invalidMessage := make([]byte, lenTooShort)
 
-	invalidMessage[0] = MsgSignalUtf16
+	invalidMessage[0] = message.MsgSignalUtf16
 
 	_, err := tryParse(t, invalidMessage)
 	require.Error(t,
@@ -180,10 +181,10 @@ func TestMsgParseInvalidSignalUtf16TooShort(t *testing.T) {
 // TestMsgParseInvalidErrorReplyTooShort tests parsing of an invalid
 // error reply message which is too short to be considered valid
 func TestMsgParseInvalidErrorReplyTooShort(t *testing.T) {
-	lenTooShort := MinLenReplyError - 1
+	lenTooShort := message.MinLenReplyError - 1
 	invalidMessage := make([]byte, lenTooShort)
 
-	invalidMessage[0] = MsgReplyError
+	invalidMessage[0] = message.MsgReplyError
 
 	_, err := tryParse(t, invalidMessage)
 	require.Error(t,
@@ -200,7 +201,7 @@ func TestMsgParseInvalidSpecialReplyTooShort(t *testing.T) {
 	invalidMessage := make([]byte, 8)
 
 	// Internal error is a special reply message type
-	invalidMessage[0] = MsgReplyInternalError
+	invalidMessage[0] = message.MsgReplyInternalError
 
 	_, err := tryParse(t, invalidMessage)
 	require.Error(t,

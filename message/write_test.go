@@ -1,8 +1,9 @@
-package message
+package message_test
 
 import (
 	"testing"
 
+	"github.com/qbeon/webwire-go/message"
 	pld "github.com/qbeon/webwire-go/payload"
 	"github.com/stretchr/testify/require"
 )
@@ -19,16 +20,16 @@ func TestWriteMsgNamelessReq(t *testing.T) {
 
 	// Compose encoded message
 	// Add type flag
-	expected := []byte{MsgRequestRestoreSession}
+	expected := []byte{message.MsgRequestRestoreSession}
 	// Add identifier
 	expected = append(expected, id[:]...)
 	// Add session key to payload
 	expected = append(expected, []byte(sessionKey)...)
 
 	writer := &testWriter{}
-	require.NoError(t, WriteMsgNamelessRequest(
+	require.NoError(t, message.WriteMsgNamelessRequest(
 		writer,
-		MsgRequestRestoreSession,
+		message.MsgRequestRestoreSession,
 		id,
 		[]byte(sessionKey),
 	))
@@ -48,7 +49,7 @@ func TestWriteMsgReqBinary(t *testing.T) {
 
 	// Compose encoded message
 	// Add type flag
-	expected := []byte{MsgRequestBinary}
+	expected := []byte{message.MsgRequestBinary}
 	// Add identifier
 	expected = append(expected, id[:]...)
 	// Add name length flag
@@ -60,7 +61,7 @@ func TestWriteMsgReqBinary(t *testing.T) {
 	expected = append(expected, payload.Data...)
 
 	writer := &testWriter{}
-	require.NoError(t, WriteMsgRequest(
+	require.NoError(t, message.WriteMsgRequest(
 		writer,
 		id,
 		name,
@@ -83,7 +84,7 @@ func TestWriteMsgReqUtf8(t *testing.T) {
 
 	// Compose encoded message
 	// Add type flag
-	expected := []byte{MsgRequestUtf8}
+	expected := []byte{message.MsgRequestUtf8}
 	// Add identifier
 	expected = append(expected, id[:]...)
 	// Add name length flag
@@ -95,7 +96,7 @@ func TestWriteMsgReqUtf8(t *testing.T) {
 	expected = append(expected, payload.Data...)
 
 	writer := &testWriter{}
-	require.NoError(t, WriteMsgRequest(
+	require.NoError(t, message.WriteMsgRequest(
 		writer,
 		id,
 		name,
@@ -118,7 +119,7 @@ func TestWriteMsgReqUtf16(t *testing.T) {
 
 	// Compose encoded message
 	// Add type flag
-	expected := []byte{MsgRequestUtf16}
+	expected := []byte{message.MsgRequestUtf16}
 	// Add identifier
 	expected = append(expected, id[:]...)
 	// Add name length flag
@@ -133,7 +134,7 @@ func TestWriteMsgReqUtf16(t *testing.T) {
 	expected = append(expected, payload.Data...)
 
 	writer := &testWriter{}
-	require.NoError(t, WriteMsgRequest(
+	require.NoError(t, message.WriteMsgRequest(
 		writer,
 		id,
 		name,
@@ -156,7 +157,7 @@ func TestWriteMsgReqUtf16OddNameLen(t *testing.T) {
 
 	// Compose encoded message
 	// Add type flag
-	expected := []byte{MsgRequestUtf16}
+	expected := []byte{message.MsgRequestUtf16}
 	// Add identifier
 	expected = append(expected, id[:]...)
 	// Add name length flag
@@ -169,7 +170,7 @@ func TestWriteMsgReqUtf16OddNameLen(t *testing.T) {
 	expected = append(expected, payload.Data...)
 
 	writer := &testWriter{}
-	require.NoError(t, WriteMsgRequest(
+	require.NoError(t, message.WriteMsgRequest(
 		writer,
 		id,
 		[]byte("odd"),
@@ -192,7 +193,7 @@ func TestWriteMsgReplyBinary(t *testing.T) {
 
 	// Compose encoded message
 	// Add type flag
-	expected := []byte{MsgReplyBinary}
+	expected := []byte{message.MsgReplyBinary}
 	// Add identifier
 	expected = append(expected, id[:]...)
 
@@ -200,7 +201,7 @@ func TestWriteMsgReplyBinary(t *testing.T) {
 	expected = append(expected, payload.Data...)
 
 	writer := &testWriter{}
-	require.NoError(t, WriteMsgReply(
+	require.NoError(t, message.WriteMsgReply(
 		writer,
 		id,
 		payload.Encoding,
@@ -220,7 +221,7 @@ func TestWriteMsgReplyUtf8(t *testing.T) {
 
 	// Compose encoded message
 	// Add type flag
-	expected := []byte{MsgReplyUtf8}
+	expected := []byte{message.MsgReplyUtf8}
 	// Add identifier
 	expected = append(expected, id[:]...)
 
@@ -228,7 +229,7 @@ func TestWriteMsgReplyUtf8(t *testing.T) {
 	expected = append(expected, payload.Data...)
 
 	writer := &testWriter{}
-	require.NoError(t, WriteMsgReply(
+	require.NoError(t, message.WriteMsgReply(
 		writer,
 		id,
 		payload.Encoding,
@@ -248,7 +249,7 @@ func TestWriteMsgReplyUtf16(t *testing.T) {
 
 	// Compose encoded message
 	// Add type flag
-	expected := []byte{MsgReplyUtf16}
+	expected := []byte{message.MsgReplyUtf16}
 	// Add identifier
 	expected = append(expected, id[:]...)
 	// Add header padding byte (necessary in case of a UTF16 encoded reply)
@@ -258,7 +259,7 @@ func TestWriteMsgReplyUtf16(t *testing.T) {
 	expected = append(expected, payload.Data...)
 
 	writer := &testWriter{}
-	require.NoError(t, WriteMsgReply(
+	require.NoError(t, message.WriteMsgReply(
 		writer,
 		id,
 		payload.Encoding,
@@ -279,7 +280,7 @@ func TestWriteMsgSigBinary(t *testing.T) {
 
 	// Compose encoded message
 	// Add type flag
-	expected := []byte{MsgSignalBinary}
+	expected := []byte{message.MsgSignalBinary}
 	// Add name length flag
 	expected = append(expected, byte(len(name)))
 	// Add name
@@ -288,7 +289,7 @@ func TestWriteMsgSigBinary(t *testing.T) {
 	expected = append(expected, payload.Data...)
 
 	writer := &testWriter{}
-	require.NoError(t, WriteMsgSignal(
+	require.NoError(t, message.WriteMsgSignal(
 		writer,
 		name,
 		payload.Encoding,
@@ -309,7 +310,7 @@ func TestWriteMsgSigUtf8(t *testing.T) {
 
 	// Compose encoded message
 	// Add type flag
-	expected := []byte{MsgSignalUtf8}
+	expected := []byte{message.MsgSignalUtf8}
 	// Add name length flag
 	expected = append(expected, byte(len(name)))
 	// Add name
@@ -318,7 +319,7 @@ func TestWriteMsgSigUtf8(t *testing.T) {
 	expected = append(expected, payload.Data...)
 
 	writer := &testWriter{}
-	require.NoError(t, WriteMsgSignal(
+	require.NoError(t, message.WriteMsgSignal(
 		writer,
 		name,
 		payload.Encoding,
@@ -339,7 +340,7 @@ func TestWriteMsgSigUtf16(t *testing.T) {
 
 	// Compose encoded message
 	// Add type flag
-	expected := []byte{MsgSignalUtf16}
+	expected := []byte{message.MsgSignalUtf16}
 	// Add name length flag
 	expected = append(expected, byte(len(name)))
 	// Add name
@@ -352,7 +353,7 @@ func TestWriteMsgSigUtf16(t *testing.T) {
 	expected = append(expected, payload.Data...)
 
 	writer := &testWriter{}
-	require.NoError(t, WriteMsgSignal(
+	require.NoError(t, message.WriteMsgSignal(
 		writer,
 		name,
 		payload.Encoding,
@@ -373,7 +374,7 @@ func TestWriteMsgSigUtf16OddNameLen(t *testing.T) {
 
 	// Compose encoded message
 	// Add type flag
-	expected := []byte{MsgSignalUtf16}
+	expected := []byte{message.MsgSignalUtf16}
 	// Add name length flag
 	expected = append(expected, byte(3))
 	// Add name of odd length
@@ -384,7 +385,7 @@ func TestWriteMsgSigUtf16OddNameLen(t *testing.T) {
 	expected = append(expected, payload.Data...)
 
 	writer := &testWriter{}
-	require.NoError(t, WriteMsgSignal(
+	require.NoError(t, message.WriteMsgSignal(
 		writer,
 		[]byte("odd"),
 		payload.Encoding,
@@ -399,12 +400,12 @@ func TestWriteMsgSigUtf16OddNameLen(t *testing.T) {
 func TestWriteMsgNotifySessionCreated(t *testing.T) {
 	// Compose encoded message
 	// Write type flag
-	expected := []byte{MsgNotifySessionCreated}
+	expected := []byte{message.MsgNotifySessionCreated}
 	// Write session info payload
 	expected = append(expected, []byte("session info")...)
 
 	writer := &testWriter{}
-	require.NoError(t, WriteMsgNotifySessionCreated(
+	require.NoError(t, message.WriteMsgNotifySessionCreated(
 		writer,
 		[]byte("session info"),
 	))
@@ -415,10 +416,10 @@ func TestWriteMsgNotifySessionCreated(t *testing.T) {
 // TestWriteMsgNotifySessionClosed tests WriteMsgNotifySessionClosed
 func TestWriteMsgNotifySessionClosed(t *testing.T) {
 	// Compose expected message
-	expected := []byte{MsgNotifySessionClosed}
+	expected := []byte{message.MsgNotifySessionClosed}
 
 	writer := &testWriter{}
-	require.NoError(t, WriteMsgNotifySessionClosed(writer))
+	require.NoError(t, message.WriteMsgNotifySessionClosed(writer))
 	require.Equal(t, expected, writer.buf)
 	require.True(t, writer.closed)
 }
@@ -426,10 +427,10 @@ func TestWriteMsgNotifySessionClosed(t *testing.T) {
 // TestWriteMsgHeartbeat tests WriteMsgHeartbeat
 func TestWriteMsgHeartbeat(t *testing.T) {
 	// Compose expected message
-	expected := []byte{MsgHeartbeat}
+	expected := []byte{message.MsgHeartbeat}
 
 	writer := &testWriter{}
-	require.NoError(t, WriteMsgHeartbeat(writer))
+	require.NoError(t, message.WriteMsgHeartbeat(writer))
 	require.Equal(t, expected, writer.buf)
 	require.True(t, writer.closed)
 }

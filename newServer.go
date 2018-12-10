@@ -34,7 +34,7 @@ func NewServer(
 	}
 
 	// Prepare the configuration push message for the webwire accept handshake
-	configMsg, err := message.NewConfMessage(
+	configMsg, err := message.NewAcceptConfMessage(
 		message.ServerConfiguration{
 			MajorProtocolVersion: 2,
 			MinorProtocolVersion: 0,

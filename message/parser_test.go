@@ -1,10 +1,11 @@
-package message
+package message_test
 
 import (
 	"encoding/json"
 	"testing"
 	"time"
 
+	"github.com/qbeon/webwire-go/message"
 	pld "github.com/qbeon/webwire-go/payload"
 	"github.com/stretchr/testify/require"
 )
@@ -19,7 +20,7 @@ func TestMsgParseCloseSessReq(t *testing.T) {
 
 	// Compose encoded message
 	// Add type flag
-	encoded := []byte{MsgRequestCloseSession}
+	encoded := []byte{message.MsgRequestCloseSession}
 	// Add identifier
 	encoded = append(encoded, id[:]...)
 
@@ -28,7 +29,7 @@ func TestMsgParseCloseSessReq(t *testing.T) {
 
 	// Compare
 	require.NotNil(t, actual.MsgBuffer)
-	require.Equal(t, MsgRequestCloseSession, actual.MsgType)
+	require.Equal(t, message.MsgRequestCloseSession, actual.MsgType)
 	require.Equal(t, id, actual.MsgIdentifier[:])
 	require.Equal(t, id, actual.MsgIdentifierBytes)
 	require.Nil(t, actual.MsgName)
@@ -36,7 +37,7 @@ func TestMsgParseCloseSessReq(t *testing.T) {
 		Encoding: pld.Binary,
 		Data:     nil,
 	}, actual.MsgPayload)
-	require.Equal(t, ServerConfiguration{}, actual.ServerConfiguration)
+	require.Equal(t, message.ServerConfiguration{}, actual.ServerConfiguration)
 }
 
 // TestMsgParseRestrSessReq tests parsing of a session restoration request
@@ -48,7 +49,7 @@ func TestMsgParseRestrSessReq(t *testing.T) {
 
 	// Compose encoded message
 	// Add type flag
-	encoded := []byte{MsgRequestRestoreSession}
+	encoded := []byte{message.MsgRequestRestoreSession}
 	// Add identifier
 	encoded = append(encoded, id[:]...)
 	// Add session key to payload
@@ -59,7 +60,7 @@ func TestMsgParseRestrSessReq(t *testing.T) {
 
 	// Compare
 	require.NotNil(t, actual.MsgBuffer)
-	require.Equal(t, MsgRequestRestoreSession, actual.MsgType)
+	require.Equal(t, message.MsgRequestRestoreSession, actual.MsgType)
 	require.Equal(t, id, actual.MsgIdentifier[:])
 	require.Equal(t, id, actual.MsgIdentifierBytes)
 	require.Nil(t, actual.MsgName)
@@ -67,13 +68,13 @@ func TestMsgParseRestrSessReq(t *testing.T) {
 		Encoding: pld.Binary,
 		Data:     []byte(sessionKey),
 	}, actual.MsgPayload)
-	require.Equal(t, ServerConfiguration{}, actual.ServerConfiguration)
+	require.Equal(t, message.ServerConfiguration{}, actual.ServerConfiguration)
 }
 
 // TestMsgParseRequestBinary tests parsing of a named binary encoded request
 func TestMsgParseRequestBinary(t *testing.T) {
 	encoded, id, name, payload := rndRequestMsg(
-		MsgRequestBinary,
+		message.MsgRequestBinary,
 		1, 255,
 		1, 1024*64,
 	)
@@ -83,18 +84,18 @@ func TestMsgParseRequestBinary(t *testing.T) {
 
 	// Compare
 	require.NotNil(t, actual.MsgBuffer)
-	require.Equal(t, MsgRequestBinary, actual.MsgType)
+	require.Equal(t, message.MsgRequestBinary, actual.MsgType)
 	require.Equal(t, id, actual.MsgIdentifier[:])
 	require.Equal(t, id, actual.MsgIdentifierBytes)
 	require.Equal(t, name, actual.MsgName)
 	require.Equal(t, payload, actual.MsgPayload)
-	require.Equal(t, ServerConfiguration{}, actual.ServerConfiguration)
+	require.Equal(t, message.ServerConfiguration{}, actual.ServerConfiguration)
 }
 
 // TestMsgParseRequestUtf8 tests parsing of a named UTF8 encoded request
 func TestMsgParseRequestUtf8(t *testing.T) {
 	encoded, id, name, payload := rndRequestMsg(
-		MsgRequestUtf8,
+		message.MsgRequestUtf8,
 		2, 255,
 		16, 16,
 	)
@@ -104,12 +105,12 @@ func TestMsgParseRequestUtf8(t *testing.T) {
 
 	// Compare
 	require.NotNil(t, actual.MsgBuffer)
-	require.Equal(t, MsgRequestUtf8, actual.MsgType)
+	require.Equal(t, message.MsgRequestUtf8, actual.MsgType)
 	require.Equal(t, id, actual.MsgIdentifier[:])
 	require.Equal(t, id, actual.MsgIdentifierBytes)
 	require.Equal(t, name, actual.MsgName)
 	require.Equal(t, payload, actual.MsgPayload)
-	require.Equal(t, ServerConfiguration{}, actual.ServerConfiguration)
+	require.Equal(t, message.ServerConfiguration{}, actual.ServerConfiguration)
 }
 
 // TestMsgParseRequestUtf16 tests parsing of a named UTF16 encoded request
@@ -124,18 +125,18 @@ func TestMsgParseRequestUtf16(t *testing.T) {
 
 	// Compare
 	require.NotNil(t, actual.MsgBuffer)
-	require.Equal(t, MsgRequestUtf16, actual.MsgType)
+	require.Equal(t, message.MsgRequestUtf16, actual.MsgType)
 	require.Equal(t, id, actual.MsgIdentifier[:])
 	require.Equal(t, id, actual.MsgIdentifierBytes)
 	require.Equal(t, name, actual.MsgName)
 	require.Equal(t, payload, actual.MsgPayload)
-	require.Equal(t, ServerConfiguration{}, actual.ServerConfiguration)
+	require.Equal(t, message.ServerConfiguration{}, actual.ServerConfiguration)
 }
 
 // TestMsgParseReplyBinary tests parsing of binary encoded reply message
 func TestMsgParseReplyBinary(t *testing.T) {
 	encoded, id, payload := rndReplyMsg(
-		MsgReplyBinary,
+		message.MsgReplyBinary,
 		1, 1024*64,
 	)
 
@@ -144,18 +145,18 @@ func TestMsgParseReplyBinary(t *testing.T) {
 
 	// Compare
 	require.NotNil(t, actual.MsgBuffer)
-	require.Equal(t, MsgReplyBinary, actual.MsgType)
+	require.Equal(t, message.MsgReplyBinary, actual.MsgType)
 	require.Equal(t, id, actual.MsgIdentifier[:])
 	require.Equal(t, id, actual.MsgIdentifierBytes)
 	require.Nil(t, actual.MsgName)
 	require.Equal(t, payload, actual.MsgPayload)
-	require.Equal(t, ServerConfiguration{}, actual.ServerConfiguration)
+	require.Equal(t, message.ServerConfiguration{}, actual.ServerConfiguration)
 }
 
 // TestMsgParseReplyUtf8 tests parsing of UTF8 encoded reply message
 func TestMsgParseReplyUtf8(t *testing.T) {
 	encoded, id, payload := rndReplyMsg(
-		MsgReplyUtf8,
+		message.MsgReplyUtf8,
 		1, 1024*64,
 	)
 
@@ -164,12 +165,12 @@ func TestMsgParseReplyUtf8(t *testing.T) {
 
 	// Compare
 	require.NotNil(t, actual.MsgBuffer)
-	require.Equal(t, MsgReplyUtf8, actual.MsgType)
+	require.Equal(t, message.MsgReplyUtf8, actual.MsgType)
 	require.Equal(t, id, actual.MsgIdentifier[:])
 	require.Equal(t, id, actual.MsgIdentifierBytes)
 	require.Nil(t, actual.MsgName)
 	require.Equal(t, payload, actual.MsgPayload)
-	require.Equal(t, ServerConfiguration{}, actual.ServerConfiguration)
+	require.Equal(t, message.ServerConfiguration{}, actual.ServerConfiguration)
 }
 
 // TestMsgParseReplyUtf16 tests parsing of UTF16 encoded reply message
@@ -183,18 +184,18 @@ func TestMsgParseReplyUtf16(t *testing.T) {
 
 	// Compare
 	require.NotNil(t, actual.MsgBuffer)
-	require.Equal(t, MsgReplyUtf16, actual.MsgType)
+	require.Equal(t, message.MsgReplyUtf16, actual.MsgType)
 	require.Equal(t, id, actual.MsgIdentifier[:])
 	require.Equal(t, id, actual.MsgIdentifierBytes)
 	require.Nil(t, actual.MsgName)
 	require.Equal(t, payload, actual.MsgPayload)
-	require.Equal(t, ServerConfiguration{}, actual.ServerConfiguration)
+	require.Equal(t, message.ServerConfiguration{}, actual.ServerConfiguration)
 }
 
 // TestMsgParseSignalBinary tests parsing of a named binary encoded signal
 func TestMsgParseSignalBinary(t *testing.T) {
 	encoded, name, payload := rndSignalMsg(
-		MsgSignalBinary,
+		message.MsgSignalBinary,
 		1, 255,
 		1, 1024*64,
 	)
@@ -204,18 +205,18 @@ func TestMsgParseSignalBinary(t *testing.T) {
 
 	// Compare
 	require.NotNil(t, actual.MsgBuffer)
-	require.Equal(t, MsgSignalBinary, actual.MsgType)
+	require.Equal(t, message.MsgSignalBinary, actual.MsgType)
 	require.Equal(t, []byte{0, 0, 0, 0, 0, 0, 0, 0}, actual.MsgIdentifierBytes)
 	require.Equal(t, [8]byte{}, actual.MsgIdentifier)
 	require.Equal(t, name, actual.MsgName)
 	require.Equal(t, payload, actual.MsgPayload)
-	require.Equal(t, ServerConfiguration{}, actual.ServerConfiguration)
+	require.Equal(t, message.ServerConfiguration{}, actual.ServerConfiguration)
 }
 
 // TestMsgParseSignalUtf8 tests parsing of a named UTF8 encoded signal
 func TestMsgParseSignalUtf8(t *testing.T) {
 	encoded, name, payload := rndSignalMsg(
-		MsgSignalUtf8,
+		message.MsgSignalUtf8,
 		1, 255,
 		1, 1024*64,
 	)
@@ -225,12 +226,12 @@ func TestMsgParseSignalUtf8(t *testing.T) {
 
 	// Compare
 	require.NotNil(t, actual.MsgBuffer)
-	require.Equal(t, MsgSignalUtf8, actual.MsgType)
+	require.Equal(t, message.MsgSignalUtf8, actual.MsgType)
 	require.Equal(t, []byte{0, 0, 0, 0, 0, 0, 0, 0}, actual.MsgIdentifierBytes)
 	require.Equal(t, [8]byte{}, actual.MsgIdentifier)
 	require.Equal(t, name, actual.MsgName)
 	require.Equal(t, payload, actual.MsgPayload)
-	require.Equal(t, ServerConfiguration{}, actual.ServerConfiguration)
+	require.Equal(t, message.ServerConfiguration{}, actual.ServerConfiguration)
 }
 
 // TestMsgParseSignalUtf16 tests parsing of a named UTF16 encoded signal
@@ -245,12 +246,12 @@ func TestMsgParseSignalUtf16(t *testing.T) {
 
 	// Compare
 	require.NotNil(t, actual.MsgBuffer)
-	require.Equal(t, MsgSignalUtf16, actual.MsgType)
+	require.Equal(t, message.MsgSignalUtf16, actual.MsgType)
 	require.Equal(t, []byte{0, 0, 0, 0, 0, 0, 0, 0}, actual.MsgIdentifierBytes)
 	require.Equal(t, [8]byte{}, actual.MsgIdentifier)
 	require.Equal(t, name, actual.MsgName)
 	require.Equal(t, payload, actual.MsgPayload)
-	require.Equal(t, ServerConfiguration{}, actual.ServerConfiguration)
+	require.Equal(t, message.ServerConfiguration{}, actual.ServerConfiguration)
 }
 
 // TestMsgParseSessCreatedSig tests parsing of session created signal
@@ -275,7 +276,7 @@ func TestMsgParseSessCreatedSig(t *testing.T) {
 
 	// Compose encoded message
 	// Add type flag
-	encoded := []byte{MsgNotifySessionCreated}
+	encoded := []byte{message.MsgNotifySessionCreated}
 	// Add session payload
 	encoded = append(encoded, payload.Data...)
 
@@ -284,77 +285,50 @@ func TestMsgParseSessCreatedSig(t *testing.T) {
 
 	// Compare
 	require.NotNil(t, actual.MsgBuffer)
-	require.Equal(t, MsgNotifySessionCreated, actual.MsgType)
+	require.Equal(t, message.MsgNotifySessionCreated, actual.MsgType)
 	require.Equal(t, []byte{0, 0, 0, 0, 0, 0, 0, 0}, actual.MsgIdentifierBytes)
 	require.Equal(t, [8]byte{}, actual.MsgIdentifier)
 	require.Nil(t, actual.MsgName)
 	require.Equal(t, payload, actual.MsgPayload)
-	require.Equal(t, ServerConfiguration{}, actual.ServerConfiguration)
+	require.Equal(t, message.ServerConfiguration{}, actual.ServerConfiguration)
 }
 
 // TestMsgParseSessClosedSig tests parsing of session closed signal
 func TestMsgParseSessClosedSig(t *testing.T) {
 	// Compose encoded message
 	// Add type flag
-	encoded := []byte{MsgNotifySessionClosed}
+	encoded := []byte{message.MsgNotifySessionClosed}
 
 	// Parse
 	actual := tryParseNoErr(t, encoded)
 
 	// Compare
 	require.NotNil(t, actual.MsgBuffer)
-	require.Equal(t, MsgNotifySessionClosed, actual.MsgType)
+	require.Equal(t, message.MsgNotifySessionClosed, actual.MsgType)
 	require.Equal(t, []byte{0, 0, 0, 0, 0, 0, 0, 0}, actual.MsgIdentifierBytes)
 	require.Equal(t, [8]byte{}, actual.MsgIdentifier)
 	require.Nil(t, actual.MsgName)
 	require.Equal(t, pld.Payload{}, actual.MsgPayload)
-	require.Equal(t, ServerConfiguration{}, actual.ServerConfiguration)
+	require.Equal(t, message.ServerConfiguration{}, actual.ServerConfiguration)
 }
 
 // TestMsgParseHeartbeat tests parsing of heartbeat messages
 func TestMsgParseHeartbeat(t *testing.T) {
 	// Compose encoded message
 	// Add type flag
-	encoded := []byte{MsgHeartbeat}
+	encoded := []byte{message.MsgHeartbeat}
 
 	// Parse
 	actual := tryParseNoErr(t, encoded)
 
 	// Compare
 	require.NotNil(t, actual.MsgBuffer)
-	require.Equal(t, MsgHeartbeat, actual.MsgType)
+	require.Equal(t, message.MsgHeartbeat, actual.MsgType)
 	require.Equal(t, []byte{0, 0, 0, 0, 0, 0, 0, 0}, actual.MsgIdentifierBytes)
 	require.Equal(t, [8]byte{}, actual.MsgIdentifier)
 	require.Nil(t, actual.MsgName)
 	require.Equal(t, pld.Payload{}, actual.MsgPayload)
-	require.Equal(t, ServerConfiguration{}, actual.ServerConfiguration)
-}
-
-// TestMsgParseConf tests parsing of server configuration messages
-func TestMsgParseConf(t *testing.T) {
-	srvConf := ServerConfiguration{
-		MajorProtocolVersion: 22,
-		MinorProtocolVersion: 33,
-		ReadTimeout:          11 * time.Second,
-		MessageBufferSize:    8192,
-	}
-
-	// Compose encoded message
-	buf, err := NewConfMessage(srvConf)
-	require.NoError(t, err)
-	require.True(t, len(buf) > 0)
-
-	// Parse
-	actual := tryParseNoErr(t, buf)
-
-	// Compare
-	require.NotNil(t, actual.MsgBuffer)
-	require.Equal(t, MsgAcceptConf, actual.MsgType)
-	require.Equal(t, []byte{0, 0, 0, 0, 0, 0, 0, 0}, actual.MsgIdentifierBytes)
-	require.Equal(t, [8]byte{}, actual.MsgIdentifier)
-	require.Nil(t, actual.MsgName)
-	require.Equal(t, pld.Payload{}, actual.MsgPayload)
-	require.Equal(t, srvConf, actual.ServerConfiguration)
+	require.Equal(t, message.ServerConfiguration{}, actual.ServerConfiguration)
 }
 
 // TestMsgParseUnknownMessageType tests parsing of messages
@@ -363,7 +337,7 @@ func TestMsgParseUnknownMessageType(t *testing.T) {
 	msgOfUnknownType := make([]byte, 1)
 	msgOfUnknownType[0] = byte(255)
 
-	actual := NewMessage(1024)
+	actual := message.NewMessage(1024)
 	typeDetermined, _ := actual.ReadBytes(msgOfUnknownType)
 	require.False(t, typeDetermined, "Expected type not to be determined")
 }
