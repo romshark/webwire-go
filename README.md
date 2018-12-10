@@ -101,11 +101,11 @@ A header-padding byte is applied in case of UTF16 payload encoding to properly a
 Fraudulent messages are recognized by analyzing the message length, out-of-range memory access attacks are therefore prevented.
 
 ## Examples
-- **[Echo](https://github.com/qbeon/webwire-go/tree/master/examples/echo)** - Demonstrates a simple request-reply implementation.
+- **[Echo](https://github.com/qbeon/webwire-go-examples/tree/master/echo)** - Demonstrates a simple request-reply implementation using the [Go client](https://github.com/qbeon/webwire-go-client).
 
-- **[Pub-Sub](https://github.com/qbeon/webwire-go/tree/master/examples/pubsub)** - Demonstrantes a simple publisher-subscriber tolopology implementation.
+- **[Pub-Sub](https://github.com/qbeon/webwire-go-examples/tree/master/pubsub)** - Demonstrantes a simple publisher-subscriber tolopology using the [Go client](https://github.com/qbeon/webwire-go-client).
 
-- **[Chat Room](https://github.com/qbeon/webwire-go/tree/master/examples/chatroom)** - Demonstrates advanced use of the library. The corresponding [JavaScript Chat Room Client](https://github.com/qbeon/webwire-js/tree/master/examples/chatroom-client-vue) is implemented with the [Vue.js framework](https://vuejs.org/).
+- **[Chat Room](https://github.com/qbeon/webwire-go-examples/tree/master/chatroom)** - Demonstrates advanced use of the library. The corresponding [JavaScript Chat Room Client](https://github.com/qbeon/webwire-js/tree/master/examples/chatroom-client-vue) is implemented with the [Vue.js framework](https://vuejs.org/).
 
 ## Features
 ### Request-Reply
