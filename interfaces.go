@@ -55,45 +55,55 @@ type Server interface {
 // ServerImplementation defines the interface
 // of a webwire server implementation
 type ServerImplementation interface {
-	// OnClientConnected is invoked when a new client successfully established
-	// a connection to the server.
+	// OnClientConnected is invoked when a new client successfully established a
+	// connection to the server.
 	//
-	// This hook will be invoked by the goroutine serving the client and thus
-	// will block the initialization process, detaining the client from
-	// starting to listen for incoming messages.
-	// To prevent blocking the initialization process it is advised to move
-	// any time consuming work to a separate goroutine
+	// OnClientConnected must return for the server to start processing incoming
+	// requests & signals. To prevent blocking the connection initialization
+	// process it is advised to move any time consuming work to a separate
+	// goroutine
 	OnClientConnected(connectionOptions ConnectionOptions, client Connection)
 
-	// OnClientDisconnected is invoked when a client closes the connection
-	// to the server.
+	// OnClientDisconnected is invoked after a client connection was closed.
 	//
-	// This hook will be invoked by the goroutine serving
-	// the calling client before it's suspended
+	// This hook will be invoked by the goroutine serving the calling client
+	// before it's unlinked
 	OnClientDisconnected(client Connection, reason error)
 
-	// OnSignal is invoked when the webwire server receives
-	// a signal from a client.
+	// OnSignal is invoked when the webwire server receives a signal from a
+	// client. The invocation of OnSignal is potentially concurrent.
 	//
-	// This hook will be invoked by the goroutine serving the calling client
-	// and will block any other interactions with this client while executing
+	// BEWARE: The byte-slice returned by message.Payload() references a
+	// potentially pooled buffer that's reused by another handler goroutine as
+	// soon as OnSignal returns. Aliasing it and using it after OnSignal
+	// returned will cause a data race! Make a copy of the slice if you need the
+	// message payload to escape the OnSignal handler context.
+	//
+	// This hook will be invoked by the goroutine serving the calling client and
+	// will block any other interactions with this client while executing
 	OnSignal(ctx context.Context, client Connection, message Message)
 
-	// OnRequest is invoked when the webwire server receives a request
-	// from a client. It must return either a response payload or an error.
+	// OnRequest is invoked when the webwire server receives a request from a
+	// client. It must return either a response payload or an error. The
+	// invocation of OnRequest is potentially concurrent.
 	//
-	// A webwire.ReqErr error can be returned to reply with an error code
-	// and an error message, this is useful when the clients user code needs
-	// to be able to understand the error and react accordingly.
-	// If a non-webwire error type is returned such as an error created by
-	// fmt.Errorf() then a special kind of error (internal server error)
-	// is returned to the client as a reply, in this case the error will be
-	// logged and the error message will not be sent to the client
-	// for security reasons as this might accidentally leak
-	// sensitive information to the client.
+	// A webwire.ErrReq error can be returned to reply with an error code and an
+	// error message, this is useful when the clients user code needs to be able
+	// to understand the error and react accordingly. If a non-webwire error
+	// type is returned such as an error created by fmt.Errorf() then a special
+	// kind of error (internal server error) is returned to the client as a
+	// reply, in this case the error will be logged and the error message will
+	// not be sent to the client for security reasons as this might accidentally
+	// leak sensitive information to the client.
 	//
-	// This hook will be invoked by the goroutine serving the calling client
-	// and will block any other interactions with this client while executing
+	// BEWARE: The byte-slice returned by message.Payload() references a
+	// potentially pooled buffer that's reused by another handler goroutine as
+	// soon as OnRequest returns. Aliasing it and using it after OnRequest
+	// returned will cause a data race! Make a copy of the slice if you need the
+	// message payload to escape the OnRequest handler context.
+	//
+	// This hook will be invoked by the goroutine serving the calling client and
+	// will block any other interactions with this client while executing
 	OnRequest(
 		ctx context.Context,
 		client Connection,
@@ -121,7 +131,8 @@ type Connection interface {
 	// Returns nil if the provided key was not found
 	Info(key int) interface{}
 
-	// Signal sends a named signal containing the given payload to the client
+	// Signal sends a named signal containing the given payload to the client.
+	// The name is optional
 	Signal(name []byte, payload Payload) error
 
 	// CreateSession creates a new session for this connection and
