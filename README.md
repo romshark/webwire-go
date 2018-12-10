@@ -43,8 +43,8 @@
 <br>
 
 <!-- CONTENT -->
-WebWire is a high-level asynchronous duplex messaging library built on top of [WebSockets](https://developer.mozilla.org/de/docs/WebSockets) and an open source binary message protocol with builtin authentication and support for UTF8 and UTF16 encoding.
-The [webwire-go](https://github.com/qbeon/webwire-go) library provides both a client and a server implementation for the Go programming language. An official [JavaScript client](https://github.com/qbeon/webwire-js) implementation is also available. WebWire provides a compact set of useful features that are not available and/or cumbersome to implement on raw WebSockets such as Request-Reply, Sessions, Thread-safety etc.
+WebWire is a high-performance transport independent asynchronous duplex messaging library and an open source binary message protocol with builtin authentication and support for UTF8 and UTF16 encoding.
+The [webwire-go](https://github.com/qbeon/webwire-go) library provides a server implementation for the Go programming language.
 <br>
 
 #### Table of Contents
@@ -70,7 +70,7 @@ The [webwire-go](https://github.com/qbeon/webwire-go) library provides both a cl
     - [Client-side Hooks](#client-side-hooks)
     - [SessionKeyGenerator Hooks](#sessionkeygenerator-hooks)
   - [Graceful Shutdown](#graceful-shutdown)
-  - [Seamless JavaScript Support](#seamless-javascript-support)
+  - [Multi-Language Support](#multi-language-support)
   - [Security](#security)
 
 
@@ -338,8 +338,10 @@ while incoming requests and signals are handled similarly to shutting down the s
 connection.Close()
 ```
 
-### Seamless JavaScript Support
-The [official JavaScript library](https://github.com/qbeon/webwire-js) enables seamless support for various JavaScript environments providing a fully compliant client implementation supporting the latest feature set of the [webwire-go](https://github.com/qbeon/webwire-go) library.
+### Multi-Language Support
+The following libraries provide seamless support for various development environments providing fully compliant protocol implementations supporting the latest features.
+- **Go (server & client)**: An [official Go client](https://github.com/qbeon/webwire-go-client) implementation is available.
+- **JavaScript (client)**: An [official JavaScript library](https://github.com/qbeon/webwire-js) enables seamless support for various JavaScript environments ([93% of web-browsers](https://caniuse.com/#search=websockets) & [Node.js](https://nodejs.org/en/)) providing a fully compliant client implementation (requires a websocket-based transport implementation such as [qbeon/webwire-go-gorilla](https://github.com/qbeon/webwire-go-gorilla) or [qbeon/webwire-go-fasthttp](https://github.com/qbeon/webwire-go-fasthttp)).
 
 ### Security
 Webwire can be hosted by a [TLS](https://en.wikipedia.org/wiki/Transport_Layer_Security) protected HTTPS server to prevent [man-in-the-middle attacks](https://en.wikipedia.org/wiki/Man-in-the-middle_attack) as well as to verify the identity of the server. Setting up a TLS protected server is easy:
