@@ -93,7 +93,7 @@ Contribution of any kind is always welcome and appreciated, check out our [Contr
 | **[Daniil Trishkin](https://github.com/FromZeus)** | CI Maintainer | DevOps |
 
 ## WebWire Binary Protocol
-WebWire is built for speed and portability implementing an open source binary protocol.
+WebWire is built for speed and portability implementing an open source [binary protocol](https://github.com/qbeon/webwire-go/blob/master/docs/protocol-sequences.svg).
 ![Protocol Subset Diagram](https://github.com/qbeon/webwire-go/blob/master/docs/img/wwr_msgproto_diagram.svg)
 
 The first byte defines the [type of the message](https://github.com/qbeon/webwire-go/blob/master/message/message.go#L91). Requests and replies contain an incremental 8-byte identifier that must be unique in the context of the senders' session. A 0 to 255 bytes long 7-bit ASCII encoded name is contained in the header of a signal or request message.
