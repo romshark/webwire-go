@@ -49,27 +49,27 @@ The [webwire-go](https://github.com/qbeon/webwire-go) library provides a server 
 
 #### Table of Contents
 - [Installation](#installation)
-  - [Dep](#dep)
-  - [Go Get](#go-get)
+	- [Dep](#dep)
+	- [Go Get](#go-get)
 - [Contribution](#contribution)
-  - [Maintainers](#maintainers)
+	- [Maintainers](#maintainers)
 - [WebWire Binary Protocol](#webwire-binary-protocol)
 - [Examples](#examples)
 - [Features](#features)
-  - [Request-Reply](#request-reply)
-  - [Client-side Signals](#client-side-signals)
-  - [Server-side Signals](#server-side-signals)
-  - [Namespaces](#namespaces)
-  - [Sessions](#sessions)
-  - [Concurrency](#concurrency)
-  - [Hooks](#hooks)
-    - [Server-side Hooks](#server-side-hooks)
-    - [SessionManager Hooks](#sessionmanager-hooks)
-    - [Client-side Hooks](#client-side-hooks)
-    - [SessionKeyGenerator Hooks](#sessionkeygenerator-hooks)
-  - [Graceful Shutdown](#graceful-shutdown)
-  - [Multi-Language Support](#multi-language-support)
-  - [Security](#security)
+	- [Request-Reply](#request-reply)
+	- [Client-side Signals](#client-side-signals)
+	- [Server-side Signals](#server-side-signals)
+	- [Namespaces](#namespaces)
+	- [Sessions](#sessions)
+	- [Concurrency](#concurrency)
+	- [Hooks](#hooks)
+		- [Server-side Hooks](#server-side-hooks)
+		- [SessionManager Hooks](#sessionmanager-hooks)
+		- [Client-side Hooks](#client-side-hooks)
+		- [SessionKeyGenerator Hooks](#sessionkeygenerator-hooks)
+	- [Graceful Shutdown](#graceful-shutdown)
+	- [Multi-Language Support](#multi-language-support)
+	- [Security](#security)
 
 
 ## Installation
@@ -159,7 +159,7 @@ case nil:
 
 // ... or check for a timeout error the easier way:
 if err != nil {
-	if wwr.IsTimeoutErr(err) {
+	if wwr.IsErrTimeout(err) {
 		// Timed out due to deadline excess or default timeout
 	} else {
 		// Unexpected error

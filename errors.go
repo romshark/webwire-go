@@ -164,9 +164,9 @@ func (err ErrCanceled) Error() string {
 	return err.Cause.Error()
 }
 
-// ErrIsTimeout returns true if the given error is either a ErrTimeout
+// IsErrTimeout returns true if the given error is either a ErrTimeout
 // or a ErrDeadlineExceeded, otherwise returns false
-func ErrIsTimeout(err error) bool {
+func IsErrTimeout(err error) bool {
 	switch err.(type) {
 	case ErrTimeout:
 		return true
