@@ -9,8 +9,7 @@ import (
 	"github.com/qbeon/webwire-go/message"
 )
 
-// NewServer creates a new WebWire server instance which uses a
-// fasthttp/websocket transport by default
+// NewServer creates a new webwire server instance
 func NewServer(
 	implementation ServerImplementation,
 	opts ServerOptions,
