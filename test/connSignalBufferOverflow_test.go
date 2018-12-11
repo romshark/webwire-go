@@ -8,9 +8,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// TestConnSignalNoNameNoPayload tests Connection.Signal providing both a nil
-// name and a nil payload
-func TestConnSignalNoNameNoPayload(t *testing.T) {
+// TestConnSignalBufferOverflow tests Connection.Signal with a name and payload
+// that would overflow the buffer
+func TestConnSignalBufferOverflow(t *testing.T) {
 	finished := sync.WaitGroup{}
 	finished.Add(1)
 
@@ -21,13 +21,19 @@ func TestConnSignalNoNameNoPayload(t *testing.T) {
 			ClientConnected: func(_ wwr.ConnectionOptions, c wwr.Connection) {
 				defer finished.Done()
 
-				assert.Error(t, c.Signal(
-					[]byte(nil),                    // No name
-					wwr.Payload{Data: []byte(nil)}, // No payload
-				))
+				payload := make([]byte, 2048)
+				err := c.Signal(
+					[]byte(nil),                // No name
+					wwr.Payload{Data: payload}, // Payload too big
+				)
+
+				assert.Error(t, err)
+				assert.IsType(t, wwr.ErrBufferOverflow{}, err)
 			},
 		},
-		wwr.ServerOptions{},
+		wwr.ServerOptions{
+			MessageBufferSize: 1024,
+		},
 		nil, // Use the default transport implementation
 	)
 
