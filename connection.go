@@ -2,6 +2,7 @@ package webwire
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net"
 	"sync"
@@ -157,6 +158,11 @@ func (con *connection) RemoteAddr() net.Addr {
 
 // Signal implements the Connection interface
 func (con *connection) Signal(name []byte, payload Payload) (err error) {
+	// Require either a name, or a payload or both
+	if len(name) < 1 && len(payload.Data) < 1 {
+		return ErrProtocol{Cause: errors.New("missing both name and payload")}
+	}
+
 	writer, err := con.sock.GetWriter()
 	if err != nil {
 		return err
