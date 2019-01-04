@@ -133,6 +133,16 @@ func (err ErrSessionsDisabled) Error() string {
 	return "sessions are disabled for this server"
 }
 
+// DisconnectedErr represents an error indicating connection loss
+type DisconnectedErr struct {
+	Cause error
+}
+
+// Error implements the error interface
+func (err DisconnectedErr) Error() string {
+	return err.Cause.Error()
+}
+
 // ErrTimeout represents a failure caused by a timeout
 type ErrTimeout struct {
 	Cause error
