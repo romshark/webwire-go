@@ -65,7 +65,6 @@ The [webwire-go](https://github.com/qbeon/webwire-go) library provides a server 
 	- [Hooks](#hooks)
 		- [Server-side Hooks](#server-side-hooks)
 		- [SessionManager Hooks](#sessionmanager-hooks)
-		- [Client-side Hooks](#client-side-hooks)
 		- [SessionKeyGenerator Hooks](#sessionkeygenerator-hooks)
 	- [Graceful Shutdown](#graceful-shutdown)
 	- [Multi-Language Support](#multi-language-support)
@@ -296,12 +295,6 @@ Various hooks provide the ability to asynchronously react to different kinds of 
 - OnSessionCreated
 - OnSessionLookup
 - OnSessionClosed
-
-#### Client-side Hooks
-- OnServerSignal
-- OnSessionCreated
-- OnSessionClosed
-- OnDisconnected
 
 #### SessionKeyGenerator Hooks
 - Generate
